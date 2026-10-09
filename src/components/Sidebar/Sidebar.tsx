@@ -5,7 +5,8 @@ import {
   Plus, 
   SlidersHorizontal,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  CheckSquare
 } from 'lucide-react';
 import { Folder, LinkItem } from '../../types';
 import { getFolderIcon, FOLDER_COLOR_MAP } from '../../utils/icons';
@@ -19,6 +20,9 @@ interface SidebarProps {
   onOpenAddFolder: () => void;
   isCollapsed: boolean;
   onToggleCollapse: () => void;
+  currentView?: 'dashboard' | 'tasks';
+  onSelectView?: (view: 'dashboard' | 'tasks') => void;
+  pendingTasksCount?: number;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -29,7 +33,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onOpenManageFolders,
   onOpenAddFolder,
   isCollapsed,
-  onToggleCollapse
+  onToggleCollapse,
+  currentView = 'dashboard',
+  onSelectView,
+  pendingTasksCount = 0,
 }) => {
   const totalCount = links.length;
   const favoriteCount = links.filter((l) => l.isFavorite).length;
@@ -40,6 +47,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   // Icon sizing: 16px (w-4 h-4) when expanded, +3px larger = 19px (w-[19px] h-[19px]) when collapsed
   const iconSizeClass = isCollapsed ? 'w-[19px] h-[19px]' : 'w-4 h-4';
+
+  const handleSelectOverview = (folderId: string | null) => {
+    if (onSelectView) {
+      onSelectView('dashboard');
+    }
+    onSelectFolder(folderId);
+  };
 
   return (
     <aside
@@ -62,28 +76,61 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <div className="space-y-1">
           {!isCollapsed && (
             <div className="px-3 py-1 text-[11px] font-semibold text-serene-text-muted uppercase tracking-wider">
-              Overview
+              Navigation & Focus
             </div>
           )}
 
-          {/* All Links */}
+          {/* Tasks & Action Items */}
           <button
-            onClick={() => onSelectFolder(null)}
+            onClick={() => onSelectView && onSelectView('tasks')}
             className={`w-full flex items-center gap-3 rounded-xl text-xs font-medium transition-all ${
               isCollapsed ? 'p-2.5 justify-center' : 'px-3 py-2'
             } ${
-              selectedFolderId === null
+              currentView === 'tasks'
+                ? 'bg-serene-primary text-white shadow-xs'
+                : 'text-serene-text-secondary dark:text-serene-text-darkSecondary hover:bg-serene-surfaceAlt-light dark:hover:bg-serene-surfaceAlt-dark hover:text-serene-text-primary dark:hover:text-serene-text-darkPrimary'
+            }`}
+            title="Tasks & Action Items"
+          >
+            <CheckSquare className={`${iconSizeClass} shrink-0 ${currentView === 'tasks' ? 'text-white' : 'text-serene-primary dark:text-serene-primary-dark'}`} />
+            {!isCollapsed && (
+              <>
+                <span className="flex-1 text-left truncate font-semibold">Tasks & Action Items</span>
+                {pendingTasksCount > 0 ? (
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-mono font-bold ${
+                    currentView === 'tasks' ? 'bg-white/20 text-white' : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20'
+                  }`}>
+                    {pendingTasksCount}
+                  </span>
+                ) : (
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-mono ${
+                    currentView === 'tasks' ? 'bg-white/20 text-white' : 'bg-black/5 dark:bg-white/10 text-serene-text-muted'
+                  }`}>
+                    0
+                  </span>
+                )}
+              </>
+            )}
+          </button>
+
+          {/* All Links */}
+          <button
+            onClick={() => handleSelectOverview(null)}
+            className={`w-full flex items-center gap-3 rounded-xl text-xs font-medium transition-all ${
+              isCollapsed ? 'p-2.5 justify-center' : 'px-3 py-2'
+            } ${
+              currentView === 'dashboard' && selectedFolderId === null
                 ? 'bg-serene-primary text-white shadow-xs'
                 : 'text-serene-text-secondary dark:text-serene-text-darkSecondary hover:bg-serene-surfaceAlt-light dark:hover:bg-serene-surfaceAlt-dark hover:text-serene-text-primary dark:hover:text-serene-text-darkPrimary'
             }`}
             title="All Resources"
           >
-            <Layers className={`${iconSizeClass} shrink-0 ${selectedFolderId === null ? 'text-white' : 'text-serene-text-muted'}`} />
+            <Layers className={`${iconSizeClass} shrink-0 ${currentView === 'dashboard' && selectedFolderId === null ? 'text-white' : 'text-serene-text-muted'}`} />
             {!isCollapsed && (
               <>
                 <span className="flex-1 text-left truncate">All Resources</span>
                 <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-mono ${
-                  selectedFolderId === null ? 'bg-white/20 text-white' : 'bg-black/5 dark:bg-white/10 text-serene-text-muted'
+                  currentView === 'dashboard' && selectedFolderId === null ? 'bg-white/20 text-white' : 'bg-black/5 dark:bg-white/10 text-serene-text-muted'
                 }`}>
                   {totalCount}
                 </span>
@@ -93,22 +140,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
           {/* Favorites */}
           <button
-            onClick={() => onSelectFolder('favorites')}
+            onClick={() => handleSelectOverview('favorites')}
             className={`w-full flex items-center gap-3 rounded-xl text-xs font-medium transition-all ${
               isCollapsed ? 'p-2.5 justify-center' : 'px-3 py-2'
             } ${
-              selectedFolderId === 'favorites'
+              currentView === 'dashboard' && selectedFolderId === 'favorites'
                 ? 'bg-amber-600 text-white shadow-xs'
                 : 'text-serene-text-secondary dark:text-serene-text-darkSecondary hover:bg-serene-surfaceAlt-light dark:hover:bg-serene-surfaceAlt-dark hover:text-serene-text-primary dark:hover:text-serene-text-darkPrimary'
             }`}
             title="Favorites"
           >
-            <Star className={`${iconSizeClass} shrink-0 ${selectedFolderId === 'favorites' ? 'text-white fill-current' : 'text-amber-500 fill-amber-500/20'}`} />
+            <Star className={`${iconSizeClass} shrink-0 ${currentView === 'dashboard' && selectedFolderId === 'favorites' ? 'text-white fill-current' : 'text-amber-500 fill-amber-500/20'}`} />
             {!isCollapsed && (
               <>
                 <span className="flex-1 text-left truncate">Favorites</span>
                 <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-mono ${
-                  selectedFolderId === 'favorites' ? 'bg-white/20 text-white' : 'bg-black/5 dark:bg-white/10 text-serene-text-muted'
+                  currentView === 'dashboard' && selectedFolderId === 'favorites' ? 'bg-white/20 text-white' : 'bg-black/5 dark:bg-white/10 text-serene-text-muted'
                 }`}>
                   {favoriteCount}
                 </span>

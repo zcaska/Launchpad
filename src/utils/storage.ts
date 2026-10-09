@@ -17,6 +17,10 @@ export function loadAppData(): AppData {
       ? parsed.quickNotes.map((n: any) => ({
           ...n,
           durationMinutes: n.durationMinutes || 30,
+          priority: n.priority || 'medium',
+          deadline: n.deadline || undefined,
+          attachedUrls: Array.isArray(n.attachedUrls) ? n.attachedUrls : [],
+          subtasks: Array.isArray(n.subtasks) ? n.subtasks : [],
         }))
       : DEFAULT_SEED_DATA.quickNotes;
 

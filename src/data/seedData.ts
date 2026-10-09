@@ -183,6 +183,19 @@ export const DEFAULT_SEED_DATA: AppData = {
       isDone: false,
       createdAt: Date.now() - 3600000 * 2,
       durationMinutes: 30,
+      priority: 'high',
+      deadline: '11:00',
+      attachedUrls: [
+        {
+          id: 'url-1',
+          title: 'Team Sync Agenda Doc',
+          url: 'https://docs.google.com/document/d/agenda-office-hours',
+        },
+      ],
+      subtasks: [
+        { id: 'sub-1', text: 'Review feedback on PR #12', isDone: true },
+        { id: 'sub-2', text: 'List architectural questions on cache invalidation', isDone: false },
+      ],
     },
     {
       id: 'note-2',
@@ -190,6 +203,19 @@ export const DEFAULT_SEED_DATA: AppData = {
       isDone: false,
       createdAt: Date.now() - 3600000 * 5,
       durationMinutes: 45,
+      priority: 'medium',
+      deadline: '17:00',
+      attachedUrls: [
+        {
+          id: 'url-2',
+          title: 'Chapter 4 Textbook Online Reading',
+          url: 'https://ocw.mit.edu/courses/distributed-systems/ch4',
+        },
+      ],
+      subtasks: [
+        { id: 'sub-3', text: 'Extract key theorems & definitions', isDone: false },
+        { id: 'sub-4', text: 'Create 3 flashcards for review', isDone: false },
+      ],
     },
     {
       id: 'note-3',
@@ -197,6 +223,9 @@ export const DEFAULT_SEED_DATA: AppData = {
       isDone: true,
       createdAt: Date.now() - 3600000 * 24,
       durationMinutes: 15,
+      priority: 'low',
+      attachedUrls: [],
+      subtasks: [],
     }
   ],
   folders: [

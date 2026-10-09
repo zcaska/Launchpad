@@ -8,7 +8,8 @@ import {
   Settings, 
   FileText,
   Command,
-  Rocket
+  Rocket,
+  CheckSquare
 } from 'lucide-react';
 import { ThemeMode } from '../../types';
 
@@ -21,6 +22,9 @@ interface HeaderProps {
   isQuickNotesOpen: boolean;
   theme: ThemeMode;
   onThemeChange: (theme: ThemeMode) => void;
+  activeView?: 'dashboard' | 'tasks';
+  onSelectView?: (view: 'dashboard' | 'tasks') => void;
+  pendingTasksCount?: number;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -32,6 +36,9 @@ export const Header: React.FC<HeaderProps> = ({
   isQuickNotesOpen,
   theme,
   onThemeChange,
+  activeView = 'dashboard',
+  onSelectView,
+  pendingTasksCount = 0,
 }) => {
   const toggleTheme = () => {
     if (theme === 'light') onThemeChange('dark');
@@ -102,6 +109,28 @@ export const Header: React.FC<HeaderProps> = ({
               <Plus className="w-4 h-4" />
               <span className="hidden sm:inline">Add Resource</span>
             </button>
+
+            {/* Tasks Screen View Toggle Button */}
+            {onSelectView && (
+              <button
+                onClick={() => onSelectView(activeView === 'tasks' ? 'dashboard' : 'tasks')}
+                title={activeView === 'tasks' ? "Back to Dashboard" : "Open Tasks Screen"}
+                className={`p-2 rounded-lg border transition-all flex items-center gap-1.5 ${
+                  activeView === 'tasks'
+                    ? 'bg-serene-primary text-white border-serene-primary shadow-xs'
+                    : 'bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark border-serene-border-light dark:border-serene-border-dark text-serene-text-secondary hover:text-serene-text-primary dark:text-serene-text-darkSecondary dark:hover:text-serene-text-darkPrimary'
+                }`}
+              >
+                <CheckSquare className="w-4 h-4" />
+                {pendingTasksCount > 0 && (
+                  <span className={`text-[10px] px-1 py-0.2 rounded-full font-mono font-bold ${
+                    activeView === 'tasks' ? 'bg-white/20 text-white' : 'bg-rose-500/10 text-rose-600 dark:text-rose-400'
+                  }`}>
+                    {pendingTasksCount}
+                  </span>
+                )}
+              </button>
+            )}
 
             {/* Quick Notes Toggle */}
             <button

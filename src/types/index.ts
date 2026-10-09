@@ -32,6 +32,20 @@ export interface Folder {
   order: number;
 }
 
+export type TaskPriority = 'high' | 'medium' | 'low';
+
+export interface TaskUrl {
+  id: string;
+  title?: string;
+  url: string;
+}
+
+export interface Subtask {
+  id: string;
+  text: string;
+  isDone: boolean;
+}
+
 export interface QuickNote {
   id: string;
   text: string;
@@ -39,6 +53,9 @@ export interface QuickNote {
   createdAt: number;
   durationMinutes?: number; // e.g. 15, 30, 45, 60, 90, 120
   deadline?: string; // Optional HH:MM or date string
+  priority?: TaskPriority;
+  attachedUrls?: TaskUrl[];
+  subtasks?: Subtask[];
 }
 
 export interface DailyFocus {

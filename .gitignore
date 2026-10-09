@@ -26,3 +26,5 @@ dist-ssr
 .playwright-mcp
 Bugs/
 stitch_landing_pad_focus_dashboard/
+.project-context/
+docs/

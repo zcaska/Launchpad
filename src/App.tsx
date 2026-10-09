@@ -27,6 +27,7 @@ import { FolderCard } from './components/LinkGrid/FolderCard';
 import { CategorySection } from './components/LinkGrid/CategorySection';
 import { CompactIconGrid } from './components/LinkGrid/CompactIconGrid';
 import { QuickNotesWidget } from './components/QuickNotes/QuickNotesWidget';
+import { TaskManagementScreen } from './components/Tasks/TaskManagementScreen';
 import { AddEditLinkModal } from './components/Modals/AddEditLinkModal';
 import { ManageFoldersModal } from './components/Modals/ManageFoldersModal';
 import { SettingsModal } from './components/Modals/SettingsModal';
@@ -46,6 +47,7 @@ import {
 
 export function App() {
   const [appData, setAppData] = useState<AppData>(() => loadAppData());
+  const [activeView, setActiveView] = useState<'dashboard' | 'tasks'>('dashboard');
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<'boxy' | 'sections'>('boxy');
@@ -310,6 +312,15 @@ export function App() {
     }));
   };
 
+  const handleToggleTask = (taskId: string) => {
+    setAppData((prev) => ({
+      ...prev,
+      quickNotes: prev.quickNotes.map((task) =>
+        task.id === taskId ? { ...task, isDone: !task.isDone } : task
+      ),
+    }));
+  };
+
   const handleUpdateScratchpad = (scratchpadText: string) => {
     setAppData((prev) => ({
       ...prev,
@@ -383,6 +394,9 @@ export function App() {
         isQuickNotesOpen={isQuickNotesOpen}
         theme={appData.settings.theme}
         onThemeChange={handleThemeChange}
+        activeView={activeView}
+        onSelectView={setActiveView}
+        pendingTasksCount={taskLoad.pendingCount}
       />
 
       {/* Main Workspace Layout (Fluid Viewport with Independent Scroll Areas) */}
@@ -397,48 +411,62 @@ export function App() {
           onOpenAddFolder={() => setIsManageFoldersOpen(true)}
           isCollapsed={sidebarCollapsed}
           onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
+          currentView={activeView}
+          onSelectView={setActiveView}
+          pendingTasksCount={taskLoad.pendingCount}
         />
 
         {/* Content Area: Independent scroll container with container queries */}
-        <main className="flex-1 h-full min-w-0 p-3 sm:p-5 lg:p-6 overflow-y-auto space-y-5 @container">
-          
-          {/* 1. TIME RADAR WIDGET (Always visible at top of main overview) */}
-          {!searchQuery && (
-            <TimeRadarWidget
-              timeRemaining={timeRemaining}
-              taskLoad={taskLoad}
-              buffer={buffer}
-              endHour={appData.settings.daySchedule.endHour}
-              onOpenTasks={() => setIsQuickNotesOpen(true)}
+        {activeView === 'tasks' ? (
+          <main className="flex-1 h-full min-w-0 p-3 sm:p-5 lg:p-6 overflow-y-auto @container">
+            <TaskManagementScreen
+              notes={appData.quickNotes}
+              scratchpadText={appData.scratchpadText}
+              onUpdateNotes={handleUpdateNotes}
+              onUpdateScratchpad={handleUpdateScratchpad}
+              onBackToDashboard={() => setActiveView('dashboard')}
             />
-          )}
+          </main>
+        ) : (
+          <main className="flex-1 h-full min-w-0 p-3 sm:p-5 lg:p-6 overflow-y-auto space-y-5 @container">
+            
+            {/* Top Widgets: Only visible in All Resources page (selectedFolderId === null && !searchQuery) */}
+            {selectedFolderId === null && !searchQuery && (
+              <>
+                {/* 1. TIME RADAR WIDGET */}
+                <TimeRadarWidget
+                  timeRemaining={timeRemaining}
+                  taskLoad={taskLoad}
+                  buffer={buffer}
+                  endHour={appData.settings.daySchedule.endHour}
+                  onOpenTasks={() => setActiveView('tasks')}
+                />
 
-          {/* 2. CONTEXT-AWARE HERO INTERCEPT */}
-          {!searchQuery && (
-            <>
-              {/* STATE A: Urgent Tasks Pending -> Show Focus & Priority Task Hero */}
-              {hasPendingTasks ? (
-                <FocusHeroBanner
-                  dailyFocus={appData.dailyFocus}
-                  onUpdateDailyFocus={handleUpdateDailyFocus}
-                  clockFormat={appData.settings.clockFormat}
-                  showQuotes={appData.settings.showQuotes}
-                />
-              ) : (
-                /* STATE B: Zero Tasks Pending / Buffer Free -> Show Smart Suggestion Engine! */
-                <SmartSuggestionCard
-                  candidate={currentSuggestion}
-                  onApprove={handleApproveSuggestion}
-                  onReject={handleRejectSuggestion}
-                  onFetchAiIdea={handleFetchAiIdea}
-                  isOpenRouterEnabled={appData.settings.openRouter.enabled}
-                  isAiLoading={isAiLoading}
-                  approvalsCount={appData.learnedPreferences.approvalsCount}
-                  rejectionsCount={appData.learnedPreferences.rejectionsCount}
-                />
-              )}
-            </>
-          )}
+                {/* 2. CONTEXT-AWARE HERO INTERCEPT */}
+                {hasPendingTasks ? (
+                  <FocusHeroBanner
+                    dailyFocus={appData.dailyFocus}
+                    onUpdateDailyFocus={handleUpdateDailyFocus}
+                    clockFormat={appData.settings.clockFormat}
+                    showQuotes={appData.settings.showQuotes}
+                    tasks={appData.quickNotes}
+                    onToggleTask={handleToggleTask}
+                    onOpenTasksScreen={() => setActiveView('tasks')}
+                  />
+                ) : (
+                  <SmartSuggestionCard
+                    candidate={currentSuggestion}
+                    onApprove={handleApproveSuggestion}
+                    onReject={handleRejectSuggestion}
+                    onFetchAiIdea={handleFetchAiIdea}
+                    isOpenRouterEnabled={appData.settings.openRouter.enabled}
+                    isAiLoading={isAiLoading}
+                    approvalsCount={appData.learnedPreferences.approvalsCount}
+                    rejectionsCount={appData.learnedPreferences.rejectionsCount}
+                  />
+                )}
+              </>
+            )}
 
           {/* 3. Navigation Sub-Bar & Breadcrumb Controls */}
           <div className="flex items-center justify-between gap-4 pt-1 pb-2 border-b border-serene-border-light/60 dark:border-serene-border-dark/60">
@@ -661,6 +689,7 @@ export function App() {
             </div>
           )}
         </main>
+        )}
 
         {/* Quick Notes Slide-over Panel */}
         {isQuickNotesOpen && (
