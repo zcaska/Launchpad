@@ -104,7 +104,7 @@ export const SmartSuggestionCard: React.FC<SmartSuggestionCardProps> = ({
           </div>
 
           {/* Main Candidate Card Item */}
-          <div className="flex flex-col @md:flex-row @md:items-center justify-between gap-4 p-3.5 sm:p-4 rounded-xl bg-white dark:bg-serene-surface-dark border border-serene-border-light dark:border-serene-border-dark shadow-subtle">
+          <div className="flex flex-col @lg:flex-row @lg:items-center justify-between gap-3.5 sm:gap-4 p-3.5 sm:p-4 rounded-xl bg-white dark:bg-serene-surface-dark border border-serene-border-light dark:border-serene-border-dark shadow-subtle">
             <div className="flex items-start gap-3 min-w-0 flex-1">
               {/* Favicon */}
               <div className="w-10 h-10 rounded-xl bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark border border-serene-border-light/60 dark:border-serene-border-dark flex items-center justify-center shrink-0 overflow-hidden shadow-2xs">
@@ -147,26 +147,26 @@ export const SmartSuggestionCard: React.FC<SmartSuggestionCardProps> = ({
               </div>
             </div>
 
-            {/* Action Controls: Approve vs Reject */}
-            <div className="flex items-center gap-2 shrink-0 justify-end pt-2 @md:pt-0 border-t @md:border-t-0 border-serene-border-light/50 dark:border-serene-border-dark/50 flex-wrap">
+            {/* Action Controls: Responsive layout - 2 equal columns when stacked, flex row when side-by-side */}
+            <div className="grid grid-cols-2 @lg:flex @lg:items-center gap-2 shrink-0 pt-2.5 @lg:pt-0 border-t @lg:border-t-0 border-serene-border-light/50 dark:border-serene-border-dark/50">
               {/* Reject button */}
               <button
                 onClick={handleRejectClick}
                 title="Not feeling this right now (Press 'R')"
-                className="px-3 py-2 bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark hover:bg-rose-50 dark:hover:bg-rose-950/30 hover:text-rose-600 dark:hover:text-rose-400 border border-serene-border-light dark:border-serene-border-dark text-xs font-semibold rounded-xl transition-all flex items-center gap-1.5"
+                className="w-full @lg:w-auto px-3 py-2 bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark hover:bg-rose-50 dark:hover:bg-rose-950/30 hover:text-rose-600 dark:hover:text-rose-400 border border-serene-border-light dark:border-serene-border-dark text-xs font-semibold rounded-xl transition-all flex items-center justify-center gap-1.5 text-center"
               >
-                <RotateCw className="w-3.5 h-3.5" />
-                <span>Show Another (R)</span>
+                <RotateCw className="w-3.5 h-3.5 shrink-0" />
+                <span className="truncate">Another (R)</span>
               </button>
 
               {/* Approve button */}
               <button
                 onClick={handleApproveClick}
                 title="Start this activity (Press 'Enter')"
-                className="px-4 py-2 bg-serene-primary hover:bg-serene-primary-hover text-white text-xs font-semibold rounded-xl shadow-sm hover:shadow transition-all flex items-center gap-1.5"
+                className="w-full @lg:w-auto px-4 py-2 bg-serene-primary hover:bg-serene-primary-hover text-white text-xs font-semibold rounded-xl shadow-sm hover:shadow transition-all flex items-center justify-center gap-1.5 text-center"
               >
-                {isApproving ? <Check className="w-3.5 h-3.5" /> : <ExternalLink className="w-3.5 h-3.5" />}
-                <span>Approve & Open</span>
+                {isApproving ? <Check className="w-3.5 h-3.5 shrink-0" /> : <ExternalLink className="w-3.5 h-3.5 shrink-0" />}
+                <span className="truncate">Approve & Open</span>
               </button>
             </div>
           </div>

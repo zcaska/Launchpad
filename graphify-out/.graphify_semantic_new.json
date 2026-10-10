@@ -1,0 +1,35 @@
+{
+  "nodes": [
+    {
+      "id": "extension/README.md",
+      "name": "Extension README",
+      "type": "document",
+      "description": "Companion browser extension setup instructions for Chrome, Edge, and Brave.",
+      "source": "extension/README.md"
+    },
+    {
+      "id": "extension/popup.html",
+      "name": "Extension Popup UI",
+      "type": "document",
+      "description": "HTML structure for the companion browser extension popup action menu.",
+      "source": "extension/popup.html"
+    }
+  ],
+  "edges": [
+    {
+      "source": "extension/README.md",
+      "target": "extension/manifest.json",
+      "type": "documents",
+      "confidence": "high"
+    },
+    {
+      "source": "extension/popup.html",
+      "target": "extension/popup.js",
+      "type": "references",
+      "confidence": "high"
+    }
+  ],
+  "hyperedges": [],
+  "input_tokens": 100,
+  "output_tokens": 100
+}

@@ -1,0 +1,462 @@
+{
+  "nodes": [
+    {
+      "id": "agents_rules_dashboard_ux_focus_dashboard_ux_heuristics",
+      "label": "Focus Dashboard UX Heuristics",
+      "file_type": "document",
+      "source_file": "C:\\Users\\AGP\\Documents\\Projects\\LaunchPAD\\.agents\\rules\\dashboard-ux.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_rules_dashboard_ux_context_scoped_overview_widgets",
+      "label": "Context-Scoped Overview Widgets",
+      "file_type": "rationale",
+      "rationale": "High-level overview banners (TimeRadarWidget, FocusHeroBanner, SmartSuggestionCard) must only render on top-level All Resources view to prevent distraction.",
+      "source_file": "C:\\Users\\AGP\\Documents\\Projects\\LaunchPAD\\.agents\\rules\\dashboard-ux.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_rules_dashboard_ux_visual_harmony_clean_iconography",
+      "label": "Visual Harmony & Clean Iconography",
+      "file_type": "rationale",
+      "rationale": "Folder cards must align icon, title, count, and actions using structured CSS Grid; preserve clean colored icon strokes without heavy background containers.",
+      "source_file": "C:\\Users\\AGP\\Documents\\Projects\\LaunchPAD\\.agents\\rules\\dashboard-ux.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_rules_subagent_execution_subagent_execution_conventions",
+      "label": "Subagent Execution Conventions",
+      "file_type": "document",
+      "source_file": "C:\\Users\\AGP\\Documents\\Projects\\LaunchPAD\\.agents\\rules\\subagent-execution.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_rules_subagent_execution_exact_installed_model_string",
+      "label": "Exact Installed Model String Convention",
+      "file_type": "rationale",
+      "rationale": "When dispatching subagents via agy CLI, do not pass short aliases; use exact installed model string like Gemini 3.8 Flash (Low).",
+      "source_file": "C:\\Users\\AGP\\Documents\\Projects\\LaunchPAD\\.agents\\rules\\subagent-execution.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "github_workflows_deploy_workflow",
+      "label": "Deploy to GitHub Pages Workflow",
+      "file_type": "document",
+      "source_file": "C:\\Users\\AGP\\Documents\\Projects\\LaunchPAD\\.github\\workflows\\deploy.yml",
+      "source_location": "1",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "github_workflows_deploy_build_job",
+      "label": "Build Job",
+      "file_type": "concept",
+      "source_file": "C:\\Users\\AGP\\Documents\\Projects\\LaunchPAD\\.github\\workflows\\deploy.yml",
+      "source_location": "20",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "github_workflows_deploy_deploy_job",
+      "label": "Deploy Job",
+      "file_type": "concept",
+      "source_file": "C:\\Users\\AGP\\Documents\\Projects\\LaunchPAD\\.github\\workflows\\deploy.yml",
+      "source_location": "43",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "readme_launchpad_overview",
+      "label": "LaunchPad Focus Dashboard & Redirect Hub",
+      "file_type": "document",
+      "source_file": "C:\\Users\\AGP\\Documents\\Projects\\LaunchPAD\\README.md",
+      "source_location": "1",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "readme_time_snatch_integration",
+      "label": "Time Snatch Extension Integration",
+      "file_type": "concept",
+      "source_file": "C:\\Users\\AGP\\Documents\\Projects\\LaunchPAD\\README.md",
+      "source_location": "38",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "readme_daily_focus_intention",
+      "label": "Daily Focus Intention",
+      "file_type": "concept",
+      "source_file": "C:\\Users\\AGP\\Documents\\Projects\\LaunchPAD\\README.md",
+      "source_location": "19",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "readme_quick_scratchpad",
+      "label": "Dual-Mode Quick Scratchpad",
+      "file_type": "concept",
+      "source_file": "C:\\Users\\AGP\\Documents\\Projects\\LaunchPAD\\README.md",
+      "source_location": "20",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "docs_superpowers_plans_2026_10_09_intelligent_focus_engine_plan",
+      "label": "Intelligent Focus Engine Plan",
+      "file_type": "document",
+      "source_file": "C:\\Users\\AGP\\Documents\\Projects\\LaunchPAD\\docs\\superpowers\\plans\\2026-10-09-intelligent-focus-engine.md",
+      "source_location": "1",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "docs_superpowers_plans_2026_10_09_intelligent_focus_engine_time_capacity",
+      "label": "Time Capacity Engine",
+      "file_type": "concept",
+      "source_file": "C:\\Users\\AGP\\Documents\\Projects\\LaunchPAD\\docs\\superpowers\\plans\\2026-10-09-intelligent-focus-engine.md",
+      "source_location": "8",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "docs_superpowers_plans_2026_10_09_intelligent_focus_engine_bandit_recommender",
+      "label": "Self-Learning Bandit Recommendation Engine",
+      "file_type": "concept",
+      "source_file": "C:\\Users\\AGP\\Documents\\Projects\\LaunchPAD\\docs\\superpowers\\plans\\2026-10-09-intelligent-focus-engine.md",
+      "source_location": "10",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "docs_superpowers_plans_2026_10_09_intelligent_focus_engine_contextual_intercept",
+      "label": "Contextual Intercept Focus System",
+      "file_type": "concept",
+      "source_file": "C:\\Users\\AGP\\Documents\\Projects\\LaunchPAD\\docs\\superpowers\\plans\\2026-10-09-intelligent-focus-engine.md",
+      "source_location": "9",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "docs_superpowers_plans_2026_10_09_progressive_disclosure_favicon_grid_plan",
+      "label": "Progressive Disclosure Favicon Grid Plan",
+      "file_type": "document",
+      "source_file": "C:\\Users\\AGP\\Documents\\Projects\\LaunchPAD\\docs\\superpowers\\plans\\2026-10-09-progressive-disclosure-favicon-grid.md",
+      "source_location": "1",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "docs_superpowers_plans_2026_10_09_progressive_disclosure_favicon_grid_domain_clustering",
+      "label": "Domain Nesting & Auto-Clustering",
+      "file_type": "concept",
+      "source_file": "C:\\Users\\AGP\\Documents\\Projects\\LaunchPAD\\docs\\superpowers\\plans\\2026-10-09-progressive-disclosure-favicon-grid.md",
+      "source_location": "25",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "docs_superpowers_plans_2026_10_09_progressive_disclosure_favicon_grid_hover_cards",
+      "label": "Floating Hover Preview Cards",
+      "file_type": "concept",
+      "source_file": "C:\\Users\\AGP\\Documents\\Projects\\LaunchPAD\\docs\\superpowers\\plans\\2026-10-09-progressive-disclosure-favicon-grid.md",
+      "source_location": "9",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "index_html_entrypoint",
+      "label": "LaunchPad HTML Entrypoint",
+      "file_type": "document",
+      "source_file": "C:\\Users\\AGP\\Documents\\Projects\\LaunchPAD\\index.html",
+      "source_location": "1",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "extension/README.md",
+      "name": "Extension README",
+      "type": "document",
+      "description": "Companion browser extension setup instructions for Chrome, Edge, and Brave.",
+      "source": "extension/README.md"
+    },
+    {
+      "id": "extension/popup.html",
+      "name": "Extension Popup UI",
+      "type": "document",
+      "description": "HTML structure for the companion browser extension popup action menu.",
+      "source": "extension/popup.html"
+    }
+  ],
+  "edges": [
+    {
+      "source": "agents_rules_dashboard_ux_focus_dashboard_ux_heuristics",
+      "target": "agents_rules_dashboard_ux_context_scoped_overview_widgets",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\AGP\\Documents\\Projects\\LaunchPAD\\.agents\\rules\\dashboard-ux.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_rules_dashboard_ux_focus_dashboard_ux_heuristics",
+      "target": "agents_rules_dashboard_ux_visual_harmony_clean_iconography",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\AGP\\Documents\\Projects\\LaunchPAD\\.agents\\rules\\dashboard-ux.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_rules_dashboard_ux_context_scoped_overview_widgets",
+      "target": "src_components_dashboard_timeradarwidget_timeradarwidget",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\AGP\\Documents\\Projects\\LaunchPAD\\.agents\\rules\\dashboard-ux.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_rules_dashboard_ux_context_scoped_overview_widgets",
+      "target": "src_components_dashboard_focusherobanner_focusherobanner",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\AGP\\Documents\\Projects\\LaunchPAD\\.agents\\rules\\dashboard-ux.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_rules_dashboard_ux_context_scoped_overview_widgets",
+      "target": "src_components_dashboard_smartsuggestioncard_smartsuggestioncard",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\AGP\\Documents\\Projects\\LaunchPAD\\.agents\\rules\\dashboard-ux.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_rules_subagent_execution_subagent_execution_conventions",
+      "target": "agents_rules_subagent_execution_exact_installed_model_string",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\AGP\\Documents\\Projects\\LaunchPAD\\.agents\\rules\\subagent-execution.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "github_workflows_deploy_workflow",
+      "target": "github_workflows_deploy_build_job",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\AGP\\Documents\\Projects\\LaunchPAD\\.github\\workflows\\deploy.yml",
+      "source_location": "20",
+      "weight": 1.0
+    },
+    {
+      "source": "github_workflows_deploy_workflow",
+      "target": "github_workflows_deploy_deploy_job",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\AGP\\Documents\\Projects\\LaunchPAD\\.github\\workflows\\deploy.yml",
+      "source_location": "43",
+      "weight": 1.0
+    },
+    {
+      "source": "github_workflows_deploy_deploy_job",
+      "target": "github_workflows_deploy_build_job",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\AGP\\Documents\\Projects\\LaunchPAD\\.github\\workflows\\deploy.yml",
+      "source_location": "48",
+      "weight": 1.0
+    },
+    {
+      "source": "readme_launchpad_overview",
+      "target": "readme_time_snatch_integration",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\AGP\\Documents\\Projects\\LaunchPAD\\README.md",
+      "source_location": "38",
+      "weight": 1.0
+    },
+    {
+      "source": "readme_launchpad_overview",
+      "target": "readme_daily_focus_intention",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\AGP\\Documents\\Projects\\LaunchPAD\\README.md",
+      "source_location": "19",
+      "weight": 1.0
+    },
+    {
+      "source": "readme_launchpad_overview",
+      "target": "readme_quick_scratchpad",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\AGP\\Documents\\Projects\\LaunchPAD\\README.md",
+      "source_location": "20",
+      "weight": 1.0
+    },
+    {
+      "source": "docs_superpowers_plans_2026_10_09_intelligent_focus_engine_plan",
+      "target": "docs_superpowers_plans_2026_10_09_intelligent_focus_engine_time_capacity",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\AGP\\Documents\\Projects\\LaunchPAD\\docs\\superpowers\\plans\\2026-10-09-intelligent-focus-engine.md",
+      "source_location": "8",
+      "weight": 1.0
+    },
+    {
+      "source": "docs_superpowers_plans_2026_10_09_intelligent_focus_engine_plan",
+      "target": "docs_superpowers_plans_2026_10_09_intelligent_focus_engine_bandit_recommender",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\AGP\\Documents\\Projects\\LaunchPAD\\docs\\superpowers\\plans\\2026-10-09-intelligent-focus-engine.md",
+      "source_location": "10",
+      "weight": 1.0
+    },
+    {
+      "source": "docs_superpowers_plans_2026_10_09_intelligent_focus_engine_plan",
+      "target": "docs_superpowers_plans_2026_10_09_intelligent_focus_engine_contextual_intercept",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\AGP\\Documents\\Projects\\LaunchPAD\\docs\\superpowers\\plans\\2026-10-09-intelligent-focus-engine.md",
+      "source_location": "9",
+      "weight": 1.0
+    },
+    {
+      "source": "docs_superpowers_plans_2026_10_09_intelligent_focus_engine_contextual_intercept",
+      "target": "readme_daily_focus_intention",
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "C:\\Users\\AGP\\Documents\\Projects\\LaunchPAD\\docs\\superpowers\\plans\\2026-10-09-intelligent-focus-engine.md",
+      "source_location": "9",
+      "weight": 1.0
+    },
+    {
+      "source": "docs_superpowers_plans_2026_10_09_progressive_disclosure_favicon_grid_plan",
+      "target": "docs_superpowers_plans_2026_10_09_progressive_disclosure_favicon_grid_domain_clustering",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\AGP\\Documents\\Projects\\LaunchPAD\\docs\\superpowers\\plans\\2026-10-09-progressive-disclosure-favicon-grid.md",
+      "source_location": "25",
+      "weight": 1.0
+    },
+    {
+      "source": "docs_superpowers_plans_2026_10_09_progressive_disclosure_favicon_grid_plan",
+      "target": "docs_superpowers_plans_2026_10_09_progressive_disclosure_favicon_grid_hover_cards",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\AGP\\Documents\\Projects\\LaunchPAD\\docs\\superpowers\\plans\\2026-10-09-progressive-disclosure-favicon-grid.md",
+      "source_location": "9",
+      "weight": 1.0
+    },
+    {
+      "source": "index_html_entrypoint",
+      "target": "readme_launchpad_overview",
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "C:\\Users\\AGP\\Documents\\Projects\\LaunchPAD\\index.html",
+      "source_location": "7",
+      "weight": 1.0
+    },
+    {
+      "source": "extension/README.md",
+      "target": "extension/manifest.json",
+      "type": "documents",
+      "confidence": "high"
+    },
+    {
+      "source": "extension/popup.html",
+      "target": "extension/popup.js",
+      "type": "references",
+      "confidence": "high"
+    }
+  ],
+  "hyperedges": [
+    {
+      "id": "hyperedge_intelligent_focus_ecosystem",
+      "label": "Intelligent Focus & Recommendation Architecture",
+      "nodes": [
+        "docs_superpowers_plans_2026_10_09_intelligent_focus_engine_time_capacity",
+        "docs_superpowers_plans_2026_10_09_intelligent_focus_engine_bandit_recommender",
+        "docs_superpowers_plans_2026_10_09_intelligent_focus_engine_contextual_intercept"
+      ],
+      "relation": "participate_in",
+      "confidence": "EXTRACTED",
+      "confidence_score": 0.95,
+      "source_file": "C:\\Users\\AGP\\Documents\\Projects\\LaunchPAD\\docs\\superpowers\\plans\\2026-10-09-intelligent-focus-engine.md"
+    }
+  ],
+  "input_tokens": 100,
+  "output_tokens": 100
+}

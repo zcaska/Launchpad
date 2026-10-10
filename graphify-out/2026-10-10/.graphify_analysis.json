@@ -1,0 +1,476 @@
+{
+  "communities": {
+    "0": [
+      "ref_lucide_react",
+      "ref_motion",
+      "ref_react",
+      "src_components_dashboard_smartsuggestioncard",
+      "src_components_dashboard_smartsuggestioncard_smartsuggestioncard",
+      "src_components_linkgrid_categorysection",
+      "src_components_linkgrid_categorysection_categorysectionprops",
+      "src_components_linkgrid_compacticongrid",
+      "src_components_linkgrid_compacticongrid_compacticongrid",
+      "src_components_linkgrid_compacticongrid_compacticongridprops",
+      "src_components_linkgrid_domainclustertile",
+      "src_components_linkgrid_domainclustertile_domainclustertile",
+      "src_components_linkgrid_domainclustertile_domainclustertileprops",
+      "src_components_linkgrid_favicontile",
+      "src_components_linkgrid_favicontile_favicontile",
+      "src_components_linkgrid_favicontile_favicontileprops",
+      "src_components_linkgrid_foldercard",
+      "src_components_linkgrid_foldercard_foldercardprops",
+      "src_components_linkgrid_linkcard",
+      "src_components_linkgrid_linkcard_linkcard",
+      "src_components_linkgrid_linkcard_linkcardprops",
+      "src_components_modals_addeditlinkmodal",
+      "src_components_modals_addeditlinkmodal_addeditlinkmodal",
+      "src_components_modals_addeditlinkmodal_addeditlinkmodalprops",
+      "src_components_modals_bookmarkimportmodal",
+      "src_components_modals_bookmarkimportmodal_bookmarkimportmodal",
+      "src_components_modals_bookmarkimportmodal_bookmarkimportmodalprops",
+      "src_components_modals_managefoldersmodal",
+      "src_components_modals_managefoldersmodal_available_colors",
+      "src_components_modals_managefoldersmodal_available_icons",
+      "src_components_modals_managefoldersmodal_managefoldersmodalprops",
+      "src_components_sidebar_sidebar",
+      "src_components_sidebar_sidebar_sidebarprops",
+      "src_types_index_folder",
+      "src_types_index_foldercolor",
+      "src_types_index_linkitem",
+      "src_utils_domaincluster",
+      "src_utils_domaincluster_cleandomainname",
+      "src_utils_domaincluster_clusteredfoldercontent",
+      "src_utils_domaincluster_clusterlinksbydomain",
+      "src_utils_domaincluster_domaingroup",
+      "src_utils_favicon",
+      "src_utils_favicon_extractdomain",
+      "src_utils_favicon_formaturl",
+      "src_utils_favicon_getfaviconurl",
+      "src_utils_icons",
+      "src_utils_icons_folder_color_map",
+      "src_utils_icons_folder_icons",
+      "src_utils_motion_modalbackdropvariants"
+    ],
+    "1": [
+      "package",
+      "package_dependencies",
+      "package_dependencies_clsx",
+      "package_dependencies_lucide_react",
+      "package_dependencies_motion",
+      "package_dependencies_react",
+      "package_dependencies_react_dom",
+      "package_dependencies_tailwind_merge",
+      "package_name",
+      "package_private",
+      "package_scripts",
+      "package_scripts_build",
+      "package_scripts_deploy",
+      "package_scripts_dev",
+      "package_scripts_predeploy",
+      "package_scripts_preview",
+      "package_type",
+      "package_version",
+      "ref_autoprefixer",
+      "ref_clsx",
+      "ref_gh_pages",
+      "ref_postcss",
+      "ref_react_dom",
+      "ref_tailwind_merge",
+      "ref_tailwindcss",
+      "ref_tailwindcss_container_queries",
+      "ref_types_node",
+      "ref_types_react",
+      "ref_types_react_dom",
+      "ref_typescript",
+      "ref_vite",
+      "ref_vitejs_plugin_react",
+      "src_index",
+      "src_main",
+      "vite_config"
+    ],
+    "2": [
+      "src_app",
+      "src_app_app",
+      "src_components_dashboard_smartsuggestioncard_smartsuggestioncardprops",
+      "src_components_header_header",
+      "src_components_header_header_header",
+      "src_components_header_header_headerprops",
+      "src_components_linkgrid_categorysection_categorysection",
+      "src_components_linkgrid_foldercard_foldercard",
+      "src_components_modals_managefoldersmodal_managefoldersmodal",
+      "src_components_quicknotes_quicknoteswidget",
+      "src_components_quicknotes_quicknoteswidget_duration_options",
+      "src_components_quicknotes_quicknoteswidget_quicknoteswidget",
+      "src_components_quicknotes_quicknoteswidget_quicknoteswidgetprops",
+      "src_components_sidebar_sidebar_sidebar",
+      "src_components_tasks_taskmanagementscreen_taskmanagementscreen",
+      "src_types_index_recommendationcandidate",
+      "src_types_index_thememode",
+      "src_utils_bookmarksyncchannel_initbookmarksyncchannel",
+      "src_utils_icons_getfoldericon",
+      "src_utils_recommender",
+      "src_utils_recommender_fetchopenrouteridea",
+      "src_utils_recommender_generatecandidatepool",
+      "src_utils_recommender_getrankedrecommendations",
+      "src_utils_recommender_recordapproval",
+      "src_utils_recommender_recordrejection",
+      "src_utils_recommender_scorecandidate",
+      "src_utils_timebudget_calculatebuffer",
+      "src_utils_timebudget_calculatedaytimeremaining",
+      "src_utils_timebudget_calculatetaskload",
+      "src_utils_timebudget_formatminutestohours",
+      "src_utils_timebudget_gettimeofdaybucket"
+    ],
+    "3": [
+      "src_types_index",
+      "src_types_index_bookmarkclassificationconfidence",
+      "src_types_index_bookmarkclassificationresult",
+      "src_types_index_bookmarkclassificationrule",
+      "src_types_index_dayschedule",
+      "src_types_index_importbookmarkresult",
+      "src_types_index_openrouterconfig",
+      "src_types_index_parsedbookmark",
+      "src_types_index_timeofdaybucket",
+      "src_utils_bookmarkclassifier",
+      "src_utils_bookmarkclassifier_classifybookmark",
+      "src_utils_bookmarkclassifier_default_domain_category_rules",
+      "src_utils_bookmarkclassifier_default_keyword_category_rules",
+      "src_utils_bookmarkclassifier_extracthostname",
+      "src_utils_bookmarkclassifier_folder_bookmarks",
+      "src_utils_bookmarkclassifier_folder_classes",
+      "src_utils_bookmarkclassifier_folder_name_patterns",
+      "src_utils_bookmarkclassifier_folder_reading",
+      "src_utils_bookmarkclassifier_folder_work",
+      "src_utils_bookmarkclassifier_resolvefolderid",
+      "src_utils_bookmarkparser",
+      "src_utils_bookmarkparser_isduplicateurl",
+      "src_utils_bookmarkparser_normalizeurl",
+      "src_utils_bookmarkparser_parsenetscapebookmarks",
+      "src_utils_bookmarkparser_parsenetscapebookmarks_processanchor",
+      "src_utils_bookmarkparser_parsenetscapebookmarks_traverse"
+    ],
+    "4": [
+      "tsconfig",
+      "tsconfig_compileroptions",
+      "tsconfig_compileroptions_allowimportingtsextensions",
+      "tsconfig_compileroptions_isolatedmodules",
+      "tsconfig_compileroptions_jsx",
+      "tsconfig_compileroptions_lib",
+      "tsconfig_compileroptions_module",
+      "tsconfig_compileroptions_moduleresolution",
+      "tsconfig_compileroptions_noemit",
+      "tsconfig_compileroptions_nofallthroughcasesinswitch",
+      "tsconfig_compileroptions_nounusedlocals",
+      "tsconfig_compileroptions_nounusedparameters",
+      "tsconfig_compileroptions_resolvejsonmodule",
+      "tsconfig_compileroptions_skiplibcheck",
+      "tsconfig_compileroptions_strict",
+      "tsconfig_compileroptions_target",
+      "tsconfig_compileroptions_usedefineforclassfields",
+      "tsconfig_include"
+    ],
+    "5": [
+      "src_components_modals_settingsmodal",
+      "src_components_modals_settingsmodal_settingsmodal",
+      "src_components_modals_settingsmodal_settingsmodalprops",
+      "src_data_seeddata",
+      "src_data_seeddata_calm_quotes",
+      "src_data_seeddata_default_initial_preferences",
+      "src_data_seeddata_default_micro_quests",
+      "src_data_seeddata_default_seed_data",
+      "src_types_index_appdata",
+      "src_types_index_learnedpreferences",
+      "src_utils_bookmarkparser_escapehtml",
+      "src_utils_bookmarkparser_exportnetscapebookmarks",
+      "src_utils_storage",
+      "src_utils_storage_exportdataasjson",
+      "src_utils_storage_importdatafromjson",
+      "src_utils_storage_loadappdata",
+      "src_utils_storage_saveappdata"
+    ],
+    "6": [
+      "src_components_tasks_taskmanagementscreen",
+      "src_components_tasks_taskmanagementscreen_filtertab",
+      "src_components_tasks_taskmanagementscreen_taskmanagementscreenprops",
+      "src_types_index_subtask",
+      "src_types_index_taskpriority",
+      "src_types_index_taskurl",
+      "src_utils_motion",
+      "src_utils_motion_drawervariants",
+      "src_utils_motion_fadescalevariants",
+      "src_utils_motion_micro_interactions",
+      "src_utils_motion_modalcontentvariants",
+      "src_utils_motion_motion_durations",
+      "src_utils_motion_motion_easings",
+      "src_utils_motion_motion_springs",
+      "src_utils_motion_pagetransitionvariants",
+      "src_utils_motion_staggercontainervariants",
+      "src_utils_motion_staggeritemvariants"
+    ],
+    "7": [
+      "agents_rules_dashboard_ux_context_scoped_overview_widgets",
+      "agents_rules_dashboard_ux_focus_dashboard_ux_heuristics",
+      "agents_rules_dashboard_ux_visual_harmony_clean_iconography",
+      "src_components_dashboard_focusherobanner",
+      "src_components_dashboard_focusherobanner_focusherobanner",
+      "src_components_dashboard_focusherobanner_focusherobannerprops",
+      "src_components_dashboard_timeradarwidget",
+      "src_components_dashboard_timeradarwidget_timeradarwidget",
+      "src_components_dashboard_timeradarwidget_timeradarwidgetprops",
+      "src_types_index_dailyfocus",
+      "src_types_index_quicknote",
+      "src_utils_timebudget",
+      "src_utils_timebudget_buffersummary",
+      "src_utils_timebudget_daytimeremaining",
+      "src_utils_timebudget_taskloadsummary"
+    ],
+    "8": [
+      "extension_background",
+      "extension_background_broadcastbookmark",
+      "extension_background_getbookmarkfoldertitle",
+      "extension_background_syncallbookmarks",
+      "extension_background_syncallbookmarks_walk",
+      "extension_rules",
+      "extension_rules_classifybookmark",
+      "extension_rules_default_domain_category_rules",
+      "extension_rules_default_keyword_category_rules",
+      "extension_rules_extracthostname",
+      "extension_rules_folder_bookmarks",
+      "extension_rules_folder_classes",
+      "extension_rules_folder_name_patterns",
+      "extension_rules_folder_reading",
+      "extension_rules_folder_work"
+    ],
+    "9": [
+      "extension_manifest",
+      "extension_manifest_action",
+      "extension_manifest_action_default_popup",
+      "extension_manifest_action_default_title",
+      "extension_manifest_background",
+      "extension_manifest_background_service_worker",
+      "extension_manifest_background_type",
+      "extension_manifest_content_scripts",
+      "extension_manifest_description",
+      "extension_manifest_host_permissions",
+      "extension_manifest_manifest_version",
+      "extension_manifest_name",
+      "extension_manifest_permissions",
+      "extension_manifest_version"
+    ],
+    "10": [
+      "package_devdependencies",
+      "package_devdependencies_autoprefixer",
+      "package_devdependencies_gh_pages",
+      "package_devdependencies_postcss",
+      "package_devdependencies_tailwindcss",
+      "package_devdependencies_tailwindcss_container_queries",
+      "package_devdependencies_types_node",
+      "package_devdependencies_types_react",
+      "package_devdependencies_types_react_dom",
+      "package_devdependencies_typescript",
+      "package_devdependencies_vite",
+      "package_devdependencies_vitejs_plugin_react"
+    ],
+    "11": [
+      "docs_superpowers_plans_2026_10_09_intelligent_focus_engine_bandit_recommender",
+      "docs_superpowers_plans_2026_10_09_intelligent_focus_engine_contextual_intercept",
+      "docs_superpowers_plans_2026_10_09_intelligent_focus_engine_plan",
+      "docs_superpowers_plans_2026_10_09_intelligent_focus_engine_time_capacity",
+      "index_html_entrypoint",
+      "readme_daily_focus_intention",
+      "readme_launchpad_overview",
+      "readme_quick_scratchpad",
+      "readme_time_snatch_integration"
+    ],
+    "12": [
+      "src_utils_bookmarksyncchannel",
+      "src_utils_bookmarksyncchannel_bookmarks_sync_channel_name",
+      "src_utils_bookmarksyncchannel_bookmarksynceventdata",
+      "src_utils_bookmarksyncchannel_bookmarksynchandler",
+      "src_utils_bookmarksyncchannel_bookmarksyncmessagetype",
+      "src_utils_bookmarksyncchannel_bookmarksyncpayload",
+      "src_utils_bookmarksyncchannel_broadcastbookmarkadded",
+      "src_utils_bookmarksyncchannel_broadcastrequestsync"
+    ],
+    "13": [
+      "tsconfig_node",
+      "tsconfig_node_compileroptions",
+      "tsconfig_node_compileroptions_allowsyntheticdefaultimports",
+      "tsconfig_node_compileroptions_composite",
+      "tsconfig_node_compileroptions_module",
+      "tsconfig_node_compileroptions_moduleresolution",
+      "tsconfig_node_compileroptions_skiplibcheck",
+      "tsconfig_node_include"
+    ],
+    "14": [
+      "docs_superpowers_plans_2026_10_09_progressive_disclosure_favicon_grid_domain_clustering",
+      "docs_superpowers_plans_2026_10_09_progressive_disclosure_favicon_grid_hover_cards",
+      "docs_superpowers_plans_2026_10_09_progressive_disclosure_favicon_grid_plan"
+    ],
+    "15": [
+      "github_workflows_deploy_build_job",
+      "github_workflows_deploy_deploy_job",
+      "github_workflows_deploy_workflow"
+    ],
+    "16": [
+      "agents_rules_subagent_execution_exact_installed_model_string",
+      "agents_rules_subagent_execution_subagent_execution_conventions"
+    ],
+    "17": [
+      "extension/README.md"
+    ],
+    "18": [
+      "extension/popup.html"
+    ],
+    "19": [
+      "extension_content"
+    ],
+    "20": [
+      "extension_popup"
+    ],
+    "21": [
+      "postcss_config"
+    ],
+    "22": [
+      "tailwind_config"
+    ]
+  },
+  "cohesion": {
+    "0": 0.1360544217687075,
+    "1": 0.058823529411764705,
+    "2": 0.15053763440860216,
+    "3": 0.12,
+    "4": 0.1111111111111111,
+    "5": 0.21323529411764705,
+    "6": 0.13970588235294118,
+    "7": 0.3238095238095238,
+    "8": 0.17142857142857143,
+    "9": 0.14285714285714285,
+    "10": 0.16666666666666666,
+    "11": 0.2222222222222222,
+    "12": 0.25,
+    "13": 0.25,
+    "14": 0.6666666666666666,
+    "15": 1.0,
+    "16": 1.0,
+    "17": 1.0,
+    "18": 1.0,
+    "19": 1.0,
+    "20": 1.0,
+    "21": 1.0,
+    "22": 1.0
+  },
+  "gods": [
+    {
+      "id": "src_app_app",
+      "label": "App()",
+      "degree": 30
+    },
+    {
+      "id": "src_types_index_linkitem",
+      "label": "LinkItem",
+      "degree": 26
+    },
+    {
+      "id": "src_types_index_folder",
+      "label": "Folder",
+      "degree": 25
+    },
+    {
+      "id": "ref_react",
+      "label": "react",
+      "degree": 20
+    },
+    {
+      "id": "ref_lucide_react",
+      "label": "lucide-react",
+      "degree": 19
+    },
+    {
+      "id": "tsconfig_compileroptions",
+      "label": "compilerOptions",
+      "degree": 16
+    },
+    {
+      "id": "src_utils_favicon_extractdomain",
+      "label": "extractDomain()",
+      "degree": 14
+    },
+    {
+      "id": "src_utils_favicon_getfaviconurl",
+      "label": "getFaviconUrl()",
+      "degree": 14
+    },
+    {
+      "id": "ref_motion",
+      "label": "motion",
+      "degree": 12
+    },
+    {
+      "id": "src_utils_icons_getfoldericon",
+      "label": "getFolderIcon()",
+      "degree": 9
+    }
+  ],
+  "surprises": [
+    {
+      "source": "SmartSuggestionCard()",
+      "target": "Context-Scoped Overview Widgets",
+      "source_files": [
+        "src/components/Dashboard/SmartSuggestionCard.tsx",
+        ".agents/rules/dashboard-ux.md"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "references",
+      "why": "crosses file types (doc \u2194 code); connects across different repos/directories; bridges separate communities"
+    },
+    {
+      "source": "FocusHeroBanner()",
+      "target": "Context-Scoped Overview Widgets",
+      "source_files": [
+        "src/components/Dashboard/FocusHeroBanner.tsx",
+        ".agents/rules/dashboard-ux.md"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "references",
+      "why": "crosses file types (code \u2194 doc); connects across different repos/directories"
+    },
+    {
+      "source": "TimeRadarWidget()",
+      "target": "Context-Scoped Overview Widgets",
+      "source_files": [
+        "src/components/Dashboard/TimeRadarWidget.tsx",
+        ".agents/rules/dashboard-ux.md"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "references",
+      "why": "crosses file types (code \u2194 doc); connects across different repos/directories"
+    },
+    {
+      "source": "Daily Focus Intention",
+      "target": "Contextual Intercept Focus System",
+      "source_files": [
+        "README.md",
+        "docs/superpowers/plans/2026-10-09-intelligent-focus-engine.md"
+      ],
+      "confidence": "INFERRED",
+      "relation": "conceptually_related_to",
+      "why": "inferred connection - not explicitly stated in source; connects across different repos/directories"
+    },
+    {
+      "source": "QuickNotesWidgetProps",
+      "target": "QuickNote",
+      "source_files": [
+        "src/components/QuickNotes/QuickNotesWidget.tsx",
+        "src/types/index.ts"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "references",
+      "why": "bridges separate communities; peripheral node `QuickNotesWidgetProps` unexpectedly reaches hub `QuickNote`"
+    }
+  ],
+  "tokens": {
+    "input": 0,
+    "output": 0
+  }
+}
