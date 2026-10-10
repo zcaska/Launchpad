@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { X, Star, Link as LinkIcon, Tag, Globe } from 'lucide-react';
 import { LinkItem, Folder } from '../../types';
 import { extractDomain, formatUrl } from '../../utils/favicon';
+import { modalBackdropVariants, modalContentVariants } from '../../utils/motion';
 
 interface AddEditLinkModalProps {
   isOpen: boolean;
@@ -47,8 +49,6 @@ export const AddEditLinkModal: React.FC<AddEditLinkModalProps> = ({
     }
   }, [editingLink, isOpen, defaultFolderId, folders]);
 
-  if (!isOpen) return null;
-
   // Auto-fill title from domain if title is empty
   const handleUrlBlur = () => {
     if (url && !title) {
@@ -85,12 +85,26 @@ export const AddEditLinkModal: React.FC<AddEditLinkModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs animate-fadeIn">
-      <div 
-        className="fixed inset-0" 
-        onClick={onClose} 
-      />
-      <div className="relative w-full max-w-lg bg-white dark:bg-serene-surface-dark border border-serene-border-light dark:border-serene-border-dark rounded-2xl shadow-modal overflow-hidden z-10 animate-scaleIn">
+    <AnimatePresence>
+      {isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <motion.div 
+            className="fixed inset-0 bg-black/40 backdrop-blur-xs" 
+            variants={modalBackdropVariants}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            onClick={onClose} 
+          />
+          <motion.div 
+            role="dialog"
+            aria-modal="true"
+            variants={modalContentVariants}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            className="relative w-full max-w-lg bg-white dark:bg-serene-surface-dark border border-serene-border-light dark:border-serene-border-dark rounded-2xl shadow-modal overflow-hidden z-10"
+          >
         {/* Header */}
         <div className="p-4 border-b border-serene-border-light dark:border-serene-border-dark flex items-center justify-between bg-serene-surfaceAlt-light/40 dark:bg-serene-surfaceAlt-dark/40">
           <div className="flex items-center gap-2">
@@ -242,7 +256,9 @@ export const AddEditLinkModal: React.FC<AddEditLinkModalProps> = ({
             </button>
           </div>
         </form>
-      </div>
-    </div>
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
   );
 };

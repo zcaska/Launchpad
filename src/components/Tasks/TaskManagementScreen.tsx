@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import {
   CheckSquare,
   Square,
@@ -18,6 +19,7 @@ import {
 } from 'lucide-react';
 import { QuickNote, TaskPriority, TaskUrl, Subtask } from '../../types';
 import { calculateTaskLoad, formatMinutesToHours } from '../../utils/timeBudget';
+import { modalBackdropVariants, modalContentVariants, staggerItemVariants, staggerContainerVariants } from '../../utils/motion';
 
 export interface TaskManagementScreenProps {
   notes: QuickNote[];
@@ -26,15 +28,6 @@ export interface TaskManagementScreenProps {
   onUpdateScratchpad: (text: string) => void;
   onBackToDashboard?: () => void;
 }
-
-const DURATION_OPTIONS = [
-  { label: '15m', minutes: 15 },
-  { label: '30m', minutes: 30 },
-  { label: '45m', minutes: 45 },
-  { label: '1h', minutes: 60 },
-  { label: '1.5h', minutes: 90 },
-  { label: '2h', minutes: 120 },
-];
 
 type FilterTab = 'All' | 'High Priority' | 'Medium' | 'Low' | 'Due Soon' | 'Completed';
 
@@ -74,6 +67,65 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
   const loadSummary = useMemo(() => calculateTaskLoad(notes), [notes]);
   const totalCompleted = useMemo(() => notes.filter((n) => n.isDone).length, [notes]);
 
+  // Deadline & Date Helpers
+  const formatLocalYMD = (d: Date) => {
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  };
+
+  const todayYMD = useMemo(() => formatLocalYMD(new Date()), []);
+  const tomorrowYMD = useMemo(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    return formatLocalYMD(d);
+  }, []);
+
+  const getDeadlineDatePart = (str: string) => {
+    if (!str) return '';
+    const match = str.match(/\d{4}-\d{2}-\d{2}/);
+    return match ? match[0] : '';
+  };
+
+  const getDeadlineTimePart = (str: string) => {
+    if (!str) return '';
+    const match = str.match(/(?:^|\s|T)(\d{2}:\d{2})/);
+    return match ? match[1] : '';
+  };
+
+  const handleSetTomorrow = () => {
+    const time = getDeadlineTimePart(formDeadline);
+    setFormDeadline(time ? `${tomorrowYMD} ${time}` : tomorrowYMD);
+  };
+
+  const handleSetToday = () => {
+    const time = getDeadlineTimePart(formDeadline);
+    setFormDeadline(time ? `${todayYMD} ${time}` : todayYMD);
+  };
+
+  const handleDeadlineDateChange = (newDate: string) => {
+    const time = getDeadlineTimePart(formDeadline);
+    if (!newDate) {
+      setFormDeadline(time || '');
+    } else {
+      setFormDeadline(time ? `${newDate} ${time}` : newDate);
+    }
+  };
+
+  const handleDeadlineTimeChange = (newTime: string) => {
+    const date = getDeadlineDatePart(formDeadline);
+    if (!newTime) {
+      setFormDeadline(date || '');
+    } else {
+      if (date) {
+        setFormDeadline(`${date} ${newTime}`);
+      } else {
+        setFormDeadline(`${todayYMD} ${newTime}`);
+      }
+    }
+  };
+
   // Deadline calculation helpers
   const getDeadlineStatus = (deadlineStr?: string) => {
     if (!deadlineStr) return null;
@@ -90,8 +142,20 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
         return { label: `Due at ${deadlineStr}`, isDueToday: true };
       }
 
-      // If full date or date-time is provided
-      const deadlineDate = new Date(deadlineStr);
+      // If YYYY-MM-DD or YYYY-MM-DD HH:MM
+      let deadlineDate: Date;
+      if (/^\d{4}-\d{2}-\d{2}$/.test(deadlineStr)) {
+        const [y, m, d] = deadlineStr.split('-').map(Number);
+        deadlineDate = new Date(y, m - 1, d, 23, 59, 59);
+      } else if (/^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}/.test(deadlineStr)) {
+        const [datePart, timePart] = deadlineStr.replace('T', ' ').split(' ');
+        const [y, m, d] = datePart.split('-').map(Number);
+        const [hh, mm] = timePart.split(':').map(Number);
+        deadlineDate = new Date(y, m - 1, d, hh, mm, 0);
+      } else {
+        deadlineDate = new Date(deadlineStr);
+      }
+
       if (isNaN(deadlineDate.getTime())) {
         return { label: deadlineStr, isGeneral: true };
       }
@@ -104,15 +168,39 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
       const diffHours = (deadlineDate.getTime() - now.getTime()) / (1000 * 60 * 60);
 
       if (deadlineDate.getTime() < now.getTime()) {
-        return { label: `Overdue (${deadlineDate.toLocaleDateString([], { month: 'short', day: 'numeric' })})`, isOverdue: true, isDueToday: isToday };
+        return { 
+          label: `Overdue (${deadlineDate.toLocaleDateString([], { month: 'short', day: 'numeric' })})`, 
+          isOverdue: true, 
+          isDueToday: isToday 
+        };
       }
       if (isToday) {
+        const hasTime = deadlineStr.includes(':');
         return { 
-          label: `Due today ${deadlineDate.getHours() ? deadlineDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}`.trim(), 
+          label: hasTime 
+            ? `Due today ${deadlineDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` 
+            : 'Due today', 
           isDueToday: true,
           isDueSoon: diffHours <= 24 
         };
       }
+
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      const isTomorrow =
+        deadlineDate.getFullYear() === tomorrow.getFullYear() &&
+        deadlineDate.getMonth() === tomorrow.getMonth() &&
+        deadlineDate.getDate() === tomorrow.getDate();
+      if (isTomorrow) {
+        const hasTime = deadlineStr.includes(':');
+        return {
+          label: hasTime 
+            ? `Tomorrow ${deadlineDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+            : 'Due tomorrow',
+          isDueSoon: true,
+        };
+      }
+
       if (diffHours <= 48 && diffHours > 0) {
         return { label: `Due soon (${deadlineDate.toLocaleDateString([], { month: 'short', day: 'numeric' })})`, isDueSoon: true };
       }
@@ -311,10 +399,10 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
   }, [notes, searchQuery, activeTab]);
 
   return (
-    <div className="flex flex-col h-full bg-serene-bg-light dark:bg-serene-bg-dark text-serene-text-primary dark:text-serene-text-darkPrimary overflow-hidden">
+    <div className="w-full flex flex-col h-full bg-serene-bg-light dark:bg-serene-bg-dark text-serene-text-primary dark:text-serene-text-darkPrimary overflow-hidden">
       {/* 1. TOP HEADER & OVERVIEW BAR */}
-      <header className="shrink-0 bg-white dark:bg-serene-surface-dark border-b border-serene-border-light dark:border-serene-border-dark px-4 sm:px-6 py-4 shadow-subtle transition-colors">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+      <header className="w-full shrink-0 bg-white dark:bg-serene-surface-dark border-b border-serene-border-light dark:border-serene-border-dark px-4 sm:px-6 py-4 shadow-subtle transition-colors">
+        <div className="w-full flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           
           {/* Left: Back button + Title & Core Stats */}
           <div className="flex items-center gap-3">
@@ -361,27 +449,8 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
             </div>
           </div>
 
-          {/* Right: Search, Filter Tabs & Add Task Primary Button */}
-          <div className="flex flex-wrap items-center gap-2.5">
-            {/* Search Input */}
-            <div className="relative min-w-[200px] sm:min-w-[240px]">
-              <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-serene-text-muted pointer-events-none" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search tasks, subtasks, urls..."
-                className="w-full pl-8 pr-7 py-1.5 bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark rounded-xl text-xs text-serene-text-primary dark:text-serene-text-darkPrimary border border-serene-border-light dark:border-serene-border-dark placeholder:text-serene-text-muted focus:outline-none focus:ring-2 focus:ring-serene-primary/30 focus:border-serene-primary transition-all"
-              />
-              {searchQuery && (
-                <button
-                  onClick={() => setSearchQuery('')}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-serene-text-muted hover:text-serene-text-primary"
-                >
-                  <X className="w-3 h-3" />
-                </button>
-              )}
-            </div>
+          {/* Right: Actions Cluster (Scratchpad Toggle & Add Task Primary Button) */}
+          <div className="flex items-center gap-2.5 self-end lg:self-auto shrink-0">
 
             {/* Scratchpad Toggle Button */}
             <button
@@ -408,8 +477,10 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
           </div>
         </div>
 
-        {/* Filter Tabs Navigation */}
-        <div className="flex items-center gap-1.5 mt-3.5 overflow-x-auto pb-0.5 pt-1 text-xs">
+        {/* 2. SUB-BAR: Filter Tabs & Search Bar Toolbar */}
+        <div className="w-full flex flex-col sm:flex-row sm:items-center justify-between gap-3 mt-3.5 pt-3 border-t border-serene-border-light/60 dark:border-serene-border-dark/60">
+          {/* Filter Tabs Navigation */}
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 text-xs no-scrollbar">
           {(['All', 'High Priority', 'Medium', 'Low', 'Due Soon', 'Completed'] as FilterTab[]).map(
             (tab) => {
               const isActive = activeTab === tab;
@@ -428,6 +499,28 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
               );
             }
           )}
+          </div>
+
+          {/* Search Input relocated to filter bar toolbar */}
+          <div className="relative w-full sm:w-64 md:w-72 shrink-0">
+            <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-serene-text-muted pointer-events-none" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search tasks, subtasks, urls..."
+              className="w-full pl-8 pr-7 py-1.5 bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark rounded-xl text-xs text-serene-text-primary dark:text-serene-text-darkPrimary border border-serene-border-light dark:border-serene-border-dark placeholder:text-serene-text-muted focus:outline-none focus:ring-2 focus:ring-serene-primary/30 focus:border-serene-primary transition-all"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-serene-text-muted hover:text-serene-text-primary p-0.5"
+                title="Clear search"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            )}
+          </div>
         </div>
       </header>
 
@@ -459,16 +552,23 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+            <motion.div 
+              className="grid grid-cols-1 xl:grid-cols-2 gap-4"
+              variants={staggerContainerVariants}
+              initial="initial"
+              animate="animate"
+            >
               {filteredTasks.map((task) => {
                 const deadlineInfo = getDeadlineStatus(task.deadline);
                 const subtasks = task.subtasks || [];
                 const completedSubtasks = subtasks.filter((s) => s.isDone).length;
 
                 return (
-                  <div
+                  <motion.div
+                    layout
                     key={task.id}
-                    className={`group rounded-2xl border p-4 sm:p-5 transition-all duration-200 flex flex-col justify-between ${
+                    variants={staggerItemVariants}
+                    className={`group rounded-2xl border p-4 sm:p-5 transition-colors duration-200 flex flex-col justify-between ${
                       task.isDone
                         ? 'bg-slate-50/70 dark:bg-slate-900/20 border-slate-200 dark:border-slate-800/60 opacity-80'
                         : 'bg-white dark:bg-serene-surface-dark border-serene-border-light dark:border-serene-border-dark shadow-subtle hover:shadow-card'
@@ -639,10 +739,10 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
                         </div>
                       )}
                     </div>
-                  </div>
+                  </motion.div>
                 );
               })}
-            </div>
+            </motion.div>
           )}
         </main>
 
@@ -683,9 +783,26 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
       </div>
 
       {/* 3. MODAL: TASK CREATION & EDITING */}
-      {isFormOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs animate-fadeIn">
-          <div className="bg-white dark:bg-serene-surface-dark border border-serene-border-light dark:border-serene-border-dark rounded-2xl shadow-modal w-full max-w-xl max-h-[90vh] flex flex-col overflow-hidden animate-scaleIn">
+      <AnimatePresence>
+        {isFormOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div 
+              className="fixed inset-0 bg-black/40 backdrop-blur-xs"
+              variants={modalBackdropVariants}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+              onClick={() => setIsFormOpen(false)}
+            />
+            <motion.div 
+              role="dialog"
+              aria-modal="true"
+              variants={modalContentVariants}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+              className="relative z-10 bg-white dark:bg-serene-surface-dark border border-serene-border-light dark:border-serene-border-dark rounded-2xl shadow-modal w-full max-w-xl max-h-[90vh] flex flex-col overflow-hidden"
+            >
             
             {/* Modal Header */}
             <div className="p-4 sm:p-5 border-b border-serene-border-light dark:border-serene-border-dark flex items-center justify-between">
@@ -769,50 +886,139 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
 
                 {/* Estimated Time Selector */}
                 <div>
-                  <label className="block text-xs font-semibold text-serene-text-secondary dark:text-serene-text-darkSecondary mb-1.5">
-                    Estimated Time Budget
-                  </label>
-                  <div className="grid grid-cols-3 gap-1.5">
-                    {DURATION_OPTIONS.map((opt) => (
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="block text-xs font-semibold text-serene-text-secondary dark:text-serene-text-darkSecondary">
+                      Estimated Time Budget
+                    </label>
+                    <span className="text-[11px] font-mono font-bold text-serene-primary dark:text-serene-primary-dark">
+                      {formatMinutesToHours(formDuration)}
+                    </span>
+                  </div>
+
+                  {/* Flexible Hours and Minutes Time Selectors */}
+                  <div className="grid grid-cols-2 gap-2">
+                    {/* Hours Select */}
+                    <div className="flex items-center justify-between bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark border border-serene-border-light dark:border-serene-border-dark rounded-xl px-3 py-1.5 focus-within:ring-2 focus-within:ring-serene-primary/40 focus-within:border-serene-primary">
+                      <select
+                        aria-label="Hours duration"
+                        value={Math.floor(formDuration / 60)}
+                        onChange={(e) => {
+                          const h = parseInt(e.target.value, 10) || 0;
+                          const m = formDuration % 60;
+                          setFormDuration(Math.max(5, h * 60 + m));
+                        }}
+                        className="bg-transparent text-xs font-semibold text-serene-text-primary dark:text-serene-text-darkPrimary focus:outline-none w-full cursor-pointer"
+                      >
+                        {Array.from({ length: 13 }, (_, i) => (
+                          <option key={i} value={i} className="bg-white dark:bg-serene-surface-dark">
+                            {i} {i === 1 ? 'hour' : 'hours'}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Minutes Select */}
+                    <div className="flex items-center justify-between bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark border border-serene-border-light dark:border-serene-border-dark rounded-xl px-3 py-1.5 focus-within:ring-2 focus-within:ring-serene-primary/40 focus-within:border-serene-primary">
+                      <select
+                        aria-label="Minutes duration"
+                        value={formDuration % 60}
+                        onChange={(e) => {
+                          const m = parseInt(e.target.value, 10) || 0;
+                          const h = Math.floor(formDuration / 60);
+                          setFormDuration(Math.max(5, h * 60 + m));
+                        }}
+                        className="bg-transparent text-xs font-semibold text-serene-text-primary dark:text-serene-text-darkPrimary focus:outline-none w-full cursor-pointer"
+                      >
+                        {[0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55].map((mins) => (
+                          <option key={mins} value={mins} className="bg-white dark:bg-serene-surface-dark">
+                            {mins} mins
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Quick Preset Chips for speed */}
+                  <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+                    {[15, 25, 30, 45, 60, 90, 120].map((mins) => (
                       <button
-                        key={opt.minutes}
+                        key={mins}
                         type="button"
-                        onClick={() => setFormDuration(opt.minutes)}
-                        className={`py-1.5 px-2 rounded-xl text-xs font-mono font-medium border transition-all ${
-                          formDuration === opt.minutes
-                            ? 'bg-serene-primary text-white border-serene-primary shadow-2xs'
-                            : 'bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark text-serene-text-secondary dark:text-serene-text-darkSecondary border-serene-border-light dark:border-serene-border-dark hover:text-serene-text-primary'
+                        onClick={() => setFormDuration(mins)}
+                        className={`px-2 py-0.5 rounded-lg text-[10px] font-mono transition-all border ${
+                          formDuration === mins
+                            ? 'bg-serene-primary text-white border-serene-primary font-semibold shadow-2xs'
+                            : 'bg-serene-surfaceAlt-light/60 dark:bg-serene-surfaceAlt-dark/60 text-serene-text-muted hover:text-serene-text-primary border-serene-border-light dark:border-serene-border-dark'
                         }`}
                       >
-                        {opt.label}
+                        {mins < 60 ? `${mins}m` : mins === 60 ? '1h' : `${mins / 60}h`}
                       </button>
                     ))}
                   </div>
                 </div>
               </div>
 
-              {/* Deadline Selector */}
+              {/* Deadline Selector with Date Picker and Tomorrow Button */}
               <div>
-                <label className="block text-xs font-semibold text-serene-text-secondary dark:text-serene-text-darkSecondary mb-1.5">
-                  Deadline / Target Date or Time
-                </label>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="text"
-                    value={formDeadline}
-                    onChange={(e) => setFormDeadline(e.target.value)}
-                    placeholder="e.g. 2026-10-15, 17:30, or Tomorrow"
-                    className="flex-1 px-3.5 py-2 bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark border border-serene-border-light dark:border-serene-border-dark rounded-xl text-xs text-serene-text-primary dark:text-serene-text-darkPrimary placeholder:text-serene-text-muted focus:outline-none focus:ring-2 focus:ring-serene-primary/40 focus:border-serene-primary"
-                  />
-                  {formDeadline && (
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-xs font-semibold text-serene-text-secondary dark:text-serene-text-darkSecondary">
+                    Target Deadline
+                  </label>
+                  <div className="flex items-center gap-1.5">
                     <button
                       type="button"
-                      onClick={() => setFormDeadline('')}
-                      className="text-xs text-serene-text-muted hover:text-serene-text-primary px-2"
+                      onClick={handleSetToday}
+                      className={`px-2 py-0.5 rounded-md text-[11px] font-medium border transition-colors ${
+                        getDeadlineDatePart(formDeadline) === todayYMD
+                          ? 'bg-serene-primary text-white border-serene-primary'
+                          : 'bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark text-serene-text-muted hover:text-serene-text-primary border-serene-border-light dark:border-serene-border-dark'
+                      }`}
                     >
-                      Clear
+                      Today
                     </button>
-                  )}
+                    <button
+                      type="button"
+                      onClick={handleSetTomorrow}
+                      className={`px-2 py-0.5 rounded-md text-[11px] font-medium border transition-colors ${
+                        getDeadlineDatePart(formDeadline) === tomorrowYMD
+                          ? 'bg-serene-primary text-white border-serene-primary'
+                          : 'bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark text-serene-text-muted hover:text-serene-text-primary border-serene-border-light dark:border-serene-border-dark'
+                      }`}
+                    >
+                      Tomorrow
+                    </button>
+                    {formDeadline && (
+                      <button
+                        type="button"
+                        onClick={() => setFormDeadline('')}
+                        className="px-1.5 py-0.5 text-[11px] text-serene-text-muted hover:text-rose-500 transition-colors"
+                      >
+                        Clear
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <div className="relative flex items-center">
+                    <Calendar className="w-3.5 h-3.5 absolute left-3 text-serene-text-muted pointer-events-none" />
+                    <input
+                      type="date"
+                      value={getDeadlineDatePart(formDeadline)}
+                      onChange={(e) => handleDeadlineDateChange(e.target.value)}
+                      className="w-full pl-8 pr-3 py-2 bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark border border-serene-border-light dark:border-serene-border-dark rounded-xl text-xs text-serene-text-primary dark:text-serene-text-darkPrimary focus:outline-none focus:ring-2 focus:ring-serene-primary/40 focus:border-serene-primary [color-scheme:light] dark:[color-scheme:dark]"
+                    />
+                  </div>
+                  <div className="relative flex items-center">
+                    <Clock className="w-3.5 h-3.5 absolute left-3 text-serene-text-muted pointer-events-none" />
+                    <input
+                      type="time"
+                      value={getDeadlineTimePart(formDeadline)}
+                      onChange={(e) => handleDeadlineTimeChange(e.target.value)}
+                      placeholder="Optional time"
+                      className="w-full pl-8 pr-3 py-2 bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark border border-serene-border-light dark:border-serene-border-dark rounded-xl text-xs text-serene-text-primary dark:text-serene-text-darkPrimary focus:outline-none focus:ring-2 focus:ring-serene-primary/40 focus:border-serene-primary [color-scheme:light] dark:[color-scheme:dark]"
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -947,9 +1153,10 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
                 </button>
               </div>
             </form>
+            </motion.div>
           </div>
-        </div>
-      )}
+        )}
+      </AnimatePresence>
     </div>
   );
 };

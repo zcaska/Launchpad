@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { 
   X, 
   Plus, 
@@ -9,6 +10,7 @@ import {
 } from 'lucide-react';
 import { Folder, FolderColor } from '../../types';
 import { FOLDER_ICONS, FOLDER_COLOR_MAP, getFolderIcon } from '../../utils/icons';
+import { modalBackdropVariants, modalContentVariants } from '../../utils/motion';
 
 interface ManageFoldersModalProps {
   isOpen: boolean;
@@ -41,8 +43,6 @@ export const ManageFoldersModal: React.FC<ManageFoldersModalProps> = ({
   const [newFolderColor, setNewFolderColor] = useState<FolderColor>('forest');
   const [newFolderIcon, setNewFolderIcon] = useState('Folder');
   const [editingIconFolderId, setEditingIconFolderId] = useState<string | null>(null);
-
-  if (!isOpen) return null;
 
   const handleCreateFolder = (e: React.FormEvent) => {
     e.preventDefault();
@@ -82,9 +82,26 @@ export const ManageFoldersModal: React.FC<ManageFoldersModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs animate-fadeIn">
-      <div className="fixed inset-0" onClick={onClose} />
-      <div className="relative w-full max-w-2xl bg-white dark:bg-serene-surface-dark border border-serene-border-light dark:border-serene-border-dark rounded-2xl shadow-modal overflow-hidden z-10 animate-scaleIn flex flex-col max-h-[90vh]">
+    <AnimatePresence>
+      {isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <motion.div 
+            className="fixed inset-0 bg-black/40 backdrop-blur-xs" 
+            variants={modalBackdropVariants}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            onClick={onClose} 
+          />
+          <motion.div 
+            role="dialog"
+            aria-modal="true"
+            variants={modalContentVariants}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            className="relative w-full max-w-2xl bg-white dark:bg-serene-surface-dark border border-serene-border-light dark:border-serene-border-dark rounded-2xl shadow-modal overflow-hidden z-10 flex flex-col max-h-[90vh]"
+          >
         {/* Header */}
         <div className="p-4 border-b border-serene-border-light dark:border-serene-border-dark flex items-center justify-between bg-serene-surfaceAlt-light/40 dark:bg-serene-surfaceAlt-dark/40">
           <div className="flex items-center gap-2">
@@ -329,7 +346,9 @@ export const ManageFoldersModal: React.FC<ManageFoldersModalProps> = ({
             Done
           </button>
         </div>
-      </div>
-    </div>
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
   );
 };

@@ -1,4 +1,5 @@
 import React from 'react';
+import { motion } from 'motion/react';
 import { Plus, ArrowRight, Globe } from 'lucide-react';
 import { Folder, LinkItem } from '../../types';
 import { getFolderIcon, FOLDER_COLOR_MAP } from '../../utils/icons';
@@ -24,9 +25,11 @@ export const FolderCard: React.FC<FolderCardProps> = ({
   const previewLinks = links.slice(0, 4);
 
   return (
-    <div
+    <motion.div
       onClick={() => onOpenFolder(folder.id)}
-      className="group relative bg-white dark:bg-serene-surface-dark border border-serene-border-light dark:border-serene-border-dark rounded-2xl p-4 sm:p-5 hover:shadow-card-hover dark:hover:shadow-card-dark-hover hover:border-serene-primary/50 dark:hover:border-serene-primary/50 transition-all duration-200 cursor-pointer flex flex-col justify-between min-h-[175px]"
+      whileHover={{ y: -3, transition: { duration: 0.18, ease: 'easeOut' } }}
+      whileTap={{ scale: 0.985 }}
+      className="group relative bg-white dark:bg-serene-surface-dark border border-serene-border-light dark:border-serene-border-dark rounded-2xl p-4 sm:p-5 hover:shadow-card-hover dark:hover:shadow-card-dark-hover hover:border-serene-primary/50 dark:hover:border-serene-primary/50 cursor-pointer flex flex-col justify-between min-h-[175px]"
     >
       {/* Top Section: Structured Grid for Icon, Title, Counts & Actions */}
       <div>
@@ -114,6 +117,6 @@ export const FolderCard: React.FC<FolderCardProps> = ({
           <ArrowRight className="w-3.5 h-3.5" />
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 };

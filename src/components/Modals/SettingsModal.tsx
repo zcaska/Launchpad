@@ -1,4 +1,5 @@
 import React, { useRef, useState } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { 
   X, 
   Download, 
@@ -17,6 +18,7 @@ import {
 import { AppData } from '../../types';
 import { exportDataAsJson, importDataFromJson } from '../../utils/storage';
 import { DEFAULT_INITIAL_PREFERENCES } from '../../data/seedData';
+import { modalBackdropVariants, modalContentVariants } from '../../utils/motion';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -35,8 +37,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 }) => {
   const [copiedUrl, setCopiedUrl] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  if (!isOpen) return null;
 
   const currentAppUrl = window.location.href;
 
@@ -122,9 +122,26 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs animate-fadeIn">
-      <div className="fixed inset-0" onClick={onClose} />
-      <div className="relative w-full max-w-2xl bg-white dark:bg-serene-surface-dark border border-serene-border-light dark:border-serene-border-dark rounded-2xl shadow-modal overflow-hidden z-10 animate-scaleIn flex flex-col max-h-[90vh]">
+    <AnimatePresence>
+      {isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <motion.div 
+            className="fixed inset-0 bg-black/40 backdrop-blur-xs" 
+            variants={modalBackdropVariants}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            onClick={onClose} 
+          />
+          <motion.div 
+            role="dialog"
+            aria-modal="true"
+            variants={modalContentVariants}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            className="relative w-full max-w-2xl bg-white dark:bg-serene-surface-dark border border-serene-border-light dark:border-serene-border-dark rounded-2xl shadow-modal overflow-hidden z-10 flex flex-col max-h-[90vh]"
+          >
         {/* Header */}
         <div className="p-4 border-b border-serene-border-light dark:border-serene-border-dark flex items-center justify-between bg-serene-surfaceAlt-light/40 dark:bg-serene-surfaceAlt-dark/40">
           <div className="flex items-center gap-2">
@@ -473,7 +490,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             Close Settings
           </button>
         </div>
-      </div>
-    </div>
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
   );
 };

@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { 
   Search, 
   ArrowLeft, 
@@ -44,6 +45,12 @@ import {
   recordRejection,
   fetchOpenRouterIdea
 } from './utils/recommender';
+import { 
+  pageTransitionVariants, 
+  drawerVariants, 
+  staggerContainerVariants, 
+  staggerItemVariants 
+} from './utils/motion';
 
 export function App() {
   const [appData, setAppData] = useState<AppData>(() => loadAppData());
@@ -417,33 +424,39 @@ export function App() {
         />
 
         {/* Content Area: Independent scroll container with container queries */}
-        {activeView === 'tasks' ? (
-          <main className="flex-1 h-full min-w-0 p-3 sm:p-5 lg:p-6 overflow-y-auto @container">
-            <TaskManagementScreen
-              notes={appData.quickNotes}
-              scratchpadText={appData.scratchpadText}
-              onUpdateNotes={handleUpdateNotes}
-              onUpdateScratchpad={handleUpdateScratchpad}
-              onBackToDashboard={() => setActiveView('dashboard')}
-            />
-          </main>
-        ) : (
-          <main className="flex-1 h-full min-w-0 p-3 sm:p-5 lg:p-6 overflow-y-auto space-y-5 @container">
+        <AnimatePresence mode="wait" initial={false}>
+          {activeView === 'tasks' ? (
+            <motion.main
+              key="tasks-view"
+              variants={pageTransitionVariants}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+              className="flex-1 h-full min-w-0 p-0 overflow-hidden @container"
+            >
+              <TaskManagementScreen
+                notes={appData.quickNotes}
+                scratchpadText={appData.scratchpadText}
+                onUpdateNotes={handleUpdateNotes}
+                onUpdateScratchpad={handleUpdateScratchpad}
+                onBackToDashboard={() => setActiveView('dashboard')}
+              />
+            </motion.main>
+          ) : (
+            <motion.main
+              key="dashboard-view"
+              variants={pageTransitionVariants}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+              className="flex-1 h-full min-w-0 p-3 sm:p-5 lg:p-6 overflow-y-auto space-y-5 @container"
+            >
             
             {/* Top Widgets: Only visible in All Resources page (selectedFolderId === null && !searchQuery) */}
             {selectedFolderId === null && !searchQuery && (
               <>
-                {/* 1. TIME RADAR WIDGET */}
-                <TimeRadarWidget
-                  timeRemaining={timeRemaining}
-                  taskLoad={taskLoad}
-                  buffer={buffer}
-                  endHour={appData.settings.daySchedule.endHour}
-                  onOpenTasks={() => setActiveView('tasks')}
-                />
-
-                {/* 2. CONTEXT-AWARE HERO INTERCEPT */}
-                {hasPendingTasks ? (
+                {/* CONTEXT-AWARE HERO INTERCEPT (Focus task on left, Time Radar in former quote space on right, horizontal quote below) */}
+                {hasPendingTasks || !currentSuggestion ? (
                   <FocusHeroBanner
                     dailyFocus={appData.dailyFocus}
                     onUpdateDailyFocus={handleUpdateDailyFocus}
@@ -452,18 +465,37 @@ export function App() {
                     tasks={appData.quickNotes}
                     onToggleTask={handleToggleTask}
                     onOpenTasksScreen={() => setActiveView('tasks')}
+                    timeRemaining={timeRemaining}
+                    taskLoad={taskLoad}
+                    buffer={buffer}
+                    endHour={appData.settings.daySchedule.endHour}
                   />
                 ) : (
-                  <SmartSuggestionCard
-                    candidate={currentSuggestion}
-                    onApprove={handleApproveSuggestion}
-                    onReject={handleRejectSuggestion}
-                    onFetchAiIdea={handleFetchAiIdea}
-                    isOpenRouterEnabled={appData.settings.openRouter.enabled}
-                    isAiLoading={isAiLoading}
-                    approvalsCount={appData.learnedPreferences.approvalsCount}
-                    rejectionsCount={appData.learnedPreferences.rejectionsCount}
-                  />
+                  <div className="@container w-full">
+                    <div className="grid grid-cols-1 @2xl:grid-cols-12 gap-3.5 sm:gap-4 animate-fadeIn">
+                      <div className="@2xl:col-span-7">
+                        <SmartSuggestionCard
+                          candidate={currentSuggestion}
+                          onApprove={handleApproveSuggestion}
+                          onReject={handleRejectSuggestion}
+                          onFetchAiIdea={handleFetchAiIdea}
+                          isOpenRouterEnabled={appData.settings.openRouter.enabled}
+                          isAiLoading={isAiLoading}
+                          approvalsCount={appData.learnedPreferences.approvalsCount}
+                          rejectionsCount={appData.learnedPreferences.rejectionsCount}
+                        />
+                      </div>
+                      <div className="@2xl:col-span-5 flex flex-col">
+                        <TimeRadarWidget
+                          timeRemaining={timeRemaining}
+                          taskLoad={taskLoad}
+                          buffer={buffer}
+                          endHour={appData.settings.daySchedule.endHour}
+                          onOpenTasks={() => setActiveView('tasks')}
+                        />
+                      </div>
+                    </div>
+                  </div>
                 )}
               </>
             )}
@@ -617,20 +649,26 @@ export function App() {
             </div>
           ) : viewMode === 'boxy' ? (
             <div className="space-y-6">
-              <div className="grid grid-cols-1 @xs:grid-cols-2 @xl:grid-cols-3 @3xl:grid-cols-4 gap-3.5 sm:gap-4 animate-fadeIn">
+              <motion.div 
+                className="grid grid-cols-1 @xs:grid-cols-2 @xl:grid-cols-3 @3xl:grid-cols-4 gap-3.5 sm:gap-4"
+                variants={staggerContainerVariants}
+                initial="initial"
+                animate="animate"
+              >
                 {appData.folders.map((folder) => {
                   const linksInFolder = appData.links.filter((l) => l.folderId === folder.id);
                   return (
-                    <FolderCard
-                      key={folder.id}
-                      folder={folder}
-                      links={linksInFolder}
-                      onOpenFolder={(folderId) => setSelectedFolderId(folderId)}
-                      onAddLinkToFolder={handleOpenAddModalForFolder}
-                    />
+                    <motion.div key={folder.id} variants={staggerItemVariants}>
+                      <FolderCard
+                        folder={folder}
+                        links={linksInFolder}
+                        onOpenFolder={(folderId) => setSelectedFolderId(folderId)}
+                        onAddLinkToFolder={handleOpenAddModalForFolder}
+                      />
+                    </motion.div>
                   );
                 })}
-              </div>
+              </motion.div>
 
               {/* Pinned / Starred Quick Dial Strip */}
               {appData.links.some((l) => l.isFavorite) && (
@@ -687,22 +725,31 @@ export function App() {
                 );
               })}
             </div>
-          )}
-        </main>
+            )}
+          </motion.main>
         )}
+      </AnimatePresence>
 
         {/* Quick Notes Slide-over Panel */}
-        {isQuickNotesOpen && (
-          <aside className="w-80 lg:w-88 2xl:w-96 h-full p-3 sm:p-4 border-l border-serene-border-light dark:border-serene-border-dark bg-white/80 dark:bg-serene-surface-dark/80 backdrop-blur-md shrink-0 overflow-y-auto animate-fadeIn z-20">
-            <QuickNotesWidget
-              notes={appData.quickNotes}
-              scratchpadText={appData.scratchpadText}
-              onUpdateNotes={handleUpdateNotes}
-              onUpdateScratchpad={handleUpdateScratchpad}
-              onClose={() => setIsQuickNotesOpen(false)}
-            />
-          </aside>
-        )}
+        <AnimatePresence>
+          {isQuickNotesOpen && (
+            <motion.aside
+              variants={drawerVariants}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+              className="w-80 lg:w-88 2xl:w-96 h-full p-3 sm:p-4 border-l border-serene-border-light dark:border-serene-border-dark bg-white/80 dark:bg-serene-surface-dark/80 backdrop-blur-md shrink-0 overflow-y-auto z-20"
+            >
+              <QuickNotesWidget
+                notes={appData.quickNotes}
+                scratchpadText={appData.scratchpadText}
+                onUpdateNotes={handleUpdateNotes}
+                onUpdateScratchpad={handleUpdateScratchpad}
+                onClose={() => setIsQuickNotesOpen(false)}
+              />
+            </motion.aside>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* Modals */}

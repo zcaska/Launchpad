@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { motion } from 'motion/react';
 import { 
   Star, 
   ExternalLink, 
@@ -57,9 +58,11 @@ export const LinkCard: React.FC<LinkCardProps> = ({
   };
 
   return (
-    <div
+    <motion.div
       onClick={handleCardClick}
-      className="group relative bg-white dark:bg-serene-surface-dark border border-serene-border-light dark:border-serene-border-dark rounded-xl p-3.5 hover:shadow-card-hover dark:hover:shadow-card-dark-hover hover:border-serene-primary/40 dark:hover:border-serene-primary/40 transition-all duration-200 cursor-pointer flex flex-col justify-between min-h-[110px]"
+      whileHover={{ y: -2, transition: { duration: 0.15, ease: 'easeOut' } }}
+      whileTap={{ scale: 0.985 }}
+      className="group relative bg-white dark:bg-serene-surface-dark border border-serene-border-light dark:border-serene-border-dark rounded-xl p-3.5 hover:shadow-card-hover dark:hover:shadow-card-dark-hover hover:border-serene-primary/40 dark:hover:border-serene-primary/40 cursor-pointer flex flex-col justify-between min-h-[110px]"
     >
       {/* Top Row: Favicon, Title, Favorite & Actions */}
       <div>
@@ -226,6 +229,6 @@ export const LinkCard: React.FC<LinkCardProps> = ({
           <ExternalLink className="w-3 h-3" />
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 };

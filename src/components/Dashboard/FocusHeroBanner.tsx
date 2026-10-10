@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { 
   Circle, 
   Sparkles, 
@@ -13,6 +14,9 @@ import {
 } from 'lucide-react';
 import { DailyFocus, QuickNote } from '../../types';
 import { CALM_QUOTES } from '../../data/seedData';
+import { TimeRadarWidget } from './TimeRadarWidget';
+import { DayTimeRemaining, TaskLoadSummary, BufferSummary } from '../../utils/timeBudget';
+import { fadeScaleVariants } from '../../utils/motion';
 
 interface FocusHeroBannerProps {
   dailyFocus?: DailyFocus;
@@ -22,6 +26,10 @@ interface FocusHeroBannerProps {
   tasks?: QuickNote[];
   onToggleTask?: (taskId: string) => void;
   onOpenTasksScreen?: () => void;
+  timeRemaining?: DayTimeRemaining;
+  taskLoad?: TaskLoadSummary;
+  buffer?: BufferSummary;
+  endHour?: number;
 }
 
 export const FocusHeroBanner: React.FC<FocusHeroBannerProps> = ({
@@ -31,6 +39,10 @@ export const FocusHeroBanner: React.FC<FocusHeroBannerProps> = ({
   tasks = [],
   onToggleTask,
   onOpenTasksScreen,
+  timeRemaining,
+  taskLoad,
+  buffer,
+  endHour,
 }) => {
   const [currentTime, setCurrentTime] = useState<Date>(new Date());
   const [quoteIndex, setQuoteIndex] = useState(0);
@@ -84,15 +96,17 @@ export const FocusHeroBanner: React.FC<FocusHeroBannerProps> = ({
     setCurrentTaskIndex((prev) => (prev < pendingTasks.length - 1 ? prev + 1 : 0));
   };
 
+  const hasTimeRadar = Boolean(timeRemaining && taskLoad && buffer && endHour !== undefined);
+
   return (
     <div className="@container w-full">
       <div className="grid grid-cols-1 @2xl:grid-cols-12 gap-3.5 sm:gap-4 animate-fadeIn">
-        {/* Primary Focus / Task Card (7 cols on @2xl) */}
+        {/* Primary Focus / Task Card (7 cols on @2xl if Time Radar present, else 12) */}
         <div className={`p-4 sm:p-5 rounded-2xl border transition-all duration-200 flex flex-col justify-between ${
           dailyFocus?.isCompleted && pendingTasks.length === 0
             ? 'bg-emerald-50/70 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800/50'
             : 'bg-white dark:bg-serene-surface-dark border-serene-border-light dark:border-serene-border-dark shadow-subtle hover:shadow-card'
-        } ${showQuotes ? '@2xl:col-span-7' : '@2xl:col-span-12'}`}>
+        } ${hasTimeRadar ? '@2xl:col-span-7' : '@2xl:col-span-12'}`}>
           
           {/* Top meta row */}
           <div className="flex items-center justify-between gap-3 mb-2.5">
@@ -262,54 +276,69 @@ export const FocusHeroBanner: React.FC<FocusHeroBannerProps> = ({
           </div>
         </div>
 
-        {/* Mindful Calm Quote & Clock Card (5 cols on @2xl) */}
-        {showQuotes && (
-          <div className="@2xl:col-span-5 p-4 sm:p-5 rounded-2xl bg-white dark:bg-serene-surface-dark border border-serene-border-light dark:border-serene-border-dark shadow-subtle hover:shadow-card transition-all flex flex-col justify-between">
-            {/* Header with Quote tag and Live Clock */}
-            <div className="flex items-center justify-between gap-3 mb-2">
-              <div className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400">
-                <Sparkles className="w-4 h-4 shrink-0" />
-                <span className="text-[11px] font-bold uppercase tracking-wider">
-                  Mindful Mindset
-                </span>
-              </div>
-
-              <div className="flex items-center gap-1.5 font-mono text-xs font-semibold px-2.5 py-0.5 rounded-lg bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark border border-serene-border-light dark:border-serene-border-dark text-serene-text-primary dark:text-serene-text-darkPrimary">
-                <Clock className="w-3 h-3 text-serene-text-muted" />
-                <span>{formattedTime}</span>
-              </div>
-            </div>
-
-            {/* Quote Body with wrap-content for long quotes */}
-            <div 
-              className="my-1.5 cursor-pointer group flex-1 flex flex-col justify-center"
-              onClick={handleNextQuote}
-              title="Click to cycle next quote"
-            >
-              <p className="text-xs sm:text-sm italic leading-relaxed text-serene-text-secondary dark:text-serene-text-darkSecondary break-words whitespace-normal group-hover:text-serene-text-primary dark:group-hover:text-serene-text-darkPrimary transition-colors">
-                "{currentQuote.text}"
-              </p>
-              <div className="mt-2 flex items-center justify-between text-[11px] text-serene-text-muted">
-                <span className="font-medium">— {currentQuote.author}</span>
-                <button
-                  type="button"
-                  onClick={handleNextQuote}
-                  className="inline-flex items-center gap-1 opacity-0 group-hover:opacity-100 hover:text-serene-primary dark:hover:text-serene-primary-dark transition-all text-[10px]"
-                >
-                  <span>Cycle quote</span>
-                  <RotateCw className="w-2.5 h-2.5" />
-                </button>
-              </div>
-            </div>
-
-            {/* Calming reassurance footer */}
-            <div className="mt-2.5 pt-2 border-t border-serene-border-light/40 dark:border-serene-border-dark/40 text-[11px] text-serene-text-muted flex items-center justify-between">
-              <span>Take a conscious breath.</span>
-              <span className="text-[10px]">✨ Focus Mode</span>
-            </div>
+        {/* Time Radar Widget in former quote space (5 cols on @2xl) */}
+        {hasTimeRadar && timeRemaining && taskLoad && buffer && endHour !== undefined && (
+          <div className="@2xl:col-span-5 flex flex-col min-w-0">
+            <TimeRadarWidget
+              timeRemaining={timeRemaining}
+              taskLoad={taskLoad}
+              buffer={buffer}
+              endHour={endHour}
+              onOpenTasks={onOpenTasksScreen || (() => {})}
+            />
           </div>
         )}
       </div>
+
+      {/* Mindful Calm Quote Horizontal Banner (less space, full horizontal view) */}
+      {showQuotes && (
+        <div 
+          onClick={handleNextQuote}
+          className="mt-3 sm:mt-3.5 group cursor-pointer px-4 py-2.5 sm:px-4.5 sm:py-2.5 rounded-2xl bg-white dark:bg-serene-surface-dark border border-serene-border-light dark:border-serene-border-dark shadow-subtle hover:shadow-card transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs"
+          title="Click to cycle next quote"
+        >
+          <div className="flex items-center gap-2.5 min-w-0 flex-1">
+            <span className="p-1 rounded-lg bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 shrink-0">
+              <Sparkles className="w-3.5 h-3.5" />
+            </span>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400 shrink-0">
+              Mindful Mindset
+            </span>
+            <span className="text-serene-border-light dark:text-serene-border-dark hidden sm:inline">•</span>
+            <AnimatePresence mode="wait">
+              <motion.p
+                key={quoteIndex}
+                variants={fadeScaleVariants}
+                initial="initial"
+                animate="animate"
+                exit="exit"
+                className="text-xs text-serene-text-secondary dark:text-serene-text-darkSecondary truncate group-hover:text-serene-text-primary dark:group-hover:text-serene-text-darkPrimary transition-colors flex-1 min-w-0"
+              >
+                <span className="italic font-normal">"{currentQuote.text}"</span>
+                <span className="font-semibold text-serene-text-muted ml-2">— {currentQuote.author}</span>
+              </motion.p>
+            </AnimatePresence>
+          </div>
+
+          <div className="flex items-center gap-3 shrink-0 self-end sm:self-auto text-serene-text-muted">
+            <button
+              type="button"
+              onClick={handleNextQuote}
+              className="inline-flex items-center gap-1 text-[11px] hover:text-serene-primary dark:hover:text-serene-primary-dark transition-colors"
+            >
+              <RotateCw className="w-3 h-3 group-hover:rotate-180 transition-transform duration-500" />
+              <span className="hidden sm:inline text-[10px]">Cycle quote</span>
+            </button>
+
+            <span className="text-serene-border-light dark:text-serene-border-dark">•</span>
+
+            <div className="flex items-center gap-1.5 font-mono text-[11px] font-medium text-serene-text-secondary dark:text-serene-text-darkSecondary">
+              <Clock className="w-3 h-3 text-serene-text-muted" />
+              <span>{formattedTime}</span>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
