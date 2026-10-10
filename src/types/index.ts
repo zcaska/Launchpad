@@ -32,7 +32,7 @@ export interface Folder {
   order: number;
 }
 
-export type TaskPriority = 'high' | 'medium' | 'low';
+export type TaskPriority = 'urgent' | 'high' | 'medium' | 'low';
 
 export interface TaskUrl {
   id: string;

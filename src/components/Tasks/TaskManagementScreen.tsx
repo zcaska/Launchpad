@@ -15,7 +15,8 @@ import {
   ListTodo,
   X,
   ArrowLeft,
-  FileText
+  FileText,
+  AlertTriangle
 } from 'lucide-react';
 import { QuickNote, TaskPriority, TaskUrl, Subtask } from '../../types';
 import { calculateTaskLoad, formatMinutesToHours } from '../../utils/timeBudget';
@@ -29,7 +30,7 @@ export interface TaskManagementScreenProps {
   onBackToDashboard?: () => void;
 }
 
-type FilterTab = 'All' | 'High Priority' | 'Medium' | 'Low' | 'Due Soon' | 'Completed';
+type FilterTab = 'All' | 'Urgent' | 'High Priority' | 'Medium' | 'Low' | 'Due Soon' | 'Completed';
 
 export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
   notes,
@@ -379,6 +380,8 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
       switch (activeTab) {
         case 'All':
           return true;
+        case 'Urgent':
+          return !task.isDone && task.priority === 'urgent';
         case 'High Priority':
           return !task.isDone && task.priority === 'high';
         case 'Medium':
@@ -398,15 +401,70 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
     });
   }, [notes, searchQuery, activeTab]);
 
+  // Tab Badge Style reflecting nature
+  const getTabBadgeStyle = (tab: FilterTab, isActive: boolean) => {
+    switch (tab) {
+      case 'All':
+        return isActive
+          ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 font-semibold shadow-xs'
+          : 'bg-slate-100 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-200/80 dark:hover:bg-slate-700';
+      case 'Urgent':
+        return isActive
+          ? 'bg-red-600 text-white font-bold shadow-xs ring-2 ring-red-400/40'
+          : 'bg-red-50/90 dark:bg-red-950/40 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-900/60 hover:bg-red-100 dark:hover:bg-red-900/60';
+      case 'High Priority':
+        return isActive
+          ? 'bg-rose-500 text-white font-semibold shadow-xs ring-2 ring-rose-400/30'
+          : 'bg-rose-50/90 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-900/60 hover:bg-rose-100 dark:hover:bg-rose-900/60';
+      case 'Medium':
+        return isActive
+          ? 'bg-amber-500 text-white font-semibold shadow-xs ring-2 ring-amber-400/30'
+          : 'bg-amber-50/90 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-900/60 hover:bg-amber-100 dark:hover:bg-amber-900/60';
+      case 'Low':
+        return isActive
+          ? 'bg-sky-500 text-white font-semibold shadow-xs ring-2 ring-sky-400/30'
+          : 'bg-sky-50/90 dark:bg-sky-950/40 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-900/60 hover:bg-sky-100 dark:hover:bg-sky-900/60';
+      case 'Due Soon':
+        return isActive
+          ? 'bg-purple-600 text-white font-semibold shadow-xs ring-2 ring-purple-400/30'
+          : 'bg-purple-50/90 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-900/60 hover:bg-purple-100 dark:hover:bg-purple-900/60';
+      case 'Completed':
+        return isActive
+          ? 'bg-emerald-600 text-white font-semibold shadow-xs ring-2 ring-emerald-400/30'
+          : 'bg-emerald-50/90 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-900/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/60';
+      default:
+        return '';
+    }
+  };
+
+  // Priority Card Background
+  const getTaskCardBackground = (task: QuickNote) => {
+    if (task.isDone) {
+      return 'bg-emerald-50/30 dark:bg-emerald-950/20 border-emerald-200/50 dark:border-emerald-900/40 opacity-75';
+    }
+    switch (task.priority) {
+      case 'urgent':
+        return 'bg-gradient-to-br from-red-50/95 via-rose-50/50 to-white dark:from-red-950/45 dark:via-rose-950/25 dark:to-serene-surface-dark border-red-300 dark:border-red-800/80 shadow-xs hover:shadow-card hover:border-red-400 dark:hover:border-red-700';
+      case 'high':
+        return 'bg-gradient-to-br from-rose-50/80 via-pink-50/40 to-white dark:from-rose-950/35 dark:via-pink-950/20 dark:to-serene-surface-dark border-rose-200/90 dark:border-rose-900/60 shadow-subtle hover:shadow-card hover:border-rose-300 dark:hover:border-rose-800';
+      case 'medium':
+        return 'bg-gradient-to-br from-amber-50/80 via-yellow-50/35 to-white dark:from-amber-950/30 dark:via-yellow-950/15 dark:to-serene-surface-dark border-amber-200/90 dark:border-amber-900/60 shadow-subtle hover:shadow-card hover:border-amber-300 dark:hover:border-amber-800';
+      case 'low':
+        return 'bg-gradient-to-br from-sky-50/80 via-blue-50/35 to-white dark:from-sky-950/30 dark:via-blue-950/15 dark:to-serene-surface-dark border-sky-200/90 dark:border-sky-900/60 shadow-subtle hover:shadow-card hover:border-sky-300 dark:hover:border-sky-800';
+      default:
+        return 'bg-white dark:bg-serene-surface-dark border-serene-border-light dark:border-serene-border-dark shadow-subtle hover:shadow-card';
+    }
+  };
+
   return (
     <div className="w-full flex flex-col h-full bg-serene-bg-light dark:bg-serene-bg-dark text-serene-text-primary dark:text-serene-text-darkPrimary overflow-hidden">
       {/* 1. TOP HEADER & OVERVIEW BAR */}
-      <header className="w-full shrink-0 bg-white dark:bg-serene-surface-dark border-b border-serene-border-light dark:border-serene-border-dark px-4 sm:px-6 py-4 shadow-subtle transition-colors">
-        <div className="w-full flex flex-col lg:flex-row lg:items-center justify-between gap-3 sm:gap-4">
+      <header className="w-full shrink-0 min-w-0 bg-white dark:bg-serene-surface-dark border-b border-serene-border-light dark:border-serene-border-dark px-3 sm:px-6 py-3.5 sm:py-4 shadow-subtle transition-colors overflow-hidden">
+        <div className="w-full min-w-0 flex flex-col lg:flex-row lg:items-center justify-between gap-3 sm:gap-4">
           
           {/* Left: Back button + Title */}
-          <div className="flex flex-col sm:flex-row sm:items-center gap-3 w-full lg:w-auto">
-            <div className="flex items-center gap-2.5 sm:gap-3">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 w-full lg:w-auto min-w-0">
+            <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
               {onBackToDashboard && (
                 <button
                   onClick={onBackToDashboard}
@@ -428,7 +486,7 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
             </div>
 
             {/* Desktop Status metrics row */}
-            <div className="hidden lg:flex items-center gap-3 text-xs lg:ml-2">
+            <div className="hidden lg:flex items-center gap-3 text-xs lg:ml-2 shrink-0">
               <span className="flex items-center gap-1.5 font-medium text-serene-text-secondary dark:text-serene-text-darkSecondary">
                 <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
                 <strong className="text-serene-text-primary dark:text-serene-text-darkPrimary font-bold">
@@ -493,23 +551,20 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
         </div>
 
         {/* 2. SUB-BAR: Filter Tabs & Search Bar Toolbar */}
-        <div className="w-full flex flex-col sm:flex-row sm:items-center justify-between gap-3 mt-3.5 pt-3 border-t border-serene-border-light/60 dark:border-serene-border-dark/60">
-          {/* Filter Tabs Navigation */}
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 text-xs no-scrollbar">
-          {(['All', 'High Priority', 'Medium', 'Low', 'Due Soon', 'Completed'] as FilterTab[]).map(
+        <div className="w-full min-w-0 flex flex-col sm:flex-row sm:items-center justify-between gap-3 mt-3.5 pt-3 border-t border-serene-border-light/60 dark:border-serene-border-dark/60">
+          {/* Filter Tabs Navigation with nature-reflecting colors */}
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 text-xs no-scrollbar min-w-0 flex-1">
+          {(['All', 'Urgent', 'High Priority', 'Medium', 'Low', 'Due Soon', 'Completed'] as FilterTab[]).map(
             (tab) => {
               const isActive = activeTab === tab;
               return (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
-                  className={`px-3 py-1.5 rounded-xl font-medium shrink-0 transition-all ${
-                    isActive
-                      ? 'bg-serene-primary text-white font-semibold shadow-xs'
-                      : 'bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark text-serene-text-secondary dark:text-serene-text-darkSecondary hover:text-serene-text-primary dark:hover:text-serene-text-darkPrimary border border-serene-border-light dark:border-serene-border-dark'
-                  }`}
+                  className={`px-3 py-1.5 rounded-xl font-medium shrink-0 transition-all flex items-center gap-1.5 ${getTabBadgeStyle(tab, isActive)}`}
                 >
-                  {tab}
+                  {tab === 'Urgent' && <AlertTriangle className="w-3 h-3 shrink-0" />}
+                  <span>{tab}</span>
                 </button>
               );
             }
@@ -517,7 +572,7 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
           </div>
 
           {/* Search Input relocated to filter bar toolbar */}
-          <div className="relative w-full sm:w-64 md:w-72 shrink-0">
+          <div className="relative w-full sm:w-48 md:w-56 lg:w-64 shrink-0">
             <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-serene-text-muted pointer-events-none" />
             <input
               type="text"
@@ -583,11 +638,7 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
                     layout
                     key={task.id}
                     variants={staggerItemVariants}
-                    className={`group rounded-2xl border p-4 sm:p-5 transition-colors duration-200 flex flex-col justify-between ${
-                      task.isDone
-                        ? 'bg-slate-50/70 dark:bg-slate-900/20 border-slate-200 dark:border-slate-800/60 opacity-80'
-                        : 'bg-white dark:bg-serene-surface-dark border-serene-border-light dark:border-serene-border-dark shadow-subtle hover:shadow-card'
-                    }`}
+                    className={`group rounded-2xl border p-4 sm:p-5 transition-all duration-200 flex flex-col justify-between ${getTaskCardBackground(task)}`}
                   >
                     <div>
                       {/* Top Row: Checkbox, Title & Actions */}
@@ -640,6 +691,12 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
                       {/* Badges Row: Priority, Time, Deadline */}
                       <div className="flex flex-wrap items-center gap-2 mt-3 text-xs">
                         {/* Priority Badge */}
+                        {task.priority === 'urgent' && (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md font-bold text-[11px] bg-red-600 text-white shadow-2xs">
+                            <AlertTriangle className="w-3 h-3 shrink-0" />
+                            <span>Urgent</span>
+                          </span>
+                        )}
                         {task.priority === 'high' && (
                           <span className="inline-flex items-center px-2 py-0.5 rounded-md font-semibold bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-900/50">
                             High Priority
@@ -870,7 +927,19 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
                   <label className="block text-xs font-semibold text-serene-text-secondary dark:text-serene-text-darkSecondary mb-1.5">
                     Priority Level
                   </label>
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setFormPriority('urgent')}
+                      className={`py-1.5 px-2 rounded-xl text-xs font-semibold border transition-all flex items-center justify-center gap-1 ${
+                        formPriority === 'urgent'
+                          ? 'bg-red-600 text-white border-red-600 shadow-2xs font-bold'
+                          : 'bg-red-50/70 dark:bg-red-950/30 text-red-700 dark:text-red-300 border-red-200 dark:border-red-900/50 hover:bg-red-100 dark:hover:bg-red-900/40'
+                      }`}
+                    >
+                      <AlertTriangle className="w-3 h-3 shrink-0" />
+                      <span>Urgent</span>
+                    </button>
                     <button
                       type="button"
                       onClick={() => setFormPriority('high')}

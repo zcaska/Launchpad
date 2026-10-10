@@ -147,7 +147,9 @@ export const FocusHeroBanner: React.FC<FocusHeroBannerProps> = ({
                     </span>
                     {activeTask.priority && (
                       <span className={`text-[9px] font-semibold uppercase px-1.5 py-0.2 rounded ${
-                        activeTask.priority === 'high'
+                        activeTask.priority === 'urgent'
+                          ? 'bg-red-600 text-white font-bold'
+                          : activeTask.priority === 'high'
                           ? 'bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300'
                           : activeTask.priority === 'medium'
                           ? 'bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300'
