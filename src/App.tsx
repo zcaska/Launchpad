@@ -6,7 +6,9 @@ import {
   Grid, 
   List, 
   Plus, 
-  Folder as FolderIcon 
+  Folder as FolderIcon,
+  BookmarkCheck,
+  X as CloseIcon
 } from 'lucide-react';
 import { 
   AppData, 
@@ -33,6 +35,9 @@ import { AddEditLinkModal } from './components/Modals/AddEditLinkModal';
 import { ManageFoldersModal } from './components/Modals/ManageFoldersModal';
 import { SettingsModal } from './components/Modals/SettingsModal';
 import { BookmarkImportModal } from './components/Modals/BookmarkImportModal';
+import { classifyBookmark } from './utils/bookmarkClassifier';
+import { normalizeUrl } from './utils/bookmarkParser';
+import { initBookmarkSyncChannel, BookmarkSyncPayload } from './utils/bookmarkSyncChannel';
 import { 
   calculateDayTimeRemaining, 
   calculateTaskLoad, 
@@ -71,12 +76,93 @@ export function App() {
   const [now, setNow] = useState<Date>(new Date());
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [aiCustomIdea, setAiCustomIdea] = useState<RecommendationCandidate | null>(null);
+  const [syncToast, setSyncToast] = useState<{ id: string; message: string; folderName: string } | null>(null);
 
   // Live clock tick for time radar calculations
   useEffect(() => {
     const timer = setInterval(() => setNow(new Date()), 15000);
     return () => clearInterval(timer);
   }, []);
+
+  // Real-time Bookmark Sync Channel listener (BroadcastChannel & window message)
+  useEffect(() => {
+    const cleanup = initBookmarkSyncChannel((incoming: BookmarkSyncPayload) => {
+      if (!incoming || !incoming.url) return;
+      const cleanUrl = incoming.url.trim();
+      if (!cleanUrl) return;
+
+      const normIncomingUrl = normalizeUrl(cleanUrl);
+
+      setAppData((prev) => {
+        // Prevent duplicate addition if URL already exists
+        const exists = prev.links.some((l) => normalizeUrl(l.url) === normIncomingUrl);
+        if (exists) {
+          return prev;
+        }
+
+        // Auto-categorize via classifyBookmark
+        const classification = incoming.folderId
+          ? {
+              folderId: incoming.folderId,
+              tags: incoming.tags || ['Bookmarks'],
+              matchedRule: 'Explicit Sync Folder',
+            }
+          : classifyBookmark(
+              cleanUrl,
+              incoming.title,
+              incoming.sourceFolder,
+              prev.folders
+            );
+
+        // Derive friendly title
+        let resolvedTitle = incoming.title?.trim();
+        if (!resolvedTitle) {
+          try {
+            resolvedTitle = new URL(cleanUrl).hostname.replace(/^www\./, '');
+          } catch {
+            resolvedTitle = cleanUrl;
+          }
+        }
+
+        const newLink: LinkItem = {
+          id: `link-sync-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+          title: resolvedTitle,
+          url: cleanUrl,
+          folderId: classification.folderId,
+          isFavorite: false,
+          tags: Array.from(new Set([...(incoming.tags || []), ...(classification.tags || [])])),
+          createdAt: incoming.addDate || Date.now(),
+          clickCount: 0,
+        };
+
+        // Find folder name for toast feedback
+        const targetFolder = prev.folders.find((f) => f.id === classification.folderId);
+        const folderName = targetFolder ? targetFolder.name : 'Bookmarks';
+
+        setSyncToast({
+          id: `toast-${Date.now()}`,
+          message: `"${resolvedTitle}" automatically categorized to ${folderName}`,
+          folderName,
+        });
+
+        return {
+          ...prev,
+          links: [newLink, ...prev.links],
+        };
+      });
+    });
+
+    return () => cleanup();
+  }, []);
+
+  // Auto-dismiss sync toast after 4.5 seconds
+  useEffect(() => {
+    if (!syncToast) return;
+    const timer = setTimeout(() => {
+      setSyncToast(null);
+    }, 4500);
+    return () => clearTimeout(timer);
+  }, [syncToast]);
 
   // Auto-save on state change
   useEffect(() => {
@@ -814,6 +900,43 @@ export function App() {
         existingLinks={appData.links}
         onImportBookmarks={handleImportBookmarks}
       />
+
+      {/* Real-time Bookmark Sync Notification Toast */}
+      <AnimatePresence>
+        {syncToast && (
+          <motion.div
+            initial={{ opacity: 0, y: 30, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.95 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+            className="fixed bottom-6 right-6 z-50 max-w-sm sm:max-w-md bg-white dark:bg-serene-surface-dark border border-serene-primary/30 dark:border-serene-primary-dark/40 rounded-xl shadow-xl p-3.5 flex items-start gap-3 backdrop-blur-md"
+            role="status"
+            aria-live="polite"
+          >
+            <div className="w-8 h-8 rounded-lg bg-serene-primary/10 dark:bg-serene-primary-dark/20 text-serene-primary dark:text-serene-primary-dark flex items-center justify-center shrink-0 mt-0.5">
+              <BookmarkCheck className="w-4 h-4" />
+            </div>
+            <div className="flex-1 min-w-0 pr-1">
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs font-bold text-serene-primary dark:text-serene-primary-dark uppercase tracking-wider">
+                  Live Bookmark Sync
+                </span>
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              </div>
+              <p className="text-xs text-serene-text-primary dark:text-serene-text-darkPrimary font-medium truncate mt-0.5">
+                {syncToast.message}
+              </p>
+            </div>
+            <button
+              onClick={() => setSyncToast(null)}
+              className="p-1 rounded-md text-serene-text-muted hover:text-serene-text-primary dark:hover:text-serene-text-darkPrimary transition-colors shrink-0"
+              title="Dismiss notification"
+            >
+              <CloseIcon className="w-3.5 h-3.5" />
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
