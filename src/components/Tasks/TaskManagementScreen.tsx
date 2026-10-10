@@ -42,7 +42,14 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
   // Filters & State
   const [activeTab, setActiveTab] = useState<FilterTab>('All');
   const [searchQuery, setSearchQuery] = useState('');
-  const [isScratchpadOpen, setIsScratchpadOpen] = useState(true);
+  // In mobile/tablet view (< 1280px / xl breakpoint), keep scratchpad closed by default
+  // so it does not cover the screen when opening Tasks & Action Items
+  const [isScratchpadOpen, setIsScratchpadOpen] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return window.innerWidth >= 1280;
+    }
+    return false;
+  });
 
   // Modal / Form state for Add / Edit
   const [isFormOpen, setIsFormOpen] = useState(false);
