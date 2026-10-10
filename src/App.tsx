@@ -32,6 +32,7 @@ import { TaskManagementScreen } from './components/Tasks/TaskManagementScreen';
 import { AddEditLinkModal } from './components/Modals/AddEditLinkModal';
 import { ManageFoldersModal } from './components/Modals/ManageFoldersModal';
 import { SettingsModal } from './components/Modals/SettingsModal';
+import { BookmarkImportModal } from './components/Modals/BookmarkImportModal';
 import { 
   calculateDayTimeRemaining, 
   calculateTaskLoad, 
@@ -61,6 +62,7 @@ export function App() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isManageFoldersOpen, setIsManageFoldersOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+  const [isBookmarkImportOpen, setIsBookmarkImportOpen] = useState(false);
   const [isQuickNotesOpen, setIsQuickNotesOpen] = useState(false);
   const [editingLink, setEditingLink] = useState<LinkItem | null>(null);
   const [defaultFolderForAdd, setDefaultFolderForAdd] = useState<string | undefined>(undefined);
@@ -199,6 +201,7 @@ export function App() {
         if (isAddModalOpen) setIsAddModalOpen(false);
         else if (isManageFoldersOpen) setIsManageFoldersOpen(false);
         else if (isSettingsModalOpen) setIsSettingsModalOpen(false);
+        else if (isBookmarkImportOpen) setIsBookmarkImportOpen(false);
         else if (isMobileSidebarOpen) setIsMobileSidebarOpen(false);
         else if (isQuickNotesOpen) setIsQuickNotesOpen(false);
         else if (selectedFolderId !== null) setSelectedFolderId(null);
@@ -247,6 +250,13 @@ export function App() {
       }));
     }
     setEditingLink(null);
+  };
+
+  const handleImportBookmarks = (newLinks: LinkItem[]) => {
+    setAppData((prev) => ({
+      ...prev,
+      links: [...newLinks, ...prev.links],
+    }));
   };
 
   const handleDeleteLink = (id: string) => {
@@ -400,6 +410,7 @@ export function App() {
           setIsAddModalOpen(true);
         }}
         onOpenSettingsModal={() => setIsSettingsModalOpen(true)}
+        onOpenBookmarkImport={() => setIsBookmarkImportOpen(true)}
         onToggleQuickNotes={() => setIsQuickNotesOpen(!isQuickNotesOpen)}
         isQuickNotesOpen={isQuickNotesOpen}
         theme={appData.settings.theme}
@@ -793,6 +804,15 @@ export function App() {
         appData={appData}
         onUpdateAppData={setAppData}
         onResetData={handleResetData}
+        onOpenBookmarkImport={() => setIsBookmarkImportOpen(true)}
+      />
+
+      <BookmarkImportModal
+        isOpen={isBookmarkImportOpen}
+        onClose={() => setIsBookmarkImportOpen(false)}
+        folders={appData.folders}
+        existingLinks={appData.links}
+        onImportBookmarks={handleImportBookmarks}
       />
     </div>
   );

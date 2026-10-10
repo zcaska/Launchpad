@@ -13,10 +13,12 @@ import {
   Clock,
   Zap,
   Key,
-  BarChart2
+  BarChart2,
+  BookmarkCheck
 } from 'lucide-react';
 import { AppData } from '../../types';
 import { exportDataAsJson, importDataFromJson } from '../../utils/storage';
+import { exportNetscapeBookmarks } from '../../utils/bookmarkParser';
 import { DEFAULT_INITIAL_PREFERENCES } from '../../data/seedData';
 import { modalBackdropVariants, modalContentVariants } from '../../utils/motion';
 
@@ -26,6 +28,7 @@ interface SettingsModalProps {
   appData: AppData;
   onUpdateAppData: (data: AppData) => void;
   onResetData: () => void;
+  onOpenBookmarkImport?: () => void;
 }
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({
@@ -34,6 +37,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   appData,
   onUpdateAppData,
   onResetData,
+  onOpenBookmarkImport,
 }) => {
   const [copiedUrl, setCopiedUrl] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -48,6 +52,19 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
   const handleExport = () => {
     exportDataAsJson(appData);
+  };
+
+  const handleExportBookmarksHtml = () => {
+    const html = exportNetscapeBookmarks(appData.links, appData.folders);
+    const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `launchpad-bookmarks-${new Date().toISOString().slice(0, 10)}.html`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -380,6 +397,42 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   <div className="text-[10px] text-serene-text-muted">Restore data from file</div>
                 </div>
               </button>
+
+              {onOpenBookmarkImport && (
+                <button
+                  onClick={() => {
+                    onClose();
+                    onOpenBookmarkImport();
+                  }}
+                  className="p-3 bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark hover:bg-white dark:hover:bg-serene-surface-dark border border-serene-border-light dark:border-serene-border-dark rounded-xl flex items-center gap-3 transition-all hover:border-serene-primary/40 group text-left"
+                >
+                  <div className="p-2 rounded-lg bg-serene-primary/10 dark:bg-serene-primary/20 text-serene-primary dark:text-serene-primary-dark">
+                    <BookmarkCheck className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="font-semibold text-serene-text-primary dark:text-serene-text-darkPrimary">
+                      Import Browser Bookmarks
+                    </div>
+                    <div className="text-[10px] text-serene-text-muted">HTML file import with auto-categorization</div>
+                  </div>
+                </button>
+              )}
+
+              <button
+                onClick={handleExportBookmarksHtml}
+                className="p-3 bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark hover:bg-white dark:hover:bg-serene-surface-dark border border-serene-border-light dark:border-serene-border-dark rounded-xl flex items-center gap-3 transition-all hover:border-serene-primary/40 group text-left"
+              >
+                <div className="p-2 rounded-lg bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300">
+                  <Download className="w-4 h-4" />
+                </div>
+                <div>
+                  <div className="font-semibold text-serene-text-primary dark:text-serene-text-darkPrimary">
+                    Export Bookmarks (.html)
+                  </div>
+                  <div className="text-[10px] text-serene-text-muted">Standard Netscape format for any browser</div>
+                </div>
+              </button>
+
               <input
                 ref={fileInputRef}
                 type="file"

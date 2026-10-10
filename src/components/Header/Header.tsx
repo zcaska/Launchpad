@@ -10,7 +10,8 @@ import {
   Command,
   Rocket,
   CheckSquare,
-  Menu
+  Menu,
+  BookmarkCheck
 } from 'lucide-react';
 import { ThemeMode } from '../../types';
 
@@ -19,6 +20,7 @@ interface HeaderProps {
   onSearchChange: (query: string) => void;
   onOpenAddModal: () => void;
   onOpenSettingsModal: () => void;
+  onOpenBookmarkImport?: () => void;
   onToggleQuickNotes: () => void;
   isQuickNotesOpen: boolean;
   theme: ThemeMode;
@@ -34,6 +36,7 @@ export const Header: React.FC<HeaderProps> = ({
   onSearchChange,
   onOpenAddModal,
   onOpenSettingsModal,
+  onOpenBookmarkImport,
   onToggleQuickNotes,
   isQuickNotesOpen,
   theme,
@@ -170,6 +173,17 @@ export const Header: React.FC<HeaderProps> = ({
               {theme === 'dark' && <Moon className="w-4 h-4 text-sky-400" />}
               {theme === 'system' && <Laptop className="w-4 h-4 text-serene-text-muted" />}
             </button>
+
+            {/* Browser Bookmark Import Quick Trigger */}
+            {onOpenBookmarkImport && (
+              <button
+                onClick={onOpenBookmarkImport}
+                title="Import Browser Bookmarks (.html)"
+                className="p-1.5 sm:p-2 bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark border border-serene-border-light dark:border-serene-border-dark text-serene-text-secondary hover:text-serene-text-primary dark:text-serene-text-darkSecondary dark:hover:text-serene-text-darkPrimary rounded-lg transition-colors"
+              >
+                <BookmarkCheck className="w-4 h-4" />
+              </button>
+            )}
 
             {/* Settings Modal Trigger */}
             <button
