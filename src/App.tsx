@@ -64,6 +64,7 @@ export function App() {
   const [isQuickNotesOpen, setIsQuickNotesOpen] = useState(false);
   const [editingLink, setEditingLink] = useState<LinkItem | null>(null);
   const [defaultFolderForAdd, setDefaultFolderForAdd] = useState<string | undefined>(undefined);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [now, setNow] = useState<Date>(new Date());
   const [isAiLoading, setIsAiLoading] = useState(false);
@@ -193,11 +194,13 @@ export function App() {
         return;
       }
 
-      // Escape -> close open modals or return to all folders
+      // Escape -> close open modals, drawers, or return to all folders
       if (e.key === 'Escape') {
         if (isAddModalOpen) setIsAddModalOpen(false);
         else if (isManageFoldersOpen) setIsManageFoldersOpen(false);
         else if (isSettingsModalOpen) setIsSettingsModalOpen(false);
+        else if (isMobileSidebarOpen) setIsMobileSidebarOpen(false);
+        else if (isQuickNotesOpen) setIsQuickNotesOpen(false);
         else if (selectedFolderId !== null) setSelectedFolderId(null);
         return;
       }
@@ -404,6 +407,7 @@ export function App() {
         activeView={activeView}
         onSelectView={setActiveView}
         pendingTasksCount={taskLoad.pendingCount}
+        onToggleMobileSidebar={() => setIsMobileSidebarOpen((prev) => !prev)}
       />
 
       {/* Main Workspace Layout (Fluid Viewport with Independent Scroll Areas) */}
@@ -421,6 +425,8 @@ export function App() {
           currentView={activeView}
           onSelectView={setActiveView}
           pendingTasksCount={taskLoad.pendingCount}
+          isMobileOpen={isMobileSidebarOpen}
+          onCloseMobile={() => setIsMobileSidebarOpen(false)}
         />
 
         {/* Content Area: Independent scroll container with container queries */}
@@ -501,7 +507,7 @@ export function App() {
             )}
 
           {/* 3. Navigation Sub-Bar & Breadcrumb Controls */}
-          <div className="flex items-center justify-between gap-4 pt-1 pb-2 border-b border-serene-border-light/60 dark:border-serene-border-dark/60">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1 pb-2 border-b border-serene-border-light/60 dark:border-serene-border-dark/60">
             <div className="flex items-center gap-3">
               {/* Back to all folders button when in a folder */}
               {selectedFolderId !== null && (
@@ -733,21 +739,32 @@ export function App() {
         {/* Quick Notes Slide-over Panel */}
         <AnimatePresence>
           {isQuickNotesOpen && (
-            <motion.aside
-              variants={drawerVariants}
-              initial="initial"
-              animate="animate"
-              exit="exit"
-              className="w-80 lg:w-88 2xl:w-96 h-full p-3 sm:p-4 border-l border-serene-border-light dark:border-serene-border-dark bg-white/80 dark:bg-serene-surface-dark/80 backdrop-blur-md shrink-0 overflow-y-auto z-20"
-            >
-              <QuickNotesWidget
-                notes={appData.quickNotes}
-                scratchpadText={appData.scratchpadText}
-                onUpdateNotes={handleUpdateNotes}
-                onUpdateScratchpad={handleUpdateScratchpad}
-                onClose={() => setIsQuickNotesOpen(false)}
+            <>
+              {/* Mobile / Tablet Backdrop when drawer is open */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setIsQuickNotesOpen(false)}
+                className="fixed inset-0 bg-black/40 backdrop-blur-xs z-30 lg:hidden"
+                aria-hidden="true"
               />
-            </motion.aside>
+              <motion.aside
+                variants={drawerVariants}
+                initial="initial"
+                animate="animate"
+                exit="exit"
+                className="fixed lg:static right-0 top-0 lg:top-auto bottom-0 lg:bottom-auto w-80 max-w-[85vw] lg:w-88 2xl:w-96 h-full p-3 sm:p-4 border-l border-serene-border-light dark:border-serene-border-dark bg-white/95 dark:bg-serene-surface-dark/95 lg:bg-white/80 lg:dark:bg-serene-surface-dark/80 backdrop-blur-md shrink-0 overflow-y-auto z-40 lg:z-20 shadow-2xl lg:shadow-none"
+              >
+                <QuickNotesWidget
+                  notes={appData.quickNotes}
+                  scratchpadText={appData.scratchpadText}
+                  onUpdateNotes={handleUpdateNotes}
+                  onUpdateScratchpad={handleUpdateScratchpad}
+                  onClose={() => setIsQuickNotesOpen(false)}
+                />
+              </motion.aside>
+            </>
           )}
         </AnimatePresence>
       </div>

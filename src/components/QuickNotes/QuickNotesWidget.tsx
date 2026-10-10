@@ -100,7 +100,9 @@ export const QuickNotesWidget: React.FC<QuickNotesWidgetProps> = ({
         {onClose && (
           <button
             onClick={onClose}
-            className="p-1 rounded-md text-serene-text-muted hover:text-serene-text-primary dark:hover:text-serene-text-darkPrimary hover:bg-black/5 dark:hover:bg-white/10"
+            aria-label="Close notes widget"
+            title="Close notes widget"
+            className="p-1.5 rounded-md text-serene-text-muted hover:text-serene-text-primary dark:hover:text-serene-text-darkPrimary hover:bg-black/5 dark:hover:bg-white/10"
           >
             <X className="w-4 h-4" />
           </button>

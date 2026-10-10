@@ -6,7 +6,9 @@ import {
   SlidersHorizontal,
   ChevronLeft,
   ChevronRight,
-  CheckSquare
+  CheckSquare,
+  X,
+  Compass
 } from 'lucide-react';
 import { Folder, LinkItem } from '../../types';
 import { getFolderIcon, FOLDER_COLOR_MAP } from '../../utils/icons';
@@ -23,6 +25,8 @@ interface SidebarProps {
   currentView?: 'dashboard' | 'tasks';
   onSelectView?: (view: 'dashboard' | 'tasks') => void;
   pendingTasksCount?: number;
+  isMobileOpen?: boolean;
+  onCloseMobile?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -37,6 +41,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   currentView = 'dashboard',
   onSelectView,
   pendingTasksCount = 0,
+  isMobileOpen = false,
+  onCloseMobile,
 }) => {
   const totalCount = links.length;
   const favoriteCount = links.filter((l) => l.isFavorite).length;
@@ -55,12 +61,202 @@ export const Sidebar: React.FC<SidebarProps> = ({
     onSelectFolder(folderId);
   };
 
+  const handleMobileNavClick = (action: () => void) => {
+    action();
+    if (onCloseMobile) {
+      onCloseMobile();
+    }
+  };
+
   return (
-    <aside
-      className={`relative h-full bg-white/70 dark:bg-serene-surface-dark/70 backdrop-blur-md border-r border-serene-border-light dark:border-serene-border-dark flex flex-col shrink-0 transition-all duration-300 select-none ${
-        isCollapsed ? 'w-[72px]' : 'w-64'
-      }`}
-    >
+    <>
+      {/* Mobile Drawer Backdrop */}
+      {isMobileOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 backdrop-blur-xs z-40 md:hidden transition-opacity"
+          onClick={onCloseMobile}
+          aria-hidden="true"
+        />
+      )}
+
+      {/* Mobile Off-Canvas Drawer */}
+      <aside
+        className={`fixed inset-y-0 left-0 z-50 w-72 max-w-[85vw] bg-white dark:bg-serene-surface-dark shadow-2xl flex flex-col md:hidden transition-transform duration-300 ease-in-out border-r border-serene-border-light dark:border-serene-border-dark ${
+          isMobileOpen ? 'translate-x-0' : '-translate-x-full pointer-events-none'
+        }`}
+      >
+        {/* Mobile Drawer Header */}
+        <div className="flex items-center justify-between p-3.5 border-b border-serene-border-light dark:border-serene-border-dark">
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-lg bg-serene-primary/10 text-serene-primary dark:text-serene-primary-dark flex items-center justify-center">
+              <Compass className="w-4 h-4" />
+            </div>
+            <span className="font-bold text-sm text-serene-text-primary dark:text-serene-text-darkPrimary">
+              Navigation & Folders
+            </span>
+          </div>
+          <button
+            onClick={onCloseMobile}
+            className="p-1.5 rounded-lg text-serene-text-muted hover:text-serene-text-primary dark:hover:text-serene-text-darkPrimary hover:bg-serene-surfaceAlt-light dark:hover:bg-serene-surfaceAlt-dark transition-colors"
+            aria-label="Close navigation"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Mobile Drawer Content */}
+        <div className="p-3 flex-1 flex flex-col gap-4 overflow-y-auto">
+          {/* Navigation Section */}
+          <div className="space-y-1">
+            <div className="px-3 py-1 text-[11px] font-semibold text-serene-text-muted uppercase tracking-wider">
+              Navigation & Focus
+            </div>
+
+            {/* Tasks & Action Items */}
+            <button
+              onClick={() => handleMobileNavClick(() => onSelectView && onSelectView('tasks'))}
+              className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-medium transition-all ${
+                currentView === 'tasks'
+                  ? 'bg-serene-primary text-white shadow-xs'
+                  : 'text-serene-text-secondary dark:text-serene-text-darkSecondary hover:bg-serene-surfaceAlt-light dark:hover:bg-serene-surfaceAlt-dark hover:text-serene-text-primary dark:hover:text-serene-text-darkPrimary'
+              }`}
+            >
+              <CheckSquare className={`w-4 h-4 shrink-0 ${currentView === 'tasks' ? 'text-white' : 'text-serene-primary dark:text-serene-primary-dark'}`} />
+              <span className="flex-1 text-left truncate font-semibold">Tasks & Action Items</span>
+              {pendingTasksCount > 0 ? (
+                <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-mono font-bold ${
+                  currentView === 'tasks' ? 'bg-white/20 text-white' : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20'
+                }`}>
+                  {pendingTasksCount}
+                </span>
+              ) : (
+                <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-mono ${
+                  currentView === 'tasks' ? 'bg-white/20 text-white' : 'bg-black/5 dark:bg-white/10 text-serene-text-muted'
+                }`}>
+                  0
+                </span>
+              )}
+            </button>
+
+            {/* All Resources */}
+            <button
+              onClick={() => handleMobileNavClick(() => handleSelectOverview(null))}
+              className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-medium transition-all ${
+                currentView === 'dashboard' && selectedFolderId === null
+                  ? 'bg-serene-primary text-white shadow-xs'
+                  : 'text-serene-text-secondary dark:text-serene-text-darkSecondary hover:bg-serene-surfaceAlt-light dark:hover:bg-serene-surfaceAlt-dark hover:text-serene-text-primary dark:hover:text-serene-text-darkPrimary'
+              }`}
+            >
+              <Layers className={`w-4 h-4 shrink-0 ${currentView === 'dashboard' && selectedFolderId === null ? 'text-white' : 'text-serene-text-muted'}`} />
+              <span className="flex-1 text-left truncate">All Resources</span>
+              <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-mono ${
+                currentView === 'dashboard' && selectedFolderId === null ? 'bg-white/20 text-white' : 'bg-black/5 dark:bg-white/10 text-serene-text-muted'
+              }`}>
+                {totalCount}
+              </span>
+            </button>
+
+            {/* Favorites */}
+            <button
+              onClick={() => handleMobileNavClick(() => handleSelectOverview('favorites'))}
+              className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-medium transition-all ${
+                currentView === 'dashboard' && selectedFolderId === 'favorites'
+                  ? 'bg-amber-600 text-white shadow-xs'
+                  : 'text-serene-text-secondary dark:text-serene-text-darkSecondary hover:bg-serene-surfaceAlt-light dark:hover:bg-serene-surfaceAlt-dark hover:text-serene-text-primary dark:hover:text-serene-text-darkPrimary'
+              }`}
+            >
+              <Star className={`w-4 h-4 shrink-0 ${currentView === 'dashboard' && selectedFolderId === 'favorites' ? 'text-white fill-current' : 'text-amber-500 fill-amber-500/20'}`} />
+              <span className="flex-1 text-left truncate">Favorites</span>
+              <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-mono ${
+                currentView === 'dashboard' && selectedFolderId === 'favorites' ? 'bg-white/20 text-white' : 'bg-black/5 dark:bg-white/10 text-serene-text-muted'
+              }`}>
+                {favoriteCount}
+              </span>
+            </button>
+          </div>
+
+          {/* Divider */}
+          <div className="h-px bg-serene-border-light dark:border-serene-border-dark my-1 mx-1" />
+
+          {/* Folders Section */}
+          <div className="space-y-1 flex-1">
+            <div className="flex items-center justify-between px-3 py-1">
+              <span className="text-[11px] font-semibold text-serene-text-muted uppercase tracking-wider">
+                Folders & Collections
+              </span>
+              <button
+                onClick={() => handleMobileNavClick(onOpenManageFolders)}
+                title="Manage Folders"
+                className="text-serene-text-muted hover:text-serene-primary dark:hover:text-serene-primary-dark p-1 rounded hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+              >
+                <SlidersHorizontal className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            <div className="space-y-1">
+              {folders.map((folder) => {
+                const IconComponent = getFolderIcon(folder.icon);
+                const colorInfo = FOLDER_COLOR_MAP[folder.color] || FOLDER_COLOR_MAP.forest;
+                const isSelected = selectedFolderId === folder.id;
+                const count = getFolderCount(folder.id);
+
+                return (
+                  <button
+                    key={folder.id}
+                    onClick={() => handleMobileNavClick(() => onSelectFolder(folder.id))}
+                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-medium transition-all group ${
+                      isSelected
+                        ? 'bg-serene-primary-soft dark:bg-serene-primary/20 text-serene-primary dark:text-serene-primary-dark font-semibold border border-serene-primary/30'
+                        : 'text-serene-text-secondary dark:text-serene-text-darkSecondary hover:bg-serene-surfaceAlt-light dark:hover:bg-serene-surfaceAlt-dark hover:text-serene-text-primary dark:hover:text-serene-text-darkPrimary'
+                    }`}
+                  >
+                    <div className="relative shrink-0 flex items-center justify-center">
+                      <IconComponent className={`w-4 h-4 ${isSelected ? 'text-serene-primary dark:text-serene-primary-dark' : 'text-serene-text-muted group-hover:text-serene-text-secondary'}`} />
+                      <span className={`absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full ${colorInfo.dot} ring-1 ring-white dark:ring-serene-surface-dark`} />
+                    </div>
+
+                    <span className="flex-1 text-left truncate">{folder.name}</span>
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-mono ${
+                      isSelected 
+                        ? 'bg-serene-primary/20 text-serene-primary dark:text-serene-primary-dark font-semibold' 
+                        : 'bg-black/5 dark:bg-white/10 text-serene-text-muted'
+                    }`}>
+                      {count}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Quick Add Folder Button */}
+            <button
+              onClick={() => handleMobileNavClick(onOpenAddFolder)}
+              className="w-full mt-2 flex items-center gap-2 px-3 py-2 rounded-xl text-xs text-serene-text-muted hover:text-serene-primary dark:hover:text-serene-primary-dark hover:bg-serene-surfaceAlt-light dark:hover:bg-serene-surfaceAlt-dark border border-dashed border-serene-border-light dark:border-serene-border-dark transition-all"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>New Folder</span>
+            </button>
+          </div>
+
+          {/* Bottom Widget in Drawer */}
+          <div className="p-3 bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark rounded-xl border border-serene-border-light dark:border-serene-border-dark text-xs space-y-1 mt-auto shrink-0">
+            <div className="flex items-center justify-between font-semibold text-serene-text-primary dark:text-serene-text-darkPrimary text-[11px]">
+              <span>Curated Hub</span>
+              <span className="font-mono text-serene-primary dark:text-serene-primary-dark">{totalCount} links</span>
+            </div>
+            <p className="text-[10px] text-serene-text-muted leading-relaxed">
+              Target for Time Snatch redirect.
+            </p>
+          </div>
+        </div>
+      </aside>
+
+      {/* Desktop Persistent Sidebar (hidden on mobile, visible md+) */}
+      <aside
+        className={`relative h-full bg-white/70 dark:bg-serene-surface-dark/70 backdrop-blur-md border-r border-serene-border-light dark:border-serene-border-dark hidden md:flex flex-col shrink-0 transition-all duration-300 select-none ${
+          isCollapsed ? 'w-[72px]' : 'w-64'
+        }`}
+      >
       {/* Collapse/Expand Floating Trigger */}
       <button
         onClick={onToggleCollapse}
@@ -256,5 +452,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
         )}
       </div>
     </aside>
-  );
+  </>
+);
 };

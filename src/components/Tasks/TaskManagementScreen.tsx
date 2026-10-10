@@ -402,76 +402,91 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
     <div className="w-full flex flex-col h-full bg-serene-bg-light dark:bg-serene-bg-dark text-serene-text-primary dark:text-serene-text-darkPrimary overflow-hidden">
       {/* 1. TOP HEADER & OVERVIEW BAR */}
       <header className="w-full shrink-0 bg-white dark:bg-serene-surface-dark border-b border-serene-border-light dark:border-serene-border-dark px-4 sm:px-6 py-4 shadow-subtle transition-colors">
-        <div className="w-full flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        <div className="w-full flex flex-col lg:flex-row lg:items-center justify-between gap-3 sm:gap-4">
           
-          {/* Left: Back button + Title & Core Stats */}
-          <div className="flex items-center gap-3">
-            {onBackToDashboard && (
-              <button
-                onClick={onBackToDashboard}
-                className="p-2 rounded-xl bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark hover:bg-black/5 dark:hover:bg-white/10 text-serene-text-secondary dark:text-serene-text-darkSecondary border border-serene-border-light dark:border-serene-border-dark transition-all"
-                title="Back to Main Dashboard"
-              >
-                <ArrowLeft className="w-4 h-4" />
-              </button>
-            )}
+          {/* Left: Back button + Title */}
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 w-full lg:w-auto">
+            <div className="flex items-center gap-2.5 sm:gap-3">
+              {onBackToDashboard && (
+                <button
+                  onClick={onBackToDashboard}
+                  className="p-2 rounded-xl bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark hover:bg-black/5 dark:hover:bg-white/10 text-serene-text-secondary dark:text-serene-text-darkSecondary border border-serene-border-light dark:border-serene-border-dark transition-all shrink-0"
+                  title="Back to Main Dashboard"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                </button>
+              )}
 
-            <div>
-              <div className="flex items-center gap-2">
-                <div className="p-1.5 rounded-lg bg-serene-primary-soft dark:bg-serene-primary/20 text-serene-primary dark:text-serene-primary-dark">
+              <div className="flex items-center gap-2 min-w-0">
+                <div className="p-1.5 rounded-lg bg-serene-primary-soft dark:bg-serene-primary/20 text-serene-primary dark:text-serene-primary-dark shrink-0">
                   <ListTodo className="w-5 h-5" />
                 </div>
-                <h1 className="text-lg sm:text-xl font-bold tracking-tight text-serene-text-primary dark:text-serene-text-darkPrimary">
+                <h1 className="text-base sm:text-lg lg:text-xl font-bold tracking-tight text-serene-text-primary dark:text-serene-text-darkPrimary truncate">
                   Task Management & Planning
                 </h1>
               </div>
+            </div>
 
-              {/* Status metrics pill row */}
-              <div className="flex items-center gap-3 mt-1 text-xs">
-                <span className="flex items-center gap-1.5 font-medium text-serene-text-secondary dark:text-serene-text-darkSecondary">
-                  <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
-                  <strong className="text-serene-text-primary dark:text-serene-text-darkPrimary font-bold">
-                    {loadSummary.pendingCount}
-                  </strong>{' '}
-                  pending
-                </span>
-                <span className="text-serene-text-muted">•</span>
-                <span className="flex items-center gap-1.5 font-medium text-emerald-600 dark:text-emerald-400">
-                  <CheckCircle2 className="w-3.5 h-3.5" />
-                  <strong>{totalCompleted}</strong> done
-                </span>
-                <span className="text-serene-text-muted">•</span>
-                <span className="flex items-center gap-1 font-mono font-medium text-serene-primary dark:text-serene-primary-dark">
-                  <Clock className="w-3.5 h-3.5" />
-                  <strong>{loadSummary.formattedPending}</strong> load
-                </span>
-              </div>
+            {/* Desktop Status metrics row */}
+            <div className="hidden lg:flex items-center gap-3 text-xs lg:ml-2">
+              <span className="flex items-center gap-1.5 font-medium text-serene-text-secondary dark:text-serene-text-darkSecondary">
+                <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+                <strong className="text-serene-text-primary dark:text-serene-text-darkPrimary font-bold">
+                  {loadSummary.pendingCount}
+                </strong>{' '}
+                pending
+              </span>
+              <span className="text-serene-text-muted">•</span>
+              <span className="flex items-center gap-1.5 font-medium text-emerald-600 dark:text-emerald-400">
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                <strong>{totalCompleted}</strong> done
+              </span>
+              <span className="text-serene-text-muted">•</span>
+              <span className="flex items-center gap-1 font-mono font-medium text-serene-primary dark:text-serene-primary-dark">
+                <Clock className="w-3.5 h-3.5" />
+                <strong>{loadSummary.formattedPending}</strong> load
+              </span>
             </div>
           </div>
 
-          {/* Right: Actions Cluster (Scratchpad Toggle & Add Task Primary Button) */}
-          <div className="flex items-center gap-2.5 self-end lg:self-auto shrink-0">
+          {/* Mobile Status Metrics 3-Column Symmetrical Grid */}
+          <div className="grid grid-cols-3 gap-2 w-full lg:hidden">
+            <div className="flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-xl bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark border border-serene-border-light dark:border-serene-border-dark text-[11px] sm:text-xs text-serene-text-secondary dark:text-serene-text-darkSecondary">
+              <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse shrink-0" />
+              <span className="truncate"><strong>{loadSummary.pendingCount}</strong> pending</span>
+            </div>
+            <div className="flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-xl bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200/50 dark:border-emerald-900/40 text-[11px] sm:text-xs text-emerald-700 dark:text-emerald-400">
+              <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+              <span className="truncate"><strong>{totalCompleted}</strong> done</span>
+            </div>
+            <div className="flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-xl bg-serene-primary-soft/60 dark:bg-serene-primary/15 border border-serene-primary/20 dark:border-serene-primary/30 text-[11px] sm:text-xs text-serene-primary dark:text-serene-primary-dark font-mono">
+              <Clock className="w-3.5 h-3.5 shrink-0" />
+              <span className="truncate"><strong>{loadSummary.formattedPending}</strong> load</span>
+            </div>
+          </div>
 
+          {/* Actions: 2-column grid on mobile, flex row on desktop */}
+          <div className="grid grid-cols-2 gap-2 w-full lg:w-auto lg:flex lg:items-center lg:gap-2.5 shrink-0">
             {/* Scratchpad Toggle Button */}
             <button
               onClick={() => setIsScratchpadOpen(!isScratchpadOpen)}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all ${
+              className={`inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold border transition-all ${
                 isScratchpadOpen
                   ? 'bg-serene-primary-soft dark:bg-serene-primary/20 text-serene-primary dark:text-serene-primary-dark border-serene-primary/30'
                   : 'bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark text-serene-text-secondary dark:text-serene-text-darkSecondary border-serene-border-light dark:border-serene-border-dark hover:text-serene-text-primary'
               }`}
               title="Toggle side scratchpad"
             >
-              <FileText className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Scratchpad</span>
+              <FileText className="w-3.5 h-3.5 shrink-0" />
+              <span>Scratchpad</span>
             </button>
 
             {/* Primary 'Add New Task' Button */}
             <button
               onClick={handleOpenCreateForm}
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-serene-primary hover:bg-serene-primary-hover text-white text-xs font-semibold rounded-xl shadow-xs transition-transform active:scale-95"
+              className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 bg-serene-primary hover:bg-serene-primary-hover text-white text-xs font-semibold rounded-xl shadow-xs transition-transform active:scale-95"
             >
-              <Plus className="w-4 h-4" />
+              <Plus className="w-4 h-4 shrink-0" />
               <span>Add New Task</span>
             </button>
           </div>
@@ -747,38 +762,46 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
         </main>
 
         {/* Scratchpad Collapsible Side Panel */}
+        {/* Collapsible Side Scratchpad */}
         {isScratchpadOpen && (
-          <aside className="w-80 lg:w-96 shrink-0 border-l border-serene-border-light dark:border-serene-border-dark bg-white/70 dark:bg-serene-surface-dark/70 backdrop-blur-md p-4 flex flex-col justify-between overflow-hidden transition-all animate-fadeIn">
-            <div className="flex items-center justify-between pb-3 border-b border-serene-border-light dark:border-serene-border-dark">
-              <div className="flex items-center gap-2">
-                <FileText className="w-4 h-4 text-serene-primary dark:text-serene-primary-dark" />
-                <h3 className="text-xs font-bold uppercase tracking-wider text-serene-text-primary dark:text-serene-text-darkPrimary">
-                  Scratchpad & Notes
-                </h3>
+          <>
+            <div
+              className="fixed inset-0 bg-black/40 backdrop-blur-xs z-30 xl:hidden animate-fade-in"
+              onClick={() => setIsScratchpadOpen(false)}
+              aria-hidden="true"
+            />
+            <aside className="fixed xl:static inset-y-0 right-0 z-40 xl:z-auto w-80 max-w-[85vw] xl:w-96 shrink-0 border-l border-serene-border-light dark:border-serene-border-dark bg-white/95 dark:bg-serene-surface-dark/95 xl:bg-white/70 xl:dark:bg-serene-surface-dark/70 backdrop-blur-md p-4 flex flex-col justify-between overflow-hidden shadow-2xl xl:shadow-none transition-all animate-fadeIn">
+              <div className="flex items-center justify-between pb-3 border-b border-serene-border-light dark:border-serene-border-dark">
+                <div className="flex items-center gap-2">
+                  <FileText className="w-4 h-4 text-serene-primary dark:text-serene-primary-dark" />
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-serene-text-primary dark:text-serene-text-darkPrimary">
+                    Scratchpad & Notes
+                  </h3>
+                </div>
+                <button
+                  onClick={() => setIsScratchpadOpen(false)}
+                  className="p-1 rounded-md text-serene-text-muted hover:text-serene-text-primary dark:hover:text-serene-text-darkPrimary"
+                  title="Hide scratchpad"
+                >
+                  <X className="w-4 h-4" />
+                </button>
               </div>
-              <button
-                onClick={() => setIsScratchpadOpen(false)}
-                className="p-1 rounded-md text-serene-text-muted hover:text-serene-text-primary dark:hover:text-serene-text-darkPrimary"
-                title="Hide scratchpad"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
 
-            <div className="flex-1 py-3 flex flex-col min-h-0">
-              <textarea
-                value={scratchpadText}
-                onChange={(e) => onUpdateScratchpad(e.target.value)}
-                placeholder="Jot down quick thoughts, ideas, links, or meeting notes here alongside your tasks..."
-                className="w-full flex-1 p-3 bg-serene-surfaceAlt-light/60 dark:bg-serene-surfaceAlt-dark/60 border border-serene-border-light dark:border-serene-border-dark rounded-xl text-xs text-serene-text-primary dark:text-serene-text-darkPrimary placeholder:text-serene-text-muted resize-none focus:outline-none focus:ring-2 focus:ring-serene-primary/30 focus:border-serene-primary font-sans leading-relaxed"
-              />
-            </div>
+              <div className="flex-1 py-3 flex flex-col min-h-0">
+                <textarea
+                  value={scratchpadText}
+                  onChange={(e) => onUpdateScratchpad(e.target.value)}
+                  placeholder="Jot down quick thoughts, ideas, links, or meeting notes here alongside your tasks..."
+                  className="w-full flex-1 p-3 bg-serene-surfaceAlt-light/60 dark:bg-serene-surfaceAlt-dark/60 border border-serene-border-light dark:border-serene-border-dark rounded-xl text-xs text-serene-text-primary dark:text-serene-text-darkPrimary placeholder:text-serene-text-muted resize-none focus:outline-none focus:ring-2 focus:ring-serene-primary/30 focus:border-serene-primary font-sans leading-relaxed"
+                />
+              </div>
 
-            <div className="pt-2 text-[11px] text-serene-text-muted flex items-center justify-between border-t border-serene-border-light/60 dark:border-serene-border-dark/60">
-              <span>Auto-saved to storage</span>
-              <span>{scratchpadText.length} characters</span>
-            </div>
-          </aside>
+              <div className="pt-2 text-[11px] text-serene-text-muted flex items-center justify-between border-t border-serene-border-light/60 dark:border-serene-border-dark/60">
+                <span>Auto-saved to storage</span>
+                <span>{scratchpadText.length} characters</span>
+              </div>
+            </aside>
+          </>
         )}
       </div>
 

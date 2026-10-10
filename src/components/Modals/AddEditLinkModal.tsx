@@ -103,10 +103,10 @@ export const AddEditLinkModal: React.FC<AddEditLinkModalProps> = ({
             initial="initial"
             animate="animate"
             exit="exit"
-            className="relative w-full max-w-lg bg-white dark:bg-serene-surface-dark border border-serene-border-light dark:border-serene-border-dark rounded-2xl shadow-modal overflow-hidden z-10"
+            className="relative w-full max-w-lg max-h-[90vh] flex flex-col bg-white dark:bg-serene-surface-dark border border-serene-border-light dark:border-serene-border-dark rounded-2xl shadow-modal overflow-hidden z-10"
           >
         {/* Header */}
-        <div className="p-4 border-b border-serene-border-light dark:border-serene-border-dark flex items-center justify-between bg-serene-surfaceAlt-light/40 dark:bg-serene-surfaceAlt-dark/40">
+        <div className="p-4 border-b border-serene-border-light dark:border-serene-border-dark flex items-center justify-between bg-serene-surfaceAlt-light/40 dark:bg-serene-surfaceAlt-dark/40 shrink-0">
           <div className="flex items-center gap-2">
             <div className="p-1.5 rounded-lg bg-serene-primary-soft dark:bg-serene-primary/20 text-serene-primary dark:text-serene-primary-dark">
               <LinkIcon className="w-4 h-4" />
@@ -124,7 +124,7 @@ export const AddEditLinkModal: React.FC<AddEditLinkModalProps> = ({
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="p-5 space-y-4">
+        <form onSubmit={handleSubmit} className="p-4 sm:p-5 space-y-4 overflow-y-auto">
           {/* URL */}
           <div>
             <label className="block text-xs font-semibold text-serene-text-primary dark:text-serene-text-darkPrimary mb-1.5">
