@@ -125,3 +125,43 @@ export interface AppData {
     activeMode: 'auto' | 'work' | 'free';
   };
 }
+
+export type BookmarkClassificationConfidence = 'high' | 'medium' | 'low';
+
+export interface BookmarkClassificationRule {
+  id?: string;
+  pattern: string;
+  type: 'domain' | 'keyword' | 'folder';
+  folderId: string;
+  tag?: string;
+  confidence?: BookmarkClassificationConfidence;
+}
+
+export interface BookmarkClassificationResult {
+  folderId: string;
+  tags: string[];
+  matchedRule: string;
+  confidence: BookmarkClassificationConfidence;
+}
+
+export interface ParsedBookmark {
+  url: string;
+  title: string;
+  folderId: string;
+  tags: string[];
+  sourceFolder?: string;
+  addDate?: number;
+  matchedRule?: string;
+  confidence?: BookmarkClassificationConfidence;
+  isDuplicate?: boolean;
+  selected?: boolean;
+}
+
+export interface ImportBookmarkResult {
+  bookmarks: ParsedBookmark[];
+  totalCount: number;
+  newCount: number;
+  duplicateCount: number;
+  foldersDetected?: string[];
+  categoryDistribution?: Record<string, number>;
+}
