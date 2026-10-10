@@ -1,0 +1,35 @@
+{
+  "manifest_version": 3,
+  "name": "LaunchPAD Companion",
+  "version": "1.0.0",
+  "description": "Companion browser extension for LaunchPAD: real-time browser bookmark synchronization and auto-categorization.",
+  "permissions": [
+    "bookmarks",
+    "storage",
+    "tabs"
+  ],
+  "host_permissions": [
+    "http://localhost/*",
+    "http://127.0.0.1/*",
+    "https://*.github.io/*"
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "http://localhost/*",
+        "http://127.0.0.1/*",
+        "https://*.github.io/*"
+      ],
+      "js": ["content.js"],
+      "run_at": "document_start"
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "LaunchPAD Companion"
+  }
+}
