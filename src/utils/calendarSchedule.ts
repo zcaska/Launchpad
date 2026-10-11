@@ -1,4 +1,4 @@
-import { CalendarEventItem, CalendarScheduleSummary } from '../types';
+import { CalendarEventItem, CalendarScheduleSummary, QuickNote } from '../types';
 
 /**
  * Merges overlapping or contiguous time intervals: O(N log N).
@@ -167,4 +167,104 @@ export function calculateTrueFocusSurplus(
     surplusMinutes,
     status,
   };
+}
+
+/**
+ * Helper to identify whether a note is a calendar task (current or legacy).
+ */
+export function isCalendarTask(n: QuickNote): boolean {
+  return (
+    n.source === 'google_calendar' ||
+    Boolean(n.eventId) ||
+    (typeof n.id === 'string' && n.id.startsWith('cal-task-'))
+  );
+}
+
+/**
+ * Synchronizes Google Calendar events into LaunchPAD QuickNotes.
+ * - Converts each active calendar event to a task with matching title, description, expected time, deadline, and Google Calendar link.
+ * - Preserves existing completion status (`isDone`) of already synced tasks.
+ * - Removes synced tasks that are no longer present in today's active calendar events (e.g. deleted/moved).
+ * - Leaves purely user-created local tasks completely intact (filters out legacy or untagged calendar items).
+ */
+export function syncCalendarEventsToQuickNotes(
+  currentNotes: QuickNote[] = [],
+  events: CalendarEventItem[] = []
+): QuickNote[] {
+  // Keep all purely manual/local notes (filter out any calendar notes)
+  const localNotes = currentNotes.filter((n) => !isCalendarTask(n));
+
+  // Existing synced notes mapped by eventId and stripped id
+  const existingSyncedMap = new Map<string, QuickNote>();
+  for (const n of currentNotes) {
+    if (isCalendarTask(n)) {
+      if (n.eventId) {
+        existingSyncedMap.set(n.eventId, n);
+      }
+      if (typeof n.id === 'string') {
+        const strippedId = n.id.replace(/^cal-task-/, '');
+        if (strippedId) {
+          existingSyncedMap.set(strippedId, n);
+        }
+      }
+    }
+  }
+
+  // Active non-cancelled, timed calendar events for today (exclude all-day events)
+  const activeEvents = events.filter((e) => !e.isAllDay && e.status !== 'cancelled');
+
+  const syncedNotes: QuickNote[] = activeEvents.map((evt) => {
+    const existing = existingSyncedMap.get(evt.id);
+
+    // Format deadline from start time (e.g. "YYYY-MM-DD HH:MM")
+    let deadlineStr: string | undefined = undefined;
+    if (evt.startTime) {
+      try {
+        const d = new Date(evt.startTime);
+        if (!isNaN(d.getTime())) {
+          const yyyy = d.getFullYear();
+          const mm = String(d.getMonth() + 1).padStart(2, '0');
+          const dd = String(d.getDate()).padStart(2, '0');
+          const hh = String(d.getHours()).padStart(2, '0');
+          const min = String(d.getMinutes()).padStart(2, '0');
+          deadlineStr = `${yyyy}-${mm}-${dd} ${hh}:${min}`;
+        }
+      } catch {
+        // Fallback
+      }
+    }
+
+    const duration = evt.durationMinutes > 0 ? evt.durationMinutes : 30;
+
+    // Attached Google Calendar link
+    const attachedUrls = evt.htmlLink
+      ? [
+          {
+            id: `cal-link-${evt.id}`,
+            title: 'Google Calendar Event',
+            url: evt.htmlLink,
+          },
+        ]
+      : [];
+
+    const defaultIsDone = Boolean(evt.endMs && evt.endMs <= Date.now());
+
+    return {
+      id: existing ? existing.id : `cal-task-${evt.id}`,
+      eventId: evt.id,
+      source: 'google_calendar' as const,
+      text: evt.summary || 'Scheduled Calendar Event',
+      description: evt.description || undefined,
+      isDone: existing ? existing.isDone : defaultIsDone,
+      createdAt: existing ? existing.createdAt : evt.startMs || Date.now(),
+      durationMinutes: duration,
+      deadline: deadlineStr,
+      priority: existing?.priority || 'medium',
+      attachedUrls: attachedUrls.length > 0 ? attachedUrls : undefined,
+      subtasks: existing?.subtasks || [],
+    };
+  });
+
+  // Preserve ordering: synced calendar tasks followed by local notes
+  return [...syncedNotes, ...localNotes];
 }

@@ -10,7 +10,8 @@ import {
   ChevronRight,
   ListTodo,
   Plus,
-  RotateCw
+  RotateCw,
+  Calendar
 } from 'lucide-react';
 import { DailyFocus, QuickNote, CalendarScheduleSummary } from '../../types';
 import { CALM_QUOTES } from '../../data/seedData';
@@ -205,11 +206,24 @@ export const FocusHeroBanner: React.FC<FocusHeroBannerProps> = ({
                     <p className="text-sm font-semibold text-serene-text-primary dark:text-serene-text-darkPrimary break-words leading-snug">
                       {activeTask.text}
                     </p>
+                    {activeTask.description && (
+                      <p className="text-xs text-serene-text-secondary dark:text-serene-text-darkSecondary mt-0.5 line-clamp-2 leading-relaxed">
+                        {activeTask.description}
+                      </p>
+                    )}
                   </div>
                 </div>
 
                 {/* Badges row: Estimated Time, Subtasks indicator, Attached URLs */}
                 <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                  {/* Google Calendar badge */}
+                  {activeTask.source === 'google_calendar' && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-sky-50 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800/50">
+                      <Calendar className="w-2.5 h-2.5" />
+                      Calendar Event
+                    </span>
+                  )}
+
                   {/* Estimated Time badge */}
                   {activeTask.durationMinutes && (
                     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-serene-primary-soft dark:bg-serene-primary/20 text-serene-primary dark:text-serene-primary-dark">

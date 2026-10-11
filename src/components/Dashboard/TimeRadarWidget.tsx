@@ -47,7 +47,7 @@ export const TimeRadarWidget: React.FC<TimeRadarWidgetProps> = ({
   const trueFocus = calculateTrueFocusSurplus(
     timeRemaining.totalMinutes,
     busyMinutes,
-    taskLoad.pendingMinutes
+    taskLoad.localPendingMinutes ?? taskLoad.pendingMinutes
   );
 
   const displayStatus = busyMinutes > 0 ? trueFocus.status : buffer.status;

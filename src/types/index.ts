@@ -51,6 +51,7 @@ export interface Subtask {
 export interface QuickNote {
   id: string;
   text: string;
+  description?: string;
   isDone: boolean;
   createdAt: number;
   durationMinutes?: number; // e.g. 15, 30, 45, 60, 90, 120
@@ -58,6 +59,8 @@ export interface QuickNote {
   priority?: TaskPriority;
   attachedUrls?: TaskUrl[];
   subtasks?: Subtask[];
+  source?: 'local' | 'google_calendar';
+  eventId?: string; // Google Calendar event ID if synced
 }
 
 export interface DailyFocus {

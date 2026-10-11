@@ -60,6 +60,8 @@ export interface TaskLoadSummary {
   completedCount: number;
   pendingMinutes: number;
   completedMinutes: number;
+  localPendingMinutes: number;
+  calendarPendingMinutes: number;
   formattedPending: string;
   formattedCompleted: string;
 }
@@ -72,6 +74,8 @@ export function calculateTaskLoad(
   let completedMinutes = 0;
   let pendingCount = 0;
   let completedCount = 0;
+  let localPendingMinutes = 0;
+  let calendarPendingMinutes = 0;
 
   // Include primary daily focus if not empty
   if (dailyFocus && dailyFocus.goal.trim()) {
@@ -82,6 +86,7 @@ export function calculateTaskLoad(
     } else {
       pendingMinutes += focusDuration;
       pendingCount += 1;
+      localPendingMinutes += focusDuration;
     }
   }
 
@@ -94,6 +99,11 @@ export function calculateTaskLoad(
     } else {
       pendingMinutes += duration;
       pendingCount += 1;
+      if (note.source === 'google_calendar') {
+        calendarPendingMinutes += duration;
+      } else {
+        localPendingMinutes += duration;
+      }
     }
   });
 
@@ -102,6 +112,8 @@ export function calculateTaskLoad(
     completedCount,
     pendingMinutes,
     completedMinutes,
+    localPendingMinutes,
+    calendarPendingMinutes,
     formattedPending: formatMinutesToHours(pendingMinutes),
     formattedCompleted: formatMinutesToHours(completedMinutes),
   };

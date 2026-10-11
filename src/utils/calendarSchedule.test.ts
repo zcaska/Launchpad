@@ -3,6 +3,7 @@ import {
   normalizeGoogleCalendarEvent,
   calculateCalendarScheduleSummary,
   calculateTrueFocusSurplus,
+  syncCalendarEventsToQuickNotes,
 } from './calendarSchedule';
 import { CalendarEventItem } from '../types';
 
@@ -173,6 +174,121 @@ console.log('--- Testing calendarSchedule.ts ---');
   // 120m day remaining, 60m meetings, 90m tasks -> net available = 60m, surplus = -30m -> overloaded
   const overRes = calculateTrueFocusSurplus(120, 60, 90);
   assertEqual(overRes.status, 'overloaded', 'calculateTrueFocusSurplus: status is overloaded when surplus < 0');
+}
+
+// 5. Test syncCalendarEventsToQuickNotes
+{
+  const localTask = {
+    id: 'local-1',
+    text: 'Local Task 1',
+    isDone: false,
+    createdAt: 1000,
+    durationMinutes: 45,
+    source: 'local' as const,
+  };
+
+  const calEvent: CalendarEventItem = {
+    id: 'cal-conf-1',
+    summary: 'Conference Meeting',
+    description: 'AI summit Meeting at Pune',
+    startTime: '2026-10-11T15:00:00Z',
+    endTime: '2026-10-11T17:00:00Z',
+    startMs: new Date('2026-10-11T15:00:00Z').getTime(),
+    endMs: new Date('2026-10-11T17:00:00Z').getTime(),
+    durationMinutes: 120, // 2 hours
+    isAllDay: false,
+    transparency: 'opaque',
+    status: 'confirmed',
+    htmlLink: 'https://calendar.google.com/event?eid=123',
+  };
+
+  const syncedTasks = syncCalendarEventsToQuickNotes([localTask], [calEvent]);
+
+  assertEqual(syncedTasks.length, 2, 'syncCalendarEventsToQuickNotes: returns 2 tasks (1 synced + 1 local)');
+  const confTask = syncedTasks.find((t) => t.eventId === 'cal-conf-1');
+  assertEqual(confTask?.text, 'Conference Meeting', 'syncCalendarEventsToQuickNotes: syncs event summary as title');
+  assertEqual(confTask?.description, 'AI summit Meeting at Pune', 'syncCalendarEventsToQuickNotes: syncs event description');
+  assertEqual(confTask?.durationMinutes, 120, 'syncCalendarEventsToQuickNotes: syncs expected duration of 2 hrs (120m)');
+  assertEqual(confTask?.source, 'google_calendar', 'syncCalendarEventsToQuickNotes: marks source as google_calendar');
+  assertEqual(confTask?.attachedUrls?.[0]?.url, 'https://calendar.google.com/event?eid=123', 'syncCalendarEventsToQuickNotes: includes Google Calendar event link');
+
+  // Test updating event updates task without losing existing local state
+  confTask!.isDone = true;
+  const updatedEvent: CalendarEventItem = {
+    ...calEvent,
+    summary: 'Updated Conference Meeting',
+    description: 'Updated description for AI summit',
+  };
+  const reSyncedTasks = syncCalendarEventsToQuickNotes(syncedTasks, [updatedEvent]);
+  const updatedTask = reSyncedTasks.find((t) => t.eventId === 'cal-conf-1');
+  assertEqual(updatedTask?.text, 'Updated Conference Meeting', 'syncCalendarEventsToQuickNotes: updates title on re-sync');
+  assertEqual(updatedTask?.description, 'Updated description for AI summit', 'syncCalendarEventsToQuickNotes: updates description on re-sync');
+  assertEqual(updatedTask?.isDone, true, 'syncCalendarEventsToQuickNotes: preserves isDone status across syncs');
+
+  // Test that all-day events (isAllDay: true) are filtered out and not converted to tasks
+  const allDayHoliday: CalendarEventItem = {
+    id: 'cal-holiday-1',
+    summary: 'National Holiday',
+    startTime: '2026-10-11',
+    endTime: '2026-10-12',
+    startMs: new Date('2026-10-11T00:00:00Z').getTime(),
+    endMs: new Date('2026-10-12T00:00:00Z').getTime(),
+    durationMinutes: 1440,
+    isAllDay: true,
+    transparency: 'transparent',
+    status: 'confirmed',
+  };
+  const tasksWithAllDay = syncCalendarEventsToQuickNotes([localTask], [calEvent, allDayHoliday]);
+  assertEqual(tasksWithAllDay.length, 2, 'syncCalendarEventsToQuickNotes: ignores all-day events (isAllDay: true)');
+  const holidayTask = tasksWithAllDay.find((t) => t.eventId === 'cal-holiday-1');
+  assertEqual(holidayTask, undefined, 'syncCalendarEventsToQuickNotes: all-day event is NOT converted to task');
+
+  // Test legacy calendar task deduplication (where existing note had id cal-task-123 but no source field)
+  const legacyTask = {
+    id: 'cal-task-event-legacy-99',
+    text: 'Legacy Meeting Task',
+    isDone: true,
+    priority: 'urgent' as const,
+    createdAt: 500,
+    durationMinutes: 30,
+    // Note: no source: 'google_calendar' and no eventId
+  };
+  const legacySyncEvent: CalendarEventItem = {
+    id: 'event-legacy-99',
+    summary: 'Legacy Meeting Event',
+    startTime: '2026-10-11T18:00:00Z',
+    endTime: '2026-10-11T18:30:00Z',
+    startMs: new Date('2026-10-11T18:00:00Z').getTime(),
+    endMs: new Date('2026-10-11T18:30:00Z').getTime(),
+    durationMinutes: 30,
+    isAllDay: false,
+    transparency: 'opaque',
+    status: 'confirmed',
+  };
+
+  const tasksWithLegacy = syncCalendarEventsToQuickNotes([legacyTask, localTask], [legacySyncEvent]);
+  assertEqual(tasksWithLegacy.length, 2, 'syncCalendarEventsToQuickNotes: legacy calendar task is deduplicated and not copied into localNotes');
+  const matchedLegacy = tasksWithLegacy.find((t) => t.eventId === 'event-legacy-99');
+  assert(matchedLegacy !== undefined, 'syncCalendarEventsToQuickNotes: correctly mapped legacy calendar event');
+  assertEqual(matchedLegacy?.isDone, true, 'syncCalendarEventsToQuickNotes: preserves isDone from legacy task');
+  assertEqual(matchedLegacy?.priority, 'urgent', 'syncCalendarEventsToQuickNotes: preserves priority from legacy task');
+
+  // Test past calendar event auto-completion (endMs <= Date.now())
+  const pastEvent: CalendarEventItem = {
+    id: 'past-event-1',
+    summary: 'Morning Standup (Already Finished)',
+    startTime: new Date(Date.now() - 7200000).toISOString(),
+    endTime: new Date(Date.now() - 3600000).toISOString(),
+    startMs: Date.now() - 7200000,
+    endMs: Date.now() - 3600000, // Ended 1 hour ago
+    durationMinutes: 60,
+    isAllDay: false,
+    transparency: 'opaque',
+    status: 'confirmed',
+  };
+  const tasksWithPast = syncCalendarEventsToQuickNotes([], [pastEvent]);
+  assertEqual(tasksWithPast.length, 1, 'syncCalendarEventsToQuickNotes: synced 1 past event');
+  assertEqual(tasksWithPast[0].isDone, true, 'syncCalendarEventsToQuickNotes: past event defaults isDone to true');
 }
 
 if (failures === 0) {

@@ -35,11 +35,12 @@ import { BookmarkImportModal } from './components/Modals/BookmarkImportModal';
 import { ConfirmDeleteModal } from './components/Modals/ConfirmDeleteModal';
 import { FolderActionDialog } from './components/Modals/FolderActionDialog';
 import { classifyBookmark } from './utils/bookmarkClassifier';
-import { calculateCalendarScheduleSummary } from './utils/calendarSchedule';
+import { calculateCalendarScheduleSummary, syncCalendarEventsToQuickNotes } from './utils/calendarSchedule';
 import { 
   fetchTodayGoogleEvents, 
   getInMemoryGoogleToken, 
-  isGoogleTokenExpired 
+  isGoogleTokenExpired,
+  requestSilentGoogleAccessToken
 } from './services/googleCalendarService';
 import { normalizeUrl, createCustomFolder, isGenericBrowserFolder } from './utils/bookmarkParser';
 import { initBookmarkSyncChannel, BookmarkSyncPayload } from './utils/bookmarkSyncChannel';
@@ -323,7 +324,12 @@ export function App() {
     const gcal = appData.settings.googleCalendar;
     if (!gcal?.enabled || !gcal.clientId) return;
 
-    const token = getInMemoryGoogleToken();
+    let token = getInMemoryGoogleToken();
+    if (!token) {
+      // Attempt silent re-authentication via Google Identity Services
+      token = await requestSilentGoogleAccessToken(gcal.clientId);
+    }
+
     if (!token) {
       if (!silent) {
         setIsSettingsModalOpen(true);
@@ -336,9 +342,11 @@ export function App() {
       setIsSyncingCalendar(true);
       const events = await fetchTodayGoogleEvents(token, gcal.calendarId || 'primary');
       setAppData((prev) => {
+        const updatedNotes = syncCalendarEventsToQuickNotes(prev.quickNotes, events);
         const updated = {
           ...prev,
           calendarEvents: events,
+          quickNotes: updatedNotes,
           settings: {
             ...prev.settings,
             googleCalendar: {

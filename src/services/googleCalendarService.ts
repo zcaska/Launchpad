@@ -1,25 +1,63 @@
 import { CalendarEventItem } from '../types';
 import { normalizeGoogleCalendarEvent } from '../utils/calendarSchedule';
 
-// Strictly in-memory token holder (NEVER stored in localStorage)
+const GCAL_TOKEN_STORAGE_KEY = 'launchpad_gcal_token_v1';
+
+// In-memory token cache backed by localStorage
 let memoryAccessToken: string | null = null;
 let memoryTokenExpiresAt: number = 0;
 
 export function getInMemoryGoogleToken(): string | null {
-  if (!memoryAccessToken || Date.now() >= memoryTokenExpiresAt - 30000) {
-    return null; // Expired or missing
+  // Check memory first
+  if (memoryAccessToken && Date.now() < memoryTokenExpiresAt - 30000) {
+    return memoryAccessToken;
   }
-  return memoryAccessToken;
+
+  // Check localStorage if memory is missing or expired
+  try {
+    const raw = typeof localStorage !== 'undefined' ? localStorage.getItem(GCAL_TOKEN_STORAGE_KEY) : null;
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed?.token && typeof parsed.expiresAt === 'number') {
+        if (Date.now() < parsed.expiresAt - 30000) {
+          memoryAccessToken = parsed.token;
+          memoryTokenExpiresAt = parsed.expiresAt;
+          return memoryAccessToken;
+        } else {
+          // Stored token expired, clear it
+          localStorage.removeItem(GCAL_TOKEN_STORAGE_KEY);
+        }
+      }
+    }
+  } catch {
+    // Ignore storage parsing errors
+  }
+
+  return null;
 }
 
 export function setInMemoryGoogleToken(token: string | null, expiresInSeconds: number = 3599): void {
   memoryAccessToken = token;
   memoryTokenExpiresAt = token ? Date.now() + expiresInSeconds * 1000 : 0;
+
+  try {
+    if (typeof localStorage !== 'undefined') {
+      if (token) {
+        localStorage.setItem(
+          GCAL_TOKEN_STORAGE_KEY,
+          JSON.stringify({ token, expiresAt: memoryTokenExpiresAt })
+        );
+      } else {
+        localStorage.removeItem(GCAL_TOKEN_STORAGE_KEY);
+      }
+    }
+  } catch {
+    // Ignore storage quota/permission errors
+  }
 }
 
 export function isGoogleTokenExpired(): boolean {
-  if (!memoryAccessToken) return true;
-  return Date.now() >= memoryTokenExpiresAt - 30000;
+  return getInMemoryGoogleToken() === null;
 }
 
 /**
@@ -49,10 +87,11 @@ export function loadGoogleIdentityScript(): Promise<void> {
 }
 
 /**
- * Requests an in-memory OAuth 2.0 access token via Google Identity Services token client.
+ * Requests an OAuth 2.0 access token via Google Identity Services token client.
  * Requests ONLY calendar.events.readonly.
+ * Allows an optional prompt parameter (defaulting to '' for silent re-auth).
  */
-export async function requestGoogleAccessToken(clientId: string): Promise<string> {
+export async function requestGoogleAccessToken(clientId: string, prompt: string = ''): Promise<string> {
   if (!clientId.trim()) {
     throw new Error('Please enter a valid Google OAuth Client ID in Settings.');
   }
@@ -84,7 +123,7 @@ export async function requestGoogleAccessToken(clientId: string): Promise<string
         },
       });
 
-      client.requestAccessToken({ prompt: '' });
+      client.requestAccessToken({ prompt });
     } catch (err) {
       reject(err);
     }
@@ -92,10 +131,24 @@ export async function requestGoogleAccessToken(clientId: string): Promise<string
 }
 
 /**
- * Revokes authorization on Google servers and clears in-memory token.
+ * Attempts client.requestAccessToken({ prompt: '' }) silently.
+ * Resolves with the access token if successful, or null if silent auth fails.
+ */
+export async function requestSilentGoogleAccessToken(clientId: string): Promise<string | null> {
+  try {
+    const token = await requestGoogleAccessToken(clientId, '');
+    return token;
+  } catch (err) {
+    console.debug('Silent Google token request failed or required interaction:', err);
+    return null;
+  }
+}
+
+/**
+ * Revokes authorization on Google servers and clears in-memory and persisted tokens.
  */
 export async function revokeGoogleAuthorization(): Promise<void> {
-  const token = memoryAccessToken;
+  const token = memoryAccessToken || getInMemoryGoogleToken();
   setInMemoryGoogleToken(null);
 
   if (token && (window as any).google?.accounts?.oauth2?.revoke) {

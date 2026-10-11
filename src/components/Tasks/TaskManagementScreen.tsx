@@ -36,7 +36,7 @@ export interface TaskManagementScreenProps {
   isTokenExpired?: boolean;
 }
 
-type FilterTab = 'All' | 'Urgent' | 'High Priority' | 'Medium' | 'Low' | 'Due Soon' | 'Completed';
+type FilterTab = 'All' | 'Calendar Events' | 'Urgent' | 'High Priority' | 'Medium' | 'Low' | 'Due Soon' | 'Completed';
 
 export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
   notes,
@@ -69,6 +69,7 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
 
   // Form Fields
   const [formTitle, setFormTitle] = useState('');
+  const [formDescription, setFormDescription] = useState('');
   const [formDuration, setFormDuration] = useState<number>(30);
   const [formPriority, setFormPriority] = useState<TaskPriority>('medium');
   const [formDeadline, setFormDeadline] = useState('');
@@ -238,6 +239,7 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
   const handleOpenCreateForm = () => {
     setEditingTaskId(null);
     setFormTitle('');
+    setFormDescription('');
     setFormDuration(30);
     setFormPriority('medium');
     setFormDeadline('');
@@ -254,6 +256,7 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
   const handleOpenEditForm = (task: QuickNote) => {
     setEditingTaskId(task.id);
     setFormTitle(task.text);
+    setFormDescription(task.description || '');
     setFormDuration(task.durationMinutes || 30);
     setFormPriority(task.priority || 'medium');
     setFormDeadline(task.deadline || '');
@@ -323,6 +326,7 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
             ? {
                 ...n,
                 text: formTitle.trim(),
+                description: formDescription.trim() || undefined,
                 durationMinutes: formDuration,
                 priority: formPriority,
                 deadline: formDeadline.trim() || undefined,
@@ -336,6 +340,7 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
       const newTask: QuickNote = {
         id: `task-${Date.now()}`,
         text: formTitle.trim(),
+        description: formDescription.trim() || undefined,
         isDone: false,
         createdAt: Date.now(),
         durationMinutes: formDuration,
@@ -382,6 +387,7 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
       if (searchQuery.trim()) {
         const query = searchQuery.toLowerCase();
         const matchesTitle = task.text.toLowerCase().includes(query);
+        const matchesDesc = task.description ? task.description.toLowerCase().includes(query) : false;
         const matchesSubtasks = task.subtasks?.some((st) =>
           st.text.toLowerCase().includes(query)
         );
@@ -390,7 +396,7 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
             u.url.toLowerCase().includes(query) ||
             (u.title && u.title.toLowerCase().includes(query))
         );
-        if (!matchesTitle && !matchesSubtasks && !matchesUrls) {
+        if (!matchesTitle && !matchesDesc && !matchesSubtasks && !matchesUrls) {
           return false;
         }
       }
@@ -399,16 +405,18 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
       switch (activeTab) {
         case 'All':
           return true;
+        case 'Calendar Events':
+          return task.source === 'google_calendar';
         case 'Urgent':
-          return !task.isDone && task.priority === 'urgent';
+          return !task.isDone && task.priority === 'urgent' && task.source !== 'google_calendar';
         case 'High Priority':
-          return !task.isDone && task.priority === 'high';
+          return !task.isDone && task.priority === 'high' && task.source !== 'google_calendar';
         case 'Medium':
-          return !task.isDone && task.priority === 'medium';
+          return !task.isDone && task.priority === 'medium' && task.source !== 'google_calendar';
         case 'Low':
-          return !task.isDone && task.priority === 'low';
+          return !task.isDone && task.priority === 'low' && task.source !== 'google_calendar';
         case 'Due Soon': {
-          if (task.isDone || !task.deadline) return false;
+          if (task.isDone || !task.deadline || task.source === 'google_calendar') return false;
           const status = getDeadlineStatus(task.deadline);
           return !!(status?.isDueSoon || status?.isOverdue || status?.isDueToday);
         }
@@ -420,6 +428,45 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
     });
   }, [notes, searchQuery, activeTab]);
 
+  // Tab counts computation
+  const tabCounts = useMemo(() => {
+    const counts: Record<FilterTab, number> = {
+      'All': notes.length,
+      'Calendar Events': 0,
+      'Urgent': 0,
+      'High Priority': 0,
+      'Medium': 0,
+      'Low': 0,
+      'Due Soon': 0,
+      'Completed': 0,
+    };
+
+    notes.forEach((task) => {
+      if (task.source === 'google_calendar') {
+        counts['Calendar Events']++;
+      }
+      if (task.isDone) {
+        counts['Completed']++;
+      } else {
+        if (task.source !== 'google_calendar') {
+          if (task.priority === 'urgent') counts['Urgent']++;
+          else if (task.priority === 'high') counts['High Priority']++;
+          else if (task.priority === 'medium') counts['Medium']++;
+          else if (task.priority === 'low') counts['Low']++;
+
+          if (task.deadline) {
+            const status = getDeadlineStatus(task.deadline);
+            if (status?.isDueSoon || status?.isOverdue || status?.isDueToday) {
+              counts['Due Soon']++;
+            }
+          }
+        }
+      }
+    });
+
+    return counts;
+  }, [notes]);
+
   // Tab Badge Style reflecting nature
   const getTabBadgeStyle = (tab: FilterTab, isActive: boolean) => {
     switch (tab) {
@@ -427,6 +474,10 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
         return isActive
           ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 font-semibold shadow-xs'
           : 'bg-slate-100 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-200/80 dark:hover:bg-slate-700';
+      case 'Calendar Events':
+        return isActive
+          ? 'bg-sky-600 text-white font-semibold shadow-xs ring-2 ring-sky-400/30'
+          : 'bg-sky-50/90 dark:bg-sky-950/40 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-900/60 hover:bg-sky-100 dark:hover:bg-sky-900/60';
       case 'Urgent':
         return isActive
           ? 'bg-red-600 text-white font-bold shadow-xs ring-2 ring-red-400/40'
@@ -573,17 +624,28 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
         <div className="w-full min-w-0 flex flex-col sm:flex-row sm:items-center justify-between gap-3 mt-3.5 pt-3 border-t border-serene-border-light/60 dark:border-serene-border-dark/60">
           {/* Filter Tabs Navigation with nature-reflecting colors */}
           <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 text-xs no-scrollbar min-w-0 flex-1">
-          {(['All', 'Urgent', 'High Priority', 'Medium', 'Low', 'Due Soon', 'Completed'] as FilterTab[]).map(
+          {(['All', 'Calendar Events', 'Urgent', 'High Priority', 'Medium', 'Low', 'Due Soon', 'Completed'] as FilterTab[]).map(
             (tab) => {
               const isActive = activeTab === tab;
+              const count = tabCounts[tab] ?? 0;
               return (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
                   className={`px-3 py-1.5 rounded-xl font-medium shrink-0 transition-all flex items-center gap-1.5 ${getTabBadgeStyle(tab, isActive)}`}
                 >
+                  {tab === 'Calendar Events' && <Calendar className="w-3 h-3 shrink-0" />}
                   {tab === 'Urgent' && <AlertTriangle className="w-3 h-3 shrink-0" />}
                   <span>{tab}</span>
+                  <span
+                    className={`ml-0.5 px-1.5 py-0.2 rounded-full text-[10px] font-bold leading-tight ${
+                      isActive
+                        ? 'bg-white/25 text-inherit'
+                        : 'bg-black/10 dark:bg-white/10 text-inherit'
+                    }`}
+                  >
+                    {count}
+                  </span>
                 </button>
               );
             }
@@ -676,15 +738,30 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
                           </button>
                           
                           <div className="flex-1 min-w-0">
-                            <h3
-                              className={`text-sm sm:text-base font-semibold text-serene-text-primary dark:text-serene-text-darkPrimary leading-snug break-words ${
-                                task.isDone
-                                  ? 'line-through text-serene-text-muted dark:text-serene-text-darkMuted'
-                                  : ''
-                              }`}
-                            >
-                              {task.text}
-                            </h3>
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <h3
+                                className={`text-sm sm:text-base font-semibold text-serene-text-primary dark:text-serene-text-darkPrimary leading-snug break-words ${
+                                  task.isDone
+                                    ? 'line-through text-serene-text-muted dark:text-serene-text-darkMuted'
+                                    : ''
+                                }`}
+                              >
+                                {task.text}
+                              </h3>
+                              {task.source === 'google_calendar' && (
+                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-sky-100 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800/50">
+                                  <Calendar className="w-2.5 h-2.5" />
+                                  <span>Google Calendar</span>
+                                </span>
+                              )}
+                            </div>
+                            {task.description && (
+                              <p className={`text-xs text-serene-text-secondary dark:text-serene-text-darkSecondary mt-1 leading-relaxed break-words whitespace-pre-line ${
+                                task.isDone ? 'line-through opacity-70' : ''
+                              }`}>
+                                {task.description}
+                              </p>
+                            )}
                           </div>
                         </div>
 
@@ -973,6 +1050,20 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
                   onChange={(e) => setFormTitle(e.target.value)}
                   placeholder="e.g. Finalize architectural diagram or write unit tests"
                   className="w-full px-3.5 py-2 bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark border border-serene-border-light dark:border-serene-border-dark rounded-xl text-sm text-serene-text-primary dark:text-serene-text-darkPrimary placeholder:text-serene-text-muted focus:outline-none focus:ring-2 focus:ring-serene-primary/40 focus:border-serene-primary"
+                />
+              </div>
+
+              {/* Description input */}
+              <div>
+                <label className="block text-xs font-semibold text-serene-text-secondary dark:text-serene-text-darkSecondary mb-1.5">
+                  Description / Agenda Notes <span className="text-[11px] font-normal text-serene-text-muted">(optional)</span>
+                </label>
+                <textarea
+                  rows={2}
+                  value={formDescription}
+                  onChange={(e) => setFormDescription(e.target.value)}
+                  placeholder="Additional context, meeting notes, agenda, or location..."
+                  className="w-full px-3.5 py-2 bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark border border-serene-border-light dark:border-serene-border-dark rounded-xl text-xs text-serene-text-primary dark:text-serene-text-darkPrimary placeholder:text-serene-text-muted focus:outline-none focus:ring-2 focus:ring-serene-primary/40 focus:border-serene-primary resize-y"
                 />
               </div>
 
