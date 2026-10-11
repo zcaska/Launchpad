@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Layers, Globe, Star, Edit2, Trash2, ChevronRight } from 'lucide-react';
+import { Layers, Star, Edit2, Trash2, ChevronRight } from 'lucide-react';
 import { DomainGroup } from '../../utils/domainCluster';
 import { LinkItem, Folder } from '../../types';
+import { FaviconImage } from '../Common/FaviconImage';
 import { MoveToFolderMenu } from './MoveToFolderMenu';
 
 interface DomainClusterTileProps {
@@ -26,7 +27,6 @@ export const DomainClusterTile: React.FC<DomainClusterTileProps> = ({
   openInNewTab = true,
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
-  const [imgError, setImgError] = useState(false);
 
   return (
     <div className="flex flex-col">
@@ -41,16 +41,13 @@ export const DomainClusterTile: React.FC<DomainClusterTileProps> = ({
         } hover:scale-105 active:scale-95`}
         title={`${group.displayName} (${group.links.length} bookmarks) - Click to view sub-pages`}
       >
-        {!imgError && group.faviconUrl ? (
-          <img
-            src={group.faviconUrl}
-            alt=""
-            className="w-6 h-6 object-contain pointer-events-none"
-            onError={() => setImgError(true)}
-          />
-        ) : (
-          <Globe className="w-5 h-5 text-serene-text-muted" />
-        )}
+        <FaviconImage
+          url={group.links[0]?.url || group.domain}
+          alt=""
+          size={48}
+          className="w-6 h-6 object-contain pointer-events-none"
+          iconClassName="w-5 h-5 text-serene-text-secondary dark:text-serene-text-darkSecondary"
+        />
 
         {/* Multi-item badge */}
         <span className="absolute -top-1 -right-1 min-w-4 h-4 px-1 rounded-full bg-serene-primary text-white text-[9px] font-mono font-bold flex items-center justify-center shadow-xs border border-white dark:border-serene-surface-dark">
@@ -69,7 +66,7 @@ export const DomainClusterTile: React.FC<DomainClusterTileProps> = ({
               <h4 className="text-xs font-bold text-serene-text-primary dark:text-serene-text-darkPrimary">
                 {group.displayName} Repositories & Sub-pages
               </h4>
-              <span className="text-[10px] font-mono text-serene-text-muted">
+              <span className="text-[10px] font-mono text-serene-text-secondary dark:text-serene-text-darkSecondary font-medium">
                 ({group.links.length} items)
               </span>
             </div>
@@ -101,12 +98,12 @@ export const DomainClusterTile: React.FC<DomainClusterTileProps> = ({
                       {link.title}
                     </div>
                     {link.description && (
-                      <p className="text-[10px] text-serene-text-muted truncate mt-0.5">
+                      <p className="text-[10px] text-serene-text-secondary dark:text-serene-text-darkSecondary truncate mt-0.5 font-normal">
                         {link.description}
                       </p>
                     )}
                   </div>
-                  <ChevronRight className="w-3.5 h-3.5 text-serene-text-muted group-hover:text-serene-primary shrink-0 transition-transform group-hover:translate-x-0.5" />
+                  <ChevronRight className="w-3.5 h-3.5 text-serene-text-secondary dark:text-serene-text-darkSecondary group-hover:text-serene-primary dark:group-hover:text-serene-primary-dark shrink-0 transition-transform group-hover:translate-x-0.5" />
                 </a>
 
                 <div className="flex items-center gap-1 shrink-0 pl-1 border-l border-serene-border-light/40 dark:border-serene-border-dark/40">

@@ -1,4 +1,5 @@
 import { Folder, LinkItem, FolderTreeNode } from '../types';
+import { linkOrderKey } from './sidebarReorder';
 
 /**
  * Builds a multi-level hierarchical folder tree from flat folder and link arrays.
@@ -40,6 +41,8 @@ export function buildFolderTree(
     list.push(link);
     linksByFolder.set(link.folderId, list);
   });
+  // Honour manual sidebar ordering; legacy links without `order` keep createdAt order.
+  linksByFolder.forEach((list) => list.sort((a, b) => linkOrderKey(a) - linkOrderKey(b)));
 
   // Sort helper
   const sortFolders = (a: Folder, b: Folder) => (a.order ?? 0) - (b.order ?? 0) || a.name.localeCompare(b.name);

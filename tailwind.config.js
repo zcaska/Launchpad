@@ -41,10 +41,10 @@ export default {
           text: {
             primary: '#1b1c1e',
             secondary: '#5f6764',
-            muted: '#8b9490',
+            muted: '#54625e',
             darkPrimary: '#f2f1f4',
             darkSecondary: '#9ca7a3',
-            darkMuted: '#687370',
+            darkMuted: '#8e9c97',
           },
           accent: {
             amber: '#d97706',

@@ -8,11 +8,11 @@ import {
   Trash2, 
   Copy, 
   Check, 
-  Globe,
   FolderInput
 } from 'lucide-react';
 import { LinkItem, Folder } from '../../types';
-import { extractDomain, getFaviconUrl, formatUrl } from '../../utils/favicon';
+import { extractDomain, formatUrl } from '../../utils/favicon';
+import { FaviconImage } from '../Common/FaviconImage';
 
 interface LinkCardProps {
   link: LinkItem;
@@ -37,10 +37,8 @@ export const LinkCard: React.FC<LinkCardProps> = ({
 }) => {
   const [copied, setCopied] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
-  const [imgError, setImgError] = useState(false);
 
   const domain = extractDomain(link.url);
-  const faviconUrl = getFaviconUrl(link.url);
   const fullUrl = formatUrl(link.url);
 
   const handleCopy = (e: React.MouseEvent) => {
@@ -69,18 +67,14 @@ export const LinkCard: React.FC<LinkCardProps> = ({
         <div className="flex items-start justify-between gap-2.5">
           <div className="flex items-center gap-2.5 min-w-0 flex-1">
             {/* Favicon / Icon */}
-            <div className="w-8 h-8 rounded-lg bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark border border-serene-border-light/60 dark:border-serene-border-dark flex items-center justify-center shrink-0 overflow-hidden shadow-2xs">
-              {!imgError && faviconUrl ? (
-                <img
-                  src={faviconUrl}
-                  alt={link.title}
-                  className="w-5 h-5 object-contain"
-                  onError={() => setImgError(true)}
-                  loading="lazy"
-                />
-              ) : (
-                <Globe className="w-4 h-4 text-serene-text-muted" />
-              )}
+            <div className="w-8 h-8 rounded-lg bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark border border-serene-border-light/60 dark:border-serene-border-dark flex items-center justify-center shrink-0 overflow-hidden shadow-2xs p-1.5">
+              <FaviconImage
+                url={link.url}
+                alt={link.title}
+                size={64}
+                className="w-5 h-5 object-contain"
+                iconClassName="w-4 h-4 text-serene-text-secondary dark:text-serene-text-darkSecondary"
+              />
             </div>
 
             {/* Title & Domain */}
@@ -88,7 +82,7 @@ export const LinkCard: React.FC<LinkCardProps> = ({
               <h3 className="text-xs font-semibold text-serene-text-primary dark:text-serene-text-darkPrimary truncate group-hover:text-serene-primary dark:group-hover:text-serene-primary-dark transition-colors">
                 {link.title}
               </h3>
-              <p className="text-[11px] text-serene-text-muted truncate font-mono">
+              <p className="text-[11px] text-serene-text-secondary dark:text-serene-text-darkSecondary truncate font-mono font-medium">
                 {domain}
               </p>
             </div>
@@ -220,7 +214,7 @@ export const LinkCard: React.FC<LinkCardProps> = ({
               </span>
             ))
           ) : (
-            <span className="text-[10px] text-serene-text-muted">Launch link</span>
+            <span className="text-[10px] text-serene-text-secondary dark:text-serene-text-darkSecondary font-medium">Launch link</span>
           )}
         </div>
 

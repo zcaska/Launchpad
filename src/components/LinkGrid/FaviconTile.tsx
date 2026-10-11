@@ -1,7 +1,8 @@
 import React, { useState, useRef } from 'react';
-import { Star, MoreVertical, Edit2, Trash2, Globe } from 'lucide-react';
+import { Star, MoreVertical, Edit2, Trash2 } from 'lucide-react';
 import { LinkItem, Folder } from '../../types';
-import { getFaviconUrl, extractDomain } from '../../utils/favicon';
+import { extractDomain } from '../../utils/favicon';
+import { FaviconImage } from '../Common/FaviconImage';
 import { MoveToFolderMenu } from './MoveToFolderMenu';
 
 interface FaviconTileProps {
@@ -27,13 +28,11 @@ export const FaviconTile: React.FC<FaviconTileProps> = ({
 }) => {
   const [isHovered, setIsHovered] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
-  const [imgError, setImgError] = useState(false);
   const [alignH, setAlignH] = useState<'left' | 'center' | 'right'>('center');
   const [alignV, setAlignV] = useState<'top' | 'bottom'>('top');
   const containerRef = useRef<HTMLDivElement>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const faviconUrl = getFaviconUrl(link.url, 48);
   const domain = extractDomain(link.url);
 
   const handleMouseEnter = () => {
@@ -114,16 +113,13 @@ export const FaviconTile: React.FC<FaviconTileProps> = ({
         } hover:scale-105 active:scale-95`}
         title={link.title}
       >
-        {!imgError && faviconUrl ? (
-          <img
-            src={faviconUrl}
-            alt=""
-            className="w-6 h-6 object-contain pointer-events-none"
-            onError={() => setImgError(true)}
-          />
-        ) : (
-          <Globe className="w-5 h-5 text-serene-text-muted" />
-        )}
+        <FaviconImage
+          url={link.url}
+          alt=""
+          size={48}
+          className="w-6 h-6 object-contain pointer-events-none"
+          iconClassName="w-5 h-5 text-serene-text-secondary dark:text-serene-text-darkSecondary"
+        />
 
         {/* Favorite indicator pip */}
         {link.isFavorite && (
@@ -149,7 +145,7 @@ export const FaviconTile: React.FC<FaviconTileProps> = ({
               <h4 className="text-xs font-bold text-serene-text-primary dark:text-serene-text-darkPrimary leading-snug line-clamp-2">
                 {link.title}
               </h4>
-              <p className="text-[10px] font-mono text-serene-text-muted mt-0.5 truncate">
+              <p className="text-[10px] font-mono text-serene-text-secondary dark:text-serene-text-darkSecondary font-medium mt-0.5 truncate">
                 {domain}
               </p>
             </div>
@@ -163,7 +159,7 @@ export const FaviconTile: React.FC<FaviconTileProps> = ({
                   onToggleFavorite(link.id);
                 }}
                 className={`p-1 rounded-md transition-colors ${
-                  link.isFavorite ? 'text-amber-500' : 'text-serene-text-muted hover:text-amber-500'
+                  link.isFavorite ? 'text-amber-500' : 'text-serene-text-secondary dark:text-serene-text-darkSecondary hover:text-amber-500'
                 }`}
                 title={link.isFavorite ? 'Unfavorite' : 'Favorite'}
               >
@@ -181,7 +177,7 @@ export const FaviconTile: React.FC<FaviconTileProps> = ({
                 aria-label="More options"
                 aria-haspopup="menu"
                 aria-expanded={showMenu}
-                className="p-1 text-serene-text-muted hover:text-serene-text-primary rounded-md"
+                className="p-1 text-serene-text-secondary dark:text-serene-text-darkSecondary hover:text-serene-text-primary dark:hover:text-serene-text-darkPrimary rounded-md"
               >
                 <MoreVertical className="w-3.5 h-3.5" />
               </button>
@@ -199,7 +195,7 @@ export const FaviconTile: React.FC<FaviconTileProps> = ({
               {link.tags.slice(0, 3).map((tag, idx) => (
                 <span
                   key={idx}
-                  className="text-[9px] px-1.5 py-0.5 rounded bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark text-serene-text-muted font-medium"
+                  className="text-[9px] px-1.5 py-0.5 rounded bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark text-serene-text-secondary dark:text-serene-text-darkSecondary font-medium"
                 >
                   #{tag}
                 </span>

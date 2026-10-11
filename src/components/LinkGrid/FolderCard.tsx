@@ -1,9 +1,9 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import { Plus, ArrowRight, Globe } from 'lucide-react';
+import { Plus, ArrowRight } from 'lucide-react';
 import { Folder, LinkItem } from '../../types';
 import { getFolderIcon, FOLDER_COLOR_MAP } from '../../utils/icons';
-import { getFaviconUrl } from '../../utils/favicon';
+import { FaviconImage } from '../Common/FaviconImage';
 
 interface FolderCardProps {
   folder: Folder;
@@ -44,7 +44,7 @@ export const FolderCard: React.FC<FolderCardProps> = ({
             <h3 className="text-sm font-bold text-serene-text-primary dark:text-serene-text-darkPrimary group-hover:text-serene-primary dark:group-hover:text-serene-primary-dark transition-colors truncate leading-tight">
               {folder.name}
             </h3>
-            <span className="text-[11px] font-mono text-serene-text-muted block mt-0.5">
+            <span className="text-[11px] font-mono text-serene-text-secondary dark:text-serene-text-darkSecondary block mt-0.5">
               {links.length} {links.length === 1 ? 'bookmark' : 'bookmarks'}
             </span>
           </div>
@@ -77,37 +77,29 @@ export const FolderCard: React.FC<FolderCardProps> = ({
         <div className="flex items-center min-w-0">
           {previewLinks.length > 0 ? (
             <div className="flex items-center gap-1.5 overflow-hidden py-0.5">
-              {previewLinks.map((link) => {
-                const favUrl = getFaviconUrl(link.url, 32);
-                return (
-                  <div
-                    key={link.id}
-                    title={link.title}
-                    className="w-6 h-6 rounded-md bg-serene-surfaceAlt-light/60 dark:bg-serene-surfaceAlt-dark/60 border border-serene-border-light dark:border-serene-border-dark flex items-center justify-center overflow-hidden shadow-2xs shrink-0"
-                  >
-                    {favUrl ? (
-                      <img
-                        src={favUrl}
-                        alt=""
-                        className="w-3.5 h-3.5 object-contain"
-                        onError={(e) => {
-                          (e.currentTarget as HTMLElement).style.display = 'none';
-                        }}
-                      />
-                    ) : (
-                      <Globe className="w-3 h-3 text-serene-text-muted" />
-                    )}
-                  </div>
-                );
-              })}
+              {previewLinks.map((link) => (
+                <div
+                  key={link.id}
+                  title={link.title}
+                  className="w-6 h-6 rounded-md bg-serene-surfaceAlt-light/60 dark:bg-serene-surfaceAlt-dark/60 border border-serene-border-light dark:border-serene-border-dark flex items-center justify-center overflow-hidden shadow-2xs shrink-0 p-1"
+                >
+                  <FaviconImage
+                    url={link.url}
+                    alt=""
+                    size={32}
+                    className="w-3.5 h-3.5 object-contain pointer-events-none"
+                    iconClassName="w-3 h-3 text-serene-text-secondary dark:text-serene-text-darkSecondary"
+                  />
+                </div>
+              ))}
               {links.length > 4 && (
-                <span className="text-[10px] font-mono text-serene-text-muted pl-1">
+                <span className="text-[10px] font-mono text-serene-text-secondary dark:text-serene-text-darkSecondary pl-1">
                   +{links.length - 4}
                 </span>
               )}
             </div>
           ) : (
-            <span className="text-[11px] text-serene-text-muted italic">Empty folder</span>
+            <span className="text-[11px] text-serene-text-secondary dark:text-serene-text-darkSecondary italic">Empty folder</span>
           )}
         </div>
 

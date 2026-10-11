@@ -19,6 +19,8 @@ export interface LinkItem {
   createdAt: number;
   lastOpenedAt?: number;
   clickCount?: number;
+  /** Manual sidebar ordering. Absent = fall back to createdAt (legacy links). */
+  order?: number;
 }
 
 export interface Folder {

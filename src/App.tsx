@@ -23,6 +23,7 @@ import { DEFAULT_SEED_DATA } from './data/seedData';
 import { Header } from './components/Header/Header';
 import { BackupReminderToast } from './components/Layout/BackupReminderToast';
 import { Sidebar } from './components/Sidebar/Sidebar';
+import { moveLinkToFolder } from './utils/sidebarReorder';
 import { GrowthMasteryScreen } from './components/Growth/GrowthMasteryScreen';
 import { FocusHeroBanner } from './components/Dashboard/FocusHeroBanner';
 import { TimeRadarWidget } from './components/Dashboard/TimeRadarWidget';
@@ -100,6 +101,18 @@ export function App() {
   // Dedicated Confirmation Modal for Item/Bookmark Deletion
   const [linkToDelete, setLinkToDelete] = useState<LinkItem | null>(null);
   const [isDeleteLinkModalOpen, setIsDeleteLinkModalOpen] = useState(false);
+
+  /** Normalise user-entered destinations, returning null when unusable. */
+  const normalizeBookmarkUrl = (raw: string): string | null => {
+    const candidate = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
+    try {
+      const u = new URL(candidate);
+      if (!u.hostname || !u.hostname.includes('.')) return null;
+      return u.toString();
+    } catch {
+      return null;
+    }
+  };
 
   // Root Folder Action Dialog for Sidebar & Root Actions
   const [sidebarFolderAction, setSidebarFolderAction] = useState<{
@@ -614,10 +627,53 @@ export function App() {
   const handleMoveFolder = (linkId: string, targetFolderId: string) => {
     setAppData((prev) => ({
       ...prev,
-      links: prev.links.map((l) =>
-        l.id === linkId ? { ...l, folderId: targetFolderId } : l
-      ),
+      links: moveLinkToFolder(prev.links, linkId, targetFolderId),
     }));
+  };
+
+  // --- Sidebar bookmark management -------------------------------------
+  // All of these funnel through setAppData, which the existing auto-save effect
+  // persists to localStorage, so no extra write path is introduced.
+
+  const handleRenameLink = (id: string, title: string) => {
+    setAppData((prev) => ({
+      ...prev,
+      links: prev.links.map((l) => (l.id === id ? { ...l, title } : l)),
+    }));
+  };
+
+  const handleChangeLinkUrl = (id: string, url: string) => {
+    const existing = appData.links;
+    if (!existing.some((l) => l.id === id)) return 'Bookmark not found';
+    const trimmed = url.trim();
+    if (existing.some((l) => l.id !== id && l.url === trimmed)) {
+      return 'Another bookmark already uses this URL';
+    }
+    const next = normalizeBookmarkUrl(trimmed);
+    if (!next) return 'Enter a valid URL';
+    // Keep the existing id/tags/folder so identity is preserved and the favicon
+    // re-resolves from the new destination.
+    setAppData((prev) => ({
+      ...prev,
+      links: prev.links.map((l) => (l.id === id ? { ...l, url: next } : l)),
+    }));
+    return null;
+  };
+
+  const handleApplySidebarLinks = (next: LinkItem[]) => {
+    setAppData((prev) => ({ ...prev, links: next }));
+  };
+
+  const handleApplySidebarFolders = (next: Folder[]) => {
+    setAppData((prev) => ({ ...prev, folders: next }));
+  };
+
+  const handleRequestLinkDelete = (id: string) => {
+    const link = appData.links.find((l) => l.id === id);
+    if (link) {
+      setLinkToDelete(link);
+      setIsDeleteLinkModalOpen(true);
+    }
   };
 
   const handleLinkClick = (link: LinkItem) => {
@@ -868,6 +924,14 @@ export function App() {
           isMobileOpen={isMobileSidebarOpen}
           onCloseMobile={() => setIsMobileSidebarOpen(false)}
           gamification={appData.gamification}
+          bookmark={{
+            onRenameLink: handleRenameLink,
+            onChangeLinkUrl: handleChangeLinkUrl,
+            onMoveLink: handleMoveFolder,
+            onDeleteLink: handleRequestLinkDelete,
+          }}
+          onChangeLinks={handleApplySidebarLinks}
+          onChangeFolders={handleApplySidebarFolders}
         />
 
         {/* Content Area: Independent scroll container with container queries */}
