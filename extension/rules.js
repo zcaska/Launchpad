@@ -196,6 +196,27 @@ export function extractHostname(url) {
   }
 }
 
+export function isGenericFolder(name) {
+  if (!name) return true;
+  const trimmed = name.trim().toLowerCase();
+  return (
+    trimmed === 'bookmarks bar' ||
+    trimmed === 'bookmarks toolbar' ||
+    trimmed === 'bookmarks menu' ||
+    trimmed === 'other bookmarks' ||
+    trimmed === 'mobile bookmarks' ||
+    trimmed === 'favourite bar' ||
+    trimmed === 'favourites bar' ||
+    trimmed === 'favorite bar' ||
+    trimmed === 'favorites bar' ||
+    trimmed === 'favourites' ||
+    trimmed === 'favorites' ||
+    trimmed === 'imported' ||
+    trimmed === 'bookmarks' ||
+    trimmed === 'managed bookmarks'
+  );
+}
+
 /**
  * Classifies a bookmark deterministically based on folder, domain, TLD, and keyword heuristics.
  *
@@ -213,7 +234,7 @@ export function classifyBookmark(url, title = '', sourceFolder = '') {
   const tags = new Set();
 
   // 1. Browser folder heuristics
-  if (cleanSourceFolder) {
+  if (cleanSourceFolder && !isGenericFolder(cleanSourceFolder)) {
     for (const pattern of FOLDER_NAME_PATTERNS) {
       if (pattern.regex.test(cleanSourceFolder)) {
         tags.add(pattern.tag);
@@ -225,6 +246,16 @@ export function classifyBookmark(url, title = '', sourceFolder = '') {
         };
       }
     }
+
+    // Custom browser folder detected (e.g., "AI", "Design", "Finance")
+    tags.add(cleanSourceFolder);
+    const slug = cleanSourceFolder.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'custom';
+    return {
+      folderId: `folder-${slug}`,
+      tags: Array.from(tags),
+      matchedRule: `Custom browser folder: "${cleanSourceFolder}"`,
+      confidence: 'high',
+    };
   }
 
   // 2. High-confidence domain matching

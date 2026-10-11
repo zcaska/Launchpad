@@ -4,6 +4,7 @@ import { X, Star, Link as LinkIcon, Tag, Globe } from 'lucide-react';
 import { LinkItem, Folder } from '../../types';
 import { extractDomain, formatUrl } from '../../utils/favicon';
 import { modalBackdropVariants, modalContentVariants } from '../../utils/motion';
+import { getFlattenedFolderHierarchy } from '../../utils/folderTree';
 
 interface AddEditLinkModalProps {
   isOpen: boolean;
@@ -181,9 +182,9 @@ export const AddEditLinkModal: React.FC<AddEditLinkModalProps> = ({
                 onChange={(e) => setFolderId(e.target.value)}
                 className="w-full px-3 py-2 text-xs bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark rounded-lg border border-serene-border-light dark:border-serene-border-dark text-serene-text-primary dark:text-serene-text-darkPrimary focus:outline-none focus:ring-1 focus:ring-serene-primary"
               >
-                {folders.map((folder) => (
+                {getFlattenedFolderHierarchy(folders).map(({ folder, displayName }) => (
                   <option key={folder.id} value={folder.id}>
-                    {folder.name}
+                    {displayName}
                   </option>
                 ))}
               </select>

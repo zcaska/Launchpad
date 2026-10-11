@@ -90,6 +90,64 @@ function isDuplicateUrl(normalizedTarget: string, existingNormalizedSet: Set<str
   return existingNormalizedSet.has(normalizedTarget);
 }
 
+export function isGenericBrowserFolder(name?: string): boolean {
+  if (!name) return true;
+  const trimmed = name.trim().toLowerCase();
+  return (
+    trimmed === 'bookmarks bar' ||
+    trimmed === 'bookmarks toolbar' ||
+    trimmed === 'bookmarks menu' ||
+    trimmed === 'other bookmarks' ||
+    trimmed === 'mobile bookmarks' ||
+    trimmed === 'favourite bar' ||
+    trimmed === 'favourites bar' ||
+    trimmed === 'favorite bar' ||
+    trimmed === 'favorites bar' ||
+    trimmed === 'favourites' ||
+    trimmed === 'favorites' ||
+    trimmed === 'imported' ||
+    trimmed === 'bookmarks' ||
+    trimmed === 'managed bookmarks'
+  );
+}
+
+export function createCustomFolder(
+  folderName: string,
+  existingFolders: Folder[],
+  parentId?: string
+): Folder {
+  const trimmed = folderName.trim();
+  const colors: Array<'indigo' | 'purple' | 'rose' | 'amber' | 'emerald' | 'sky'> = [
+    'indigo', 'purple', 'rose', 'amber', 'emerald', 'sky'
+  ];
+  const color = colors[existingFolders.length % colors.length];
+
+  // Pick sensible default icon based on folder name
+  const lower = trimmed.toLowerCase();
+  let icon = 'Folder';
+  if (/(ai|gpt|claude|llm|bot|intel)/i.test(lower)) icon = 'Sparkles';
+  else if (/(dev|code|git|tech|stack|api)/i.test(lower)) icon = 'Code';
+  else if (/(read|book|paper|news|article)/i.test(lower)) icon = 'BookOpen';
+  else if (/(study|school|class|learn|course)/i.test(lower)) icon = 'GraduationCap';
+  else if (/(work|job|corp|office|project)/i.test(lower)) icon = 'Briefcase';
+  else if (/(tool|util|service|daily)/i.test(lower)) icon = 'Bookmark';
+  else if (/(music|sound|audio)/i.test(lower)) icon = 'Music';
+  else if (/(video|movie|media|yt)/i.test(lower)) icon = 'Video';
+  else if (/(design|ui|ux|art)/i.test(lower)) icon = 'Palette';
+
+  const safeSlug = trimmed.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'custom';
+  return {
+    id: `folder-${safeSlug}-${Date.now().toString(36)}`,
+    name: trimmed,
+    description: `Folder: ${trimmed}`,
+    icon,
+    color,
+    parentId,
+    isCollapsed: false,
+    order: existingFolders.length + 1,
+  };
+}
+
 /**
  * Parses Netscape Bookmark HTML string (standard format exported by Chrome, Firefox, Safari, Edge, Brave).
  * Extracts bookmark titles, URLs, creation timestamps, and folder structures.
@@ -122,25 +180,51 @@ export function parseNetscapeBookmarks(
 
   const parsedBookmarks: ParsedBookmark[] = [];
   const foldersDetectedSet = new Set<string>();
-  const categoryDistribution: Record<string, number> = {};
   const seenInBatchSet = new Set<string>();
+  const categoryDistribution: Record<string, number> = {};
 
   // Use DOMParser to parse HTML content
   const parser = new DOMParser();
   const doc = parser.parseFromString(htmlContent, 'text/html');
-
-  // Find root dl container or body
   const root = doc.body;
 
+  // Keep a dynamic list of folders: existing availableFolders + any auto-created folders from import
+  const currentFolders: Folder[] = [...availableFolders];
+  const createdFolders: Folder[] = [];
+  const createdFolderIdsByPath = new Map<string, string>();
+
+  // Helper to get or create a folder on the fly
+  function getOrCreateFolder(folderName: string, parentId?: string): Folder {
+    const trimmed = folderName.trim();
+    const cacheKey = `${parentId || 'root'}::${trimmed.toLowerCase()}`;
+
+    // Check if matching folder already exists in currentFolders
+    const existing = currentFolders.find(
+      f => f.name.trim().toLowerCase() === trimmed.toLowerCase() &&
+           (parentId ? f.parentId === parentId : !f.parentId)
+    );
+    if (existing) {
+      createdFolderIdsByPath.set(cacheKey, existing.id);
+      return existing;
+    }
+
+    // Check if we already created it in this batch
+    if (createdFolderIdsByPath.has(cacheKey)) {
+      const id = createdFolderIdsByPath.get(cacheKey)!;
+      return currentFolders.find(f => f.id === id)!;
+    }
+
+    const newFolder = createCustomFolder(trimmed, currentFolders, parentId);
+    currentFolders.push(newFolder);
+    createdFolders.push(newFolder);
+    createdFolderIdsByPath.set(cacheKey, newFolder.id);
+    return newFolder;
+  }
+
   /**
-   * Traverses DOM nodes recursively to track nested folder hierarchy.
-   * Netscape format structure:
-   * <DT><H3 ADD_DATE="...">Folder Name</H3>
-   * <DL><p>
-   *   <DT><A HREF="..." ADD_DATE="...">Bookmark Title</A>
-   * </DL><p>
+   * Traverses DOM nodes recursively to track nested folder hierarchy up to 5 levels.
    */
-  function traverse(node: Node, currentFolderHierarchy: string[]) {
+  function traverse(node: Node, currentFolderHierarchy: Folder[]) {
     for (let i = 0; i < node.childNodes.length; i++) {
       const child = node.childNodes[i];
 
@@ -149,28 +233,45 @@ export function parseNetscapeBookmarks(
         const tagName = el.tagName.toUpperCase();
 
         if (tagName === 'H3') {
-          // A folder heading. The text content is the folder name.
           const folderName = el.textContent?.trim() || '';
-          if (folderName && !['Bookmarks bar', 'Bookmarks Toolbar', 'Bookmarks Menu', 'Other Bookmarks'].includes(folderName)) {
+          if (folderName && !isGenericBrowserFolder(folderName)) {
             foldersDetectedSet.add(folderName);
           }
         } else if (tagName === 'DT') {
-          // Check if this DT contains an H3 (subfolder) or an A tag (bookmark)
           const h3 = el.querySelector(':scope > h3, h3');
-          const dl = el.querySelector(':scope > dl, dl');
+          let dl = el.querySelector(':scope > dl, dl');
           const a = el.querySelector(':scope > a, a');
+
+          // Check if DL is next sibling of DT (Netscape HTML variant)
+          if (h3 && !dl) {
+            let sibling = el.nextElementSibling;
+            while (sibling && sibling.tagName !== 'DL' && sibling.tagName !== 'DT') {
+              sibling = sibling.nextElementSibling;
+            }
+            if (sibling && sibling.tagName === 'DL') {
+              dl = sibling as HTMLElement;
+            }
+          }
 
           if (h3 && dl) {
             const folderName = h3.textContent?.trim() || '';
-            if (folderName) {
+            if (folderName && !isGenericBrowserFolder(folderName)) {
               foldersDetectedSet.add(folderName);
+              const parentFolder = currentFolderHierarchy[currentFolderHierarchy.length - 1];
+              const parentId = parentFolder?.id;
+              const folderObj = getOrCreateFolder(folderName, parentId);
+
+              // Limit nesting to 5 levels (0..4)
+              const nextHierarchy = currentFolderHierarchy.length < 5
+                ? [...currentFolderHierarchy, folderObj]
+                : currentFolderHierarchy;
+              traverse(dl, nextHierarchy);
+            } else {
+              traverse(dl, currentFolderHierarchy);
             }
-            const nextHierarchy = folderName ? [...currentFolderHierarchy, folderName] : currentFolderHierarchy;
-            traverse(dl, nextHierarchy);
           } else if (a) {
             processAnchor(a as HTMLAnchorElement, currentFolderHierarchy);
           } else {
-            // General traversal for nested items in DT
             traverse(el, currentFolderHierarchy);
           }
         } else if (tagName === 'DL') {
@@ -184,7 +285,7 @@ export function parseNetscapeBookmarks(
     }
   }
 
-  function processAnchor(anchor: HTMLAnchorElement, folderHierarchy: string[]) {
+  function processAnchor(anchor: HTMLAnchorElement, folderHierarchy: Folder[]) {
     const rawHref = anchor.getAttribute('href') || anchor.href || '';
     if (!rawHref || rawHref.startsWith('javascript:') || rawHref.startsWith('place:')) {
       return;
@@ -196,16 +297,30 @@ export function parseNetscapeBookmarks(
     if (rawAddDate) {
       const parsedSeconds = parseInt(rawAddDate, 10);
       if (!isNaN(parsedSeconds) && parsedSeconds > 0) {
-        // Netscape ADD_DATE is typically in Unix epoch seconds
         addDate = parsedSeconds > 1e11 ? parsedSeconds : parsedSeconds * 1000;
       }
     }
 
-    // Source folder context (immediate parent or concatenated path)
-    const sourceFolder = folderHierarchy.length > 0 ? folderHierarchy[folderHierarchy.length - 1] : undefined;
+    const activeFolder = folderHierarchy.length > 0 ? folderHierarchy[folderHierarchy.length - 1] : undefined;
 
-    // Run rule-based classification engine
-    const classification = classifyBookmark(rawHref, title, sourceFolder, availableFolders);
+    let targetFolderId: string;
+    let targetTags: string[] = [];
+    let matchedRule: string;
+    let confidence: 'high' | 'medium' | 'low';
+
+    if (activeFolder) {
+      targetFolderId = activeFolder.id;
+      targetTags = [activeFolder.name];
+      const pathNames = folderHierarchy.map(f => f.name);
+      matchedRule = `Imported Hierarchy: "${pathNames.join(' > ')}"`;
+      confidence = 'high';
+    } else {
+      const classification = classifyBookmark(rawHref, title, undefined, currentFolders);
+      targetFolderId = classification.folderId;
+      targetTags = classification.tags;
+      matchedRule = classification.matchedRule;
+      confidence = classification.confidence;
+    }
 
     // Duplicate detection
     const normalized = normalizeUrl(rawHref);
@@ -217,12 +332,13 @@ export function parseNetscapeBookmarks(
     const parsedItem: ParsedBookmark = {
       url: rawHref,
       title,
-      folderId: classification.folderId,
-      tags: classification.tags,
-      sourceFolder,
+      folderId: targetFolderId,
+      tags: targetTags,
+      sourceFolder: activeFolder?.name,
+      folderHierarchy: folderHierarchy.map(f => f.name),
       addDate: addDate || Date.now(),
-      matchedRule: classification.matchedRule,
-      confidence: classification.confidence,
+      matchedRule,
+      confidence,
       isDuplicate: isDup,
       selected: !isDup, // Pre-select non-duplicates by default
     };
@@ -230,7 +346,7 @@ export function parseNetscapeBookmarks(
     parsedBookmarks.push(parsedItem);
 
     // Update category distribution
-    categoryDistribution[classification.folderId] = (categoryDistribution[classification.folderId] || 0) + 1;
+    categoryDistribution[targetFolderId] = (categoryDistribution[targetFolderId] || 0) + 1;
   }
 
   // If there are top-level DL tags, or direct body contents, traverse from root
@@ -246,6 +362,7 @@ export function parseNetscapeBookmarks(
     newCount,
     duplicateCount,
     foldersDetected: Array.from(foldersDetectedSet),
+    createdFolders,
     categoryDistribution,
   };
 }

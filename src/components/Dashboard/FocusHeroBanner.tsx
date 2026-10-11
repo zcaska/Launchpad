@@ -12,7 +12,7 @@ import {
   Plus,
   RotateCw
 } from 'lucide-react';
-import { DailyFocus, QuickNote } from '../../types';
+import { DailyFocus, QuickNote, CalendarScheduleSummary } from '../../types';
 import { CALM_QUOTES } from '../../data/seedData';
 import { TimeRadarWidget } from './TimeRadarWidget';
 import { DayTimeRemaining, TaskLoadSummary, BufferSummary } from '../../utils/timeBudget';
@@ -30,6 +30,10 @@ interface FocusHeroBannerProps {
   taskLoad?: TaskLoadSummary;
   buffer?: BufferSummary;
   endHour?: number;
+  calendarSummary?: CalendarScheduleSummary;
+  onSyncCalendar?: () => void;
+  isSyncingCalendar?: boolean;
+  onOpenCalendarSettings?: () => void;
 }
 
 export const FocusHeroBanner: React.FC<FocusHeroBannerProps> = ({
@@ -43,6 +47,10 @@ export const FocusHeroBanner: React.FC<FocusHeroBannerProps> = ({
   taskLoad,
   buffer,
   endHour,
+  calendarSummary,
+  onSyncCalendar,
+  isSyncingCalendar,
+  onOpenCalendarSettings,
 }) => {
   const [currentTime, setCurrentTime] = useState<Date>(new Date());
   const [quoteIndex, setQuoteIndex] = useState(0);
@@ -287,6 +295,10 @@ export const FocusHeroBanner: React.FC<FocusHeroBannerProps> = ({
               buffer={buffer}
               endHour={endHour}
               onOpenTasks={onOpenTasksScreen || (() => {})}
+              calendarSummary={calendarSummary}
+              onSyncCalendar={onSyncCalendar}
+              isSyncingCalendar={isSyncingCalendar}
+              onOpenCalendarSettings={onOpenCalendarSettings}
             />
           </div>
         )}

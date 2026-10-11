@@ -37,6 +37,10 @@ export function loadAppData(): AppData {
         ...DEFAULT_SEED_DATA.settings.openRouter,
         ...(parsed.settings?.openRouter || {}),
       },
+      googleCalendar: {
+        ...DEFAULT_SEED_DATA.settings.googleCalendar,
+        ...(parsed.settings?.googleCalendar || {}),
+      },
       activeMode: parsed.settings?.activeMode || 'auto',
     };
 
@@ -45,6 +49,7 @@ export function loadAppData(): AppData {
       folders: Array.isArray(parsed.folders) ? parsed.folders : DEFAULT_SEED_DATA.folders,
       links: Array.isArray(parsed.links) ? parsed.links : DEFAULT_SEED_DATA.links,
       quickNotes,
+      calendarEvents: Array.isArray(parsed.calendarEvents) ? parsed.calendarEvents : [],
       scratchpadText: typeof parsed.scratchpadText === 'string' ? parsed.scratchpadText : DEFAULT_SEED_DATA.scratchpadText,
       dailyFocus: {
         date: parsed.dailyFocus?.date || new Date().toISOString().split('T')[0],
@@ -92,6 +97,7 @@ export function importDataFromJson(jsonStr: string): AppData {
     folders: parsed.folders,
     links: parsed.links,
     quickNotes: Array.isArray(parsed.quickNotes) ? parsed.quickNotes : [],
+    calendarEvents: Array.isArray(parsed.calendarEvents) ? parsed.calendarEvents : [],
     scratchpadText: typeof parsed.scratchpadText === 'string' ? parsed.scratchpadText : '',
     dailyFocus: parsed.dailyFocus || {
       date: new Date().toISOString().split('T')[0],

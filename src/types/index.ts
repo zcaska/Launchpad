@@ -30,6 +30,8 @@ export interface Folder {
   isCollapsible?: boolean;
   isCollapsed?: boolean;
   order: number;
+  parentId?: string; // ID of parent folder if this is a subfolder
+  isHidden?: boolean; // When true, folder is hidden from sidebar and standard views
 }
 
 export type TaskPriority = 'urgent' | 'high' | 'medium' | 'low';
@@ -106,6 +108,41 @@ export interface RecommendationCandidate {
   score?: number;
 }
 
+export interface CalendarEventItem {
+  id: string;
+  summary: string;
+  description?: string;
+  startTime: string; // ISO 8601 string
+  endTime: string;   // ISO 8601 string
+  startMs: number;   // Epoch timestamp in ms
+  endMs: number;     // Epoch timestamp in ms
+  durationMinutes: number;
+  isAllDay: boolean;
+  transparency?: 'opaque' | 'transparent'; // opaque = Busy (default), transparent = Free
+  status: 'confirmed' | 'tentative' | 'cancelled';
+  htmlLink?: string;
+  location?: string;
+  colorId?: string;
+}
+
+export interface GoogleCalendarConfig {
+  enabled: boolean;
+  clientId: string;
+  calendarId: string; // default: 'primary'
+  syncIntervalMinutes: number; // default: 5
+  lastSyncedAt?: number; // Epoch timestamp of last successful sync
+}
+
+export interface CalendarScheduleSummary {
+  events: CalendarEventItem[];
+  totalBusyMinutesToday: number;
+  remainingBusyMinutesToday: number;
+  nextEvent?: CalendarEventItem;
+  minutesUntilNextEvent?: number;
+  currentEvent?: CalendarEventItem;
+  isTokenExpired?: boolean;
+}
+
 export interface AppData {
   version: number;
   folders: Folder[];
@@ -114,6 +151,7 @@ export interface AppData {
   scratchpadText: string;
   dailyFocus: DailyFocus;
   learnedPreferences: LearnedPreferences;
+  calendarEvents?: CalendarEventItem[];
   settings: {
     theme: ThemeMode;
     clockFormat: '12h' | '24h';
@@ -123,6 +161,7 @@ export interface AppData {
     daySchedule: DaySchedule;
     openRouter: OpenRouterConfig;
     activeMode: 'auto' | 'work' | 'free';
+    googleCalendar?: GoogleCalendarConfig;
   };
 }
 
@@ -150,11 +189,20 @@ export interface ParsedBookmark {
   folderId: string;
   tags: string[];
   sourceFolder?: string;
+  folderHierarchy?: string[];
   addDate?: number;
   matchedRule?: string;
   confidence?: BookmarkClassificationConfidence;
   isDuplicate?: boolean;
   selected?: boolean;
+}
+
+export interface FolderTreeNode {
+  folder: Folder;
+  children: FolderTreeNode[];
+  directLinks: LinkItem[];
+  totalLinkCount: number;
+  level: number; // 0 (root) up to 4 (5th level)
 }
 
 export interface ImportBookmarkResult {
@@ -163,5 +211,6 @@ export interface ImportBookmarkResult {
   newCount: number;
   duplicateCount: number;
   foldersDetected?: string[];
+  createdFolders?: Folder[];
   categoryDistribution?: Record<string, number>;
 }

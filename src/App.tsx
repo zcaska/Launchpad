@@ -1,10 +1,8 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Search, 
   ArrowLeft, 
-  Grid, 
-  List, 
   Plus, 
   Folder as FolderIcon,
   BookmarkCheck,
@@ -26,18 +24,35 @@ import { Sidebar } from './components/Sidebar/Sidebar';
 import { FocusHeroBanner } from './components/Dashboard/FocusHeroBanner';
 import { TimeRadarWidget } from './components/Dashboard/TimeRadarWidget';
 import { SmartSuggestionCard } from './components/Dashboard/SmartSuggestionCard';
-import { FolderCard } from './components/LinkGrid/FolderCard';
-import { CategorySection } from './components/LinkGrid/CategorySection';
 import { CompactIconGrid } from './components/LinkGrid/CompactIconGrid';
+import { CalendarScheduleTimeline } from './components/Calendar/CalendarScheduleTimeline';
 import { QuickNotesWidget } from './components/QuickNotes/QuickNotesWidget';
 import { TaskManagementScreen } from './components/Tasks/TaskManagementScreen';
 import { AddEditLinkModal } from './components/Modals/AddEditLinkModal';
 import { ManageFoldersModal } from './components/Modals/ManageFoldersModal';
 import { SettingsModal } from './components/Modals/SettingsModal';
 import { BookmarkImportModal } from './components/Modals/BookmarkImportModal';
+import { ConfirmDeleteModal } from './components/Modals/ConfirmDeleteModal';
+import { FolderActionDialog } from './components/Modals/FolderActionDialog';
 import { classifyBookmark } from './utils/bookmarkClassifier';
-import { normalizeUrl } from './utils/bookmarkParser';
+import { calculateCalendarScheduleSummary } from './utils/calendarSchedule';
+import { 
+  fetchTodayGoogleEvents, 
+  getInMemoryGoogleToken, 
+  isGoogleTokenExpired 
+} from './services/googleCalendarService';
+import { normalizeUrl, createCustomFolder, isGenericBrowserFolder } from './utils/bookmarkParser';
 import { initBookmarkSyncChannel, BookmarkSyncPayload } from './utils/bookmarkSyncChannel';
+import { 
+  getDescendantFolderIds, 
+  getFolderBreadcrumbs,
+  hideFolderWithSubfolders,
+  hideFolderWithoutSubfolders,
+  unhideFolderWithSubfolders,
+  unhideFolderWithoutSubfolders,
+  deleteFolderWithSubfolders,
+  deleteFolderWithoutSubfolders
+} from './utils/folderTree';
 import { 
   calculateDayTimeRemaining, 
   calculateTaskLoad, 
@@ -53,9 +68,7 @@ import {
 } from './utils/recommender';
 import { 
   pageTransitionVariants, 
-  drawerVariants, 
-  staggerContainerVariants, 
-  staggerItemVariants 
+  drawerVariants 
 } from './utils/motion';
 
 export function App() {
@@ -63,7 +76,8 @@ export function App() {
   const [activeView, setActiveView] = useState<'dashboard' | 'tasks'>('dashboard');
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [viewMode, setViewMode] = useState<'boxy' | 'sections'>('boxy');
+  const [isSyncingCalendar, setIsSyncingCalendar] = useState(false);
+  const isSyncingCalendarRef = useRef(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isManageFoldersOpen, setIsManageFoldersOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
@@ -78,6 +92,16 @@ export function App() {
   const [aiCustomIdea, setAiCustomIdea] = useState<RecommendationCandidate | null>(null);
   const [syncToast, setSyncToast] = useState<{ id: string; message: string; folderName: string } | null>(null);
 
+  // Dedicated Confirmation Modal for Item/Bookmark Deletion
+  const [linkToDelete, setLinkToDelete] = useState<LinkItem | null>(null);
+  const [isDeleteLinkModalOpen, setIsDeleteLinkModalOpen] = useState(false);
+
+  // Root Folder Action Dialog for Sidebar & Root Actions
+  const [sidebarFolderAction, setSidebarFolderAction] = useState<{
+    folder: Folder;
+    mode: 'hide' | 'unhide' | 'delete';
+  } | null>(null);
+
   // Live clock tick for time radar calculations
   useEffect(() => {
     const timer = setInterval(() => setNow(new Date()), 15000);
@@ -86,68 +110,131 @@ export function App() {
 
   // Real-time Bookmark Sync Channel listener (BroadcastChannel & window message)
   useEffect(() => {
-    const cleanup = initBookmarkSyncChannel((incoming: BookmarkSyncPayload) => {
-      if (!incoming || !incoming.url) return;
-      const cleanUrl = incoming.url.trim();
-      if (!cleanUrl) return;
-
-      const normIncomingUrl = normalizeUrl(cleanUrl);
+    const cleanup = initBookmarkSyncChannel((incoming: BookmarkSyncPayload | BookmarkSyncPayload[]) => {
+      const incomingList = Array.isArray(incoming) ? incoming : [incoming];
+      const validItems = incomingList.filter(item => item && item.url && item.url.trim().length > 0);
+      if (validItems.length === 0) return;
 
       setAppData((prev) => {
-        // Prevent duplicate addition if URL already exists
-        const exists = prev.links.some((l) => normalizeUrl(l.url) === normIncomingUrl);
-        if (exists) {
+        let currentFolders = [...prev.folders];
+        const existingUrls = new Set(prev.links.map((l) => normalizeUrl(l.url)));
+        const newLinksToAdd: LinkItem[] = [];
+        let createdFolderCount = 0;
+        let lastCategorizedFolderName = 'Bookmarks';
+
+        for (const item of validItems) {
+          const cleanUrl = item.url.trim();
+          const normIncomingUrl = normalizeUrl(cleanUrl);
+
+          // Prevent duplicate addition if URL already exists
+          if (existingUrls.has(normIncomingUrl)) {
+            continue;
+          }
+          existingUrls.add(normIncomingUrl);
+
+          // Determine target folder based on hierarchy (up to 5 levels)
+          let targetFolderId: string;
+          let targetTags: string[] = item.tags || [];
+
+          const hierarchyLevels = (item.folderHierarchy && item.folderHierarchy.length > 0
+            ? item.folderHierarchy
+            : item.sourceFolder ? [item.sourceFolder] : []
+          )
+            .map(f => f.trim())
+            .filter(f => !isGenericBrowserFolder(f))
+            .slice(0, 5);
+
+          if (hierarchyLevels.length > 0) {
+            let currentParentId: string | undefined = undefined;
+
+            for (let i = 0; i < hierarchyLevels.length; i++) {
+              const levelName = hierarchyLevels[i];
+              let existingFolder = currentFolders.find(
+                (f) =>
+                  f.name.toLowerCase() === levelName.toLowerCase() &&
+                  (currentParentId ? f.parentId === currentParentId : !f.parentId)
+              );
+
+              if (!existingFolder) {
+                existingFolder = createCustomFolder(levelName, currentFolders, currentParentId);
+                currentFolders.push(existingFolder);
+                createdFolderCount++;
+              }
+
+              currentParentId = existingFolder.id;
+              if (!targetTags.includes(levelName)) {
+                targetTags = [levelName, ...targetTags];
+              }
+            }
+
+            targetFolderId = currentParentId!;
+          } else if (item.folderId && currentFolders.some(f => f.id === item.folderId)) {
+            targetFolderId = item.folderId;
+          } else {
+            // Auto-categorize via classifyBookmark using updated currentFolders
+            const classification = classifyBookmark(
+              cleanUrl,
+              item.title,
+              item.sourceFolder,
+              currentFolders
+            );
+            targetFolderId = classification.folderId;
+            targetTags = Array.from(new Set([...targetTags, ...classification.tags]));
+          }
+
+          // Derive friendly title
+          let resolvedTitle = item.title?.trim();
+          if (!resolvedTitle) {
+            try {
+              resolvedTitle = new URL(cleanUrl).hostname.replace(/^www\./, '');
+            } catch {
+              resolvedTitle = cleanUrl;
+            }
+          }
+
+          const targetFolder = currentFolders.find((f) => f.id === targetFolderId);
+          if (targetFolder) {
+            lastCategorizedFolderName = targetFolder.name;
+          }
+
+          const newLink: LinkItem = {
+            id: `link-sync-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+            title: resolvedTitle,
+            url: cleanUrl,
+            folderId: targetFolderId,
+            isFavorite: false,
+            tags: targetTags,
+            createdAt: item.addDate || Date.now(),
+            clickCount: 0,
+          };
+
+          newLinksToAdd.push(newLink);
+        }
+
+        if (newLinksToAdd.length === 0) {
           return prev;
         }
 
-        // Auto-categorize via classifyBookmark
-        const classification = incoming.folderId
-          ? {
-              folderId: incoming.folderId,
-              tags: incoming.tags || ['Bookmarks'],
-              matchedRule: 'Explicit Sync Folder',
-            }
-          : classifyBookmark(
-              cleanUrl,
-              incoming.title,
-              incoming.sourceFolder,
-              prev.folders
-            );
-
-        // Derive friendly title
-        let resolvedTitle = incoming.title?.trim();
-        if (!resolvedTitle) {
-          try {
-            resolvedTitle = new URL(cleanUrl).hostname.replace(/^www\./, '');
-          } catch {
-            resolvedTitle = cleanUrl;
-          }
+        if (newLinksToAdd.length === 1) {
+          setSyncToast({
+            id: `toast-${Date.now()}`,
+            message: `"${newLinksToAdd[0].title}" automatically categorized to ${lastCategorizedFolderName}`,
+            folderName: lastCategorizedFolderName,
+          });
+        } else {
+          setSyncToast({
+            id: `toast-${Date.now()}`,
+            message: `Synced ${newLinksToAdd.length} bookmarks${
+              createdFolderCount > 0 ? ` across ${createdFolderCount} new folder(s)` : ''
+            }`,
+            folderName: createdFolderCount > 0 ? `${createdFolderCount} Folders` : 'Bookmarks',
+          });
         }
-
-        const newLink: LinkItem = {
-          id: `link-sync-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
-          title: resolvedTitle,
-          url: cleanUrl,
-          folderId: classification.folderId,
-          isFavorite: false,
-          tags: Array.from(new Set([...(incoming.tags || []), ...(classification.tags || [])])),
-          createdAt: incoming.addDate || Date.now(),
-          clickCount: 0,
-        };
-
-        // Find folder name for toast feedback
-        const targetFolder = prev.folders.find((f) => f.id === classification.folderId);
-        const folderName = targetFolder ? targetFolder.name : 'Bookmarks';
-
-        setSyncToast({
-          id: `toast-${Date.now()}`,
-          message: `"${resolvedTitle}" automatically categorized to ${folderName}`,
-          folderName,
-        });
 
         return {
           ...prev,
-          links: [newLink, ...prev.links],
+          folders: currentFolders,
+          links: [...newLinksToAdd, ...prev.links],
         };
       });
     });
@@ -216,6 +303,90 @@ export function App() {
   const buffer = useMemo(() => {
     return calculateBuffer(timeRemaining.totalMinutes, taskLoad.pendingMinutes);
   }, [timeRemaining.totalMinutes, taskLoad.pendingMinutes]);
+
+  // Calendar Schedule Summary (merged busy intervals, next meeting, token status)
+  const calendarSummary = useMemo(() => {
+    const summary = calculateCalendarScheduleSummary(
+      appData.calendarEvents || [],
+      now,
+      appData.settings.daySchedule.endHour
+    );
+    return {
+      ...summary,
+      isTokenExpired: isGoogleTokenExpired() && Boolean(appData.settings.googleCalendar?.enabled),
+    };
+  }, [appData.calendarEvents, now, appData.settings.daySchedule.endHour, appData.settings.googleCalendar?.enabled]);
+
+  // Concurrency-guarded Google Calendar Synchronization
+  const handleSyncCalendar = useCallback(async (silent: boolean = false) => {
+    if (isSyncingCalendarRef.current) return;
+    const gcal = appData.settings.googleCalendar;
+    if (!gcal?.enabled || !gcal.clientId) return;
+
+    const token = getInMemoryGoogleToken();
+    if (!token) {
+      if (!silent) {
+        setIsSettingsModalOpen(true);
+      }
+      return;
+    }
+
+    try {
+      isSyncingCalendarRef.current = true;
+      setIsSyncingCalendar(true);
+      const events = await fetchTodayGoogleEvents(token, gcal.calendarId || 'primary');
+      setAppData((prev) => {
+        const updated = {
+          ...prev,
+          calendarEvents: events,
+          settings: {
+            ...prev.settings,
+            googleCalendar: {
+              ...prev.settings.googleCalendar!,
+              lastSyncedAt: Date.now(),
+            },
+          },
+        };
+        saveAppData(updated);
+        return updated;
+      });
+    } catch (err: any) {
+      console.warn('Google Calendar sync warning:', err);
+      // Preserve cached calendarEvents during network failure
+    } finally {
+      isSyncingCalendarRef.current = false;
+      setIsSyncingCalendar(false);
+    }
+  }, [appData.settings.googleCalendar]);
+
+  // Periodic polling & Window Focus/Visibility listeners for Google Calendar
+  useEffect(() => {
+    if (!appData.settings.googleCalendar?.enabled) return;
+
+    // Silent background sync on mount if token is in memory
+    handleSyncCalendar(true);
+
+    const onFocus = () => handleSyncCalendar(true);
+    window.addEventListener('focus', onFocus);
+
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        handleSyncCalendar(true);
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+
+    const intervalMinutes = appData.settings.googleCalendar.syncIntervalMinutes || 5;
+    const intervalTimer = setInterval(() => {
+      handleSyncCalendar(true);
+    }, intervalMinutes * 60 * 1000);
+
+    return () => {
+      window.removeEventListener('focus', onFocus);
+      document.removeEventListener('visibilitychange', onVisibility);
+      clearInterval(intervalTimer);
+    };
+  }, [appData.settings.googleCalendar?.enabled, appData.settings.googleCalendar?.syncIntervalMinutes, handleSyncCalendar]);
 
   const timeOfDay = useMemo(() => getTimeOfDayBucket(now), [now]);
 
@@ -338,18 +509,85 @@ export function App() {
     setEditingLink(null);
   };
 
-  const handleImportBookmarks = (newLinks: LinkItem[]) => {
-    setAppData((prev) => ({
-      ...prev,
-      links: [...newLinks, ...prev.links],
-    }));
+  const handleImportBookmarks = (newLinks: LinkItem[], newFolders?: Folder[]) => {
+    setAppData((prev) => {
+      let updatedFolders = prev.folders;
+      if (newFolders && newFolders.length > 0) {
+        const existingIds = new Set(prev.folders.map(f => f.id));
+        const foldersToAdd = newFolders.filter(f => !existingIds.has(f.id));
+        if (foldersToAdd.length > 0) {
+          updatedFolders = [...prev.folders, ...foldersToAdd];
+        }
+      }
+      return {
+        ...prev,
+        folders: updatedFolders,
+        links: [...newLinks, ...prev.links],
+      };
+    });
   };
 
   const handleDeleteLink = (id: string) => {
-    setAppData((prev) => ({
-      ...prev,
-      links: prev.links.filter((l) => l.id !== id),
-    }));
+    const target = appData.links.find((l) => l.id === id);
+    if (target) {
+      setLinkToDelete(target);
+      setIsDeleteLinkModalOpen(true);
+    }
+  };
+
+  const handleConfirmDeleteLink = () => {
+    if (linkToDelete) {
+      setAppData((prev) => ({
+        ...prev,
+        links: prev.links.filter((l) => l.id !== linkToDelete.id),
+      }));
+    }
+    setIsDeleteLinkModalOpen(false);
+    setLinkToDelete(null);
+  };
+
+  const handleCancelDeleteLink = () => {
+    setIsDeleteLinkModalOpen(false);
+    setLinkToDelete(null);
+  };
+
+  const handleConfirmSidebarFolderAction = (withSubfolders: boolean) => {
+    if (!sidebarFolderAction) return;
+    const { folder, mode } = sidebarFolderAction;
+
+    if (mode === 'hide') {
+      const updated = withSubfolders
+        ? hideFolderWithSubfolders(appData.folders, folder.id)
+        : hideFolderWithoutSubfolders(appData.folders, folder.id);
+      setAppData((prev) => ({ ...prev, folders: updated }));
+      if (selectedFolderId === folder.id) {
+        setSelectedFolderId(null);
+      }
+    } else if (mode === 'unhide') {
+      const updated = withSubfolders
+        ? unhideFolderWithSubfolders(appData.folders, folder.id)
+        : unhideFolderWithoutSubfolders(appData.folders, folder.id);
+      setAppData((prev) => ({ ...prev, folders: updated }));
+    } else if (mode === 'delete') {
+      if (appData.folders.length <= 1) {
+        alert('You must have at least one folder.');
+        setSidebarFolderAction(null);
+        return;
+      }
+      const res = withSubfolders
+        ? deleteFolderWithSubfolders(appData.folders, appData.links, folder.id)
+        : deleteFolderWithoutSubfolders(appData.folders, appData.links, folder.id);
+      setAppData((prev) => ({
+        ...prev,
+        folders: res.updatedFolders,
+        links: res.updatedLinks,
+      }));
+      if (selectedFolderId === folder.id) {
+        setSelectedFolderId(null);
+      }
+    }
+
+    setSidebarFolderAction(null);
   };
 
   const handleToggleFavorite = (id: string) => {
@@ -397,6 +635,14 @@ export function App() {
     setAppData((prev) => ({
       ...prev,
       folders: newFolders,
+    }));
+  };
+
+  const handleSaveFoldersAndLinks = (newFolders: Folder[], newLinks?: LinkItem[]) => {
+    setAppData((prev) => ({
+      ...prev,
+      folders: newFolders,
+      links: newLinks ?? prev.links,
     }));
   };
 
@@ -449,13 +695,17 @@ export function App() {
     setSelectedFolderId(null);
   };
 
-  // Filtered Links Calculation
+  // Filtered Links Calculation (includes direct links + descendant subfolders)
   const filteredLinks = useMemo(() => {
     return appData.links.filter((link) => {
       if (selectedFolderId === 'favorites') {
         if (!link.isFavorite) return false;
       } else if (selectedFolderId !== null) {
-        if (link.folderId !== selectedFolderId) return false;
+        const matchingIds = new Set([
+          selectedFolderId,
+          ...getDescendantFolderIds(selectedFolderId, appData.folders),
+        ]);
+        if (!matchingIds.has(link.folderId)) return false;
       }
 
       if (searchQuery.trim()) {
@@ -480,6 +730,16 @@ export function App() {
     }
     return null;
   }, [appData.folders, selectedFolderId]);
+
+  const folderBreadcrumbs = useMemo(() => {
+    if (!selectedFolderId || selectedFolderId === 'favorites') return [];
+    return getFolderBreadcrumbs(selectedFolderId, appData.folders);
+  }, [selectedFolderId, appData.folders]);
+
+  const directSubfolders = useMemo(() => {
+    if (!selectedFolderId || selectedFolderId === 'favorites') return [];
+    return appData.folders.filter((f) => f.parentId === selectedFolderId && !f.isHidden);
+  }, [selectedFolderId, appData.folders]);
 
   // Context-Aware Intercept Condition:
   const hasPendingTasks = taskLoad.pendingCount > 0;
@@ -517,6 +777,8 @@ export function App() {
           onSelectFolder={setSelectedFolderId}
           onOpenManageFolders={() => setIsManageFoldersOpen(true)}
           onOpenAddFolder={() => setIsManageFoldersOpen(true)}
+          onHideFolder={(folder) => setSidebarFolderAction({ folder, mode: 'hide' })}
+          onDeleteFolder={(folder) => setSidebarFolderAction({ folder, mode: 'delete' })}
           isCollapsed={sidebarCollapsed}
           onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
           currentView={activeView}
@@ -543,6 +805,11 @@ export function App() {
                 onUpdateNotes={handleUpdateNotes}
                 onUpdateScratchpad={handleUpdateScratchpad}
                 onBackToDashboard={() => setActiveView('dashboard')}
+                calendarEvents={appData.calendarEvents || []}
+                onSyncCalendar={() => handleSyncCalendar(false)}
+                isSyncingCalendar={isSyncingCalendar}
+                onOpenSettings={() => setIsSettingsModalOpen(true)}
+                isTokenExpired={calendarSummary.isTokenExpired}
               />
             </motion.main>
           ) : (
@@ -572,6 +839,10 @@ export function App() {
                     taskLoad={taskLoad}
                     buffer={buffer}
                     endHour={appData.settings.daySchedule.endHour}
+                    calendarSummary={calendarSummary}
+                    onSyncCalendar={() => handleSyncCalendar(false)}
+                    isSyncingCalendar={isSyncingCalendar}
+                    onOpenCalendarSettings={() => setIsSettingsModalOpen(true)}
                   />
                 ) : (
                   <div className="@container w-full">
@@ -595,6 +866,10 @@ export function App() {
                           buffer={buffer}
                           endHour={appData.settings.daySchedule.endHour}
                           onOpenTasks={() => setActiveView('tasks')}
+                          calendarSummary={calendarSummary}
+                          onSyncCalendar={() => handleSyncCalendar(false)}
+                          isSyncingCalendar={isSyncingCalendar}
+                          onOpenCalendarSettings={() => setIsSettingsModalOpen(true)}
                         />
                       </div>
                     </div>
@@ -603,83 +878,101 @@ export function App() {
               </>
             )}
 
-          {/* 3. Navigation Sub-Bar & Breadcrumb Controls */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1 pb-2 border-b border-serene-border-light/60 dark:border-serene-border-dark/60">
-            <div className="flex items-center gap-3">
-              {/* Back to all folders button when in a folder */}
-              {selectedFolderId !== null && (
-                <button
-                  onClick={() => setSelectedFolderId(null)}
-                  className="p-1.5 rounded-lg bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark text-serene-text-muted hover:text-serene-primary dark:hover:text-serene-primary-dark border border-serene-border-light dark:border-serene-border-dark transition-colors"
-                  title="Back to All Folders (Esc)"
-                >
-                  <ArrowLeft className="w-4 h-4" />
-                </button>
-              )}
+          {/* 3. Navigation Sub-Bar & Breadcrumb Controls (Only shown when browsing a folder, favorites, or searching) */}
+          {(selectedFolderId !== null || searchQuery.trim() !== '') && (
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1 pb-2 border-b border-serene-border-light/60 dark:border-serene-border-dark/60">
+              <div className="flex items-center gap-3">
+                {/* Back to all folders button when in a folder */}
+                {selectedFolderId !== null && (
+                  <button
+                    onClick={() => setSelectedFolderId(null)}
+                    className="p-1.5 rounded-lg bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark text-serene-text-muted hover:text-serene-primary dark:hover:text-serene-primary-dark border border-serene-border-light dark:border-serene-border-dark transition-colors"
+                    title="Back to Dashboard (Esc)"
+                  >
+                    <ArrowLeft className="w-4 h-4" />
+                  </button>
+                )}
 
-              <div>
-                <div className="flex items-center gap-2">
-                  <h2 className="text-base sm:text-lg font-bold text-serene-text-primary dark:text-serene-text-darkPrimary">
-                    {selectedFolderId === null && (searchQuery ? 'Search Results' : 'Resource Spaces & Folders')}
-                    {selectedFolderId === 'favorites' && 'Starred Favorites'}
-                    {activeFolder && activeFolder.name}
-                  </h2>
-                  <span className="text-xs font-mono px-2 py-0.5 rounded-md bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark text-serene-text-muted border border-serene-border-light dark:border-serene-border-dark">
-                    {selectedFolderId === null && !searchQuery
-                      ? `${appData.folders.length} folders • ${appData.links.length} links`
-                      : `${filteredLinks.length} ${filteredLinks.length === 1 ? 'item' : 'items'}`}
-                  </span>
+                <div>
+                  {folderBreadcrumbs.length > 1 && (
+                    <nav className="flex items-center gap-1.5 text-[11px] text-serene-text-muted mb-1 flex-wrap" aria-label="Breadcrumb">
+                      <button
+                        onClick={() => setSelectedFolderId(null)}
+                        className="hover:text-serene-primary dark:hover:text-serene-primary-dark transition-colors"
+                      >
+                        Dashboard
+                      </button>
+                      {folderBreadcrumbs.map((crumb, idx) => {
+                        const isLast = idx === folderBreadcrumbs.length - 1;
+                        return (
+                          <span key={crumb.id} className="flex items-center gap-1.5">
+                            <span className="opacity-40">/</span>
+                            {isLast ? (
+                              <span className="font-semibold text-serene-primary dark:text-serene-primary-dark">
+                                {crumb.name}
+                              </span>
+                            ) : (
+                              <button
+                                onClick={() => setSelectedFolderId(crumb.id)}
+                                className="hover:text-serene-primary dark:hover:text-serene-primary-dark transition-colors"
+                              >
+                                {crumb.name}
+                              </button>
+                            )}
+                          </span>
+                        );
+                      })}
+                    </nav>
+                  )}
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-base sm:text-lg font-bold text-serene-text-primary dark:text-serene-text-darkPrimary">
+                      {searchQuery ? 'Search Results' : selectedFolderId === 'favorites' ? 'Starred Favorites' : activeFolder?.name}
+                    </h2>
+                    <span className="text-xs font-mono px-2 py-0.5 rounded-md bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark text-serene-text-muted border border-serene-border-light dark:border-serene-border-dark">
+                      {`${filteredLinks.length} ${filteredLinks.length === 1 ? 'item' : 'items'}`}
+                    </span>
+                  </div>
+                  {activeFolder?.description && (
+                    <p className="text-xs text-serene-text-muted mt-0.5">
+                      {activeFolder.description}
+                    </p>
+                  )}
+                  {/* Direct Subfolders quick navigation pills */}
+                  {directSubfolders.length > 0 && (
+                    <div className="flex items-center gap-1.5 flex-wrap mt-2 pt-1.5 border-t border-serene-border-light/40 dark:border-serene-border-dark/40 text-xs">
+                      <span className="text-[11px] font-semibold text-serene-text-muted shrink-0">Subfolders:</span>
+                      {directSubfolders.map((sub) => {
+                        const count = appData.links.filter((l) => l.folderId === sub.id).length;
+                        return (
+                          <button
+                            key={sub.id}
+                            onClick={() => setSelectedFolderId(sub.id)}
+                            className="px-2 py-0.5 rounded-md text-[11px] font-medium bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark border border-serene-border-light dark:border-serene-border-dark hover:border-serene-primary/50 text-serene-text-primary dark:text-serene-text-darkPrimary transition-colors flex items-center gap-1 shrink-0"
+                          >
+                            <span>{sub.name}</span>
+                            <span className="font-mono opacity-60">({count})</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
-                {activeFolder?.description && (
-                  <p className="text-xs text-serene-text-muted mt-0.5">
-                    {activeFolder.description}
-                  </p>
+              </div>
+
+              {/* Folder Quick Action */}
+              <div className="flex items-center gap-2">
+                {activeFolder && (
+                  <button
+                    onClick={() => handleOpenAddModalForFolder(activeFolder.id)}
+                    className="inline-flex items-center gap-1 px-3 py-1.5 bg-serene-primary hover:bg-serene-primary-hover text-white text-xs font-semibold rounded-lg shadow-2xs transition-colors"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Add to {activeFolder.name}</span>
+                  </button>
                 )}
               </div>
             </div>
-
-            {/* View switcher & Quick Action */}
-            <div className="flex items-center gap-2">
-              {selectedFolderId === null && !searchQuery && (
-                <div className="flex items-center bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark p-1 rounded-lg border border-serene-border-light dark:border-serene-border-dark">
-                  <button
-                    onClick={() => setViewMode('boxy')}
-                    title="Boxy Folders View"
-                    className={`px-2.5 py-1 rounded-md text-xs font-medium flex items-center gap-1.5 transition-all ${
-                      viewMode === 'boxy'
-                        ? 'bg-white dark:bg-serene-surface-dark text-serene-primary dark:text-serene-primary-dark shadow-2xs font-semibold'
-                        : 'text-serene-text-muted hover:text-serene-text-primary'
-                    }`}
-                  >
-                    <Grid className="w-3.5 h-3.5" />
-                    <span className="hidden sm:inline">Folder Tiles</span>
-                  </button>
-                  <button
-                    onClick={() => setViewMode('sections')}
-                    title="Expanded Sections View"
-                    className={`px-2.5 py-1 rounded-md text-xs font-medium flex items-center gap-1.5 transition-all ${
-                      viewMode === 'sections'
-                        ? 'bg-white dark:bg-serene-surface-dark text-serene-primary dark:text-serene-primary-dark shadow-2xs font-semibold'
-                        : 'text-serene-text-muted hover:text-serene-text-primary'
-                    }`}
-                  >
-                    <List className="w-3.5 h-3.5" />
-                    <span className="hidden sm:inline">Expanded</span>
-                  </button>
-                </div>
-              )}
-
-              {activeFolder && (
-                <button
-                  onClick={() => handleOpenAddModalForFolder(activeFolder.id)}
-                  className="inline-flex items-center gap-1 px-3 py-1.5 bg-serene-primary hover:bg-serene-primary-hover text-white text-xs font-semibold rounded-lg shadow-2xs transition-colors"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>Add to {activeFolder.name}</span>
-                </button>
-              )}
-            </div>
-          </div>
+          )}
 
           {/* 4. MAIN CONTENT VIEWS */}
           {searchQuery.trim() || selectedFolderId === 'favorites' ? (
@@ -750,32 +1043,12 @@ export function App() {
                 </div>
               )}
             </div>
-          ) : viewMode === 'boxy' ? (
+          ) : (
+            /* Home / Dashboard View: Clean, focused, uncluttered */
             <div className="space-y-6">
-              <motion.div 
-                className="grid grid-cols-1 @xs:grid-cols-2 @xl:grid-cols-3 @3xl:grid-cols-4 gap-3.5 sm:gap-4"
-                variants={staggerContainerVariants}
-                initial="initial"
-                animate="animate"
-              >
-                {appData.folders.map((folder) => {
-                  const linksInFolder = appData.links.filter((l) => l.folderId === folder.id);
-                  return (
-                    <motion.div key={folder.id} variants={staggerItemVariants}>
-                      <FolderCard
-                        folder={folder}
-                        links={linksInFolder}
-                        onOpenFolder={(folderId) => setSelectedFolderId(folderId)}
-                        onAddLinkToFolder={handleOpenAddModalForFolder}
-                      />
-                    </motion.div>
-                  );
-                })}
-              </motion.div>
-
-              {/* Pinned / Starred Quick Dial Strip */}
-              {appData.links.some((l) => l.isFavorite) && (
-                <div className="pt-4 border-t border-serene-border-light/60 dark:border-serene-border-dark/60 space-y-3">
+              {/* Pinned / Starred Quick Access Strip */}
+              {appData.links.some((l) => l.isFavorite) ? (
+                <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <span className="w-2 h-2 rounded-full bg-amber-500" />
@@ -785,7 +1058,7 @@ export function App() {
                     </div>
                     <button
                       onClick={() => setSelectedFolderId('favorites')}
-                      className="text-xs text-serene-primary dark:text-serene-primary-dark hover:underline"
+                      className="text-xs text-serene-primary dark:text-serene-primary-dark hover:underline font-medium"
                     >
                       View all favorites ({appData.links.filter((l) => l.isFavorite).length}) →
                     </button>
@@ -804,32 +1077,32 @@ export function App() {
                     />
                   </div>
                 </div>
+              ) : (
+                <div className="py-6 px-4 text-center rounded-2xl border border-dashed border-serene-border-light dark:border-serene-border-dark bg-white/40 dark:bg-serene-surface-dark/40">
+                  <p className="text-xs text-serene-text-secondary dark:text-serene-text-darkSecondary font-medium">
+                    Your resource spaces & folders are easily accessible anytime in the left sidebar.
+                  </p>
+                  <p className="text-[11px] text-serene-text-muted mt-1">
+                    Star any bookmark to pin it here on your home dashboard for 1-click access.
+                  </p>
+                </div>
+              )}
+
+              {/* Today's Calendar Schedule Timeline (if Google Calendar is enabled) */}
+              {appData.settings.googleCalendar?.enabled && (
+                <div className="pt-2">
+                  <CalendarScheduleTimeline
+                    events={appData.calendarEvents || []}
+                    onSync={() => handleSyncCalendar(false)}
+                    isSyncing={isSyncingCalendar}
+                    onOpenSettings={() => setIsSettingsModalOpen(true)}
+                    isTokenExpired={calendarSummary.isTokenExpired}
+                  />
+                </div>
               )}
             </div>
-          ) : (
-            <div className="space-y-8">
-              {appData.folders.map((folder) => {
-                const linksInFolder = appData.links.filter((l) => l.folderId === folder.id);
-
-                return (
-                  <CategorySection
-                    key={folder.id}
-                    folder={folder}
-                    links={linksInFolder}
-                    allFolders={appData.folders}
-                    onToggleFavorite={handleToggleFavorite}
-                    onEditLink={handleEditLink}
-                    onDeleteLink={handleDeleteLink}
-                    onMoveFolder={handleMoveFolder}
-                    onAddLinkToFolder={handleOpenAddModalForFolder}
-                    onLinkClick={handleLinkClick}
-                    openInNewTab={appData.settings.openInNewTab}
-                  />
-                );
-              })}
-            </div>
-            )}
-          </motion.main>
+          )}
+        </motion.main>
         )}
       </AnimatePresence>
 
@@ -881,7 +1154,9 @@ export function App() {
         isOpen={isManageFoldersOpen}
         onClose={() => setIsManageFoldersOpen(false)}
         folders={appData.folders}
+        links={appData.links}
         onSaveFolders={handleSaveFolders}
+        onSaveFoldersAndLinks={handleSaveFoldersAndLinks}
       />
 
       <SettingsModal
@@ -891,6 +1166,8 @@ export function App() {
         onUpdateAppData={setAppData}
         onResetData={handleResetData}
         onOpenBookmarkImport={() => setIsBookmarkImportOpen(true)}
+        onSyncCalendar={() => handleSyncCalendar(false)}
+        isSyncingCalendar={isSyncingCalendar}
       />
 
       <BookmarkImportModal
@@ -899,6 +1176,36 @@ export function App() {
         folders={appData.folders}
         existingLinks={appData.links}
         onImportBookmarks={handleImportBookmarks}
+      />
+
+      {/* Dedicated Confirmation Modal for Bookmark/Link Deletion */}
+      <ConfirmDeleteModal
+        isOpen={isDeleteLinkModalOpen}
+        onClose={handleCancelDeleteLink}
+        onConfirm={handleConfirmDeleteLink}
+        title="Delete Bookmark"
+        itemName={linkToDelete?.title}
+        description="Are you sure you want to delete this bookmark? This action cannot be undone."
+        confirmText="Delete"
+      />
+
+      {/* Root Folder Action Dialog for Sidebar & Root Actions */}
+      <FolderActionDialog
+        isOpen={!!sidebarFolderAction}
+        mode={sidebarFolderAction?.mode || 'hide'}
+        folder={sidebarFolderAction?.folder || null}
+        childCount={
+          sidebarFolderAction?.folder
+            ? appData.folders.filter((f) => f.parentId === sidebarFolderAction.folder.id).length
+            : 0
+        }
+        linkCount={
+          sidebarFolderAction?.folder
+            ? appData.links.filter((l) => l.folderId === sidebarFolderAction.folder.id).length
+            : 0
+        }
+        onClose={() => setSidebarFolderAction(null)}
+        onConfirmWithOptions={handleConfirmSidebarFolderAction}
       />
 
       {/* Real-time Bookmark Sync Notification Toast */}

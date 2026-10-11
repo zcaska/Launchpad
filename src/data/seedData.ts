@@ -171,7 +171,14 @@ export const DEFAULT_SEED_DATA: AppData = {
       dailyLimit: 20,
       requestsToday: 0,
     },
+    googleCalendar: {
+      enabled: false,
+      clientId: '',
+      calendarId: 'primary',
+      syncIntervalMinutes: 5,
+    },
   },
+  calendarEvents: [],
   scratchpadText: `💡 Quick Scratchpad:
 - Review week 4 lecture slides before 4 PM
 - Submit PR for LaunchPad core components

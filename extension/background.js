@@ -3,7 +3,7 @@
  * Listens for chrome.bookmarks events and broadcasts to LaunchPAD tabs.
  */
 
-import { classifyBookmark } from './rules.js';
+import { classifyBookmark, isGenericFolder } from './rules.js';
 
 const SYNC_CHANNEL_NAME = 'launchpad_bookmarks_sync';
 
@@ -52,19 +52,28 @@ async function broadcastBookmark(payload) {
 }
 
 /**
- * Retrieves the folder title for a given bookmark's parent ID.
+ * Retrieves the full folder path hierarchy for a given bookmark parent ID.
  */
-async function getBookmarkFolderTitle(parentId) {
-  if (!parentId) return '';
-  try {
-    const nodes = await chrome.bookmarks.get(parentId);
-    if (nodes && nodes.length > 0) {
-      return nodes[0].title || '';
+async function getBookmarkFolderHierarchy(parentId) {
+  const hierarchy = [];
+  let currentId = parentId;
+  while (currentId) {
+    try {
+      const nodes = await chrome.bookmarks.get(currentId);
+      if (nodes && nodes.length > 0) {
+        const title = nodes[0].title || '';
+        if (title && !isGenericFolder(title)) {
+          hierarchy.unshift(title);
+        }
+        currentId = nodes[0].parentId;
+      } else {
+        break;
+      }
+    } catch {
+      break;
     }
-  } catch {
-    // Parent node might be root or inaccessible
   }
-  return '';
+  return hierarchy;
 }
 
 // Listen for newly created bookmarks in Chrome / Edge / Brave
@@ -74,13 +83,15 @@ chrome.bookmarks.onCreated.addListener(async (id, bookmark) => {
     return;
   }
 
-  const sourceFolder = await getBookmarkFolderTitle(bookmark.parentId);
+  const folderHierarchy = await getBookmarkFolderHierarchy(bookmark.parentId);
+  const sourceFolder = folderHierarchy.length > 0 ? folderHierarchy[folderHierarchy.length - 1] : '';
   const classification = classifyBookmark(bookmark.url, bookmark.title, sourceFolder);
 
   const payload = {
     url: bookmark.url,
     title: bookmark.title || '',
     sourceFolder,
+    folderHierarchy,
     folderId: classification.folderId,
     tags: classification.tags,
     addDate: bookmark.dateAdded || Date.now(),
@@ -113,21 +124,26 @@ async function syncAllBookmarks() {
   const tree = await chrome.bookmarks.getTree();
   const allBookmarks = [];
 
-  function walk(nodes, currentFolder = '') {
+  function walk(nodes, folderPath = []) {
     for (const node of nodes) {
       if (node.url) {
-        const classification = classifyBookmark(node.url, node.title, currentFolder);
+        const sourceFolder = folderPath.length > 0 ? folderPath[folderPath.length - 1] : '';
+        const classification = classifyBookmark(node.url, node.title, sourceFolder);
         allBookmarks.push({
           url: node.url,
           title: node.title || '',
-          sourceFolder: currentFolder,
+          sourceFolder,
+          folderHierarchy: [...folderPath],
           folderId: classification.folderId,
           tags: classification.tags,
           addDate: node.dateAdded || Date.now(),
         });
       }
       if (node.children && node.children.length > 0) {
-        walk(node.children, node.title || currentFolder);
+        const nextPath = node.title && !isGenericFolder(node.title)
+          ? [...folderPath, node.title]
+          : folderPath;
+        walk(node.children, nextPath);
       }
     }
   }

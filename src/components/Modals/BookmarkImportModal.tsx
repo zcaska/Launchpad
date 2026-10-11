@@ -18,13 +18,14 @@ import { Folder, LinkItem, ParsedBookmark } from '../../types';
 import { parseNetscapeBookmarks } from '../../utils/bookmarkParser';
 import { modalBackdropVariants, modalContentVariants } from '../../utils/motion';
 import { extractDomain, getFaviconUrl } from '../../utils/favicon';
+import { formatFolderHierarchyName } from '../../utils/folderTree';
 
 interface BookmarkImportModalProps {
   isOpen: boolean;
   onClose: () => void;
   folders: Folder[];
   existingLinks: LinkItem[];
-  onImportBookmarks: (newLinks: LinkItem[]) => void;
+  onImportBookmarks: (newLinks: LinkItem[], newFolders?: Folder[]) => void;
 }
 
 export const BookmarkImportModal: React.FC<BookmarkImportModalProps> = ({
@@ -38,6 +39,7 @@ export const BookmarkImportModal: React.FC<BookmarkImportModalProps> = ({
   const [isDragging, setIsDragging] = useState(false);
   const [fileName, setFileName] = useState<string>('');
   const [bookmarks, setBookmarks] = useState<ParsedBookmark[]>([]);
+  const [detectedFolders, setDetectedFolders] = useState<Folder[]>([]);
   const [skipDuplicates, setSkipDuplicates] = useState(true);
   const [searchFilter, setSearchFilter] = useState('');
   const [selectedFolderFilter, setSelectedFolderFilter] = useState<string>('all');
@@ -51,6 +53,7 @@ export const BookmarkImportModal: React.FC<BookmarkImportModalProps> = ({
     setIsDragging(false);
     setFileName('');
     setBookmarks([]);
+    setDetectedFolders([]);
     setSkipDuplicates(true);
     setSearchFilter('');
     setSelectedFolderFilter('all');
@@ -71,6 +74,7 @@ export const BookmarkImportModal: React.FC<BookmarkImportModalProps> = ({
         const content = (e.target?.result as string) || '';
         const result = parseNetscapeBookmarks(content, existingLinks, folders);
         setBookmarks(result.bookmarks);
+        setDetectedFolders(result.createdFolders || []);
         setStep('preview');
       } catch (err: any) {
         alert('Could not parse bookmark file: ' + (err?.message || 'Invalid format'));
@@ -190,6 +194,13 @@ export const BookmarkImportModal: React.FC<BookmarkImportModalProps> = ({
     return counts;
   }, [bookmarks]);
 
+  // Combined list of existing folders and detected new folders from imported source
+  const allAvailableFolders = useMemo(() => {
+    const existingIds = new Set(folders.map(f => f.id));
+    const newFolders = detectedFolders.filter(f => !existingIds.has(f.id));
+    return [...folders, ...newFolders];
+  }, [folders, detectedFolders]);
+
   // Execute batch import
   const handleConfirmImport = () => {
     const toImport = bookmarks.filter(b => b.selected);
@@ -201,18 +212,35 @@ export const BookmarkImportModal: React.FC<BookmarkImportModalProps> = ({
     setIsImporting(true);
 
     const now = Date.now();
+    const fallbackFolderId = allAvailableFolders[0]?.id || 'f-misc';
     const newLinks: LinkItem[] = toImport.map((b, idx) => ({
       id: `imported-${now}-${idx}-${Math.random().toString(36).slice(2, 7)}`,
       title: b.title || extractDomain(b.url),
       url: b.url,
       description: b.sourceFolder ? `Imported from: ${b.sourceFolder}` : undefined,
-      folderId: b.folderId || folders[0]?.id || 'f-misc',
+      folderId: b.folderId || fallbackFolderId,
       isFavorite: false,
       tags: b.tags || [],
       createdAt: b.addDate || now,
     }));
 
-    onImportBookmarks(newLinks);
+    // Find which newly detected folders are actually used by the imported bookmarks,
+    // including all ancestor folders in the hierarchy up to the root.
+    const usedFolderIds = new Set(newLinks.map(l => l.folderId));
+    const allNeededFolderIds = new Set<string>();
+
+    usedFolderIds.forEach(id => {
+      let currentId: string | undefined = id;
+      while (currentId) {
+        allNeededFolderIds.add(currentId);
+        const folderInDetected = detectedFolders.find(f => f.id === currentId);
+        currentId = folderInDetected?.parentId;
+      }
+    });
+
+    const foldersToCreate = detectedFolders.filter(f => allNeededFolderIds.has(f.id));
+
+    onImportBookmarks(newLinks, foldersToCreate);
     setImportedCount(newLinks.length);
     setIsImporting(false);
 
@@ -351,6 +379,10 @@ export const BookmarkImportModal: React.FC<BookmarkImportModalProps> = ({
                       <span className="px-2.5 py-1 rounded-lg bg-serene-primary/10 text-serene-primary dark:text-serene-primary-dark font-medium border border-serene-primary/20">
                         Selected: <strong className="font-bold">{selectedCount}</strong>
                       </span>
+                      <span className="hidden md:inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark text-serene-text-muted text-[11px] border border-serene-border-light dark:border-serene-border-dark">
+                        <Sparkles className="w-3 h-3 text-serene-primary" />
+                        <span>Root browser bars automatically filtered</span>
+                      </span>
                     </div>
 
                     {/* Duplicate toggle & Select All Buttons */}
@@ -398,21 +430,31 @@ export const BookmarkImportModal: React.FC<BookmarkImportModalProps> = ({
                     >
                       All ({totalCount})
                     </button>
-                    {folders.map(f => {
+                    {allAvailableFolders.map(f => {
                       const count = categoryCounts[f.id] || 0;
                       if (count === 0) return null;
+                      const isNew = detectedFolders.some(df => df.id === f.id);
                       return (
                         <button
                           key={f.id}
                           type="button"
                           onClick={() => setSelectedFolderFilter(f.id)}
-                          className={`px-2.5 py-1 rounded-full text-[11px] font-medium transition-colors shrink-0 flex items-center gap-1 ${
+                          className={`px-2.5 py-1 rounded-full text-[11px] font-medium transition-colors shrink-0 flex items-center gap-1.5 ${
                             selectedFolderFilter === f.id
                               ? 'bg-serene-primary text-white'
                               : 'bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark text-serene-text-secondary border border-serene-border-light dark:border-serene-border-dark hover:border-serene-primary/40'
                           }`}
                         >
                           <span>{f.name}</span>
+                          {isNew && (
+                            <span className={`text-[9px] px-1 py-0.2 rounded font-semibold uppercase ${
+                              selectedFolderFilter === f.id
+                                ? 'bg-white/20 text-white'
+                                : 'bg-purple-100 dark:bg-purple-900/60 text-purple-700 dark:text-purple-300'
+                            }`}>
+                              New
+                            </span>
+                          )}
                           <span className="opacity-70">({count})</span>
                         </button>
                       );
@@ -517,9 +559,9 @@ export const BookmarkImportModal: React.FC<BookmarkImportModalProps> = ({
                             onChange={(e) => changeBookmarkFolder(item.originalIndex, e.target.value)}
                             className="w-full text-xs py-1 px-2 rounded-lg bg-white dark:bg-serene-surface-dark border border-serene-border-light dark:border-serene-border-dark text-serene-text-primary dark:text-serene-text-darkPrimary focus:outline-none focus:ring-1 focus:ring-serene-primary"
                           >
-                            {folders.map(f => (
+                            {allAvailableFolders.map(f => (
                               <option key={f.id} value={f.id}>
-                                {f.name}
+                                {formatFolderHierarchyName(f, allAvailableFolders)} {detectedFolders.some(df => df.id === f.id) ? '✦ (New)' : ''}
                               </option>
                             ))}
                           </select>

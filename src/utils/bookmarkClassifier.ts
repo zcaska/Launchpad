@@ -250,6 +250,24 @@ export function classifyBookmark(
 
   // 1. Browser Folder Heuristics (if user already had structured folders in browser)
   if (cleanSourceFolder) {
+    // 1a. Direct match against an existing available folder (e.g. user already has an "AI" or "Personal" folder)
+    if (availableFolders && availableFolders.length > 0) {
+      const directFolderMatch = availableFolders.find(
+        f => f.name.trim().toLowerCase() === cleanSourceFolder.toLowerCase() ||
+             f.id.toLowerCase() === `folder-${cleanSourceFolder.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`
+      );
+      if (directFolderMatch) {
+        tags.add(directFolderMatch.name);
+        return {
+          folderId: directFolderMatch.id,
+          tags: Array.from(tags),
+          matchedRule: `Exact folder match: "${directFolderMatch.name}"`,
+          confidence: 'high' as BookmarkClassificationConfidence,
+        };
+      }
+    }
+
+    // 1b. Match generic category regexes
     for (const pattern of FOLDER_NAME_PATTERNS) {
       if (pattern.regex.test(cleanSourceFolder)) {
         tags.add(pattern.tag);

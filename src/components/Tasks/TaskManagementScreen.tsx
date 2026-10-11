@@ -18,9 +18,10 @@ import {
   FileText,
   AlertTriangle
 } from 'lucide-react';
-import { QuickNote, TaskPriority, TaskUrl, Subtask } from '../../types';
+import { QuickNote, TaskPriority, TaskUrl, Subtask, CalendarEventItem } from '../../types';
 import { calculateTaskLoad, formatMinutesToHours } from '../../utils/timeBudget';
 import { modalBackdropVariants, modalContentVariants, staggerItemVariants, staggerContainerVariants } from '../../utils/motion';
+import { CalendarScheduleTimeline } from '../Calendar/CalendarScheduleTimeline';
 
 export interface TaskManagementScreenProps {
   notes: QuickNote[];
@@ -28,6 +29,11 @@ export interface TaskManagementScreenProps {
   onUpdateNotes: (notes: QuickNote[]) => void;
   onUpdateScratchpad: (text: string) => void;
   onBackToDashboard?: () => void;
+  calendarEvents?: CalendarEventItem[];
+  onSyncCalendar?: () => void;
+  isSyncingCalendar?: boolean;
+  onOpenSettings?: () => void;
+  isTokenExpired?: boolean;
 }
 
 type FilterTab = 'All' | 'Urgent' | 'High Priority' | 'Medium' | 'Low' | 'Due Soon' | 'Completed';
@@ -38,10 +44,16 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
   onUpdateNotes,
   onUpdateScratchpad,
   onBackToDashboard,
+  calendarEvents = [],
+  onSyncCalendar,
+  isSyncingCalendar = false,
+  onOpenSettings,
+  isTokenExpired = false,
 }) => {
   // Filters & State
   const [activeTab, setActiveTab] = useState<FilterTab>('All');
   const [searchQuery, setSearchQuery] = useState('');
+  const [sidePanelTab, setSidePanelTab] = useState<'scratchpad' | 'schedule'>('schedule');
   // In mobile/tablet view (< 1280px / xl breakpoint), keep scratchpad closed by default
   // so it does not cover the screen when opening Tasks & Action Items
   const [isScratchpadOpen, setIsScratchpadOpen] = useState(() => {
@@ -835,35 +847,72 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
               aria-hidden="true"
             />
             <aside className="fixed xl:static inset-y-0 right-0 z-40 xl:z-auto w-80 max-w-[85vw] xl:w-96 shrink-0 border-l border-serene-border-light dark:border-serene-border-dark bg-white/95 dark:bg-serene-surface-dark/95 xl:bg-white/70 xl:dark:bg-serene-surface-dark/70 backdrop-blur-md p-4 flex flex-col justify-between overflow-hidden shadow-2xl xl:shadow-none transition-all animate-fadeIn">
-              <div className="flex items-center justify-between pb-3 border-b border-serene-border-light dark:border-serene-border-dark">
-                <div className="flex items-center gap-2">
-                  <FileText className="w-4 h-4 text-serene-primary dark:text-serene-primary-dark" />
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-serene-text-primary dark:text-serene-text-darkPrimary">
-                    Scratchpad & Notes
-                  </h3>
+              {/* Header with Tabs */}
+              <div className="flex items-center justify-between pb-2.5 border-b border-serene-border-light dark:border-serene-border-dark">
+                <div className="flex items-center gap-1 bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark p-0.5 rounded-lg border border-serene-border-light dark:border-serene-border-dark">
+                  <button
+                    onClick={() => setSidePanelTab('schedule')}
+                    className={`px-2.5 py-1 rounded-md text-[11px] font-semibold flex items-center gap-1.5 transition-all ${
+                      sidePanelTab === 'schedule'
+                        ? 'bg-white dark:bg-serene-surface-dark text-serene-primary dark:text-serene-primary-dark shadow-2xs'
+                        : 'text-serene-text-muted hover:text-serene-text-primary'
+                    }`}
+                  >
+                    <Calendar className="w-3 h-3" />
+                    <span>Schedule</span>
+                    {calendarEvents.length > 0 && (
+                      <span className="font-mono text-[10px] opacity-75">({calendarEvents.length})</span>
+                    )}
+                  </button>
+
+                  <button
+                    onClick={() => setSidePanelTab('scratchpad')}
+                    className={`px-2.5 py-1 rounded-md text-[11px] font-semibold flex items-center gap-1.5 transition-all ${
+                      sidePanelTab === 'scratchpad'
+                        ? 'bg-white dark:bg-serene-surface-dark text-serene-primary dark:text-serene-primary-dark shadow-2xs'
+                        : 'text-serene-text-muted hover:text-serene-text-primary'
+                    }`}
+                  >
+                    <FileText className="w-3 h-3" />
+                    <span>Scratchpad</span>
+                  </button>
                 </div>
+
                 <button
                   onClick={() => setIsScratchpadOpen(false)}
                   className="p-1 rounded-md text-serene-text-muted hover:text-serene-text-primary dark:hover:text-serene-text-darkPrimary"
-                  title="Hide scratchpad"
+                  title="Hide side panel"
                 >
                   <X className="w-4 h-4" />
                 </button>
               </div>
 
-              <div className="flex-1 py-3 flex flex-col min-h-0">
-                <textarea
-                  value={scratchpadText}
-                  onChange={(e) => onUpdateScratchpad(e.target.value)}
-                  placeholder="Jot down quick thoughts, ideas, links, or meeting notes here alongside your tasks..."
-                  className="w-full flex-1 p-3 bg-serene-surfaceAlt-light/60 dark:bg-serene-surfaceAlt-dark/60 border border-serene-border-light dark:border-serene-border-dark rounded-xl text-xs text-serene-text-primary dark:text-serene-text-darkPrimary placeholder:text-serene-text-muted resize-none focus:outline-none focus:ring-2 focus:ring-serene-primary/30 focus:border-serene-primary font-sans leading-relaxed"
-                />
-              </div>
-
-              <div className="pt-2 text-[11px] text-serene-text-muted flex items-center justify-between border-t border-serene-border-light/60 dark:border-serene-border-dark/60">
-                <span>Auto-saved to storage</span>
-                <span>{scratchpadText.length} characters</span>
-              </div>
+              {/* Panel Content */}
+              {sidePanelTab === 'schedule' ? (
+                <div className="flex-1 py-3 flex flex-col min-h-0 overflow-y-auto">
+                  <CalendarScheduleTimeline
+                    events={calendarEvents}
+                    onSync={onSyncCalendar}
+                    isSyncing={isSyncingCalendar}
+                    onOpenSettings={onOpenSettings}
+                    isTokenExpired={isTokenExpired}
+                    className="border-0 shadow-none p-0 bg-transparent"
+                  />
+                </div>
+              ) : (
+                <div className="flex-1 py-3 flex flex-col min-h-0">
+                  <textarea
+                    value={scratchpadText}
+                    onChange={(e) => onUpdateScratchpad(e.target.value)}
+                    placeholder="Jot down quick thoughts, ideas, links, or meeting notes here alongside your tasks..."
+                    className="w-full flex-1 p-3 bg-serene-surfaceAlt-light/60 dark:bg-serene-surfaceAlt-dark/60 border border-serene-border-light dark:border-serene-border-dark rounded-xl text-xs text-serene-text-primary dark:text-serene-text-darkPrimary placeholder:text-serene-text-muted resize-none focus:outline-none focus:ring-2 focus:ring-serene-primary/30 focus:border-serene-primary font-sans leading-relaxed"
+                  />
+                  <div className="pt-2 text-[11px] text-serene-text-muted flex items-center justify-between border-t border-serene-border-light/60 dark:border-serene-border-dark/60">
+                    <span>Auto-saved to storage</span>
+                    <span>{scratchpadText.length} characters</span>
+                  </div>
+                </div>
+              )}
             </aside>
           </>
         )}

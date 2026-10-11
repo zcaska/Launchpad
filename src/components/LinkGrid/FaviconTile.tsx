@@ -114,7 +114,7 @@ export const FaviconTile: React.FC<FaviconTileProps> = ({
       {/* Floating Progressive Disclosure Preview Card with Clamped Alignment */}
       {isHovered && (
         <div 
-          className={`absolute z-50 w-64 p-3 bg-white dark:bg-serene-surface-dark border border-serene-border-light dark:border-serene-border-dark rounded-2xl shadow-modal animate-fadeIn pointer-events-auto ${
+          className={`absolute z-30 w-64 p-3 bg-white dark:bg-serene-surface-dark border border-serene-border-light dark:border-serene-border-dark rounded-2xl shadow-modal animate-fadeIn pointer-events-auto ${
             alignV === 'top' ? 'bottom-full mb-2' : 'top-full mt-2'
           } ${
             alignH === 'left' 
@@ -205,8 +205,9 @@ export const FaviconTile: React.FC<FaviconTileProps> = ({
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  onDelete(link.id);
                   setIsHovered(false);
+                  setShowMenu(false);
+                  onDelete(link.id);
                 }}
                 className="text-rose-600 hover:text-rose-700 flex items-center gap-1 font-medium"
               >

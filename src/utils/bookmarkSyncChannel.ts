@@ -11,6 +11,7 @@ export interface BookmarkSyncPayload {
   url: string;
   title?: string;
   sourceFolder?: string;
+  folderHierarchy?: string[];
   tags?: string[];
   folderId?: string;
   addDate?: number;
@@ -22,7 +23,7 @@ export interface BookmarkSyncEventData {
   payload: BookmarkSyncPayload | BookmarkSyncPayload[];
 }
 
-export type BookmarkSyncHandler = (payload: BookmarkSyncPayload) => void;
+export type BookmarkSyncHandler = (payload: BookmarkSyncPayload | BookmarkSyncPayload[]) => void;
 
 let activeBroadcastChannel: BroadcastChannel | null = null;
 
@@ -96,16 +97,12 @@ export function initBookmarkSyncChannel(
 
       if (data.type === 'BOOKMARK_CREATED' && data.payload) {
         if (Array.isArray(data.payload)) {
-          data.payload.forEach((item: BookmarkSyncPayload) => {
-            if (item && item.url) onNewBookmark(item);
-          });
+          onNewBookmark(data.payload);
         } else if (data.payload.url) {
           onNewBookmark(data.payload as BookmarkSyncPayload);
         }
       } else if (data.type === 'SYNC_BOOKMARKS_BATCH' && Array.isArray(data.payload)) {
-        data.payload.forEach((item: BookmarkSyncPayload) => {
-          if (item && item.url) onNewBookmark(item);
-        });
+        onNewBookmark(data.payload);
       }
     } catch (err) {
       console.warn('[BookmarkSync] Error handling BroadcastChannel message:', err);
@@ -137,9 +134,7 @@ export function initBookmarkSyncChannel(
         const payload = data.payload || data.bookmark || data.data;
         if (payload) {
           if (Array.isArray(payload)) {
-            payload.forEach((item: BookmarkSyncPayload) => {
-              if (item && item.url) onNewBookmark(item);
-            });
+            onNewBookmark(payload);
           } else if (payload.url) {
             onNewBookmark(payload as BookmarkSyncPayload);
           }
@@ -150,9 +145,7 @@ export function initBookmarkSyncChannel(
       ) {
         const batch = data.payload || data.bookmarks;
         if (Array.isArray(batch)) {
-          batch.forEach((item: BookmarkSyncPayload) => {
-            if (item && item.url) onNewBookmark(item);
-          });
+          onNewBookmark(batch);
         }
       }
     } catch (err) {
