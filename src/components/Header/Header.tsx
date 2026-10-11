@@ -25,8 +25,8 @@ interface HeaderProps {
   isQuickNotesOpen: boolean;
   theme: ThemeMode;
   onThemeChange: (theme: ThemeMode) => void;
-  activeView?: 'dashboard' | 'tasks';
-  onSelectView?: (view: 'dashboard' | 'tasks') => void;
+  activeView?: 'dashboard' | 'tasks' | 'growth';
+  onSelectView?: (view: 'dashboard' | 'tasks' | 'growth') => void;
   pendingTasksCount?: number;
   onToggleMobileSidebar?: () => void;
 }

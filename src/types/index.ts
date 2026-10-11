@@ -146,6 +146,37 @@ export interface CalendarScheduleSummary {
   isTokenExpired?: boolean;
 }
 
+export interface DailyGrowthRecord {
+  tasksCompleted: number;
+  focusMinutes: number;
+  xpEarned: number;
+  dailyGoalCompleted: boolean;
+}
+
+export interface HeroLevelDef {
+  id: string;
+  level: number;
+  name: string;
+  title: string;
+  category: 'anime' | 'fiction' | 'real_world';
+  minStreakDays: number;
+  minLifetimeXp: number;
+  avatarIcon: string;
+  gradient: string;
+  realLifeMeaning: string;
+  quote: string;
+}
+
+export interface GamificationState {
+  currentXp: number;
+  currentStreak: number;
+  longestStreak: number;
+  lastActiveDate: string; // 'YYYY-MM-DD'
+  unlockedHeroIds: string[];
+  activeHeroId: string;
+  lastBackupTimestamp: number;
+}
+
 export interface AppData {
   version: number;
   folders: Folder[];
@@ -155,6 +186,8 @@ export interface AppData {
   dailyFocus: DailyFocus;
   learnedPreferences: LearnedPreferences;
   calendarEvents?: CalendarEventItem[];
+  gamification: GamificationState;
+  growthHistory: Record<string, DailyGrowthRecord>;
   settings: {
     theme: ThemeMode;
     clockFormat: '12h' | '24h';

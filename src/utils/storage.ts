@@ -44,6 +44,20 @@ export function loadAppData(): AppData {
       activeMode: parsed.settings?.activeMode || 'auto',
     };
 
+    const gamification = parsed.gamification
+      ? {
+          currentXp: typeof parsed.gamification.currentXp === 'number' ? parsed.gamification.currentXp : (DEFAULT_SEED_DATA.gamification?.currentXp ?? 0),
+          currentStreak: typeof parsed.gamification.currentStreak === 'number' ? parsed.gamification.currentStreak : (DEFAULT_SEED_DATA.gamification?.currentStreak ?? 1),
+          longestStreak: typeof parsed.gamification.longestStreak === 'number' ? parsed.gamification.longestStreak : (DEFAULT_SEED_DATA.gamification?.longestStreak ?? 1),
+          lastActiveDate: typeof parsed.gamification.lastActiveDate === 'string' ? parsed.gamification.lastActiveDate : (DEFAULT_SEED_DATA.gamification?.lastActiveDate ?? new Date().toISOString().split('T')[0]),
+          unlockedHeroIds: Array.isArray(parsed.gamification.unlockedHeroIds) ? parsed.gamification.unlockedHeroIds : (DEFAULT_SEED_DATA.gamification?.unlockedHeroIds ?? ['lvl-1-awakening']),
+          activeHeroId: typeof parsed.gamification.activeHeroId === 'string' ? parsed.gamification.activeHeroId : (DEFAULT_SEED_DATA.gamification?.activeHeroId ?? 'lvl-1-awakening'),
+          lastBackupTimestamp: typeof parsed.gamification.lastBackupTimestamp === 'number' ? parsed.gamification.lastBackupTimestamp : (DEFAULT_SEED_DATA.gamification?.lastBackupTimestamp ?? Date.now()),
+        }
+      : DEFAULT_SEED_DATA.gamification;
+
+    const growthHistory = typeof parsed.growthHistory === 'object' && parsed.growthHistory !== null ? parsed.growthHistory : {};
+
     const loadedData: AppData = {
       version: 2,
       folders: Array.isArray(parsed.folders) ? parsed.folders : DEFAULT_SEED_DATA.folders,
@@ -59,6 +73,8 @@ export function loadAppData(): AppData {
       },
       learnedPreferences,
       settings,
+      gamification,
+      growthHistory,
     };
 
     return loadedData;
@@ -77,7 +93,12 @@ export function saveAppData(data: AppData): void {
 }
 
 export function exportDataAsJson(data: AppData): void {
-  const jsonString = `data:text/json;charset=utf-8,${encodeURIComponent(JSON.stringify(data, null, 2))}`;
+  const exportPayload: AppData = {
+    ...data,
+    gamification: data.gamification || DEFAULT_SEED_DATA.gamification,
+    growthHistory: data.growthHistory || {},
+  };
+  const jsonString = `data:text/json;charset=utf-8,${encodeURIComponent(JSON.stringify(exportPayload, null, 2))}`;
   const downloadAnchor = document.createElement('a');
   const dateStr = new Date().toISOString().split('T')[0];
   downloadAnchor.setAttribute('href', jsonString);
@@ -92,6 +113,21 @@ export function importDataFromJson(jsonStr: string): AppData {
   if (!parsed || !Array.isArray(parsed.folders) || !Array.isArray(parsed.links)) {
     throw new Error('Invalid LaunchPad backup file format. Must contain folders and links.');
   }
+
+  const gamification = parsed.gamification
+    ? {
+        currentXp: typeof parsed.gamification.currentXp === 'number' ? parsed.gamification.currentXp : (DEFAULT_SEED_DATA.gamification?.currentXp ?? 0),
+        currentStreak: typeof parsed.gamification.currentStreak === 'number' ? parsed.gamification.currentStreak : (DEFAULT_SEED_DATA.gamification?.currentStreak ?? 1),
+        longestStreak: typeof parsed.gamification.longestStreak === 'number' ? parsed.gamification.longestStreak : (DEFAULT_SEED_DATA.gamification?.longestStreak ?? 1),
+        lastActiveDate: typeof parsed.gamification.lastActiveDate === 'string' ? parsed.gamification.lastActiveDate : (DEFAULT_SEED_DATA.gamification?.lastActiveDate ?? new Date().toISOString().split('T')[0]),
+        unlockedHeroIds: Array.isArray(parsed.gamification.unlockedHeroIds) ? parsed.gamification.unlockedHeroIds : (DEFAULT_SEED_DATA.gamification?.unlockedHeroIds ?? ['lvl-1-awakening']),
+        activeHeroId: typeof parsed.gamification.activeHeroId === 'string' ? parsed.gamification.activeHeroId : (DEFAULT_SEED_DATA.gamification?.activeHeroId ?? 'lvl-1-awakening'),
+        lastBackupTimestamp: typeof parsed.gamification.lastBackupTimestamp === 'number' ? parsed.gamification.lastBackupTimestamp : (DEFAULT_SEED_DATA.gamification?.lastBackupTimestamp ?? Date.now()),
+      }
+    : DEFAULT_SEED_DATA.gamification;
+
+  const growthHistory = typeof parsed.growthHistory === 'object' && parsed.growthHistory !== null ? parsed.growthHistory : {};
+
   return {
     version: 2,
     folders: parsed.folders,
@@ -110,5 +146,7 @@ export function importDataFromJson(jsonStr: string): AppData {
       ...DEFAULT_SEED_DATA.settings,
       ...(parsed.settings || {}),
     },
+    gamification,
+    growthHistory,
   };
 }

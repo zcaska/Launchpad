@@ -11,15 +11,17 @@ import {
   X,
   Compass,
   ExternalLink,
-  EyeOff
+  EyeOff,
+  Trophy
 } from 'lucide-react';
-import { Folder, LinkItem, FolderTreeNode } from '../../types';
+import { Folder, LinkItem, FolderTreeNode, GamificationState } from '../../types';
 import { getFolderIcon, FOLDER_COLOR_MAP } from '../../utils/icons';
 import { getFaviconUrl } from '../../utils/favicon';
 import { 
   buildFolderTree, 
   getFolderBreadcrumbs
 } from '../../utils/folderTree';
+import { getHeroById } from '../../data/heroRoster';
 
 interface SidebarProps {
   folders: Folder[];
@@ -32,11 +34,12 @@ interface SidebarProps {
   onDeleteFolder?: (folder: Folder) => void;
   isCollapsed: boolean;
   onToggleCollapse: () => void;
-  currentView?: 'dashboard' | 'tasks';
-  onSelectView?: (view: 'dashboard' | 'tasks') => void;
+  currentView?: 'dashboard' | 'tasks' | 'growth';
+  onSelectView?: (view: 'dashboard' | 'tasks' | 'growth') => void;
   pendingTasksCount?: number;
   isMobileOpen?: boolean;
   onCloseMobile?: () => void;
+  gamification?: GamificationState;
 }
 
 interface FolderTreeItemProps {
@@ -252,9 +255,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
   pendingTasksCount = 0,
   isMobileOpen = false,
   onCloseMobile,
+  gamification,
 }) => {
   const totalCount = links.length;
   const favoriteCount = links.filter((l) => l.isFavorite).length;
+
+  const activeHero = useMemo(() => {
+    if (!gamification?.activeHeroId) return null;
+    return getHeroById(gamification.activeHeroId);
+  }, [gamification?.activeHeroId]);
+
+  const heroLevelBadge = activeHero ? `Lvl ${activeHero.level}` : 'Lvl 1';
 
   // Build hierarchical folder tree supporting up to 5 levels
   const folderTree = useMemo(() => buildFolderTree(folders, links, 5), [folders, links]);
@@ -368,6 +379,28 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   0
                 </span>
               )}
+            </button>
+
+            {/* Growth & Mastery */}
+            <button
+              onClick={() => handleMobileNavClick(() => onSelectView && onSelectView('growth'))}
+              className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-medium transition-all ${
+                currentView === 'growth'
+                  ? 'bg-serene-primary text-white shadow-xs'
+                  : 'text-serene-text-secondary dark:text-serene-text-darkSecondary hover:bg-serene-surfaceAlt-light dark:hover:bg-serene-surfaceAlt-dark'
+              }`}
+            >
+              <Trophy className="w-4 h-4" />
+              <span className="flex-1 text-left font-semibold">Growth & Mastery</span>
+              <span
+                className={`text-[10px] px-1.5 py-0.5 rounded-full font-mono font-bold truncate max-w-[120px] ${
+                  currentView === 'growth'
+                    ? 'bg-white/20 text-white'
+                    : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20'
+                }`}
+              >
+                {heroLevelBadge}
+              </span>
             </button>
 
             {/* All Resources */}
@@ -513,6 +546,39 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       0
                     </span>
                   )}
+                </>
+              )}
+            </button>
+
+            {/* Growth & Mastery */}
+            <button
+              onClick={() => onSelectView && onSelectView('growth')}
+              className={`w-full flex items-center gap-3 rounded-xl text-xs font-medium transition-all ${
+                isCollapsed ? 'p-2.5 justify-center' : 'px-3 py-2'
+              } ${
+                currentView === 'growth'
+                  ? 'bg-serene-primary text-white shadow-xs'
+                  : 'text-serene-text-secondary dark:text-serene-text-darkSecondary hover:bg-serene-surfaceAlt-light dark:hover:bg-serene-surfaceAlt-dark hover:text-serene-text-primary dark:hover:text-serene-text-darkPrimary'
+              }`}
+              title={`Growth & Mastery (${heroLevelBadge})`}
+            >
+              <Trophy
+                className={`${iconSizeClass} shrink-0 ${
+                  currentView === 'growth' ? 'text-white' : 'text-amber-500 dark:text-amber-400'
+                }`}
+              />
+              {!isCollapsed && (
+                <>
+                  <span className="flex-1 text-left truncate font-semibold">Growth & Mastery</span>
+                  <span
+                    className={`text-[10px] px-1.5 py-0.5 rounded-full font-mono font-bold truncate max-w-[110px] ${
+                      currentView === 'growth'
+                        ? 'bg-white/20 text-white'
+                        : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20'
+                    }`}
+                  >
+                    {heroLevelBadge}
+                  </span>
                 </>
               )}
             </button>

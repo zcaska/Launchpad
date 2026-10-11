@@ -17,10 +17,13 @@ import {
   ThemeMode,
   RecommendationCandidate 
 } from './types';
-import { loadAppData, saveAppData } from './utils/storage';
+import { loadAppData, saveAppData, exportDataAsJson, importDataFromJson } from './utils/storage';
+import { recordTaskCompletion, recordDailyFocusCompletion } from './utils/gamification';
 import { DEFAULT_SEED_DATA } from './data/seedData';
 import { Header } from './components/Header/Header';
+import { BackupReminderToast } from './components/Layout/BackupReminderToast';
 import { Sidebar } from './components/Sidebar/Sidebar';
+import { GrowthMasteryScreen } from './components/Growth/GrowthMasteryScreen';
 import { FocusHeroBanner } from './components/Dashboard/FocusHeroBanner';
 import { TimeRadarWidget } from './components/Dashboard/TimeRadarWidget';
 import { SmartSuggestionCard } from './components/Dashboard/SmartSuggestionCard';
@@ -74,7 +77,7 @@ import {
 
 export function App() {
   const [appData, setAppData] = useState<AppData>(() => loadAppData());
-  const [activeView, setActiveView] = useState<'dashboard' | 'tasks'>('dashboard');
+  const [activeView, setActiveView] = useState<'dashboard' | 'tasks' | 'growth'>('dashboard');
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [isSyncingCalendar, setIsSyncingCalendar] = useState(false);
@@ -92,6 +95,7 @@ export function App() {
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [aiCustomIdea, setAiCustomIdea] = useState<RecommendationCandidate | null>(null);
   const [syncToast, setSyncToast] = useState<{ id: string; message: string; folderName: string } | null>(null);
+  const [isBackupDismissed, setIsBackupDismissed] = useState(false);
 
   // Dedicated Confirmation Modal for Item/Bookmark Deletion
   const [linkToDelete, setLinkToDelete] = useState<LinkItem | null>(null);
@@ -656,13 +660,34 @@ export function App() {
 
   // Handlers for Daily Focus & Notes
   const handleUpdateDailyFocus = (focusUpdates: Partial<DailyFocus>) => {
-    setAppData((prev) => ({
-      ...prev,
-      dailyFocus: {
-        ...prev.dailyFocus,
-        ...focusUpdates,
-      },
-    }));
+    setAppData((prev) => {
+      const willBeCompleted = focusUpdates.isCompleted === true;
+      const wasCompleted = prev.dailyFocus.isCompleted === true;
+
+      let nextGamification = prev.gamification;
+      let nextGrowthHistory = prev.growthHistory;
+
+      if (willBeCompleted && !wasCompleted) {
+        const result = recordDailyFocusCompletion(
+          prev.gamification,
+          prev.growthHistory,
+          focusUpdates.durationMinutes || prev.dailyFocus.durationMinutes || 45,
+          new Date()
+        );
+        nextGamification = result.gamification;
+        nextGrowthHistory = result.history;
+      }
+
+      return {
+        ...prev,
+        dailyFocus: {
+          ...prev.dailyFocus,
+          ...focusUpdates,
+        },
+        gamification: nextGamification,
+        growthHistory: nextGrowthHistory,
+      };
+    });
   };
 
   const handleUpdateNotes = (quickNotes: QuickNote[]) => {
@@ -673,12 +698,33 @@ export function App() {
   };
 
   const handleToggleTask = (taskId: string) => {
-    setAppData((prev) => ({
-      ...prev,
-      quickNotes: prev.quickNotes.map((task) =>
-        task.id === taskId ? { ...task, isDone: !task.isDone } : task
-      ),
-    }));
+    setAppData((prev) => {
+      const taskToComplete = prev.quickNotes.find((t) => t.id === taskId);
+      const isCompleting = taskToComplete && !taskToComplete.isDone;
+
+      let nextGamification = prev.gamification;
+      let nextGrowthHistory = prev.growthHistory;
+
+      if (isCompleting && taskToComplete) {
+        const result = recordTaskCompletion(
+          prev.gamification,
+          prev.growthHistory,
+          taskToComplete,
+          new Date()
+        );
+        nextGamification = result.gamification;
+        nextGrowthHistory = result.history;
+      }
+
+      return {
+        ...prev,
+        quickNotes: prev.quickNotes.map((task) =>
+          task.id === taskId ? { ...task, isDone: !task.isDone } : task
+        ),
+        gamification: nextGamification,
+        growthHistory: nextGrowthHistory,
+      };
+    });
   };
 
   const handleUpdateScratchpad = (scratchpadText: string) => {
@@ -702,6 +748,24 @@ export function App() {
     setAppData(DEFAULT_SEED_DATA);
     setSelectedFolderId(null);
   };
+
+  const handleQuickBackup = () => {
+    exportDataAsJson(appData);
+    const updatedData: AppData = {
+      ...appData,
+      gamification: {
+        ...(appData.gamification || DEFAULT_SEED_DATA.gamification!),
+        lastBackupTimestamp: Date.now(),
+      },
+    };
+    setAppData(updatedData);
+    saveAppData(updatedData);
+    setIsBackupDismissed(true);
+  };
+
+  const daysSinceBackup = Math.floor(
+    (Date.now() - (appData.gamification?.lastBackupTimestamp || 0)) / (1000 * 60 * 60 * 24)
+  );
 
   // Filtered Links Calculation (includes direct links + descendant subfolders)
   const filteredLinks = useMemo(() => {
@@ -775,6 +839,15 @@ export function App() {
         onToggleMobileSidebar={() => setIsMobileSidebarOpen((prev) => !prev)}
       />
 
+      {/* 5-Day Automated Backup Reminder Banner */}
+      {daysSinceBackup >= 5 && !isBackupDismissed && (
+        <BackupReminderToast
+          daysSinceLastBackup={daysSinceBackup}
+          onQuickBackup={handleQuickBackup}
+          onDismiss={() => setIsBackupDismissed(true)}
+        />
+      )}
+
       {/* Main Workspace Layout (Fluid Viewport with Independent Scroll Areas) */}
       <div className="flex-1 flex w-full overflow-hidden relative">
         {/* Sidebar: Fixed in place, only scrolled when user scrolls inside sidebar */}
@@ -794,11 +867,45 @@ export function App() {
           pendingTasksCount={taskLoad.pendingCount}
           isMobileOpen={isMobileSidebarOpen}
           onCloseMobile={() => setIsMobileSidebarOpen(false)}
+          gamification={appData.gamification}
         />
 
         {/* Content Area: Independent scroll container with container queries */}
         <AnimatePresence mode="wait" initial={false}>
-          {activeView === 'tasks' ? (
+          {activeView === 'growth' ? (
+            <motion.main
+              key="growth-view"
+              variants={pageTransitionVariants}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+              className="flex-1 h-full min-w-0 p-0 overflow-hidden @container"
+            >
+              <GrowthMasteryScreen
+                gamification={appData.gamification}
+                growthHistory={appData.growthHistory}
+                onSelectHero={(id) => {
+                  setAppData((prev) => {
+                    const updated = { ...prev, gamification: { ...prev.gamification, activeHeroId: id } };
+                    saveAppData(updated);
+                    return updated;
+                  });
+                }}
+                onExportBackup={handleQuickBackup}
+                onImportBackup={(jsonStr) => {
+                  try {
+                    const imported = importDataFromJson(jsonStr);
+                    setAppData(imported);
+                    saveAppData(imported);
+                    alert("Progress and data imported successfully!");
+                  } catch (err: any) {
+                    alert("Import failed: " + (err.message || "Invalid backup file"));
+                  }
+                }}
+                onBackToDashboard={() => setActiveView("dashboard")}
+              />
+            </motion.main>
+          ) : activeView === 'tasks' ? (
             <motion.main
               key="tasks-view"
               variants={pageTransitionVariants}

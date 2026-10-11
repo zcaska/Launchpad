@@ -178,6 +178,16 @@ export const DEFAULT_SEED_DATA: AppData = {
       syncIntervalMinutes: 5,
     },
   },
+  gamification: {
+    currentXp: 0,
+    currentStreak: 1,
+    longestStreak: 1,
+    lastActiveDate: new Date().toISOString().split('T')[0],
+    unlockedHeroIds: ['lvl-1-awakening'],
+    activeHeroId: 'lvl-1-awakening',
+    lastBackupTimestamp: Date.now(),
+  },
+  growthHistory: {},
   calendarEvents: [],
   scratchpadText: `💡 Quick Scratchpad:
 - Review week 4 lecture slides before 4 PM
