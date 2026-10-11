@@ -147,9 +147,9 @@ export const DEFAULT_SEED_DATA: AppData = {
   version: 2,
   dailyFocus: {
     date: new Date().toISOString().split('T')[0],
-    goal: 'Complete Module 3 assignment & review system design notes',
+    goal: '',
     isCompleted: false,
-    durationMinutes: 60,
+    durationMinutes: 0,
   },
   learnedPreferences: DEFAULT_INITIAL_PREFERENCES,
   settings: {

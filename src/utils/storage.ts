@@ -67,9 +67,9 @@ export function loadAppData(): AppData {
       scratchpadText: typeof parsed.scratchpadText === 'string' ? parsed.scratchpadText : DEFAULT_SEED_DATA.scratchpadText,
       dailyFocus: {
         date: parsed.dailyFocus?.date || new Date().toISOString().split('T')[0],
-        goal: parsed.dailyFocus?.goal || '',
+        goal: parsed.dailyFocus?.goal === 'Complete Module 3 assignment & review system design notes' ? '' : (parsed.dailyFocus?.goal || ''),
         isCompleted: Boolean(parsed.dailyFocus?.isCompleted),
-        durationMinutes: parsed.dailyFocus?.durationMinutes || 45,
+        durationMinutes: parsed.dailyFocus?.goal === 'Complete Module 3 assignment & review system design notes' ? 0 : (parsed.dailyFocus?.durationMinutes || 0),
       },
       learnedPreferences,
       settings,

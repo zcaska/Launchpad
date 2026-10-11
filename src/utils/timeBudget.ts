@@ -77,9 +77,14 @@ export function calculateTaskLoad(
   let localPendingMinutes = 0;
   let calendarPendingMinutes = 0;
 
-  // Include primary daily focus if not empty
-  if (dailyFocus && dailyFocus.goal.trim()) {
-    const focusDuration = dailyFocus.durationMinutes || 45;
+  // Include primary daily focus if explicitly set with duration and not the legacy placeholder
+  if (
+    dailyFocus &&
+    dailyFocus.goal.trim() &&
+    dailyFocus.goal !== 'Complete Module 3 assignment & review system design notes' &&
+    (dailyFocus.durationMinutes || 0) > 0
+  ) {
+    const focusDuration = dailyFocus.durationMinutes || 0;
     if (dailyFocus.isCompleted) {
       completedMinutes += focusDuration;
       completedCount += 1;

@@ -302,8 +302,8 @@ export function App() {
   }, [now, appData.settings.daySchedule]);
 
   const taskLoad = useMemo(() => {
-    return calculateTaskLoad(appData.quickNotes, appData.dailyFocus);
-  }, [appData.quickNotes, appData.dailyFocus]);
+    return calculateTaskLoad(appData.quickNotes);
+  }, [appData.quickNotes]);
 
   const buffer = useMemo(() => {
     return calculateBuffer(timeRemaining.totalMinutes, taskLoad.pendingMinutes);

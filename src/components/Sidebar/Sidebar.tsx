@@ -403,7 +403,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </span>
             </button>
 
-            {/* All Resources */}
+            {/* Dashboard */}
             <button
               onClick={() => handleMobileNavClick(() => handleSelectOverview(null))}
               className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-medium transition-all ${
@@ -413,10 +413,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               }`}
             >
               <Layers className="w-4 h-4" />
-              <span className="flex-1 text-left">All Resources</span>
-              <span className="text-[10px] px-1.5 py-0.5 rounded-full font-mono bg-black/5 dark:bg-white/10 text-serene-text-muted">
-                {totalCount}
-              </span>
+              <span className="flex-1 text-left">Dashboard</span>
             </button>
 
             {/* Favorites */}
@@ -583,7 +580,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               )}
             </button>
 
-            {/* All Resources */}
+            {/* Dashboard */}
             <button
               onClick={() => handleSelectOverview(null)}
               className={`w-full flex items-center gap-3 rounded-xl text-xs font-medium transition-all ${
@@ -593,7 +590,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   ? 'bg-serene-primary text-white shadow-xs'
                   : 'text-serene-text-secondary dark:text-serene-text-darkSecondary hover:bg-serene-surfaceAlt-light dark:hover:bg-serene-surfaceAlt-dark hover:text-serene-text-primary dark:hover:text-serene-text-darkPrimary'
               }`}
-              title="All Resources"
+              title="Dashboard"
             >
               <Layers
                 className={`${iconSizeClass} shrink-0 ${
@@ -601,18 +598,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 }`}
               />
               {!isCollapsed && (
-                <>
-                  <span className="flex-1 text-left truncate">All Resources</span>
-                  <span
-                    className={`text-[10px] px-1.5 py-0.5 rounded-full font-mono ${
-                      currentView === 'dashboard' && selectedFolderId === null
-                        ? 'bg-white/20 text-white'
-                        : 'bg-black/5 dark:bg-white/10 text-serene-text-muted'
-                    }`}
-                  >
-                    {totalCount}
-                  </span>
-                </>
+                <span className="flex-1 text-left truncate">Dashboard</span>
               )}
             </button>
 

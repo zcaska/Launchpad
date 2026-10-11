@@ -11,7 +11,8 @@ import {
   ListTodo,
   Plus,
   RotateCw,
-  Calendar
+  Calendar,
+  CheckCircle2
 } from 'lucide-react';
 import { DailyFocus, QuickNote, CalendarScheduleSummary } from '../../types';
 import { CALM_QUOTES } from '../../data/seedData';
@@ -39,6 +40,7 @@ interface FocusHeroBannerProps {
 
 export const FocusHeroBanner: React.FC<FocusHeroBannerProps> = ({
   dailyFocus,
+  onUpdateDailyFocus,
   clockFormat,
   showQuotes = true,
   tasks = [],
@@ -59,6 +61,11 @@ export const FocusHeroBanner: React.FC<FocusHeroBannerProps> = ({
 
   // Pending tasks filter
   const pendingTasks = tasks.filter((t) => !t.isDone);
+
+  // calculateTaskLoad counts an unfinished daily focus as outstanding work, so the
+  // banner must agree with it. Otherwise PENDING WORK shows "1h / 1 task" while this
+  // card claims "All Clear" - two sources of truth disagreeing on the same state.
+  const hasPendingFocus = Boolean(dailyFocus?.goal?.trim()) && !dailyFocus?.isCompleted;
 
   // Reset or constrain currentTaskIndex when pendingTasks count changes
   useEffect(() => {
@@ -132,6 +139,10 @@ export const FocusHeroBanner: React.FC<FocusHeroBannerProps> = ({
               {pendingTasks.length > 0 ? (
                 <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/60 text-amber-800 dark:text-amber-300">
                   {pendingTasks.length} {pendingTasks.length === 1 ? 'task' : 'tasks'} pending
+                </span>
+              ) : hasPendingFocus ? (
+                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/60 text-amber-800 dark:text-amber-300">
+                  Focus pending
                 </span>
               ) : (
                 <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300">
@@ -272,23 +283,36 @@ export const FocusHeroBanner: React.FC<FocusHeroBannerProps> = ({
               </div>
             ) : (
               /* Zero pending tasks state */
-              <div className="p-3 rounded-xl bg-serene-surfaceAlt-light/40 dark:bg-serene-surfaceAlt-dark/40 border border-dashed border-serene-border-light dark:border-serene-border-dark flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+              <div className="p-3 rounded-xl bg-serene-surfaceAlt-light/40 dark:bg-serene-surfaceAlt-dark/40 border border-dashed border-serene-border-light dark:border-serene-border-dark flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className={`w-2 h-2 rounded-full shrink-0 ${hasPendingFocus ? 'bg-amber-500 animate-pulse' : 'bg-emerald-500 animate-pulse'}`} />
                   <span className="text-xs text-serene-text-secondary dark:text-serene-text-darkSecondary">
-                    All tasks clear! Ready for focused work.
+                    {hasPendingFocus ? 'Tasks clear \u00b7 focus open' : 'All tasks clear! Ready for focused work.'}
                   </span>
                 </div>
-                {onOpenTasksScreen && (
-                  <button
-                    type="button"
-                    onClick={onOpenTasksScreen}
-                    className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold text-serene-primary dark:text-serene-primary-dark bg-serene-primary-soft dark:bg-serene-primary/20 rounded-lg hover:bg-serene-primary/20 transition-colors"
-                  >
-                    <Plus className="w-3 h-3" />
-                    <span>Create task</span>
-                  </button>
-                )}
+                <div className="flex items-center gap-2 shrink-0">
+                  {hasPendingFocus && onUpdateDailyFocus && (
+                    <button
+                      type="button"
+                      onClick={() => onUpdateDailyFocus({ isCompleted: true })}
+                      title="Mark today's focus as complete"
+                      className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold text-serene-primary dark:text-serene-primary-dark bg-serene-primary-soft dark:bg-serene-primary/20 rounded-lg hover:bg-serene-primary/20 transition-colors"
+                    >
+                      <CheckCircle2 className="w-3 h-3" />
+                      <span>Complete focus</span>
+                    </button>
+                  )}
+                  {onOpenTasksScreen && (
+                    <button
+                      type="button"
+                      onClick={onOpenTasksScreen}
+                      className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold text-serene-primary dark:text-serene-primary-dark bg-serene-primary-soft dark:bg-serene-primary/20 rounded-lg hover:bg-serene-primary/20 transition-colors"
+                    >
+                      <Plus className="w-3 h-3" />
+                      <span>Create task</span>
+                    </button>
+                  )}
+                </div>
               </div>
             )}
           </div>
