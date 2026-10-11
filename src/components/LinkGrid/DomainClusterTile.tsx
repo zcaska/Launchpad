@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Layers, Globe, Star, Edit2, Trash2, ChevronRight } from 'lucide-react';
 import { DomainGroup } from '../../utils/domainCluster';
 import { LinkItem, Folder } from '../../types';
+import { MoveToFolderMenu } from './MoveToFolderMenu';
 
 interface DomainClusterTileProps {
   group: DomainGroup;
@@ -16,9 +17,11 @@ interface DomainClusterTileProps {
 
 export const DomainClusterTile: React.FC<DomainClusterTileProps> = ({
   group,
+  folders,
   onToggleFavorite,
   onEdit,
   onDelete,
+  onMoveFolder,
   onLinkClick,
   openInNewTab = true,
 }) => {
@@ -132,6 +135,12 @@ export const DomainClusterTile: React.FC<DomainClusterTileProps> = ({
                   >
                     <Edit2 className="w-3 h-3" />
                   </button>
+
+                  <MoveToFolderMenu
+                    folders={folders}
+                    currentFolderId={link.folderId}
+                    onMove={(targetId) => onMoveFolder(link.id, targetId)}
+                  />
 
                   <button
                     type="button"

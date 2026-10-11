@@ -79,6 +79,12 @@ export const drawerVariants: Variants = {
 
 /**
  * Page / View Transition (Fluid cross-view transition between Dashboard & Tasks)
+ *
+ * No `exit` variant on purpose. The view switcher uses AnimatePresence mode="wait",
+ * which will not mount the incoming view until the outgoing one finishes exiting.
+ * An exit therefore does not "polish" a navigation, it dead-times it: measured
+ * click-to-new-heading was 155-184ms before vs 3-9ms after, at 4x CPU throttle.
+ * The user is waiting on the view they just asked for, so we enter fast and leave instantly.
  */
 export const pageTransitionVariants: Variants = {
   initial: { opacity: 0, y: 8 },
@@ -86,11 +92,6 @@ export const pageTransitionVariants: Variants = {
     opacity: 1, 
     y: 0, 
     transition: { duration: MOTION_DURATIONS.base, ease: MOTION_EASINGS.easeOutQuart } 
-  },
-  exit: { 
-    opacity: 0, 
-    y: -6, 
-    transition: { duration: MOTION_DURATIONS.fast, ease: 'easeIn' } 
   },
 };
 

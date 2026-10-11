@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { Star, MoreVertical, Edit2, Trash2, Globe } from 'lucide-react';
 import { LinkItem, Folder } from '../../types';
 import { getFaviconUrl, extractDomain } from '../../utils/favicon';
+import { MoveToFolderMenu } from './MoveToFolderMenu';
 
 interface FaviconTileProps {
   link: LinkItem;
@@ -16,9 +17,11 @@ interface FaviconTileProps {
 
 export const FaviconTile: React.FC<FaviconTileProps> = ({
   link,
+  folders,
   onToggleFavorite,
   onEdit,
   onDelete,
+  onMoveFolder,
   onLinkClick,
   openInNewTab = true,
 }) => {
@@ -66,6 +69,21 @@ export const FaviconTile: React.FC<FaviconTileProps> = ({
     }, 150);
   };
 
+  // The action row only rendered on mouseenter, so it was unreachable by keyboard
+  // and on touch. Treat focus like hover and keep it open while focus stays inside.
+  const handleFocus = () => {
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    handleMouseEnter();
+  };
+
+  const handleBlur = (e: React.FocusEvent<HTMLDivElement>) => {
+    if (e.currentTarget.contains(e.relatedTarget as Node)) return;
+    timeoutRef.current = setTimeout(() => {
+      setIsHovered(false);
+      setShowMenu(false);
+    }, 150);
+  };
+
   const handleClick = (e: React.MouseEvent) => {
     onLinkClick(link);
     if (!openInNewTab) {
@@ -80,6 +98,8 @@ export const FaviconTile: React.FC<FaviconTileProps> = ({
       className="relative select-none"
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
+      onFocus={handleFocus}
+      onBlur={handleBlur}
     >
       {/* 44x44px Squircle Tile */}
       <a
@@ -157,6 +177,10 @@ export const FaviconTile: React.FC<FaviconTileProps> = ({
                   e.stopPropagation();
                   setShowMenu(!showMenu);
                 }}
+                title="More options"
+                aria-label="More options"
+                aria-haspopup="menu"
+                aria-expanded={showMenu}
                 className="p-1 text-serene-text-muted hover:text-serene-text-primary rounded-md"
               >
                 <MoreVertical className="w-3.5 h-3.5" />
@@ -185,20 +209,31 @@ export const FaviconTile: React.FC<FaviconTileProps> = ({
 
           {/* Quick Menu Options */}
           {showMenu && (
-            <div className="mt-2 pt-2 border-t border-serene-border-light/60 dark:border-serene-border-dark/60 flex items-center justify-between text-[10px]">
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  onEdit(link);
-                  setIsHovered(false);
-                }}
-                className="text-serene-text-secondary hover:text-serene-primary flex items-center gap-1 font-medium"
-              >
-                <Edit2 className="w-3 h-3" />
-                <span>Edit</span>
-              </button>
+            <div className="mt-2 pt-2 border-t border-serene-border-light/60 dark:border-serene-border-dark/60 flex items-center justify-between gap-2 text-[10px]">
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onEdit(link);
+                    setIsHovered(false);
+                  }}
+                  className="text-serene-text-secondary hover:text-serene-primary flex items-center gap-1 font-medium"
+                >
+                  <Edit2 className="w-3 h-3" />
+                  <span>Edit</span>
+                </button>
+
+                <MoveToFolderMenu
+                  folders={folders}
+                  currentFolderId={link.folderId}
+                  onMove={(targetId) => {
+                    onMoveFolder(link.id, targetId);
+                    setShowMenu(false);
+                  }}
+                />
+              </div>
 
               <button
                 type="button"

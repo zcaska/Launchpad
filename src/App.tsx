@@ -496,7 +496,7 @@ export function App() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isAddModalOpen, isManageFoldersOpen, isSettingsModalOpen, selectedFolderId, currentSuggestion, handleRejectSuggestion]);
+  }, [isAddModalOpen, isManageFoldersOpen, isSettingsModalOpen, isBookmarkImportOpen, isMobileSidebarOpen, isQuickNotesOpen, selectedFolderId, currentSuggestion, handleRejectSuggestion]);
 
   // Handlers for Links
   const handleSaveLink = (linkData: Omit<LinkItem, 'id' | 'createdAt'>, linkId?: string) => {
