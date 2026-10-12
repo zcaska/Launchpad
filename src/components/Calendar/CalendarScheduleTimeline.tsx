@@ -234,6 +234,23 @@ export const CalendarScheduleTimeline: React.FC<CalendarScheduleTimelineProps> =
                         📍 {evt.location}
                       </p>
                     )}
+                    {evt.extractedUrls && evt.extractedUrls.length > 0 && (
+                      <div className="flex flex-wrap items-center gap-1 mt-1">
+                        {evt.extractedUrls.map((link) => (
+                          <a
+                            key={link.id}
+                            href={link.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-serene-primary-soft dark:bg-serene-primary/20 text-serene-primary dark:text-serene-primary-dark hover:underline truncate max-w-[180px]"
+                            title={link.url}
+                          >
+                            <span className="truncate">{link.title || link.url.replace(/^https?:\/\//, '')}</span>
+                            <ExternalLink className="w-2.5 h-2.5 shrink-0 opacity-70" />
+                          </a>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
 

@@ -1066,8 +1066,8 @@ export function App() {
                   />
                 ) : (
                   <div className="@container w-full">
-                    <div className="grid grid-cols-1 @2xl:grid-cols-12 gap-3.5 sm:gap-4 animate-fadeIn">
-                      <div className="@2xl:col-span-7">
+                    <div className="grid grid-cols-1 @3xl:grid-cols-12 gap-3.5 sm:gap-4 animate-fadeIn">
+                      <div className="@3xl:col-span-7">
                         <SmartSuggestionCard
                           candidate={currentSuggestion}
                           onApprove={handleApproveSuggestion}
@@ -1079,7 +1079,7 @@ export function App() {
                           rejectionsCount={appData.learnedPreferences.rejectionsCount}
                         />
                       </div>
-                      <div className="@2xl:col-span-5 flex flex-col">
+                      <div className="@3xl:col-span-5 flex flex-col">
                         <TimeRadarWidget
                           timeRemaining={timeRemaining}
                           taskLoad={taskLoad}

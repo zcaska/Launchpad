@@ -128,6 +128,7 @@ export interface CalendarEventItem {
   htmlLink?: string;
   location?: string;
   colorId?: string;
+  extractedUrls?: TaskUrl[];
 }
 
 export interface GoogleCalendarConfig {

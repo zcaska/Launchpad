@@ -22,6 +22,8 @@ import { QuickNote, TaskPriority, TaskUrl, Subtask, CalendarEventItem } from '..
 import { calculateTaskLoad, formatMinutesToHours } from '../../utils/timeBudget';
 import { modalBackdropVariants, modalContentVariants, staggerItemVariants, staggerContainerVariants } from '../../utils/motion';
 import { CalendarScheduleTimeline } from '../Calendar/CalendarScheduleTimeline';
+import { SafeDescription } from '../Common/SafeDescription';
+import { extractCalendarDescriptionLinksAndCleanText } from '../../utils/calendarFormatting';
 
 export interface TaskManagementScreenProps {
   notes: QuickNote[];
@@ -260,7 +262,12 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
   const handleOpenEditForm = (task: QuickNote) => {
     setEditingTaskId(task.id);
     setFormTitle(task.text);
-    setFormDescription(task.description || '');
+    const cleanFormDesc = task.description
+      ? (task.description.includes('<a') || task.description.includes('&lt;a')
+          ? extractCalendarDescriptionLinksAndCleanText(task.description).cleanDescription
+          : task.description)
+      : '';
+    setFormDescription(cleanFormDesc);
     setFormDuration(task.durationMinutes || 30);
     setFormPriority(task.priority || 'medium');
     setFormDeadline(task.deadline || '');
@@ -760,11 +767,12 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
                               )}
                             </div>
                             {task.description && (
-                              <p className={`text-xs text-serene-text-secondary dark:text-serene-text-darkSecondary mt-1 leading-relaxed break-words whitespace-pre-line ${
-                                task.isDone ? 'line-through opacity-70' : ''
-                              }`}>
-                                {task.description}
-                              </p>
+                              <div className={`mt-1 leading-relaxed ${task.isDone ? 'line-through opacity-70' : ''}`}>
+                                <SafeDescription
+                                  text={task.description}
+                                  className="text-xs text-serene-text-secondary dark:text-serene-text-darkSecondary"
+                                />
+                              </div>
                             )}
                           </div>
                         </div>

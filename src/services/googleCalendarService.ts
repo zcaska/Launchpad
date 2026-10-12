@@ -263,6 +263,7 @@ export async function fetchTodayGoogleEvents(
     url.searchParams.set('timeZone', userTimeZone);
     url.searchParams.set('singleEvents', 'true');
     url.searchParams.set('orderBy', 'startTime');
+    url.searchParams.set('conferenceDataVersion', '1');
     url.searchParams.set('_t', Date.now().toString());
     if (pageToken) {
       url.searchParams.set('pageToken', pageToken);

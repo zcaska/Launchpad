@@ -1,4 +1,9 @@
-import { CalendarEventItem, CalendarScheduleSummary, QuickNote } from '../types';
+import { CalendarEventItem, CalendarScheduleSummary, QuickNote, TaskUrl } from '../types';
+import {
+  extractCalendarDescriptionLinksAndCleanText,
+  isSafeUrl,
+  deriveUrlTitle,
+} from './calendarFormatting';
 
 /**
  * Merges overlapping or contiguous time intervals: O(N log N).
@@ -44,10 +49,42 @@ export function normalizeGoogleCalendarEvent(rawItem: any): CalendarEventItem | 
   const endMs = !isNaN(endDate.getTime()) ? endDate.getTime() : startMs;
   const durationMinutes = Math.max(0, Math.round((endMs - startMs) / 60000));
 
+  const eventId = rawItem.id || `event-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+
+  // Extract links and clean plain text from event description
+  const { cleanDescription, extractedUrls } = extractCalendarDescriptionLinksAndCleanText(
+    rawItem.description,
+    eventId
+  );
+
+  const eventUrls: TaskUrl[] = [...extractedUrls];
+
+  // Inspect Google Meet / Hangout video link
+  if (rawItem.hangoutLink && isSafeUrl(rawItem.hangoutLink)) {
+    if (!eventUrls.some((u) => u.url === rawItem.hangoutLink)) {
+      eventUrls.unshift({
+        id: `cal-link-${eventId}-meet`,
+        title: 'Google Meet',
+        url: rawItem.hangoutLink,
+      });
+    }
+  }
+
+  // Inspect location if it is a standalone URL
+  if (rawItem.location && isSafeUrl(rawItem.location)) {
+    if (!eventUrls.some((u) => u.url === rawItem.location)) {
+      eventUrls.push({
+        id: `cal-link-${eventId}-loc`,
+        title: deriveUrlTitle(rawItem.location, 'Location Link'),
+        url: rawItem.location,
+      });
+    }
+  }
+
   return {
-    id: rawItem.id || `event-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    id: eventId,
     summary: (rawItem.summary || '(Untitled Event)').trim(),
-    description: rawItem.description || undefined,
+    description: cleanDescription || undefined,
     startTime: startStr,
     endTime: endStr,
     startMs,
@@ -56,9 +93,10 @@ export function normalizeGoogleCalendarEvent(rawItem: any): CalendarEventItem | 
     isAllDay,
     transparency: rawItem.transparency === 'transparent' ? 'transparent' : 'opaque',
     status: rawItem.status === 'tentative' ? 'tentative' : 'confirmed',
-    htmlLink: rawItem.htmlLink || undefined,
+    htmlLink: isSafeUrl(rawItem.htmlLink) ? rawItem.htmlLink : undefined,
     location: rawItem.location || undefined,
     colorId: rawItem.colorId || undefined,
+    extractedUrls: eventUrls.length > 0 ? eventUrls : undefined,
   };
 }
 
@@ -238,34 +276,64 @@ export function syncCalendarEventsToQuickNotes(
 
     const duration = evt.durationMinutes > 0 ? evt.durationMinutes : 30;
 
-    // Attached Google Calendar link
-    const attachedUrls = evt.htmlLink
-      ? [
-          {
-            id: `cal-link-${evt.id}`,
-            title: 'Google Calendar Event',
-            url: evt.htmlLink,
-          },
-        ]
-      : [];
+    // Collect extracted class/meeting links and Google Calendar event links
+    const linkList: TaskUrl[] = [];
+    const seenUrls = new Set<string>();
+
+    // 1. Add extracted links from description / conference
+    if (evt.extractedUrls && evt.extractedUrls.length > 0) {
+      for (const link of evt.extractedUrls) {
+        if (!seenUrls.has(link.url)) {
+          seenUrls.add(link.url);
+          linkList.push(link);
+        }
+      }
+    }
+
+    // Clean plain-text description if evt.description wasn't already cleaned
+    let cleanDesc = evt.description;
+    if (evt.description && (evt.description.includes('<a') || evt.description.includes('&lt;a'))) {
+      const parsed = extractCalendarDescriptionLinksAndCleanText(evt.description, evt.id);
+      cleanDesc = parsed.cleanDescription;
+      for (const link of parsed.extractedUrls) {
+        if (!seenUrls.has(link.url)) {
+          seenUrls.add(link.url);
+          linkList.push(link);
+        }
+      }
+    }
+
+    // 2. Add attached Google Calendar event link
+    if (evt.htmlLink && isSafeUrl(evt.htmlLink) && !seenUrls.has(evt.htmlLink)) {
+      seenUrls.add(evt.htmlLink);
+      linkList.push({
+        id: `cal-link-${evt.id}`,
+        title: 'Google Calendar Event',
+        url: evt.htmlLink,
+      });
+    }
 
     const defaultIsDone = Boolean(evt.endMs && evt.endMs <= Date.now());
-    // If the event is in the future, it cannot be considered done even if previously marked done in the past
-    const isFutureEvent = Boolean(evt.endMs && evt.endMs > Date.now());
-    const resolvedIsDone = isFutureEvent ? false : (existing ? existing.isDone : defaultIsDone);
+    // Only reset isDone to false if the event was rescheduled into the future with a changed time
+    const isRescheduled = Boolean(
+      existing &&
+      existing.createdAt !== (evt.startMs || 0) &&
+      evt.startMs > Date.now()
+    );
+    const resolvedIsDone = isRescheduled ? false : (existing ? existing.isDone : defaultIsDone);
 
     return {
       id: existing ? existing.id : `cal-task-${evt.id}`,
       eventId: evt.id,
       source: 'google_calendar' as const,
       text: evt.summary || 'Scheduled Calendar Event',
-      description: evt.description || undefined,
+      description: cleanDesc || undefined,
       isDone: resolvedIsDone,
       createdAt: existing ? existing.createdAt : evt.startMs || Date.now(),
       durationMinutes: duration,
       deadline: deadlineStr,
       priority: existing?.priority || 'medium',
-      attachedUrls: attachedUrls.length > 0 ? attachedUrls : undefined,
+      attachedUrls: linkList.length > 0 ? linkList : undefined,
       subtasks: existing?.subtasks || [],
     };
   });

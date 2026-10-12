@@ -311,6 +311,77 @@ console.log('--- Testing calendarSchedule.ts ---');
   assertEqual(rescheduledTasks.length, 1, 'syncCalendarEventsToQuickNotes: returns rescheduled task');
   assertEqual(rescheduledTasks[0].isDone, false, 'syncCalendarEventsToQuickNotes: future rescheduled event resets isDone to false');
   assertEqual(rescheduledTasks[0].text, 'Morning Standup (Rescheduled to Tomorrow)', 'syncCalendarEventsToQuickNotes: updates title on rescheduled event');
+
+  // Test class link extraction from rich description into attachedUrls and clean description
+  const classEventRaw = {
+    id: 'cal-class-sem3',
+    summary: 'Microeconomics Lecture',
+    description: '<a href="https://www.poonamkumari.com/learn/home/sem3">Sem-3---Intermediate-Micro-1 (Poonam Kumari)</a>',
+    start: { dateTime: new Date(Date.now() + 3600000).toISOString() },
+    end: { dateTime: new Date(Date.now() + 7200000).toISOString() },
+    htmlLink: 'https://calendar.google.com/event?eid=123',
+    status: 'confirmed',
+  };
+  const normalizedClassEvent = normalizeGoogleCalendarEvent(classEventRaw);
+  assert(normalizedClassEvent !== null, 'normalizeGoogleCalendarEvent: normalizes class event');
+  assertEqual(
+    normalizedClassEvent?.description,
+    'Sem-3---Intermediate-Micro-1 (Poonam Kumari)',
+    'normalizeGoogleCalendarEvent: cleans description of raw HTML anchor tags'
+  );
+  assertEqual(
+    normalizedClassEvent?.extractedUrls?.length,
+    1,
+    'normalizeGoogleCalendarEvent: extracts class url'
+  );
+  assertEqual(
+    normalizedClassEvent?.extractedUrls?.[0]?.url,
+    'https://www.poonamkumari.com/learn/home/sem3',
+    'normalizeGoogleCalendarEvent: preserves class url target'
+  );
+  assertEqual(
+    normalizedClassEvent?.extractedUrls?.[0]?.title,
+    'Sem-3---Intermediate-Micro-1 (Poonam Kumari)',
+    'normalizeGoogleCalendarEvent: preserves meaningful anchor title'
+  );
+
+  // Test syncing the class event into quick notes
+  const syncedClassTasks = syncCalendarEventsToQuickNotes([], [normalizedClassEvent!]);
+  assertEqual(syncedClassTasks.length, 1, 'syncCalendarEventsToQuickNotes: syncs 1 class task');
+  const classTask = syncedClassTasks[0];
+  assertEqual(
+    classTask.description,
+    'Sem-3---Intermediate-Micro-1 (Poonam Kumari)',
+    'syncCalendarEventsToQuickNotes: task description contains clean text without raw <a> or href markup'
+  );
+  assertEqual(classTask.attachedUrls?.length, 2, 'syncCalendarEventsToQuickNotes: has class link + calendar event link');
+  assertEqual(
+    classTask.attachedUrls?.[0]?.title,
+    'Sem-3---Intermediate-Micro-1 (Poonam Kumari)',
+    'syncCalendarEventsToQuickNotes: class link title is meaningful'
+  );
+  assertEqual(
+    classTask.attachedUrls?.[0]?.url,
+    'https://www.poonamkumari.com/learn/home/sem3',
+    'syncCalendarEventsToQuickNotes: class link URL matches destination'
+  );
+  assertEqual(
+    classTask.attachedUrls?.[1]?.title,
+    'Google Calendar Event',
+    'syncCalendarEventsToQuickNotes: calendar event link is preserved'
+  );
+
+  // Test preservation of user completed status on future tasks when NOT rescheduled
+  const userCompletedFutureTask = {
+    ...classTask,
+    isDone: true,
+  };
+  const reSyncedFutureTasks = syncCalendarEventsToQuickNotes([userCompletedFutureTask], [normalizedClassEvent!]);
+  assertEqual(
+    reSyncedFutureTasks[0].isDone,
+    true,
+    'syncCalendarEventsToQuickNotes: user completed status is preserved on future task without re-unchecking'
+  );
 }
 
 if (failures === 0) {

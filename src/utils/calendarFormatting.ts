@@ -1,6 +1,7 @@
 /**
- * Calendar formatting utilities for event times and durations.
+ * Calendar formatting utilities for event times, durations, and description link extraction.
  */
+import { TaskUrl } from '../types';
 
 /**
  * Extracts hours and minutes from a Date object or date/time string.
@@ -97,6 +98,166 @@ export function formatEventDuration(durationMinutes: number): string {
 }
 
 /**
+ * Validates whether a URL uses safe web protocols (http or https).
+ * Rejects dangerous schemes like javascript:, data:, vbscript:, file:, etc.
+ */
+export function isSafeUrl(rawUrl: string): boolean {
+  if (!rawUrl || typeof rawUrl !== 'string') return false;
+  const trimmed = rawUrl.trim();
+  if (/^(javascript|data|vbscript|file):/i.test(trimmed)) {
+    return false;
+  }
+  try {
+    const parsed = new URL(trimmed);
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Decodes standard named and numeric HTML entities.
+ */
+export function decodeHtmlEntities(input: string): string {
+  if (!input || typeof input !== 'string') return '';
+  return input
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&apos;/g, "'")
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&#x([0-9a-fA-F]+);/g, (_, hex) => {
+      try {
+        const code = parseInt(hex, 16);
+        return isNaN(code) ? '' : String.fromCharCode(code);
+      } catch {
+        return '';
+      }
+    })
+    .replace(/&#(\d+);/g, (_, dec) => {
+      try {
+        const code = parseInt(dec, 10);
+        return isNaN(code) ? '' : String.fromCharCode(code);
+      } catch {
+        return '';
+      }
+    });
+}
+
+/**
+ * Derives a human-friendly fallback title from a URL when no meaningful title is provided.
+ */
+export function deriveUrlTitle(rawUrl: string, fallback: string = 'Open Link'): string {
+  try {
+    const urlObj = new URL(rawUrl.trim());
+    const host = urlObj.hostname.replace(/^www\./i, '');
+    if (host) return host;
+  } catch {
+    // Ignore invalid url parse
+  }
+  return fallback;
+}
+
+export interface ExtractedCalendarDetails {
+  cleanDescription: string;
+  extractedUrls: TaskUrl[];
+}
+
+/**
+ * Extracts links from Google Calendar descriptions (raw HTML anchors, escaped anchors, plain URLs),
+ * unescapes entities, sanitizes protocols, and produces clean human-readable plain text
+ * along with structured TaskUrl items.
+ */
+export function extractCalendarDescriptionLinksAndCleanText(
+  rawDescription?: string,
+  eventId?: string
+): ExtractedCalendarDetails {
+  if (!rawDescription || typeof rawDescription !== 'string') {
+    return { cleanDescription: '', extractedUrls: [] };
+  }
+
+  const prefix = eventId ? `cal-link-${eventId}` : `cal-link-${Date.now()}`;
+  const extractedUrls: TaskUrl[] = [];
+  const seenUrls = new Set<string>();
+
+  // If the description contains escaped HTML tags (&lt;a href=...), unescape entities first
+  let text = rawDescription;
+  if (/&lt;a\s+/i.test(text) || /&lt;\/a&gt;/i.test(text)) {
+    text = decodeHtmlEntities(text);
+  }
+
+  // 1. Match HTML anchor tags: <a ... href="..." ...>...</a>
+  const anchorRegex = /<a\s+(?:[^>]*?\s+)?href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi;
+  text = text.replace(anchorRegex, (_, href, innerContent) => {
+    const decodedUrl = decodeHtmlEntities(href).trim();
+    // Strip nested tags from innerContent if any
+    const rawTitle = decodeHtmlEntities(innerContent.replace(/<[^>]+>/g, '')).trim();
+
+    if (isSafeUrl(decodedUrl) && !seenUrls.has(decodedUrl)) {
+      seenUrls.add(decodedUrl);
+
+      // Determine readable title
+      // Prefer anchor title if meaningful; if empty or identical to URL, fallback to hostname
+      let title = rawTitle;
+      if (!title || title.toLowerCase() === decodedUrl.toLowerCase()) {
+        title = deriveUrlTitle(decodedUrl, 'Open Class Link');
+      }
+
+      extractedUrls.push({
+        id: `${prefix}-${extractedUrls.length}`,
+        title,
+        url: decodedUrl,
+      });
+    }
+
+    // In plain text description, replace the anchor tag with the readable title (or empty if none)
+    return rawTitle;
+  });
+
+  // 2. Match standalone plain-text URLs not in anchors
+  const urlRegex = /\bhttps?:\/\/[^\s<>"']+/gi;
+  let match: RegExpExecArray | null;
+  while ((match = urlRegex.exec(text)) !== null) {
+    const rawUrl = match[0].replace(/[.,;:)\]]+$/, ''); // strip trailing punctuation
+    if (isSafeUrl(rawUrl) && !seenUrls.has(rawUrl)) {
+      seenUrls.add(rawUrl);
+      extractedUrls.push({
+        id: `${prefix}-${extractedUrls.length}`,
+        title: deriveUrlTitle(rawUrl, 'Open Link'),
+        url: rawUrl,
+      });
+    }
+  }
+
+  // 3. Convert line-breaking tags to newlines
+  text = text
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/p>/gi, '\n')
+    .replace(/<\/div>/gi, '\n')
+    .replace(/<\/li>/gi, '\n')
+    .replace(/<li[^>]*>/gi, '• ');
+
+  // 4. Strip any remaining HTML tags
+  text = text.replace(/<[^>]+>/g, '');
+
+  // 5. Decode any remaining HTML entities in the text
+  text = decodeHtmlEntities(text);
+
+  // 6. Clean up newlines and excessive whitespace
+  text = text
+    .replace(/\r\n/g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+
+  return {
+    cleanDescription: text,
+    extractedUrls,
+  };
+}
+
+/**
  * Self-contained test suite asserting correct behavior of calendar formatting functions.
  * Returns true if all assertions succeed.
  */
@@ -150,6 +311,62 @@ export function runCalendarFormattingTests(): boolean {
     assertEqual(formatEventDuration(135), '2h 15m', 'formatEventDuration 135m -> 2h 15m');
     assertEqual(formatEventDuration(74.6), '1h 15m', 'formatEventDuration rounding float minutes');
 
+    // Test isSafeUrl
+    assertEqual(isSafeUrl('https://www.poonamkumari.com/learn'), true, 'isSafeUrl https valid');
+    assertEqual(isSafeUrl('http://zoom.us/j/12345'), true, 'isSafeUrl http valid');
+    assertEqual(isSafeUrl('javascript:alert(1)'), false, 'isSafeUrl javascript rejected');
+    assertEqual(isSafeUrl('data:text/html,<script>'), false, 'isSafeUrl data scheme rejected');
+    assertEqual(isSafeUrl('vbscript:msgbox'), false, 'isSafeUrl vbscript rejected');
+    assertEqual(isSafeUrl('file:///C:/passwords.txt'), false, 'isSafeUrl file scheme rejected');
+    assertEqual(isSafeUrl(''), false, 'isSafeUrl empty string rejected');
+
+    // Test decodeHtmlEntities
+    assertEqual(
+      decodeHtmlEntities('Sem-3 &amp; Economics &quot;Micro-1&quot; &#39;2026&#39;'),
+      "Sem-3 & Economics \"Micro-1\" '2026'",
+      'decodeHtmlEntities standard entities'
+    );
+    assertEqual(
+      decodeHtmlEntities('&lt;a href=&quot;test&quot;&gt;Hello&lt;/a&gt;'),
+      '<a href="test">Hello</a>',
+      'decodeHtmlEntities tag brackets'
+    );
+
+    // Test deriveUrlTitle
+    assertEqual(deriveUrlTitle('https://www.poonamkumari.com/learn/home'), 'poonamkumari.com', 'deriveUrlTitle strips www');
+    assertEqual(deriveUrlTitle('https://zoom.us/j/123456?pwd=abc'), 'zoom.us', 'deriveUrlTitle hostname');
+    assertEqual(deriveUrlTitle('invalid', 'Fallback'), 'Fallback', 'deriveUrlTitle fallback');
+
+    // Test extractCalendarDescriptionLinksAndCleanText on User Example
+    const userClassHtml = '<a href="https://www.poonamkumari.com/learn/home/sem3">Sem-3---Intermediate-Micro-1 (Poonam Kumari)</a>';
+    const parsedUserExample = extractCalendarDescriptionLinksAndCleanText(userClassHtml, 'evt-101');
+    assertEqual(parsedUserExample.cleanDescription, 'Sem-3---Intermediate-Micro-1 (Poonam Kumari)', 'User example cleanDescription has no html markup');
+    assertEqual(parsedUserExample.extractedUrls.length, 1, 'User example extracts 1 url');
+    assertEqual(parsedUserExample.extractedUrls[0].title, 'Sem-3---Intermediate-Micro-1 (Poonam Kumari)', 'User example title preserved from anchor text');
+    assertEqual(parsedUserExample.extractedUrls[0].url, 'https://www.poonamkumari.com/learn/home/sem3', 'User example url extracted');
+
+    // Test extractCalendarDescriptionLinksAndCleanText on Escaped HTML
+    const escapedHtml = 'Class link: &lt;a href=&quot;https://meet.google.com/xyz-pdqr-abc&quot;&gt;Google Meet&lt;/a&gt; for today';
+    const parsedEscaped = extractCalendarDescriptionLinksAndCleanText(escapedHtml, 'evt-102');
+    assertEqual(parsedEscaped.cleanDescription, 'Class link: Google Meet for today', 'Escaped html tags cleaned in text');
+    assertEqual(parsedEscaped.extractedUrls.length, 1, 'Escaped html extracts link');
+    assertEqual(parsedEscaped.extractedUrls[0].url, 'https://meet.google.com/xyz-pdqr-abc', 'Escaped url extracted');
+    assertEqual(parsedEscaped.extractedUrls[0].title, 'Google Meet', 'Escaped title extracted');
+
+    // Test extractCalendarDescriptionLinksAndCleanText on Malformed / Dangerous URLs
+    const dangerousHtml = 'Click <a href="javascript:alert(1)">Here</a> or <a href="https://legit.com">Legit</a>';
+    const parsedDangerous = extractCalendarDescriptionLinksAndCleanText(dangerousHtml, 'evt-103');
+    assertEqual(parsedDangerous.extractedUrls.length, 1, 'Dangerous schemes filtered out');
+    assertEqual(parsedDangerous.extractedUrls[0].url, 'https://legit.com', 'Only safe url extracted');
+
+    // Test plain text URLs alongside text
+    const plainTextWithUrl = 'Notes are at https://docs.google.com/document/d/123/edit.<br>Please read.';
+    const parsedPlain = extractCalendarDescriptionLinksAndCleanText(plainTextWithUrl, 'evt-104');
+    assertEqual(parsedPlain.cleanDescription, 'Notes are at https://docs.google.com/document/d/123/edit.\nPlease read.', 'Plain text converted line breaks');
+    assertEqual(parsedPlain.extractedUrls.length, 1, 'Plain text url extracted');
+    assertEqual(parsedPlain.extractedUrls[0].url, 'https://docs.google.com/document/d/123/edit', 'Plain url matched without trailing period');
+    assertEqual(parsedPlain.extractedUrls[0].title, 'docs.google.com', 'Plain url title defaults to domain');
+
     return true;
   } catch (error) {
     console.error('Calendar formatting test assertion error:', error);
@@ -171,3 +388,4 @@ if (
     process.exit(1);
   }
 }
+

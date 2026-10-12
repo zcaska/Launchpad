@@ -67,7 +67,7 @@ export const SmartSuggestionCard: React.FC<SmartSuggestionCardProps> = ({
   };
 
   return (
-    <div className="@container relative overflow-hidden bg-gradient-to-br from-serene-primary/5 via-white to-serene-secondary/5 dark:from-serene-primary/10 dark:via-serene-surface-dark dark:to-serene-secondary/10 border-2 border-serene-primary/30 dark:border-serene-primary/40 rounded-2xl p-4 sm:p-5 shadow-card hover:shadow-card-hover transition-all animate-fadeIn">
+    <div className="@container relative overflow-hidden bg-white dark:bg-serene-surface-dark border border-serene-border-light dark:border-serene-border-dark rounded-2xl p-4 sm:p-5 shadow-subtle hover:shadow-card transition-all animate-fadeIn">
       {/* Top Banner Tag: AI / Algorithmic recommendation indicator */}
       <div className="flex flex-col @sm:flex-row @sm:items-center justify-between gap-2.5 mb-3.5">
         <div className="flex items-center gap-2 flex-wrap">

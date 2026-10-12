@@ -3,7 +3,6 @@ import { motion, AnimatePresence } from 'motion/react';
 import { 
   Circle, 
   Sparkles, 
-  Clock, 
   Target,
   ExternalLink,
   ChevronLeft,
@@ -19,6 +18,7 @@ import { CALM_QUOTES } from '../../data/seedData';
 import { TimeRadarWidget } from './TimeRadarWidget';
 import { DayTimeRemaining, TaskLoadSummary, BufferSummary } from '../../utils/timeBudget';
 import { fadeScaleVariants } from '../../utils/motion';
+import { SafeDescription } from '../Common/SafeDescription';
 
 interface FocusHeroBannerProps {
   dailyFocus?: DailyFocus;
@@ -42,7 +42,7 @@ interface FocusHeroBannerProps {
 export const FocusHeroBanner: React.FC<FocusHeroBannerProps> = ({
   dailyFocus,
   onUpdateDailyFocus,
-  clockFormat,
+  clockFormat: _clockFormat,
   showQuotes = true,
   tasks = [],
   onToggleTask,
@@ -81,7 +81,7 @@ export const FocusHeroBanner: React.FC<FocusHeroBannerProps> = ({
   const activeTask = pendingTasks[currentTaskIndex] || null;
 
   useEffect(() => {
-    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+    const timer = setInterval(() => setCurrentTime(new Date()), 60000);
     return () => clearInterval(timer);
   }, []);
 
@@ -91,12 +91,6 @@ export const FocusHeroBanner: React.FC<FocusHeroBannerProps> = ({
   };
 
   const currentQuote = CALM_QUOTES[quoteIndex];
-
-  const formattedTime = currentTime.toLocaleTimeString([], {
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: clockFormat === '12h',
-  });
 
   const formattedDate = currentTime.toLocaleDateString([], {
     weekday: 'long',
@@ -118,13 +112,13 @@ export const FocusHeroBanner: React.FC<FocusHeroBannerProps> = ({
 
   return (
     <div className="@container w-full">
-      <div className="grid grid-cols-1 @2xl:grid-cols-12 gap-3.5 sm:gap-4 animate-fadeIn">
-        {/* Primary Focus / Task Card (7 cols on @2xl if Time Radar present, else 12) */}
+      <div className="grid grid-cols-1 @3xl:grid-cols-12 gap-3.5 sm:gap-4 animate-fadeIn">
+        {/* Primary Focus / Task Card (7 cols on @3xl if Time Radar present, else 12) */}
         <div className={`p-4 sm:p-5 rounded-2xl border transition-all duration-200 flex flex-col justify-between ${
           dailyFocus?.isCompleted && pendingTasks.length === 0
             ? 'bg-emerald-50/70 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800/50'
             : 'bg-white dark:bg-serene-surface-dark border-serene-border-light dark:border-serene-border-dark shadow-subtle hover:shadow-card'
-        } ${hasTimeRadar ? '@2xl:col-span-7' : '@2xl:col-span-12'}`}>
+        } ${hasTimeRadar ? '@3xl:col-span-7' : '@3xl:col-span-12'}`}>
           
           {/* Top meta row */}
           <div className="flex items-center justify-between gap-3 mb-2.5">
@@ -133,7 +127,7 @@ export const FocusHeroBanner: React.FC<FocusHeroBannerProps> = ({
                 <Target className="w-4 h-4" />
               </span>
               <span className="text-[11px] font-bold uppercase tracking-wider text-serene-primary dark:text-serene-primary-dark">
-                Primary Focus & Intention
+                Primary Focus
               </span>
             </div>
 
@@ -154,21 +148,19 @@ export const FocusHeroBanner: React.FC<FocusHeroBannerProps> = ({
             </div>
           </div>
 
-
-
           {/* Pending Tasks Section inside Card */}
           <div className="my-1.5 flex-1 flex flex-col justify-center">
             {activeTask ? (
-              <div className="p-3 rounded-xl bg-serene-surfaceAlt-light/70 dark:bg-serene-surfaceAlt-dark/70 border border-serene-border-light/80 dark:border-serene-border-dark/80 space-y-2">
-                {/* Task Header & Carousel Controls */}
+              <div className="space-y-2.5 py-1">
+                {/* Task Carousel Header */}
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-serene-primary dark:text-serene-primary-dark flex items-center gap-1">
-                      <ListTodo className="w-3 h-3" />
-                      Pending Task {pendingTasks.length > 1 ? `(${currentTaskIndex + 1}/${pendingTasks.length})` : ''}
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-serene-text-secondary dark:text-serene-text-darkSecondary flex items-center gap-1">
+                      <ListTodo className="w-3 h-3 text-serene-primary dark:text-serene-primary-dark" />
+                      Active Task {pendingTasks.length > 1 ? `(${currentTaskIndex + 1}/${pendingTasks.length})` : ''}
                     </span>
                     {activeTask.priority && (
-                      <span className={`text-[9px] font-semibold uppercase px-1.5 py-0.2 rounded ${
+                      <span className={`text-[9px] font-semibold uppercase px-1.5 py-0.5 rounded ${
                         activeTask.priority === 'urgent'
                           ? 'bg-red-600 text-white font-bold'
                           : activeTask.priority === 'high'
@@ -206,23 +198,23 @@ export const FocusHeroBanner: React.FC<FocusHeroBannerProps> = ({
                 </div>
 
                 {/* Task Title & Checkbox */}
-                <div className="flex items-start gap-2.5">
+                <div className="flex items-start gap-3">
                   <button
                     type="button"
                     onClick={() => onToggleTask && onToggleTask(activeTask.id)}
-                    className="mt-0.5 shrink-0 transition-transform active:scale-95"
+                    className="mt-1 shrink-0 transition-transform active:scale-95"
                     title="Mark task done"
                   >
-                    <Circle className="w-4 h-4 text-serene-text-muted hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors" />
+                    <Circle className="w-5 h-5 text-serene-text-muted hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors" />
                   </button>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-serene-text-primary dark:text-serene-text-darkPrimary break-words leading-snug">
+                    <p className="text-base sm:text-lg font-bold text-serene-text-primary dark:text-serene-text-darkPrimary break-words leading-snug">
                       {activeTask.text}
                     </p>
                     {activeTask.description && (
-                      <p className="text-xs text-serene-text-secondary dark:text-serene-text-darkSecondary mt-0.5 line-clamp-2 leading-relaxed">
-                        {activeTask.description}
-                      </p>
+                      <div className="mt-1 text-xs text-serene-text-secondary dark:text-serene-text-darkSecondary leading-relaxed">
+                        <SafeDescription text={activeTask.description} lineClamp={2} />
+                      </div>
                     )}
                   </div>
                 </div>
@@ -257,9 +249,9 @@ export const FocusHeroBanner: React.FC<FocusHeroBannerProps> = ({
                       key={link.id}
                       href={link.url}
                       target="_blank"
-                      rel="noreferrer"
+                      rel="noopener noreferrer"
                       onClick={(e) => e.stopPropagation()}
-                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-white dark:bg-serene-surface-dark border border-serene-border-light dark:border-serene-border-dark text-serene-text-secondary hover:text-serene-primary dark:text-serene-text-darkSecondary dark:hover:text-serene-primary-dark transition-colors shadow-2xs hover:border-serene-primary/40 truncate max-w-[180px]"
+                      className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-medium bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark border border-serene-border-light dark:border-serene-border-dark text-serene-primary dark:text-serene-primary-dark hover:border-serene-primary/40 transition-colors shadow-2xs truncate max-w-[220px]"
                       title={link.url}
                     >
                       <ExternalLink className="w-2.5 h-2.5 shrink-0" />
@@ -270,22 +262,21 @@ export const FocusHeroBanner: React.FC<FocusHeroBannerProps> = ({
 
                 {/* View all pending tasks button */}
                 {onOpenTasksScreen && (
-                  <div className="pt-1 flex items-center justify-between border-t border-serene-border-light/40 dark:border-serene-border-dark/40">
+                  <div className="pt-2 flex items-center justify-between border-t border-serene-border-light/40 dark:border-serene-border-dark/40">
                     <button
                       type="button"
                       onClick={onOpenTasksScreen}
                       className="text-[11px] font-medium text-serene-primary dark:text-serene-primary-dark hover:underline flex items-center gap-1"
                     >
-                      <span>View all {pendingTasks.length} pending tasks</span>
+                      <span>Manage all {pendingTasks.length} pending tasks</span>
                       <ChevronRight className="w-3 h-3" />
                     </button>
-                    <span className="text-[10px] text-serene-text-muted">Click circle to mark done</span>
                   </div>
                 )}
               </div>
             ) : (
               /* Zero pending tasks state */
-              <div className="p-3 rounded-xl bg-serene-surfaceAlt-light/40 dark:bg-serene-surfaceAlt-dark/40 border border-dashed border-serene-border-light dark:border-serene-border-dark flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="p-3.5 rounded-xl bg-serene-surfaceAlt-light/40 dark:bg-serene-surfaceAlt-dark/40 border border-dashed border-serene-border-light dark:border-serene-border-dark flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="flex items-center gap-2 min-w-0">
                   <span className={`w-2 h-2 rounded-full shrink-0 ${hasPendingFocus ? 'bg-amber-500 animate-pulse' : 'bg-emerald-500 animate-pulse'}`} />
                   <span className="text-xs text-serene-text-secondary dark:text-serene-text-darkSecondary">
@@ -319,16 +310,16 @@ export const FocusHeroBanner: React.FC<FocusHeroBannerProps> = ({
             )}
           </div>
 
-          {/* Bottom helper */}
+          {/* Bottom helper date strip */}
           <div className="mt-2.5 pt-2 border-t border-serene-border-light/40 dark:border-serene-border-dark/40 flex items-center justify-between text-[11px] text-serene-text-muted">
-            <span className="truncate">Anchor your attention before opening any tab.</span>
+            <span className="text-[10px] font-medium text-serene-text-secondary dark:text-serene-text-darkSecondary">Primary Attention Anchor</span>
             <span className="font-mono text-[10px] shrink-0 ml-2">{formattedDate}</span>
           </div>
         </div>
 
-        {/* Time Radar Widget in former quote space (5 cols on @2xl) */}
+        {/* Time Radar Widget in former quote space (5 cols on @3xl) */}
         {hasTimeRadar && timeRemaining && taskLoad && buffer && endHour !== undefined && (
-          <div className="@2xl:col-span-5 flex flex-col min-w-0">
+          <div className="@3xl:col-span-5 flex flex-col min-w-0">
             <TimeRadarWidget
               timeRemaining={timeRemaining}
               taskLoad={taskLoad}
@@ -384,13 +375,6 @@ export const FocusHeroBanner: React.FC<FocusHeroBannerProps> = ({
               <RotateCw className="w-3 h-3 group-hover:rotate-180 transition-transform duration-500" />
               <span className="hidden sm:inline text-[10px]">Cycle quote</span>
             </button>
-
-            <span className="text-serene-border-light dark:text-serene-border-dark">•</span>
-
-            <div className="flex items-center gap-1.5 font-mono text-[11px] font-medium text-serene-text-secondary dark:text-serene-text-darkSecondary">
-              <Clock className="w-3 h-3 text-serene-text-muted" />
-              <span>{formattedTime}</span>
-            </div>
           </div>
         </div>
       )}
