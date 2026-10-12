@@ -44,7 +44,7 @@ import {
   fetchTodayGoogleEvents, 
   getInMemoryGoogleToken, 
   isGoogleTokenExpired,
-  requestSilentGoogleAccessToken
+  requestGoogleAccessToken
 } from './services/googleCalendarService';
 import { normalizeUrl, createCustomFolder, isGenericBrowserFolder } from './utils/bookmarkParser';
 import { initBookmarkSyncChannel, BookmarkSyncPayload } from './utils/bookmarkSyncChannel';
@@ -343,8 +343,24 @@ export function App() {
 
     let token = getInMemoryGoogleToken();
     if (!token) {
-      // Attempt silent re-authentication via Google Identity Services
-      token = await requestSilentGoogleAccessToken(gcal.clientId);
+      // In silent/background mode (mount, focus, visibility, interval polling):
+      // DO NOT trigger popup windows or account choosers!
+      // In browser-only GIS, requestAccessToken opens a popup; calling it without a user
+      // gesture creates unsolicited popups and popup-blocker issues. Return gracefully.
+      if (silent) {
+        return;
+      }
+
+      // If user-initiated (e.g. clicked Sync Now or Re-authorize):
+      // Explicitly request access token within the user gesture context,
+      // providing login_hint (userEmail) and prompt: '' to bypass the account chooser!
+      try {
+        token = await requestGoogleAccessToken(gcal.clientId, '', gcal.userEmail);
+      } catch (err: any) {
+        console.warn('Google Calendar authorization failed or was closed:', err);
+        setIsSettingsModalOpen(true);
+        return;
+      }
     }
 
     if (!token) {
@@ -357,7 +373,14 @@ export function App() {
     try {
       isSyncingCalendarRef.current = true;
       setIsSyncingCalendar(true);
-      const events = await fetchTodayGoogleEvents(token, gcal.calendarId || 'primary');
+      let discoveredEmail: string | undefined = gcal.userEmail;
+      const events = await fetchTodayGoogleEvents(
+        token,
+        gcal.calendarId || 'primary',
+        (email) => {
+          discoveredEmail = email;
+        }
+      );
       setAppData((prev) => {
         const updatedNotes = syncCalendarEventsToQuickNotes(prev.quickNotes, events);
         const updated = {
@@ -368,6 +391,7 @@ export function App() {
             ...prev.settings,
             googleCalendar: {
               ...prev.settings.googleCalendar!,
+              ...(discoveredEmail ? { userEmail: discoveredEmail } : {}),
               lastSyncedAt: Date.now(),
             },
           },
@@ -988,6 +1012,7 @@ export function App() {
                 onSyncCalendar={() => handleSyncCalendar(false)}
                 isSyncingCalendar={isSyncingCalendar}
                 onOpenSettings={() => setIsSettingsModalOpen(true)}
+                onReauthorize={() => handleSyncCalendar(false)}
                 isTokenExpired={calendarSummary.isTokenExpired}
               />
             </motion.main>
@@ -1022,6 +1047,7 @@ export function App() {
                     onSyncCalendar={() => handleSyncCalendar(false)}
                     isSyncingCalendar={isSyncingCalendar}
                     onOpenCalendarSettings={() => setIsSettingsModalOpen(true)}
+                    onReauthorize={() => handleSyncCalendar(false)}
                   />
                 ) : (
                   <div className="@container w-full">
@@ -1049,6 +1075,7 @@ export function App() {
                           onSyncCalendar={() => handleSyncCalendar(false)}
                           isSyncingCalendar={isSyncingCalendar}
                           onOpenCalendarSettings={() => setIsSettingsModalOpen(true)}
+                          onReauthorize={() => handleSyncCalendar(false)}
                         />
                       </div>
                     </div>
@@ -1275,6 +1302,7 @@ export function App() {
                     onSync={() => handleSyncCalendar(false)}
                     isSyncing={isSyncingCalendar}
                     onOpenSettings={() => setIsSettingsModalOpen(true)}
+                    onReauthorize={() => handleSyncCalendar(false)}
                     isTokenExpired={calendarSummary.isTokenExpired}
                   />
                 </div>

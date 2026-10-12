@@ -136,6 +136,7 @@ export interface GoogleCalendarConfig {
   calendarId: string; // default: 'primary'
   syncIntervalMinutes: number; // default: 5
   lastSyncedAt?: number; // Epoch timestamp of last successful sync
+  userEmail?: string; // Connected Google account email for login_hint bypass
 }
 
 export interface CalendarScheduleSummary {

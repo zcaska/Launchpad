@@ -32,7 +32,8 @@ import { modalBackdropVariants, modalContentVariants } from '../../utils/motion'
 import { 
   requestGoogleAccessToken, 
   revokeGoogleAuthorization, 
-  isGoogleTokenExpired 
+  isGoogleTokenExpired,
+  fetchGoogleCalendarAccountEmail
 } from '../../services/googleCalendarService';
 
 interface SettingsModalProps {
@@ -180,7 +181,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     });
   };
 
-  const handleConnectCalendar = async () => {
+  const handleConnectCalendar = async (promptMode: string = '') => {
     const clientId = gcalConfig.clientId?.trim();
     if (!clientId) {
       setGcalError('Please enter your Google OAuth Client ID before connecting.');
@@ -191,7 +192,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       setIsConnectingGCal(true);
       setGcalError(null);
       setGcalSuccessMsg(null);
-      await requestGoogleAccessToken(clientId);
+      // When explicitly choosing to switch account, skip login_hint; otherwise pass existing email to bypass account picker
+      const loginHint = promptMode === 'select_account' ? undefined : gcalConfig.userEmail;
+      const token = await requestGoogleAccessToken(clientId, promptMode, loginHint);
+      const userEmail = (await fetchGoogleCalendarAccountEmail(token, gcalConfig.calendarId || 'primary')) || gcalConfig.userEmail;
       onUpdateAppData({
         ...appData,
         settings: {
@@ -200,10 +204,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             ...gcalConfig,
             enabled: true,
             clientId,
+            ...(userEmail ? { userEmail } : {}),
           },
         },
       });
-      setGcalSuccessMsg('Connected successfully! Calendar access granted.');
+      setGcalSuccessMsg(`Connected successfully! Calendar access granted${userEmail ? ` (${userEmail})` : ''}.`);
       if (onSyncCalendar) {
         await onSyncCalendar();
       }
@@ -229,6 +234,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           googleCalendar: {
             ...gcalConfig,
             enabled: false,
+            userEmail: undefined,
           },
         },
       });
@@ -557,6 +563,27 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               />
             </div>
 
+            {/* Connected Account Status */}
+            {gcalConfig.enabled && gcalConfig.userEmail && (
+              <div className="flex items-center justify-between p-2.5 rounded-lg bg-emerald-50/70 dark:bg-emerald-950/40 border border-emerald-200/60 dark:border-emerald-800/50 text-xs">
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                  <span className="text-serene-text-secondary dark:text-serene-text-darkSecondary">
+                    Connected Account: <strong className="font-semibold text-emerald-800 dark:text-emerald-300 font-mono text-[11px]">{gcalConfig.userEmail}</strong>
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleConnectCalendar('select_account')}
+                  disabled={isConnectingGCal}
+                  className="text-[11px] font-medium text-emerald-700 dark:text-emerald-400 hover:underline hover:text-emerald-800 dark:hover:text-emerald-300 transition-colors disabled:opacity-50"
+                  title="Switch to another Google Account"
+                >
+                  Switch account
+                </button>
+              </div>
+            )}
+
             {/* Actions */}
             <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
               <div className="text-[10px] text-serene-text-muted">
@@ -584,7 +611,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     {isGoogleTokenExpired() && (
                       <button
                         type="button"
-                        onClick={handleConnectCalendar}
+                        onClick={() => handleConnectCalendar('')}
                         disabled={isConnectingGCal}
                         className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors disabled:opacity-50"
                       >
@@ -603,7 +630,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 ) : (
                   <button
                     type="button"
-                    onClick={handleConnectCalendar}
+                    onClick={() => handleConnectCalendar('')}
                     disabled={isConnectingGCal || !gcalConfig.clientId?.trim()}
                     className="px-3.5 py-1.5 bg-serene-primary hover:bg-serene-primary-hover text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-2xs disabled:opacity-50"
                   >

@@ -87,11 +87,44 @@ export function loadGoogleIdentityScript(): Promise<void> {
 }
 
 /**
+ * Extracts the user's primary account email from Google Calendar API response.
+ */
+export function extractPrimaryCalendarEmail(data: any): string | null {
+  if (!data) return null;
+  if (typeof data.summary === 'string' && data.summary.includes('@')) {
+    return data.summary.trim();
+  }
+  if (Array.isArray(data.items)) {
+    for (const item of data.items) {
+      if (Array.isArray(item.attendees)) {
+        const selfAttendee = item.attendees.find((a: any) => a?.self && typeof a?.email === 'string');
+        if (selfAttendee?.email) {
+          return selfAttendee.email.trim();
+        }
+      }
+      if (item.creator?.email && typeof item.creator.email === 'string') {
+        return item.creator.email.trim();
+      }
+      if (item.organizer?.email && typeof item.organizer.email === 'string') {
+        return item.organizer.email.trim();
+      }
+    }
+  }
+  return null;
+}
+
+/**
  * Requests an OAuth 2.0 access token via Google Identity Services token client.
  * Requests ONLY calendar.events.readonly.
- * Allows an optional prompt parameter (defaulting to '' for silent re-auth).
+ * Sets prompt: '' to avoid Google Identity Services defaulting to 'select_account'.
+ * When loginHint is supplied, Google directs authentication straight to that account,
+ * eliminating repeated account chooser popups.
  */
-export async function requestGoogleAccessToken(clientId: string, prompt: string = ''): Promise<string> {
+export async function requestGoogleAccessToken(
+  clientId: string,
+  prompt: string = '',
+  loginHint?: string
+): Promise<string> {
   if (!clientId.trim()) {
     throw new Error('Please enter a valid Google OAuth Client ID in Settings.');
   }
@@ -105,9 +138,11 @@ export async function requestGoogleAccessToken(clientId: string, prompt: string 
         throw new Error('Google Identity Services SDK is unavailable in this environment.');
       }
 
-      const client = google.accounts.oauth2.initTokenClient({
+      const clientConfig: any = {
         client_id: clientId.trim(),
         scope: 'https://www.googleapis.com/auth/calendar.events.readonly',
+        // Crucial: Passing prompt (default '') prevents GIS from defaulting to 'select_account'
+        prompt: prompt,
         callback: (response: any) => {
           if (response.error) {
             reject(new Error(response.error_description || response.error));
@@ -121,9 +156,20 @@ export async function requestGoogleAccessToken(clientId: string, prompt: string 
             reject(new Error('No access token returned from Google authentication prompt.'));
           }
         },
-      });
+      };
 
-      client.requestAccessToken({ prompt });
+      if (loginHint && loginHint.trim()) {
+        clientConfig.login_hint = loginHint.trim();
+      }
+
+      const client = google.accounts.oauth2.initTokenClient(clientConfig);
+
+      const requestOptions: any = { prompt };
+      if (loginHint && loginHint.trim()) {
+        requestOptions.login_hint = loginHint.trim();
+      }
+
+      client.requestAccessToken(requestOptions);
     } catch (err) {
       reject(err);
     }
@@ -132,14 +178,42 @@ export async function requestGoogleAccessToken(clientId: string, prompt: string 
 
 /**
  * Attempts client.requestAccessToken({ prompt: '' }) silently.
+ * Passes loginHint if available to prevent the account selector popup.
  * Resolves with the access token if successful, or null if silent auth fails.
  */
-export async function requestSilentGoogleAccessToken(clientId: string): Promise<string | null> {
+export async function requestSilentGoogleAccessToken(
+  clientId: string,
+  loginHint?: string
+): Promise<string | null> {
   try {
-    const token = await requestGoogleAccessToken(clientId, '');
+    const token = await requestGoogleAccessToken(clientId, '', loginHint);
     return token;
   } catch (err) {
     console.debug('Silent Google token request failed or required interaction:', err);
+    return null;
+  }
+}
+
+/**
+ * Fetches the user's primary calendar email using an active token.
+ */
+export async function fetchGoogleCalendarAccountEmail(
+  token: string,
+  calendarId: string = 'primary'
+): Promise<string | null> {
+  try {
+    const url = new URL(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events`);
+    url.searchParams.set('maxResults', '1');
+    const res = await fetch(url.toString(), {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: 'application/json',
+      },
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return extractPrimaryCalendarEmail(data);
+  } catch {
     return null;
   }
 }
@@ -165,10 +239,12 @@ export async function revokeGoogleAuthorization(): Promise<void> {
 /**
  * Fetches events for the current day using Google Calendar v3 REST API
  * with full pagination and error handling.
+ * Optionally discovers and reports the primary calendar account email.
  */
 export async function fetchTodayGoogleEvents(
   token: string,
-  calendarId: string = 'primary'
+  calendarId: string = 'primary',
+  onAccountEmailDiscovered?: (email: string) => void
 ): Promise<CalendarEventItem[]> {
   const now = new Date();
   const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
@@ -176,6 +252,7 @@ export async function fetchTodayGoogleEvents(
 
   const allItems: CalendarEventItem[] = [];
   let pageToken: string | undefined = undefined;
+  let hasCheckedEmail = false;
 
   do {
     const url = new URL(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events`);
@@ -204,6 +281,15 @@ export async function fetchTodayGoogleEvents(
     }
 
     const data = await res.json();
+
+    if (!hasCheckedEmail && onAccountEmailDiscovered && calendarId === 'primary') {
+      hasCheckedEmail = true;
+      const discovered = extractPrimaryCalendarEmail(data);
+      if (discovered) {
+        onAccountEmailDiscovered(discovered);
+      }
+    }
+
     const rawItems = Array.isArray(data.items) ? data.items : [];
 
     for (const raw of rawItems) {

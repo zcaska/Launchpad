@@ -33,6 +33,7 @@ export interface TaskManagementScreenProps {
   onSyncCalendar?: () => void;
   isSyncingCalendar?: boolean;
   onOpenSettings?: () => void;
+  onReauthorize?: () => void;
   isTokenExpired?: boolean;
 }
 
@@ -48,6 +49,7 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
   onSyncCalendar,
   isSyncingCalendar = false,
   onOpenSettings,
+  onReauthorize,
   isTokenExpired = false,
 }) => {
   // Filters & State
@@ -972,6 +974,7 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
                     onSync={onSyncCalendar}
                     isSyncing={isSyncingCalendar}
                     onOpenSettings={onOpenSettings}
+                    onReauthorize={onReauthorize}
                     isTokenExpired={isTokenExpired}
                     className="border-0 shadow-none p-0 bg-transparent"
                   />

@@ -26,6 +26,7 @@ interface TimeRadarWidgetProps {
   onSyncCalendar?: () => void;
   isSyncingCalendar?: boolean;
   onOpenCalendarSettings?: () => void;
+  onReauthorize?: () => void;
 }
 
 export const TimeRadarWidget: React.FC<TimeRadarWidgetProps> = ({
@@ -39,6 +40,7 @@ export const TimeRadarWidget: React.FC<TimeRadarWidgetProps> = ({
   onSyncCalendar,
   isSyncingCalendar = false,
   onOpenCalendarSettings,
+  onReauthorize,
 }) => {
   const formattedCutoff = endHour > 12 ? `${endHour - 12}:00 PM` : `${endHour}:00 AM`;
 
@@ -69,7 +71,7 @@ export const TimeRadarWidget: React.FC<TimeRadarWidgetProps> = ({
           </span>
           {calendarSummary?.isTokenExpired && (
             <button
-              onClick={onOpenCalendarSettings}
+              onClick={onReauthorize || onOpenCalendarSettings}
               className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800/50 hover:bg-amber-200 transition-colors"
               title="Google Calendar token expired. Click to re-authorize."
             >

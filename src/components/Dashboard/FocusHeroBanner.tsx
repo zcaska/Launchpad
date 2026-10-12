@@ -36,6 +36,7 @@ interface FocusHeroBannerProps {
   onSyncCalendar?: () => void;
   isSyncingCalendar?: boolean;
   onOpenCalendarSettings?: () => void;
+  onReauthorize?: () => void;
 }
 
 export const FocusHeroBanner: React.FC<FocusHeroBannerProps> = ({
@@ -54,6 +55,7 @@ export const FocusHeroBanner: React.FC<FocusHeroBannerProps> = ({
   onSyncCalendar,
   isSyncingCalendar,
   onOpenCalendarSettings,
+  onReauthorize,
 }) => {
   const [currentTime, setCurrentTime] = useState<Date>(new Date());
   const [quoteIndex, setQuoteIndex] = useState(0);
@@ -337,6 +339,7 @@ export const FocusHeroBanner: React.FC<FocusHeroBannerProps> = ({
               onSyncCalendar={onSyncCalendar}
               isSyncingCalendar={isSyncingCalendar}
               onOpenCalendarSettings={onOpenCalendarSettings}
+              onReauthorize={onReauthorize}
             />
           </div>
         )}

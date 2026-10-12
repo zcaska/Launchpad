@@ -13,6 +13,7 @@ interface CalendarScheduleTimelineProps {
   onSync?: () => void;
   isSyncing?: boolean;
   onOpenSettings?: () => void;
+  onReauthorize?: () => void;
   isTokenExpired?: boolean;
   className?: string;
 }
@@ -22,6 +23,7 @@ export const CalendarScheduleTimeline: React.FC<CalendarScheduleTimelineProps> =
   onSync,
   isSyncing = false,
   onOpenSettings,
+  onReauthorize,
   isTokenExpired = false,
   className = '',
 }) => {
@@ -105,8 +107,9 @@ export const CalendarScheduleTimeline: React.FC<CalendarScheduleTimelineProps> =
         <div className="flex items-center gap-2">
           {isTokenExpired && (
             <button
-              onClick={onOpenSettings}
+              onClick={onReauthorize || onOpenSettings}
               className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800/50 hover:bg-amber-200 transition-colors"
+              title="Google Calendar authorization expired. Click to re-authorize."
             >
               Re-authorize
             </button>
