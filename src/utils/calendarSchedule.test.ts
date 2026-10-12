@@ -289,6 +289,28 @@ console.log('--- Testing calendarSchedule.ts ---');
   const tasksWithPast = syncCalendarEventsToQuickNotes([], [pastEvent]);
   assertEqual(tasksWithPast.length, 1, 'syncCalendarEventsToQuickNotes: synced 1 past event');
   assertEqual(tasksWithPast[0].isDone, true, 'syncCalendarEventsToQuickNotes: past event defaults isDone to true');
+
+  // Test event deletion: when an event is deleted in Google Calendar, it is pruned from quickNotes
+  const retainedTasks = syncCalendarEventsToQuickNotes(tasksWithPast, []);
+  assertEqual(retainedTasks.length, 0, 'syncCalendarEventsToQuickNotes: deleted Google Calendar event is pruned from quickNotes');
+
+  // Test event rescheduling: if a past completed event is rescheduled to the future, isDone resets to false
+  const completedPastTask = {
+    ...tasksWithPast[0],
+    isDone: true,
+  };
+  const futureRescheduledEvent: CalendarEventItem = {
+    ...pastEvent,
+    summary: 'Morning Standup (Rescheduled to Tomorrow)',
+    startTime: new Date(Date.now() + 86400000).toISOString(),
+    endTime: new Date(Date.now() + 86400000 + 3600000).toISOString(),
+    startMs: Date.now() + 86400000,
+    endMs: Date.now() + 86400000 + 3600000,
+  };
+  const rescheduledTasks = syncCalendarEventsToQuickNotes([completedPastTask], [futureRescheduledEvent]);
+  assertEqual(rescheduledTasks.length, 1, 'syncCalendarEventsToQuickNotes: returns rescheduled task');
+  assertEqual(rescheduledTasks[0].isDone, false, 'syncCalendarEventsToQuickNotes: future rescheduled event resets isDone to false');
+  assertEqual(rescheduledTasks[0].text, 'Morning Standup (Rescheduled to Tomorrow)', 'syncCalendarEventsToQuickNotes: updates title on rescheduled event');
 }
 
 if (failures === 0) {

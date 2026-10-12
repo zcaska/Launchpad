@@ -176,16 +176,18 @@ export function isCalendarTask(n: QuickNote): boolean {
   return (
     n.source === 'google_calendar' ||
     Boolean(n.eventId) ||
-    (typeof n.id === 'string' && n.id.startsWith('cal-task-'))
+    (typeof n.id === 'string' && n.id.startsWith('cal-task-')) ||
+    Boolean(n.attachedUrls?.some((u) => u.url.includes('calendar.google.com') || u.title === 'Google Calendar Event'))
   );
 }
 
 /**
  * Synchronizes Google Calendar events into LaunchPAD QuickNotes.
  * - Converts each active calendar event to a task with matching title, description, expected time, deadline, and Google Calendar link.
- * - Preserves existing completion status (`isDone`) of already synced tasks.
+ * - Updates existing tasks with latest summary, description, duration, and deadline from Google Calendar.
+ * - Preserves existing completion status (`isDone`) unless the event has been rescheduled to the future.
  * - Removes synced tasks that are no longer present in today's active calendar events (e.g. deleted/moved).
- * - Leaves purely user-created local tasks completely intact (filters out legacy or untagged calendar items).
+ * - Leaves purely user-created local tasks completely intact.
  */
 export function syncCalendarEventsToQuickNotes(
   currentNotes: QuickNote[] = [],
@@ -248,6 +250,9 @@ export function syncCalendarEventsToQuickNotes(
       : [];
 
     const defaultIsDone = Boolean(evt.endMs && evt.endMs <= Date.now());
+    // If the event is in the future, it cannot be considered done even if previously marked done in the past
+    const isFutureEvent = Boolean(evt.endMs && evt.endMs > Date.now());
+    const resolvedIsDone = isFutureEvent ? false : (existing ? existing.isDone : defaultIsDone);
 
     return {
       id: existing ? existing.id : `cal-task-${evt.id}`,
@@ -255,7 +260,7 @@ export function syncCalendarEventsToQuickNotes(
       source: 'google_calendar' as const,
       text: evt.summary || 'Scheduled Calendar Event',
       description: evt.description || undefined,
-      isDone: existing ? existing.isDone : defaultIsDone,
+      isDone: resolvedIsDone,
       createdAt: existing ? existing.createdAt : evt.startMs || Date.now(),
       durationMinutes: duration,
       deadline: deadlineStr,

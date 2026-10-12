@@ -255,11 +255,15 @@ export async function fetchTodayGoogleEvents(
   let hasCheckedEmail = false;
 
   do {
+    const userTimeZone = typeof Intl !== 'undefined' ? Intl.DateTimeFormat().resolvedOptions().timeZone : 'UTC';
+
     const url = new URL(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events`);
     url.searchParams.set('timeMin', startOfDay.toISOString());
     url.searchParams.set('timeMax', endOfDay.toISOString());
+    url.searchParams.set('timeZone', userTimeZone);
     url.searchParams.set('singleEvents', 'true');
     url.searchParams.set('orderBy', 'startTime');
+    url.searchParams.set('_t', Date.now().toString());
     if (pageToken) {
       url.searchParams.set('pageToken', pageToken);
     }
@@ -268,7 +272,10 @@ export async function fetchTodayGoogleEvents(
       headers: {
         Authorization: `Bearer ${token}`,
         Accept: 'application/json',
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        Pragma: 'no-cache',
       },
+      cache: 'no-store',
     });
 
     if (!res.ok) {

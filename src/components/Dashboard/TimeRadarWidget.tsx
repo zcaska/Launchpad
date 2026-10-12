@@ -69,7 +69,7 @@ export const TimeRadarWidget: React.FC<TimeRadarWidgetProps> = ({
           <span className="text-[11px] font-bold uppercase tracking-wider text-serene-primary dark:text-serene-primary-dark">
             Time Radar & Budget
           </span>
-          {calendarSummary?.isTokenExpired && (
+          {calendarSummary?.isTokenExpired ? (
             <button
               onClick={onReauthorize || onOpenCalendarSettings}
               className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800/50 hover:bg-amber-200 transition-colors"
@@ -77,7 +77,17 @@ export const TimeRadarWidget: React.FC<TimeRadarWidgetProps> = ({
             >
               Re-authorize
             </button>
-          )}
+          ) : calendarSummary?.syncError ? (
+            <button
+              onClick={onSyncCalendar}
+              disabled={isSyncingCalendar}
+              className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-rose-100 dark:bg-rose-950/60 text-rose-800 dark:text-rose-300 border border-rose-200 dark:border-rose-800/50 hover:bg-rose-200 transition-colors flex items-center gap-1"
+              title={`Calendar sync error: ${calendarSummary.syncError}. Click to retry.`}
+            >
+              <AlertTriangle className="w-2.5 h-2.5 text-rose-600 dark:text-rose-400" />
+              <span>Sync Failed</span>
+            </button>
+          ) : null}
         </div>
 
         {/* Quick Action Buttons */}

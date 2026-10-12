@@ -83,6 +83,11 @@ export function App() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isSyncingCalendar, setIsSyncingCalendar] = useState(false);
   const isSyncingCalendarRef = useRef(false);
+  const [calendarSyncError, setCalendarSyncError] = useState<string | null>(null);
+  const gcalConfigRef = useRef(appData.settings.googleCalendar);
+  useEffect(() => {
+    gcalConfigRef.current = appData.settings.googleCalendar;
+  }, [appData.settings.googleCalendar]);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isManageFoldersOpen, setIsManageFoldersOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
@@ -322,7 +327,7 @@ export function App() {
     return calculateBuffer(timeRemaining.totalMinutes, taskLoad.pendingMinutes);
   }, [timeRemaining.totalMinutes, taskLoad.pendingMinutes]);
 
-  // Calendar Schedule Summary (merged busy intervals, next meeting, token status)
+  // Calendar Schedule Summary (merged busy intervals, next meeting, token status, sync error)
   const calendarSummary = useMemo(() => {
     const summary = calculateCalendarScheduleSummary(
       appData.calendarEvents || [],
@@ -332,47 +337,49 @@ export function App() {
     return {
       ...summary,
       isTokenExpired: isGoogleTokenExpired() && Boolean(appData.settings.googleCalendar?.enabled),
+      syncError: calendarSyncError || undefined,
     };
-  }, [appData.calendarEvents, now, appData.settings.daySchedule.endHour, appData.settings.googleCalendar?.enabled]);
+  }, [appData.calendarEvents, now, appData.settings.daySchedule.endHour, appData.settings.googleCalendar?.enabled, calendarSyncError]);
 
-  // Concurrency-guarded Google Calendar Synchronization
+  // Concurrency-guarded Google Calendar Synchronization with stable callback reference
   const handleSyncCalendar = useCallback(async (silent: boolean = false) => {
+    // Synchronously acquire lock to prevent race conditions from concurrent triggers
     if (isSyncingCalendarRef.current) return;
-    const gcal = appData.settings.googleCalendar;
+    const gcal = gcalConfigRef.current;
     if (!gcal?.enabled || !gcal.clientId) return;
 
-    let token = getInMemoryGoogleToken();
-    if (!token) {
-      // In silent/background mode (mount, focus, visibility, interval polling):
-      // DO NOT trigger popup windows or account choosers!
-      // In browser-only GIS, requestAccessToken opens a popup; calling it without a user
-      // gesture creates unsolicited popups and popup-blocker issues. Return gracefully.
-      if (silent) {
-        return;
-      }
-
-      // If user-initiated (e.g. clicked Sync Now or Re-authorize):
-      // Explicitly request access token within the user gesture context,
-      // providing login_hint (userEmail) and prompt: '' to bypass the account chooser!
-      try {
-        token = await requestGoogleAccessToken(gcal.clientId, '', gcal.userEmail);
-      } catch (err: any) {
-        console.warn('Google Calendar authorization failed or was closed:', err);
-        setIsSettingsModalOpen(true);
-        return;
-      }
-    }
-
-    if (!token) {
-      if (!silent) {
-        setIsSettingsModalOpen(true);
-      }
-      return;
-    }
+    isSyncingCalendarRef.current = true;
+    setIsSyncingCalendar(true);
 
     try {
-      isSyncingCalendarRef.current = true;
-      setIsSyncingCalendar(true);
+      let token = getInMemoryGoogleToken();
+      if (!token) {
+        // In silent/background mode:
+        // Do NOT spawn popup windows without user gesture!
+        // Return gracefully, maintaining cached view and marking token expired
+        if (silent) {
+          return;
+        }
+
+        // If user-initiated (clicked Sync Now or Re-authorize):
+        // Request token with user gesture, providing login_hint (userEmail) and prompt: ''
+        try {
+          token = await requestGoogleAccessToken(gcal.clientId, '', gcal.userEmail);
+        } catch (err: any) {
+          console.warn('Google Calendar authorization failed or was closed:', err);
+          setCalendarSyncError(err.message || 'Authorization failed');
+          setIsSettingsModalOpen(true);
+          return;
+        }
+      }
+
+      if (!token) {
+        if (!silent) {
+          setIsSettingsModalOpen(true);
+        }
+        return;
+      }
+
       let discoveredEmail: string | undefined = gcal.userEmail;
       const events = await fetchTodayGoogleEvents(
         token,
@@ -381,6 +388,10 @@ export function App() {
           discoveredEmail = email;
         }
       );
+
+      // Clear any prior sync error on success
+      setCalendarSyncError(null);
+
       setAppData((prev) => {
         const updatedNotes = syncCalendarEventsToQuickNotes(prev.quickNotes, events);
         const updated = {
@@ -400,19 +411,22 @@ export function App() {
         return updated;
       });
     } catch (err: any) {
-      console.warn('Google Calendar sync warning:', err);
-      // Preserve cached calendarEvents during network failure
+      console.error('Google Calendar sync error:', err);
+      setCalendarSyncError(err.message || 'Failed to sync with Google Calendar');
+      if (!silent) {
+        alert(`Google Calendar sync failed: ${err.message || 'Network or authorization error'}`);
+      }
     } finally {
       isSyncingCalendarRef.current = false;
       setIsSyncingCalendar(false);
     }
-  }, [appData.settings.googleCalendar]);
+  }, []); // Stable callback identity - does not change when lastSyncedAt updates!
 
   // Periodic polling & Window Focus/Visibility listeners for Google Calendar
   useEffect(() => {
     if (!appData.settings.googleCalendar?.enabled) return;
 
-    // Silent background sync on mount if token is in memory
+    // Background sync on mount if token is in memory
     handleSyncCalendar(true);
 
     const onFocus = () => handleSyncCalendar(true);
@@ -1014,6 +1028,7 @@ export function App() {
                 onOpenSettings={() => setIsSettingsModalOpen(true)}
                 onReauthorize={() => handleSyncCalendar(false)}
                 isTokenExpired={calendarSummary.isTokenExpired}
+                syncError={calendarSummary.syncError}
               />
             </motion.main>
           ) : (

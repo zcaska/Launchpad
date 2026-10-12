@@ -35,6 +35,7 @@ export interface TaskManagementScreenProps {
   onOpenSettings?: () => void;
   onReauthorize?: () => void;
   isTokenExpired?: boolean;
+  syncError?: string;
 }
 
 type FilterTab = 'All' | 'Calendar Events' | 'Urgent' | 'High Priority' | 'Medium' | 'Low' | 'Due Soon' | 'Completed';
@@ -51,6 +52,7 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
   onOpenSettings,
   onReauthorize,
   isTokenExpired = false,
+  syncError,
 }) => {
   // Filters & State
   const [activeTab, setActiveTab] = useState<FilterTab>('All');
@@ -976,6 +978,7 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
                     onOpenSettings={onOpenSettings}
                     onReauthorize={onReauthorize}
                     isTokenExpired={isTokenExpired}
+                    syncError={syncError}
                     className="border-0 shadow-none p-0 bg-transparent"
                   />
                 </div>

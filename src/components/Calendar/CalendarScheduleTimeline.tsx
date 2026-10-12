@@ -4,7 +4,8 @@ import {
   ExternalLink, 
   Sparkles, 
   RefreshCw, 
-  CheckCircle2 
+  CheckCircle2,
+  AlertTriangle 
 } from 'lucide-react';
 import { CalendarEventItem } from '../../types';
 
@@ -15,6 +16,7 @@ interface CalendarScheduleTimelineProps {
   onOpenSettings?: () => void;
   onReauthorize?: () => void;
   isTokenExpired?: boolean;
+  syncError?: string;
   className?: string;
 }
 
@@ -25,6 +27,7 @@ export const CalendarScheduleTimeline: React.FC<CalendarScheduleTimelineProps> =
   onOpenSettings,
   onReauthorize,
   isTokenExpired = false,
+  syncError,
   className = '',
 }) => {
   const now = new Date();
@@ -105,7 +108,7 @@ export const CalendarScheduleTimeline: React.FC<CalendarScheduleTimelineProps> =
         </div>
 
         <div className="flex items-center gap-2">
-          {isTokenExpired && (
+          {isTokenExpired ? (
             <button
               onClick={onReauthorize || onOpenSettings}
               className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800/50 hover:bg-amber-200 transition-colors"
@@ -113,7 +116,17 @@ export const CalendarScheduleTimeline: React.FC<CalendarScheduleTimelineProps> =
             >
               Re-authorize
             </button>
-          )}
+          ) : syncError ? (
+            <button
+              onClick={onSync}
+              disabled={isSyncing}
+              className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-rose-100 dark:bg-rose-950/60 text-rose-800 dark:text-rose-300 border border-rose-200 dark:border-rose-800/50 hover:bg-rose-200 transition-colors flex items-center gap-1"
+              title={`Calendar sync error: ${syncError}. Click to retry.`}
+            >
+              <AlertTriangle className="w-2.5 h-2.5 text-rose-600 dark:text-rose-400" />
+              <span>Sync Failed</span>
+            </button>
+          ) : null}
           {onSync && (
             <button
               onClick={onSync}

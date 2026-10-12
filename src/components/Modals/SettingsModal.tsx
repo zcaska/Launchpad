@@ -35,6 +35,7 @@ import {
   isGoogleTokenExpired,
   fetchGoogleCalendarAccountEmail
 } from '../../services/googleCalendarService';
+import { isCalendarTask } from '../../utils/calendarSchedule';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -229,6 +230,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       onUpdateAppData({
         ...appData,
         calendarEvents: [],
+        quickNotes: appData.quickNotes.filter((n) => !isCalendarTask(n)),
         settings: {
           ...appData.settings,
           googleCalendar: {

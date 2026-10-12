@@ -147,6 +147,7 @@ export interface CalendarScheduleSummary {
   minutesUntilNextEvent?: number;
   currentEvent?: CalendarEventItem;
   isTokenExpired?: boolean;
+  syncError?: string;
 }
 
 export interface DailyGrowthRecord {
