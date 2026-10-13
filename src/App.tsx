@@ -27,7 +27,7 @@ import { GrowthMasteryScreen } from './components/Growth/GrowthMasteryScreen';
 import { PrimaryFocusCard } from './components/Dashboard/PrimaryFocusCard';
 import { CommitmentRadarWidget } from './components/Dashboard/CommitmentRadarWidget';
 import TimeRadarWidget from './components/Dashboard/TimeRadarWidget';
-import { calculateTaskUrgency } from './utils/taskUrgency';
+import { calculateTaskUrgency, toggleTaskInList, toggleSubtaskInList } from './utils/taskUrgency';
 import {
   FocusTimerState,
   loadFocusTimer,
@@ -745,21 +745,34 @@ export function App() {
       ...prev,
       quickNotes,
     }));
+    // If selectedFocusTaskId was completed in the updated notes, clear it
+    if (selectedFocusTaskId) {
+      const selected = quickNotes.find((t) => t.id === selectedFocusTaskId);
+      if (selected && selected.isDone) {
+        setSelectedFocusTaskId(null);
+      }
+    }
   };
 
   const handleToggleTask = (taskId: string) => {
+    let becameDone = false;
+
     setAppData((prev) => {
-      const taskToComplete = prev.quickNotes.find((t) => t.id === taskId);
-      const isCompleting = taskToComplete && !taskToComplete.isDone;
+      const { updatedTasks, toggledTask, isNowDone } = toggleTaskInList(
+        prev.quickNotes,
+        taskId
+      );
+
+      becameDone = isNowDone;
 
       let nextGamification = prev.gamification;
       let nextGrowthHistory = prev.growthHistory;
 
-      if (isCompleting && taskToComplete) {
+      if (isNowDone && toggledTask) {
         const result = recordTaskCompletion(
           prev.gamification,
           prev.growthHistory,
-          taskToComplete,
+          toggledTask,
           new Date()
         );
         nextGamification = result.gamification;
@@ -768,28 +781,58 @@ export function App() {
 
       return {
         ...prev,
-        quickNotes: prev.quickNotes.map((task) =>
-          task.id === taskId ? { ...task, isDone: !task.isDone } : task
-        ),
+        quickNotes: updatedTasks,
         gamification: nextGamification,
         growthHistory: nextGrowthHistory,
       };
     });
+
+    if (becameDone) {
+      setSelectedFocusTaskId((prev) => (prev === taskId ? null : prev));
+    }
   };
 
   const handleToggleSubtask = (taskId: string, subtaskId: string) => {
-    setAppData((prev) => ({
-      ...prev,
-      quickNotes: prev.quickNotes.map((task) => {
-        if (task.id !== taskId || !task.subtasks) return task;
-        return {
-          ...task,
-          subtasks: task.subtasks.map((st) =>
-            st.id === subtaskId ? { ...st, isDone: !st.isDone } : st
-          ),
-        };
-      }),
-    }));
+    let becameDone = false;
+
+    setAppData((prev) => {
+      const { updatedTasks, parentTask, parentBecameDone } = toggleSubtaskInList(
+        prev.quickNotes,
+        taskId,
+        subtaskId
+      );
+
+      becameDone = parentBecameDone;
+
+      let nextGamification = prev.gamification;
+      let nextGrowthHistory = prev.growthHistory;
+
+      if (parentBecameDone && parentTask) {
+        const result = recordTaskCompletion(
+          prev.gamification,
+          prev.growthHistory,
+          parentTask,
+          new Date()
+        );
+        nextGamification = result.gamification;
+        nextGrowthHistory = result.history;
+      }
+
+      return {
+        ...prev,
+        quickNotes: updatedTasks,
+        gamification: nextGamification,
+        growthHistory: nextGrowthHistory,
+      };
+    });
+
+    if (becameDone) {
+      if (focusTimer?.taskId === taskId) {
+        bankElapsedIntoTask(taskId, elapsedSeconds(focusTimer));
+        persistTimer(null);
+      }
+      setSelectedFocusTaskId((prev) => (prev === taskId ? null : prev));
+    }
   };
 
   // Single active focus timer, persisted so it survives reloads. Ending (or
@@ -1125,6 +1168,8 @@ export function App() {
                 isTokenExpired={calendarSummary.isTokenExpired}
                 syncError={calendarSummary.syncError}
                 initialTaskId={editingTaskIdForScreen}
+                onToggleTask={handleToggleTaskWithTimer}
+                onToggleSubtask={handleToggleSubtask}
               />
             </motion.main>
           ) : (
@@ -1450,6 +1495,7 @@ export function App() {
                   onUpdateNotes={handleUpdateNotes}
                   onUpdateScratchpad={handleUpdateScratchpad}
                   onClose={() => setIsQuickNotesOpen(false)}
+                  onToggleTask={handleToggleTaskWithTimer}
                 />
               </motion.aside>
             </>

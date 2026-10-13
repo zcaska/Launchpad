@@ -18,6 +18,7 @@ interface QuickNotesWidgetProps {
   onUpdateNotes: (notes: QuickNote[]) => void;
   onUpdateScratchpad: (text: string) => void;
   onClose?: () => void;
+  onToggleTask?: (id: string) => void;
 }
 
 const DURATION_OPTIONS = [
@@ -35,6 +36,7 @@ export const QuickNotesWidget: React.FC<QuickNotesWidgetProps> = ({
   onUpdateNotes,
   onUpdateScratchpad,
   onClose,
+  onToggleTask,
 }) => {
   const [activeTab, setActiveTab] = useState<'checklist' | 'scratchpad'>('checklist');
   const [newTodoText, setNewTodoText] = useState('');
@@ -57,11 +59,15 @@ export const QuickNotesWidget: React.FC<QuickNotesWidgetProps> = ({
   };
 
   const handleToggleTodo = (id: string) => {
-    onUpdateNotes(
-      notes.map((note) =>
-        note.id === id ? { ...note, isDone: !note.isDone } : note
-      )
-    );
+    if (onToggleTask) {
+      onToggleTask(id);
+    } else {
+      onUpdateNotes(
+        notes.map((note) =>
+          note.id === id ? { ...note, isDone: !note.isDone } : note
+        )
+      );
+    }
   };
 
   const handleDeleteTodo = (id: string) => {

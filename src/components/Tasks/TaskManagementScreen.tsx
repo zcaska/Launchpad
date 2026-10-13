@@ -24,6 +24,7 @@ import { modalBackdropVariants, modalContentVariants, staggerItemVariants, stagg
 import { CalendarScheduleTimeline } from '../Calendar/CalendarScheduleTimeline';
 import { SafeDescription } from '../Common/SafeDescription';
 import { extractCalendarDescriptionLinksAndCleanText } from '../../utils/calendarFormatting';
+import { toggleTaskInList, toggleSubtaskInList } from '../../utils/taskUrgency';
 
 export interface TaskManagementScreenProps {
   notes: QuickNote[];
@@ -39,6 +40,8 @@ export interface TaskManagementScreenProps {
   isTokenExpired?: boolean;
   syncError?: string;
   initialTaskId?: string | null;
+  onToggleTask?: (taskId: string) => void;
+  onToggleSubtask?: (taskId: string, subtaskId: string) => void;
 }
 
 type FilterTab = 'All' | 'Calendar Events' | 'Urgent' | 'High Priority' | 'Medium' | 'Low' | 'Due Soon' | 'Completed';
@@ -57,6 +60,8 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
   isTokenExpired = false,
   syncError,
   initialTaskId,
+  onToggleTask,
+  onToggleSubtask,
 }) => {
   // Filters & State
   const [activeTab, setActiveTab] = useState<FilterTab>('All');
@@ -347,6 +352,13 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
     if (!formTitle.trim()) return;
 
     if (editingTaskId) {
+      const existing = notes.find((n) => n.id === editingTaskId);
+      const allSubtasksDone = formSubtasks.length > 0 && formSubtasks.every((st) => st.isDone);
+      let nextIsDone = existing ? existing.isDone : false;
+      if (formSubtasks.length > 0) {
+        if (allSubtasksDone) nextIsDone = true;
+        else if (nextIsDone) nextIsDone = false;
+      }
       onUpdateNotes(
         notes.map((n) =>
           n.id === editingTaskId
@@ -359,16 +371,18 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
                 deadline: formDeadline.trim() || undefined,
                 attachedUrls: formUrls.length > 0 ? formUrls : undefined,
                 subtasks: formSubtasks.length > 0 ? formSubtasks : undefined,
+                isDone: nextIsDone,
               }
             : n
         )
       );
     } else {
+      const allSubtasksDone = formSubtasks.length > 0 && formSubtasks.every((st) => st.isDone);
       const newTask: QuickNote = {
         id: `task-${Date.now()}`,
         text: formTitle.trim(),
         description: formDescription.trim() || undefined,
-        isDone: false,
+        isDone: allSubtasksDone,
         createdAt: Date.now(),
         durationMinutes: formDuration,
         priority: formPriority,
@@ -384,9 +398,12 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
 
   // Direct In-Card Actions
   const handleToggleTaskComplete = (taskId: string) => {
-    onUpdateNotes(
-      notes.map((n) => (n.id === taskId ? { ...n, isDone: !n.isDone } : n))
-    );
+    if (onToggleTask) {
+      onToggleTask(taskId);
+    } else {
+      const { updatedTasks } = toggleTaskInList(notes, taskId);
+      onUpdateNotes(updatedTasks);
+    }
   };
 
   const handleDeleteTask = (taskId: string) => {
@@ -394,17 +411,12 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
   };
 
   const handleToggleSubtask = (taskId: string, subtaskId: string) => {
-    onUpdateNotes(
-      notes.map((task) => {
-        if (task.id !== taskId || !task.subtasks) return task;
-        return {
-          ...task,
-          subtasks: task.subtasks.map((st) =>
-            st.id === subtaskId ? { ...st, isDone: !st.isDone } : st
-          ),
-        };
-      })
-    );
+    if (onToggleSubtask) {
+      onToggleSubtask(taskId, subtaskId);
+    } else {
+      const { updatedTasks } = toggleSubtaskInList(notes, taskId, subtaskId);
+      onUpdateNotes(updatedTasks);
+    }
   };
 
   // Filtered tasks computation

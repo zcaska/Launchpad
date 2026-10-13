@@ -194,17 +194,17 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = ({
   }, []);
 
   // Determine active task:
-  // 1. Explicitly selectedTaskId if exists
+  // 1. Explicitly selectedTaskId if exists and is not done
   // 2. Highest urgency pending task
-  // 3. Fallback to first available task
+  // 3. Fallback to null (Clean "Clear Runway" empty state if no pending tasks remain)
   const activeTask = useMemo(() => {
     if (selectedTaskId) {
       const matched = tasks.find((t) => t.id === selectedTaskId);
-      if (matched) return matched;
+      if (matched && !matched.isDone) return matched;
     }
     const pendingTasks = tasks.filter((t) => !t.isDone);
     if (pendingTasks.length === 0) {
-      return tasks[0] || null;
+      return null;
     }
     // Sort pending tasks by urgency score descending
     const sorted = [...pendingTasks].sort((a, b) => {
@@ -369,14 +369,27 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = ({
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3.5">
           {/* Left section: Icon box + Badges + Title + Description */}
           <div className="flex items-start gap-3 sm:gap-3.5 min-w-0 flex-1">
-            {/* Task Icon in elevated rounded container */}
-            <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-white dark:bg-stone-900/80 border border-rose-200/80 dark:border-rose-900/50 flex items-center justify-center shrink-0 shadow-2xs">
-              {isCalendarTask ? (
-                <Calendar className="w-6 h-6 sm:w-7 sm:h-7 text-rose-500" />
-              ) : (
-                <Target className="w-6 h-6 sm:w-7 sm:h-7 text-rose-500" />
-              )}
-            </div>
+            {/* Task Icon in elevated rounded container with direct completion toggle */}
+            <button
+              type="button"
+              onClick={() => onToggleTask?.(activeTask.id)}
+              className="group/iconToggle w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-white dark:bg-stone-900/80 border border-rose-200/80 dark:border-rose-900/50 flex items-center justify-center shrink-0 shadow-2xs hover:border-teal-600 dark:hover:border-teal-500 hover:bg-teal-50/60 dark:hover:bg-teal-950/40 transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-teal-500/30"
+              title={activeTask.isDone ? 'Mark as incomplete' : 'Mark task complete'}
+              aria-label={activeTask.isDone ? 'Mark as incomplete' : 'Mark task complete'}
+            >
+              <div className="relative flex items-center justify-center">
+                <span className="transition-all duration-150 group-hover/iconToggle:opacity-0 group-hover/iconToggle:scale-75">
+                  {isCalendarTask ? (
+                    <Calendar className="w-6 h-6 sm:w-7 sm:h-7 text-rose-500" />
+                  ) : (
+                    <Target className="w-6 h-6 sm:w-7 sm:h-7 text-rose-500" />
+                  )}
+                </span>
+                <span className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/iconToggle:opacity-100 transition-all duration-150 scale-75 group-hover/iconToggle:scale-100">
+                  <Check className="w-6 h-6 sm:w-7 sm:h-7 text-teal-700 dark:text-teal-400 stroke-[3]" />
+                </span>
+              </div>
+            </button>
 
             <div className="min-w-0 flex-1">
               {/* Badges Row */}
@@ -391,10 +404,21 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = ({
                 </span>
               </div>
 
-              {/* Task Title */}
-              <h3 className="text-base sm:text-lg lg:text-xl font-bold text-serene-text-primary dark:text-serene-text-darkPrimary leading-snug truncate">
-                {activeTask.text}
-              </h3>
+              {/* Task Title Row with Direct Checkbox */}
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => onToggleTask?.(activeTask.id)}
+                  className="w-5 h-5 sm:w-5.5 sm:h-5.5 rounded-md border-2 border-stone-300 dark:border-stone-600 hover:border-teal-600 dark:hover:border-teal-400 flex items-center justify-center shrink-0 transition-all cursor-pointer group/titlechk focus:outline-none focus:ring-2 focus:ring-teal-500/30"
+                  title="Mark task as complete"
+                  aria-label="Mark task as complete"
+                >
+                  <Check className="w-3.5 h-3.5 text-transparent group-hover/titlechk:text-teal-600 dark:group-hover/titlechk:text-teal-400 stroke-[3] transition-colors" />
+                </button>
+                <h3 className="text-base sm:text-lg lg:text-xl font-bold text-serene-text-primary dark:text-serene-text-darkPrimary leading-snug truncate">
+                  {activeTask.text}
+                </h3>
+              </div>
 
               {/* Multiline Description with safe sanitization */}
               {activeTask.description && (
@@ -706,6 +730,17 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = ({
                   : `Resume · ${formatElapsed(liveElapsed)}`
                 : 'Start now'}
             </span>
+          </button>
+
+          {/* Direct Complete Action Button */}
+          <button
+            type="button"
+            onClick={() => onToggleTask?.(activeTask.id)}
+            className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-xl border border-teal-200 dark:border-teal-800/60 bg-teal-50 dark:bg-teal-950/40 hover:bg-teal-100 dark:hover:bg-teal-900/60 text-teal-800 dark:text-teal-200 text-xs sm:text-sm font-semibold transition-all cursor-pointer shrink-0 shadow-2xs hover:shadow-xs active:scale-[0.99]"
+            title="Mark task as complete"
+          >
+            <Check className="w-4 h-4 stroke-[2.5] text-teal-700 dark:text-teal-300" />
+            <span>Complete</span>
           </button>
 
           {/* End & log button, only while this task is timed */}

@@ -7,6 +7,8 @@ import {
   rankTasksByOpportunity,
   getTopOpportunity,
   calculateSessionMomentumIndex,
+  toggleTaskInList,
+  toggleSubtaskInList,
   RADAR_VIEWBOX,
   RADAR_RINGS,
   DEFAULT_VISIBLE_SUBTASKS,
@@ -305,6 +307,56 @@ const sessionStats = calculateSessionMomentumIndex([
 
 assert(sessionStats.momentumIndex > 0, `Session momentum index calculated: ${sessionStats.momentumIndex}`);
 assert(['Ignition', 'Building Steam', 'Flow State', 'Unstoppable'].includes(sessionStats.tierName), 'Valid tier name');
+
+// ============================================================================
+// 5. Subtask and Parent Task Completion Synchronization
+// ============================================================================
+console.log('\n--- 5. Subtask and Parent Task Completion Synchronization ---');
+
+const syncTask1: QuickNote = {
+  id: 't-sync-1',
+  text: 'Sync Parent Task',
+  isDone: false,
+  createdAt: Date.now(),
+  subtasks: [
+    { id: 'st-1', text: 'Subtask 1', isDone: false },
+    { id: 'st-2', text: 'Subtask 2', isDone: false },
+    { id: 'st-3', text: 'Subtask 3', isDone: false },
+  ],
+};
+
+const taskList = [syncTask1];
+
+// 5.1 Completing parent task marks all subtasks complete
+const { updatedTasks: afterParentDone, isNowDone } = toggleTaskInList(taskList, 't-sync-1');
+assertEqual(isNowDone, true, 'Parent task toggled to done');
+assertEqual(afterParentDone[0].isDone, true, 'Parent task isDone is true');
+assert(afterParentDone[0].subtasks?.every((s) => s.isDone) === true, 'All subtasks are marked done when parent is completed');
+
+// 5.2 Uncompleting parent task marks all subtasks incomplete
+const { updatedTasks: afterParentUndone } = toggleTaskInList(afterParentDone, 't-sync-1');
+assertEqual(afterParentUndone[0].isDone, false, 'Parent task isDone is false');
+assert(afterParentUndone[0].subtasks?.every((s) => !s.isDone) === true, 'All subtasks are marked incomplete when parent is uncompleted');
+
+// 5.3 Completing 1 of 3 subtasks does NOT complete parent task
+const { updatedTasks: afterSub1, parentBecameDone: pDone1 } = toggleSubtaskInList(afterParentUndone, 't-sync-1', 'st-1');
+assertEqual(pDone1, false, 'Parent did not become done after 1 of 3 subtasks');
+assertEqual(afterSub1[0].isDone, false, 'Parent task remains incomplete after 1 subtask');
+
+// 5.4 Completing 2 of 3 subtasks does NOT complete parent task
+const { updatedTasks: afterSub2, parentBecameDone: pDone2 } = toggleSubtaskInList(afterSub1, 't-sync-1', 'st-2');
+assertEqual(pDone2, false, 'Parent did not become done after 2 of 3 subtasks');
+assertEqual(afterSub2[0].isDone, false, 'Parent task remains incomplete after 2 subtasks');
+
+// 5.5 Completing all 3 subtasks marks parent task complete
+const { updatedTasks: afterSub3, parentBecameDone: pDone3 } = toggleSubtaskInList(afterSub2, 't-sync-1', 'st-3');
+assertEqual(pDone3, true, 'parentBecameDone is true when final subtask completed');
+assertEqual(afterSub3[0].isDone, true, 'Parent task is marked complete when all subtasks completed');
+
+// 5.6 Unchecking 1 subtask when parent was complete marks parent task incomplete
+const { updatedTasks: afterUncheckSub, parentBecameIncomplete } = toggleSubtaskInList(afterSub3, 't-sync-1', 'st-2');
+assertEqual(parentBecameIncomplete, true, 'parentBecameIncomplete is true when subtask unchecked');
+assertEqual(afterUncheckSub[0].isDone, false, 'Parent task is marked incomplete when any subtask unchecked');
 
 console.log('\n=======================================');
 if (failures === 0) {

@@ -115,6 +115,61 @@ const propsTest: PrimaryFocusCardProps = {
 assert(propsTest.tasks.length === 1, 'Accepts tasks array prop');
 assert(propsTest.clockFormat === '12h', 'Accepts clockFormat 12h or 24h prop');
 
+// 6. Test Active Task Selection and Completed Task Exclusion
+console.log('--- Active Task Selection & Completed Exclusion ---');
+function resolveActiveTask(tasks: QuickNote[], selectedTaskId?: string | null): QuickNote | null {
+  if (selectedTaskId) {
+    const matched = tasks.find((t) => t.id === selectedTaskId);
+    if (matched && !matched.isDone) return matched;
+  }
+  const pendingTasks = tasks.filter((t) => !t.isDone);
+  if (pendingTasks.length === 0) {
+    return null;
+  }
+  const sorted = [...pendingTasks].sort((a, b) => {
+    const urgA = calculateTaskUrgency(a.deadline).urgencyWeight;
+    const urgB = calculateTaskUrgency(b.deadline).urgencyWeight;
+    return urgB - urgA;
+  });
+  return sorted[0];
+}
+
+const pendingTaskA: QuickNote = {
+  id: 'task-a',
+  text: 'Task A (Low urgency)',
+  isDone: false,
+  createdAt: Date.now(),
+  deadline: '2026-10-25 18:00', // Later
+};
+
+const pendingTaskB: QuickNote = {
+  id: 'task-b',
+  text: 'Task B (High urgency)',
+  isDone: false,
+  createdAt: Date.now(),
+  deadline: '2026-10-13 18:00', // Today / Overdue
+};
+
+const testQueue = [pendingTaskA, pendingTaskB];
+
+// 6.1 Highest urgency pending task chosen by default
+const defaultPick = resolveActiveTask(testQueue, null);
+assertEqual(defaultPick?.id, 'task-b', 'Highest urgency pending task (Task B) selected by default');
+
+// 6.2 Explicitly selected task chosen if pending
+const explicitPick = resolveActiveTask(testQueue, 'task-a');
+assertEqual(explicitPick?.id, 'task-a', 'Explicitly selected pending task (Task A) is selected');
+
+// 6.3 If selected task is marked complete in All Tasks, falls back to remaining pending task
+const queueWithADone = testQueue.map((t) => (t.id === 'task-a' ? { ...t, isDone: true } : t));
+const afterACompleted = resolveActiveTask(queueWithADone, 'task-a');
+assertEqual(afterACompleted?.id, 'task-b', 'Completed selected task is ignored, falls back to pending Task B');
+
+// 6.4 If all tasks completed, active task resolves to null (Clear Runway empty state)
+const allCompletedQueue = testQueue.map((t) => ({ ...t, isDone: true }));
+const afterAllCompleted = resolveActiveTask(allCompletedQueue, 'task-b');
+assertEqual(afterAllCompleted, null, 'Resolves to null (Clear Runway) when all tasks are complete');
+
 console.log('\n=======================================');
 if (failures === 0) {
   console.log('🎉 ALL PRIMARY FOCUS CARD TESTS PASSED! (0 failures)\n');

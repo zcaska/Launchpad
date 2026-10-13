@@ -950,3 +950,91 @@ export function calculateSessionMomentumIndex(tasks: QuickNote[]): SessionMoment
     velocityDescription,
   };
 }
+
+// ============================================================================
+// 6. Subtask & Task Completion Synchronization
+// ============================================================================
+
+/**
+ * Toggles completion status of a task within a list, ensuring that:
+ * 1. Completing a parent task marks all its subtasks complete.
+ * 2. Uncompleting a parent task marks all its subtasks incomplete.
+ */
+export function toggleTaskInList(
+  tasks: QuickNote[],
+  taskId: string
+): { updatedTasks: QuickNote[]; toggledTask?: QuickNote; isNowDone: boolean } {
+  let toggledTask: QuickNote | undefined;
+  let isNowDone = false;
+
+  const updatedTasks = tasks.map((task) => {
+    if (task.id !== taskId) return task;
+
+    const nextIsDone = !task.isDone;
+    isNowDone = nextIsDone;
+
+    const nextSubtasks = task.subtasks
+      ? task.subtasks.map((st) => ({ ...st, isDone: nextIsDone }))
+      : undefined;
+
+    const updated: QuickNote = {
+      ...task,
+      isDone: nextIsDone,
+      ...(nextSubtasks ? { subtasks: nextSubtasks } : {}),
+    };
+    toggledTask = updated;
+    return updated;
+  });
+
+  return { updatedTasks, toggledTask, isNowDone };
+}
+
+/**
+ * Toggles completion status of a subtask within a task, ensuring that:
+ * 1. Completing all subtasks marks the parent task complete.
+ * 2. Uncompleting any subtask when parent was complete marks the parent task incomplete.
+ */
+export function toggleSubtaskInList(
+  tasks: QuickNote[],
+  taskId: string,
+  subtaskId: string
+): {
+  updatedTasks: QuickNote[];
+  parentTask?: QuickNote;
+  parentBecameDone: boolean;
+  parentBecameIncomplete: boolean;
+} {
+  let parentTask: QuickNote | undefined;
+  let parentBecameDone = false;
+  let parentBecameIncomplete = false;
+
+  const updatedTasks = tasks.map((task) => {
+    if (task.id !== taskId || !task.subtasks) return task;
+
+    const nextSubtasks = task.subtasks.map((st) =>
+      st.id === subtaskId ? { ...st, isDone: !st.isDone } : st
+    );
+
+    const allSubtasksDone =
+      nextSubtasks.length > 0 && nextSubtasks.every((st) => st.isDone);
+
+    let nextIsDone = task.isDone;
+    if (allSubtasksDone && !task.isDone) {
+      nextIsDone = true;
+      parentBecameDone = true;
+    } else if (!allSubtasksDone && task.isDone) {
+      nextIsDone = false;
+      parentBecameIncomplete = true;
+    }
+
+    const updated: QuickNote = {
+      ...task,
+      isDone: nextIsDone,
+      subtasks: nextSubtasks,
+    };
+    parentTask = updated;
+    return updated;
+  });
+
+  return { updatedTasks, parentTask, parentBecameDone, parentBecameIncomplete };
+}
