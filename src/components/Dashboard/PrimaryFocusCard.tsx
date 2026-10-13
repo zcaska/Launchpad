@@ -410,23 +410,23 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = ({
           </div>
 
           {/* Right section: Deadline Block with visual progress bar */}
-          <div className="w-full sm:w-auto sm:pl-4 sm:border-l border-rose-200/60 dark:border-rose-900/40 flex sm:flex-col justify-between sm:justify-center items-start sm:items-start shrink-0 min-w-[125px] pt-2 sm:pt-0 border-t sm:border-t-0 border-rose-200/50">
-            <div>
-              <div className="flex items-center gap-1.5 text-rose-500 dark:text-rose-400 mb-0.5">
-                <Clock className="w-3.5 h-3.5 shrink-0" />
-                <span className="text-[11px] font-semibold">Deadline</span>
+          <div className="w-full sm:w-auto sm:pl-5 sm:border-l border-rose-200/60 dark:border-rose-900/40 flex sm:flex-col justify-between sm:justify-center items-start sm:items-start shrink-0 min-w-[180px] lg:min-w-[210px] pt-2.5 sm:pt-0 border-t sm:border-t-0 border-rose-200/50">
+            <div className="w-full">
+              <div className="flex items-center gap-1.5 text-rose-500 dark:text-rose-400 mb-1.5">
+                <Clock className="w-4.5 h-4.5 shrink-0" />
+                <span className="text-xs sm:text-sm font-bold uppercase tracking-wider">Deadline</span>
               </div>
-              <div className="text-xs sm:text-sm font-bold text-rose-600 dark:text-rose-400 leading-tight">
+              <div className="text-base sm:text-lg lg:text-xl font-black text-rose-600 dark:text-rose-400 leading-snug">
                 <div>{deadlineDateLabel}</div>
-                <div>{deadlineTimeLabel}</div>
+                <div className="font-mono text-sm sm:text-base font-extrabold">{deadlineTimeLabel}</div>
               </div>
-              <div className="text-[11px] text-serene-text-muted dark:text-serene-text-darkMuted mt-0.5">
+              <div className="text-xs sm:text-sm font-semibold text-rose-700/80 dark:text-rose-300/80 mt-1">
                 {deadlineMetrics.countdownText}
               </div>
             </div>
 
             {/* Visual Deadline Progress Bar */}
-            <div className="w-24 sm:w-full h-1.5 bg-rose-200/80 dark:bg-rose-950/80 rounded-full overflow-hidden mt-2">
+            <div className="w-32 sm:w-full h-2.5 bg-rose-200/80 dark:bg-rose-950/80 rounded-full overflow-hidden mt-2.5">
               <div
                 className="h-full bg-rose-500 rounded-full transition-all duration-300"
                 style={{ width: `${deadlineMetrics.progressPercent}%` }}

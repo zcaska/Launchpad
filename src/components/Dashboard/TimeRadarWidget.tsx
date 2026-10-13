@@ -261,8 +261,8 @@ export const TimeRadarWidget: React.FC<TimeRadarWidgetProps> = ({
             </div>
           </div>
           <div className="text-right shrink-0 flex items-center gap-2">
-            <span className={`text-sm font-bold text-serene-text-primary dark:text-serene-text-darkPrimary whitespace-nowrap ${
-              timeRemaining.isPastCutoff ? 'font-sans' : 'font-mono'
+            <span className={`text-base sm:text-lg font-bold text-serene-text-primary dark:text-serene-text-darkPrimary whitespace-nowrap ${
+              timeRemaining.isPastCutoff ? 'font-sans' : 'font-mono font-extrabold'
             }`}>
               {timeRemaining.isPastCutoff ? 'End of Day' : timeRemaining.formatted}
             </span>
@@ -288,7 +288,7 @@ export const TimeRadarWidget: React.FC<TimeRadarWidgetProps> = ({
             </div>
           </div>
           <div className="text-right shrink-0 flex items-center gap-2">
-            <span className="text-sm font-bold font-mono text-amber-600 dark:text-amber-400 whitespace-nowrap">
+            <span className="text-base sm:text-lg font-extrabold font-mono text-amber-600 dark:text-amber-400 whitespace-nowrap">
               {taskLoad.pendingMinutes === 0 ? '0m' : taskLoad.formattedPending}
             </span>
             <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200/60 dark:border-amber-800/50">
@@ -325,8 +325,8 @@ export const TimeRadarWidget: React.FC<TimeRadarWidgetProps> = ({
             </div>
           </div>
           <div className="text-right shrink-0 flex items-center gap-2">
-            <span className={`text-sm font-bold text-serene-text-primary dark:text-serene-text-darkPrimary whitespace-nowrap ${
-              busyMinutes > 0 ? 'font-mono' : 'font-sans'
+            <span className={`text-base sm:text-lg font-bold text-serene-text-primary dark:text-serene-text-darkPrimary whitespace-nowrap ${
+              busyMinutes > 0 ? 'font-mono font-extrabold' : 'font-sans'
             }`}>
               {busyMinutes > 0
                 ? `${Math.floor(calendarSummary!.totalBusyMinutesToday / 60)}h ${calendarSummary!.totalBusyMinutesToday % 60}m`
