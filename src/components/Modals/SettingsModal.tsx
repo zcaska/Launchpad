@@ -33,7 +33,8 @@ import {
   requestGoogleAccessToken, 
   revokeGoogleAuthorization, 
   isGoogleTokenExpired,
-  fetchGoogleCalendarAccountEmail
+  fetchGoogleCalendarAccountEmail,
+  GoogleAuthError
 } from '../../services/googleCalendarService';
 import { isCalendarTask } from '../../utils/calendarSchedule';
 
@@ -214,7 +215,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         await onSyncCalendar();
       }
     } catch (err: any) {
-      setGcalError(err.message || 'Failed to authorize with Google Calendar');
+      // Closing the popup is not an error worth shouting about.
+      const kind = err instanceof GoogleAuthError ? err.kind : 'unknown';
+      setGcalError(
+        kind === 'user_cancelled'
+          ? 'Authorization cancelled.'
+          : err.message || 'Failed to authorize with Google Calendar'
+      );
     } finally {
       setIsConnectingGCal(false);
     }

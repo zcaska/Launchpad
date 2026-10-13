@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   CheckSquare,
@@ -38,6 +38,7 @@ export interface TaskManagementScreenProps {
   onReauthorize?: () => void;
   isTokenExpired?: boolean;
   syncError?: string;
+  initialTaskId?: string | null;
 }
 
 type FilterTab = 'All' | 'Calendar Events' | 'Urgent' | 'High Priority' | 'Medium' | 'Low' | 'Due Soon' | 'Completed';
@@ -55,6 +56,7 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
   onReauthorize,
   isTokenExpired = false,
   syncError,
+  initialTaskId,
 }) => {
   // Filters & State
   const [activeTab, setActiveTab] = useState<FilterTab>('All');
@@ -279,6 +281,20 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
     setSubtaskInput('');
     setIsFormOpen(true);
   };
+
+  // Automatically open the edit modal when initialTaskId is provided and matches a task
+  const openedInitialTaskIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (initialTaskId && initialTaskId !== openedInitialTaskIdRef.current) {
+      const taskToEdit = notes.find((n) => n.id === initialTaskId);
+      if (taskToEdit) {
+        openedInitialTaskIdRef.current = initialTaskId;
+        handleOpenEditForm(taskToEdit);
+      }
+    } else if (!initialTaskId) {
+      openedInitialTaskIdRef.current = null;
+    }
+  }, [initialTaskId, notes]);
 
   // Add Attached URL
   const handleAddUrl = () => {

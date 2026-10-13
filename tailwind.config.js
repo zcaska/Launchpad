@@ -11,19 +11,19 @@ export default {
         serene: {
           bg: {
             light: '#faf9fb',
-            dark: '#111417',
+            dark: '#13171d',
           },
           surface: {
             light: '#ffffff',
-            dark: '#1a1e23',
+            dark: '#1c2127',
           },
           surfaceAlt: {
             light: '#f3f2f5',
-            dark: '#23282f',
+            dark: '#252b33',
           },
           border: {
             light: '#e2e0e5',
-            dark: '#2e353e',
+            dark: '#35404d',
           },
           primary: {
             DEFAULT: '#264d44',

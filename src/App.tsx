@@ -12,22 +12,29 @@ import {
   AppData, 
   Folder, 
   LinkItem, 
-  DailyFocus, 
   QuickNote, 
   ThemeMode,
   RecommendationCandidate 
 } from './types';
 import { loadAppData, saveAppData, exportDataAsJson, importDataFromJson } from './utils/storage';
-import { recordTaskCompletion, recordDailyFocusCompletion } from './utils/gamification';
+import { recordTaskCompletion } from './utils/gamification';
 import { DEFAULT_SEED_DATA } from './data/seedData';
 import { Header } from './components/Header/Header';
 import { BackupReminderToast } from './components/Layout/BackupReminderToast';
 import { Sidebar } from './components/Sidebar/Sidebar';
 import { moveLinkToFolder } from './utils/sidebarReorder';
 import { GrowthMasteryScreen } from './components/Growth/GrowthMasteryScreen';
-import { FocusHeroBanner } from './components/Dashboard/FocusHeroBanner';
-import { TimeRadarWidget } from './components/Dashboard/TimeRadarWidget';
-import { SmartSuggestionCard } from './components/Dashboard/SmartSuggestionCard';
+import { PrimaryFocusCard } from './components/Dashboard/PrimaryFocusCard';
+import { CommitmentRadarWidget } from './components/Dashboard/CommitmentRadarWidget';
+import { MomentumCard } from './components/Dashboard/MomentumCard';
+import TimeRadarWidget from './components/Dashboard/TimeRadarWidget';
+import { calculateTaskUrgency } from './utils/taskUrgency';
+import {
+  FocusTimerState,
+  loadFocusTimer,
+  saveFocusTimer,
+  elapsedSeconds,
+} from './utils/focusTimer';
 import { CompactIconGrid } from './components/LinkGrid/CompactIconGrid';
 import { CalendarScheduleTimeline } from './components/Calendar/CalendarScheduleTimeline';
 import { QuickNotesWidget } from './components/QuickNotes/QuickNotesWidget';
@@ -44,7 +51,9 @@ import {
   fetchTodayGoogleEvents, 
   getInMemoryGoogleToken, 
   isGoogleTokenExpired,
-  requestGoogleAccessToken
+  requestGoogleAccessToken,
+  GoogleAuthError,
+  needsReauthorization
 } from './services/googleCalendarService';
 import { normalizeUrl, createCustomFolder, isGenericBrowserFolder } from './utils/bookmarkParser';
 import { initBookmarkSyncChannel, BookmarkSyncPayload } from './utils/bookmarkSyncChannel';
@@ -59,17 +68,15 @@ import {
   deleteFolderWithoutSubfolders
 } from './utils/folderTree';
 import { 
-  calculateDayTimeRemaining, 
   calculateTaskLoad, 
-  calculateBuffer, 
-  getTimeOfDayBucket 
+  getTimeOfDayBucket,
+  calculateDayTimeRemaining,
+  calculateBuffer
 } from './utils/timeBudget';
 import { 
   generateCandidatePool, 
   getRankedRecommendations, 
-  recordApproval, 
-  recordRejection,
-  fetchOpenRouterIdea
+  recordRejection 
 } from './utils/recommender';
 import { 
   pageTransitionVariants, 
@@ -96,12 +103,12 @@ export function App() {
   const [editingLink, setEditingLink] = useState<LinkItem | null>(null);
   const [defaultFolderForAdd, setDefaultFolderForAdd] = useState<string | undefined>(undefined);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   const [now, setNow] = useState<Date>(new Date());
-  const [isAiLoading, setIsAiLoading] = useState(false);
-  const [aiCustomIdea, setAiCustomIdea] = useState<RecommendationCandidate | null>(null);
   const [syncToast, setSyncToast] = useState<{ id: string; message: string; folderName: string } | null>(null);
   const [isBackupDismissed, setIsBackupDismissed] = useState(false);
+  const [selectedFocusTaskId, setSelectedFocusTaskId] = useState<string | null>(null);
+  const [editingTaskIdForScreen, setEditingTaskIdForScreen] = useState<string | null>(null);
 
   // Dedicated Confirmation Modal for Item/Bookmark Deletion
   const [linkToDelete, setLinkToDelete] = useState<LinkItem | null>(null);
@@ -310,22 +317,10 @@ export function App() {
     return () => mediaQuery.removeEventListener('change', handleChange);
   }, [appData.settings.theme]);
 
-  // Time Budget & Capacity Calculations
-  const timeRemaining = useMemo(() => {
-    return calculateDayTimeRemaining(
-      now, 
-      appData.settings.daySchedule.startHour, 
-      appData.settings.daySchedule.endHour
-    );
-  }, [now, appData.settings.daySchedule]);
-
+  // Task Load Capacity Calculation
   const taskLoad = useMemo(() => {
     return calculateTaskLoad(appData.quickNotes);
   }, [appData.quickNotes]);
-
-  const buffer = useMemo(() => {
-    return calculateBuffer(timeRemaining.totalMinutes, taskLoad.pendingMinutes);
-  }, [timeRemaining.totalMinutes, taskLoad.pendingMinutes]);
 
   // Calendar Schedule Summary (merged busy intervals, next meeting, token status, sync error)
   const calendarSummary = useMemo(() => {
@@ -340,6 +335,20 @@ export function App() {
       syncError: calendarSyncError || undefined,
     };
   }, [appData.calendarEvents, now, appData.settings.daySchedule.endHour, appData.settings.googleCalendar?.enabled, calendarSyncError]);
+
+  // Day Time Remaining Calculation
+  const timeRemaining = useMemo(() => {
+    return calculateDayTimeRemaining(
+      now,
+      appData.settings.daySchedule.startHour,
+      appData.settings.daySchedule.endHour
+    );
+  }, [now, appData.settings.daySchedule.startHour, appData.settings.daySchedule.endHour]);
+
+  // Focus Runway Buffer Calculation
+  const buffer = useMemo(() => {
+    return calculateBuffer(timeRemaining.totalMinutes, taskLoad.pendingMinutes);
+  }, [timeRemaining.totalMinutes, taskLoad.pendingMinutes]);
 
   // Concurrency-guarded Google Calendar Synchronization with stable callback reference
   const handleSyncCalendar = useCallback(async (silent: boolean = false) => {
@@ -366,9 +375,14 @@ export function App() {
         try {
           token = await requestGoogleAccessToken(gcal.clientId, '', gcal.userEmail);
         } catch (err: any) {
-          console.warn('Google Calendar authorization failed or was closed:', err);
-          setCalendarSyncError(err.message || 'Authorization failed');
-          setIsSettingsModalOpen(true);
+          const kind = err instanceof GoogleAuthError ? err.kind : 'unknown';
+          // A closed popup is a user decision, not a failure: never surface it as a sync error.
+          if (kind !== 'user_cancelled') {
+            setCalendarSyncError(err.message || 'Authorization failed');
+          }
+          if (!silent && kind !== 'user_cancelled' && kind !== 'invalid_config') {
+            setIsSettingsModalOpen(true);
+          }
           return;
         }
       }
@@ -411,10 +425,16 @@ export function App() {
         return updated;
       });
     } catch (err: any) {
-      console.error('Google Calendar sync error:', err);
-      setCalendarSyncError(err.message || 'Failed to sync with Google Calendar');
-      if (!silent) {
-        alert(`Google Calendar sync failed: ${err.message || 'Network or authorization error'}`);
+      const kind = err instanceof GoogleAuthError ? err.kind : 'unknown';
+      // user_cancelled: the popup was dismissed on purpose, so this is not a sync failure.
+      if (kind === 'user_cancelled') {
+        setCalendarSyncError(null);
+      } else {
+        setCalendarSyncError(err.message || 'Failed to sync with Google Calendar');
+        // Credential failures self-heal via the Re-authorize button; alert() would be noise.
+        if (!silent && !needsReauthorization(err)) {
+          alert(`Google Calendar sync failed: ${err.message || 'Network or authorization error'}`);
+        }
       }
     } finally {
       isSyncingCalendarRef.current = false;
@@ -459,20 +479,9 @@ export function App() {
   }, [appData.links, appData.folders]);
 
   const currentSuggestion = useMemo(() => {
-    if (aiCustomIdea) return aiCustomIdea;
     const ranked = getRankedRecommendations(candidatePool, appData.learnedPreferences, timeOfDay, 1);
     return ranked[0] || null;
-  }, [candidatePool, appData.learnedPreferences, timeOfDay, aiCustomIdea]);
-
-  // Approve & Reject Suggestion Handlers
-  const handleApproveSuggestion = useCallback((candidate: RecommendationCandidate) => {
-    const updatedPrefs = recordApproval(appData.learnedPreferences, candidate, timeOfDay);
-    setAppData((prev) => ({
-      ...prev,
-      learnedPreferences: updatedPrefs,
-    }));
-    setAiCustomIdea(null);
-  }, [appData.learnedPreferences, timeOfDay]);
+  }, [candidatePool, appData.learnedPreferences, timeOfDay]);
 
   const handleRejectSuggestion = useCallback((candidate: RecommendationCandidate) => {
     const updatedPrefs = recordRejection(appData.learnedPreferences, candidate, timeOfDay);
@@ -480,27 +489,7 @@ export function App() {
       ...prev,
       learnedPreferences: updatedPrefs,
     }));
-    setAiCustomIdea(null);
   }, [appData.learnedPreferences, timeOfDay]);
-
-  const handleFetchAiIdea = async () => {
-    if (!appData.settings.openRouter.apiKey) {
-      setIsSettingsModalOpen(true);
-      return;
-    }
-    setIsAiLoading(true);
-    const idea = await fetchOpenRouterIdea(
-      appData.settings.openRouter.apiKey,
-      appData.settings.openRouter.model,
-      appData.dailyFocus.goal || 'Productive learning'
-    );
-    setIsAiLoading(false);
-    if (idea) {
-      setAiCustomIdea(idea);
-    } else {
-      alert('Could not fetch idea from OpenRouter. Please verify your API key.');
-    }
-  };
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -752,38 +741,6 @@ export function App() {
     }));
   };
 
-  // Handlers for Daily Focus & Notes
-  const handleUpdateDailyFocus = (focusUpdates: Partial<DailyFocus>) => {
-    setAppData((prev) => {
-      const willBeCompleted = focusUpdates.isCompleted === true;
-      const wasCompleted = prev.dailyFocus.isCompleted === true;
-
-      let nextGamification = prev.gamification;
-      let nextGrowthHistory = prev.growthHistory;
-
-      if (willBeCompleted && !wasCompleted) {
-        const result = recordDailyFocusCompletion(
-          prev.gamification,
-          prev.growthHistory,
-          focusUpdates.durationMinutes || prev.dailyFocus.durationMinutes || 45,
-          new Date()
-        );
-        nextGamification = result.gamification;
-        nextGrowthHistory = result.history;
-      }
-
-      return {
-        ...prev,
-        dailyFocus: {
-          ...prev.dailyFocus,
-          ...focusUpdates,
-        },
-        gamification: nextGamification,
-        growthHistory: nextGrowthHistory,
-      };
-    });
-  };
-
   const handleUpdateNotes = (quickNotes: QuickNote[]) => {
     setAppData((prev) => ({
       ...prev,
@@ -820,6 +777,144 @@ export function App() {
       };
     });
   };
+
+  const handleToggleSubtask = (taskId: string, subtaskId: string) => {
+    setAppData((prev) => ({
+      ...prev,
+      quickNotes: prev.quickNotes.map((task) => {
+        if (task.id !== taskId || !task.subtasks) return task;
+        return {
+          ...task,
+          subtasks: task.subtasks.map((st) =>
+            st.id === subtaskId ? { ...st, isDone: !st.isDone } : st
+          ),
+        };
+      }),
+    }));
+  };
+
+  // Single active focus timer, persisted so it survives reloads. Ending (or
+  // switching away) banks elapsed seconds into the task's timeSpentSeconds.
+  const [focusTimer, setFocusTimer] = useState<FocusTimerState | null>(() => loadFocusTimer());
+
+  const persistTimer = (next: FocusTimerState | null) => {
+    setFocusTimer(next);
+    saveFocusTimer(next);
+  };
+
+  const bankElapsedIntoTask = (taskId: string, seconds: number) => {
+    if (seconds <= 0) return;
+    setAppData((prev) => ({
+      ...prev,
+      quickNotes: prev.quickNotes.map((task) =>
+        task.id === taskId
+          ? { ...task, timeSpentSeconds: (task.timeSpentSeconds || 0) + seconds }
+          : task
+      ),
+    }));
+  };
+
+  const handleTimerStart = (taskId: string) => {
+    if (focusTimer?.running && focusTimer.taskId !== taskId) {
+      bankElapsedIntoTask(focusTimer.taskId, elapsedSeconds(focusTimer));
+    }
+    const base = focusTimer && focusTimer.taskId === taskId && !focusTimer.running ? focusTimer.baseSeconds : 0;
+    persistTimer({ taskId, startedAt: Date.now(), baseSeconds: base, running: true });
+  };
+
+  const handleTimerPause = () => {
+    if (!focusTimer || !focusTimer.running) return;
+    persistTimer({ ...focusTimer, baseSeconds: elapsedSeconds(focusTimer), running: false });
+  };
+
+  const handleTimerResume = () => {
+    if (!focusTimer || focusTimer.running) return;
+    persistTimer({ ...focusTimer, startedAt: Date.now(), running: true });
+  };
+
+  const handleTimerEnd = () => {
+    if (!focusTimer) return;
+    bankElapsedIntoTask(focusTimer.taskId, elapsedSeconds(focusTimer));
+    persistTimer(null);
+  };
+
+  // Completing the timed task banks its elapsed time automatically.
+  const handleToggleTaskWithTimer = (taskId: string) => {
+    const target = appData.quickNotes.find((t) => t.id === taskId);
+    if (target && !target.isDone && focusTimer?.taskId === taskId) {
+      bankElapsedIntoTask(taskId, elapsedSeconds(focusTimer));
+      persistTimer(null);
+    }
+    handleToggleTask(taskId);
+  };
+
+  // Tasks arriving from the extension popup (live or flushed from its queue).
+  const handleAddTaskFromExtension = (text: string) => {
+    const clean = text.trim().slice(0, 200);
+    if (!clean) return;
+    setAppData((prev) => ({
+      ...prev,
+      quickNotes: [
+        ...prev.quickNotes,
+        { id: `task-${Date.now()}`, text: clean, isDone: false, createdAt: Date.now(), source: 'local' as const },
+      ],
+    }));
+  };
+
+  // Next pending task after the timed one, for the extension popup.
+  const nextFocusTask = useMemo(() => {
+    const skipId = focusTimer?.taskId || selectedFocusTaskId;
+    const pending = appData.quickNotes.filter((t) => !t.isDone && t.id !== skipId);
+    if (pending.length === 0) return null;
+    return [...pending].sort((a, b) => {
+      const urgA = calculateTaskUrgency(a.deadline).urgencyWeight;
+      const urgB = calculateTaskUrgency(b.deadline).urgencyWeight;
+      return urgB - urgA;
+    })[0];
+  }, [appData.quickNotes, focusTimer?.taskId, selectedFocusTaskId]);
+
+  // Extension bridge: inbound commands/adds, outbound timer + next-task state.
+  // Outbound posts ride the existing 15s clock tick so the badge stays fresh.
+  useEffect(() => {
+    const onMessage = (e: MessageEvent) => {
+      const data = e.data;
+      if (!data || data.source !== 'LAUNCHPAD_EXTENSION_BRIDGE' || typeof data.type !== 'string') return;
+      if (data.type === 'LAUNCHPAD_ADD_TASK' && typeof data.payload?.text === 'string') {
+        handleAddTaskFromExtension(data.payload.text);
+      } else if (data.type === 'LAUNCHPAD_TIMER_COMMAND') {
+        const cmd = data.payload?.command;
+        if (cmd === 'pause') handleTimerPause();
+        else if (cmd === 'resume') handleTimerResume();
+        else if (cmd === 'end') handleTimerEnd();
+      }
+    };
+    window.addEventListener('message', onMessage);
+    return () => window.removeEventListener('message', onMessage);
+  });
+
+  useEffect(() => {
+    const timedTask = focusTimer ? appData.quickNotes.find((t) => t.id === focusTimer.taskId) : undefined;
+    window.postMessage(
+      {
+        source: 'LAUNCHPAD_APP',
+        type: 'FOCUS_TIMER_STATE',
+        payload: {
+          timer: focusTimer
+            ? {
+                taskId: focusTimer.taskId,
+                taskText: timedTask?.text || 'Focus task',
+                running: focusTimer.running,
+                elapsedSeconds: elapsedSeconds(focusTimer),
+                startedAt: focusTimer.startedAt,
+                baseSeconds: focusTimer.baseSeconds,
+              }
+            : null,
+          nextTask: nextFocusTask ? { id: nextFocusTask.id, text: nextFocusTask.text } : null,
+        },
+      },
+      '*'
+    );
+  }, [focusTimer, nextFocusTask, appData.quickNotes, now]);
 
   const handleUpdateScratchpad = (scratchpadText: string) => {
     setAppData((prev) => ({
@@ -907,9 +1002,6 @@ export function App() {
     return appData.folders.filter((f) => f.parentId === selectedFolderId && !f.isHidden);
   }, [selectedFolderId, appData.folders]);
 
-  // Context-Aware Intercept Condition:
-  const hasPendingTasks = taskLoad.pendingCount > 0;
-
   return (
     <div className="h-screen flex flex-col overflow-hidden bg-serene-bg-light dark:bg-serene-bg-dark text-serene-text-primary dark:text-serene-text-darkPrimary">
       {/* Streamlined Single-Row Header */}
@@ -970,6 +1062,7 @@ export function App() {
           }}
           onChangeLinks={handleApplySidebarLinks}
           onChangeFolders={handleApplySidebarFolders}
+          userEmail={appData.settings.googleCalendar?.userEmail}
         />
 
         {/* Content Area: Independent scroll container with container queries */}
@@ -1021,7 +1114,10 @@ export function App() {
                 scratchpadText={appData.scratchpadText}
                 onUpdateNotes={handleUpdateNotes}
                 onUpdateScratchpad={handleUpdateScratchpad}
-                onBackToDashboard={() => setActiveView('dashboard')}
+                onBackToDashboard={() => {
+                  setEditingTaskIdForScreen(null);
+                  setActiveView('dashboard');
+                }}
                 calendarEvents={appData.calendarEvents || []}
                 onSyncCalendar={() => handleSyncCalendar(false)}
                 isSyncingCalendar={isSyncingCalendar}
@@ -1029,6 +1125,7 @@ export function App() {
                 onReauthorize={() => handleSyncCalendar(false)}
                 isTokenExpired={calendarSummary.isTokenExpired}
                 syncError={calendarSummary.syncError}
+                initialTaskId={editingTaskIdForScreen}
               />
             </motion.main>
           ) : (
@@ -1041,62 +1138,71 @@ export function App() {
               className="flex-1 h-full min-w-0 p-3 sm:p-5 lg:p-6 overflow-y-auto space-y-5 @container"
             >
             
-            {/* Top Widgets: Only visible in All Resources page (selectedFolderId === null && !searchQuery) */}
+            {/* Dynamic Focus Dashboard matching Image 1 */}
             {selectedFolderId === null && !searchQuery && (
-              <>
-                {/* CONTEXT-AWARE HERO INTERCEPT (Focus task on left, Time Radar in former quote space on right, horizontal quote below) */}
-                {hasPendingTasks || !currentSuggestion ? (
-                  <FocusHeroBanner
-                    dailyFocus={appData.dailyFocus}
-                    onUpdateDailyFocus={handleUpdateDailyFocus}
-                    clockFormat={appData.settings.clockFormat}
-                    showQuotes={appData.settings.showQuotes}
-                    tasks={appData.quickNotes}
-                    onToggleTask={handleToggleTask}
-                    onOpenTasksScreen={() => setActiveView('tasks')}
-                    timeRemaining={timeRemaining}
-                    taskLoad={taskLoad}
-                    buffer={buffer}
-                    endHour={appData.settings.daySchedule.endHour}
-                    calendarSummary={calendarSummary}
-                    onSyncCalendar={() => handleSyncCalendar(false)}
-                    isSyncingCalendar={isSyncingCalendar}
-                    onOpenCalendarSettings={() => setIsSettingsModalOpen(true)}
-                    onReauthorize={() => handleSyncCalendar(false)}
-                  />
-                ) : (
-                  <div className="@container w-full">
-                    <div className="grid grid-cols-1 @3xl:grid-cols-12 gap-3.5 sm:gap-4 animate-fadeIn">
-                      <div className="@3xl:col-span-7">
-                        <SmartSuggestionCard
-                          candidate={currentSuggestion}
-                          onApprove={handleApproveSuggestion}
-                          onReject={handleRejectSuggestion}
-                          onFetchAiIdea={handleFetchAiIdea}
-                          isOpenRouterEnabled={appData.settings.openRouter.enabled}
-                          isAiLoading={isAiLoading}
-                          approvalsCount={appData.learnedPreferences.approvalsCount}
-                          rejectionsCount={appData.learnedPreferences.rejectionsCount}
-                        />
-                      </div>
-                      <div className="@3xl:col-span-5 flex flex-col">
-                        <TimeRadarWidget
-                          timeRemaining={timeRemaining}
-                          taskLoad={taskLoad}
-                          buffer={buffer}
-                          endHour={appData.settings.daySchedule.endHour}
-                          onOpenTasks={() => setActiveView('tasks')}
-                          calendarSummary={calendarSummary}
-                          onSyncCalendar={() => handleSyncCalendar(false)}
-                          isSyncingCalendar={isSyncingCalendar}
-                          onOpenCalendarSettings={() => setIsSettingsModalOpen(true)}
-                          onReauthorize={() => handleSyncCalendar(false)}
-                        />
-                      </div>
-                    </div>
+              <div className="space-y-4 sm:space-y-5 animate-fadeIn">
+                {/* ROW 1: PRIMARY FOCUS (Left) + COMMITMENT RADAR (Right) */}
+                <div className="grid grid-cols-1 @4xl:grid-cols-12 gap-4 sm:gap-5 items-stretch">
+                  <div className="@4xl:col-span-7 flex flex-col">
+                    <PrimaryFocusCard
+                      tasks={appData.quickNotes}
+                      selectedTaskId={selectedFocusTaskId}
+                      onSelectTask={(id) => setSelectedFocusTaskId(id)}
+                      onToggleTask={handleToggleTaskWithTimer}
+                      onToggleSubtask={handleToggleSubtask}
+                      onOpenTaskEdit={() => {
+                        if (selectedFocusTaskId) {
+                          setEditingTaskIdForScreen(selectedFocusTaskId);
+                        }
+                        setActiveView('tasks');
+                      }}
+                      onOpenCalendarSettings={() => setIsSettingsModalOpen(true)}
+                      clockFormat={appData.settings.clockFormat}
+                      focusTimer={focusTimer}
+                      onTimerStart={handleTimerStart}
+                      onTimerPause={handleTimerPause}
+                      onTimerResume={handleTimerResume}
+                      onTimerEnd={handleTimerEnd}
+                    />
                   </div>
-                )}
-              </>
+                  <div className="@4xl:col-span-5 flex flex-col">
+                    <CommitmentRadarWidget
+                      tasks={appData.quickNotes}
+                      onSelectTask={(id) => {
+                        setSelectedFocusTaskId(id);
+                        setEditingTaskIdForScreen(id);
+                        setActiveView('tasks');
+                      }}
+                      onOpenTasks={() => setActiveView('tasks')}
+                      calendarSummary={calendarSummary}
+                    />
+                  </div>
+                </div>
+
+                {/* ROW 2: MOMENTUM + TIME RADAR & BUDGET */}
+                <div className="grid grid-cols-1 @2xl:grid-cols-2 @4xl:grid-cols-12 gap-4 sm:gap-5 items-stretch">
+                  <div className="@4xl:col-span-5 flex flex-col">
+                    <MomentumCard
+                      tasks={appData.quickNotes}
+                      growthHistory={appData.growthHistory}
+                      gamification={appData.gamification}
+                    />
+                  </div>
+                  <div className="@4xl:col-span-7 flex flex-col">
+                    <TimeRadarWidget
+                      timeRemaining={timeRemaining}
+                      taskLoad={taskLoad}
+                      buffer={buffer}
+                      endHour={appData.settings.daySchedule.endHour}
+                      onOpenTasks={() => setActiveView('tasks')}
+                      calendarSummary={calendarSummary}
+                      onSyncCalendar={() => handleSyncCalendar(false)}
+                      isSyncingCalendar={isSyncingCalendar}
+                      onOpenCalendarSettings={() => setIsSettingsModalOpen(true)}
+                    />
+                  </div>
+                </div>
+              </div>
             )}
 
           {/* 3. Navigation Sub-Bar & Breadcrumb Controls (Only shown when browsing a folder, favorites, or searching) */}

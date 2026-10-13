@@ -10,9 +10,9 @@
   }
 
   .dark {
-    --color-bg-primary: #111417;
-    --color-surface-primary: #1a1e23;
-    --color-border-subtle: #2e353e;
+    --color-bg-primary: #13171d;
+    --color-surface-primary: #1c2127;
+    --color-border-subtle: #35404d;
   }
 
   body {

@@ -149,6 +149,100 @@
       text-align: center;
       line-height: 1.4;
     }
+
+    .focus-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 14px;
+    }
+
+    .focus-title {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    .focus-task {
+      font-size: 13px;
+      font-weight: 600;
+      line-height: 1.35;
+      margin-bottom: 2px;
+      overflow: hidden;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+    }
+
+    .focus-timer {
+      font-size: 20px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      margin: 2px 0 8px;
+    }
+
+    .focus-next {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .timer-row {
+      display: flex;
+      gap: 6px;
+    }
+
+    .timer-row button {
+      padding: 7px 8px;
+      font-size: 12px;
+    }
+
+    .add-row {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 14px;
+    }
+
+    .add-row input {
+      flex: 1;
+      min-width: 0;
+      padding: 9px 10px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: var(--card);
+      color: var(--text);
+      font-size: 13px;
+      outline: none;
+    }
+
+    .add-row input:focus {
+      border-color: var(--primary);
+    }
+
+    .add-btn {
+      width: 40px;
+      flex-shrink: 0;
+      font-size: 18px;
+      font-weight: 600;
+      padding: 9px 0;
+    }
+
+    .btn-danger {
+      background: #3b1d24;
+      color: #fda4af;
+      border: 1px solid #5b2831;
+    }
+
+    .btn-danger:hover {
+      background: #4c232c;
+    }
   </style>
 </head>
 <body>
@@ -168,6 +262,22 @@
         <span id="status-text">Active & Listening</span>
       </div>
     </div>
+  </div>
+
+  <div class="focus-card">
+    <div class="focus-title">Primary Focus</div>
+    <div id="focus-task" class="focus-task">No active timer</div>
+    <div id="focus-timer" class="focus-timer">0:00</div>
+    <div id="focus-next" class="focus-next"></div>
+    <div class="timer-row">
+      <button id="timer-toggle-btn" class="btn-secondary">Resume</button>
+      <button id="timer-end-btn" class="btn-danger">End</button>
+    </div>
+  </div>
+
+  <div class="add-row">
+    <input id="add-input" type="text" maxlength="200" placeholder="New task + Enter" aria-label="New task" />
+    <button id="add-btn" class="btn-primary add-btn" title="Add task to LaunchPAD">+</button>
   </div>
 
   <div class="actions">

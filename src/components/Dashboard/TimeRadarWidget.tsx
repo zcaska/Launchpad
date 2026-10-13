@@ -42,8 +42,6 @@ export const TimeRadarWidget: React.FC<TimeRadarWidgetProps> = ({
   onOpenCalendarSettings,
   onReauthorize,
 }) => {
-  const formattedCutoff = endHour > 12 ? `${endHour - 12}:00 PM` : `${endHour}:00 AM`;
-
   // Calculate adjusted true focus surplus taking into account merged busy intervals
   const busyMinutes = calendarSummary?.remainingBusyMinutesToday || 0;
   const trueFocus = calculateTrueFocusSurplus(
@@ -72,7 +70,7 @@ export const TimeRadarWidget: React.FC<TimeRadarWidgetProps> = ({
           {calendarSummary?.isTokenExpired ? (
             <button
               onClick={onReauthorize || onOpenCalendarSettings}
-              className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800/50 hover:bg-amber-200 transition-colors"
+              className="text-[10px] font-semibold whitespace-nowrap px-2.5 py-1 rounded-full bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800/50 hover:bg-amber-200 transition-colors"
               title="Google Calendar token expired. Click to re-authorize."
             >
               Re-authorize
@@ -81,10 +79,10 @@ export const TimeRadarWidget: React.FC<TimeRadarWidgetProps> = ({
             <button
               onClick={onSyncCalendar}
               disabled={isSyncingCalendar}
-              className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-rose-100 dark:bg-rose-950/60 text-rose-800 dark:text-rose-300 border border-rose-200 dark:border-rose-800/50 hover:bg-rose-200 transition-colors flex items-center gap-1"
+              className="text-[10px] font-semibold whitespace-nowrap px-2.5 py-1 rounded-full bg-rose-100 dark:bg-rose-950/60 text-rose-800 dark:text-rose-300 border border-rose-200 dark:border-rose-800/50 hover:bg-rose-200 transition-colors flex items-center gap-1"
               title={`Calendar sync error: ${calendarSummary.syncError}. Click to retry.`}
             >
-              <AlertTriangle className="w-2.5 h-2.5 text-rose-600 dark:text-rose-400" />
+              <AlertTriangle className="w-2.5 h-2.5 text-rose-600 dark:text-rose-400 shrink-0" />
               <span>Sync Failed</span>
             </button>
           ) : null}
@@ -133,41 +131,41 @@ export const TimeRadarWidget: React.FC<TimeRadarWidgetProps> = ({
       )}
 
       {/* 2x2 Symmetrical Metric Grid for Visual Harmony */}
-      <div className="grid grid-cols-2 gap-2 sm:gap-2.5 my-1 flex-1 content-center">
+      <div className="grid grid-cols-2 gap-3 my-1.5 flex-1 content-center">
         {/* Quadrant 1: Time Left */}
-        <div className="p-2.5 sm:p-3 rounded-xl bg-serene-surfaceAlt-light/60 dark:bg-serene-surfaceAlt-dark/40 border border-serene-border-light/60 dark:border-serene-border-dark/60 flex flex-col justify-center min-w-0">
+        <div className="p-3 sm:p-3.5 rounded-xl bg-serene-surfaceAlt-light/60 dark:bg-serene-surfaceAlt-dark/40 border border-serene-border-light/60 dark:border-serene-border-dark/60 flex flex-col justify-between min-w-0">
           <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-serene-text-secondary dark:text-serene-text-darkSecondary">
             <Clock className="w-3.5 h-3.5 text-serene-primary dark:text-serene-primary-dark shrink-0" />
             <span className="truncate">Time Left</span>
           </div>
-          <div className="mt-1.5 flex items-baseline justify-between gap-1.5">
-            <span className="text-sm sm:text-base font-bold font-mono text-serene-text-primary dark:text-serene-text-darkPrimary truncate">
+          <div className="mt-2 flex items-baseline justify-between gap-1.5 min-w-0">
+            <span className="text-sm sm:text-base font-bold font-mono text-serene-text-primary dark:text-serene-text-darkPrimary whitespace-nowrap">
               {timeRemaining.isPastCutoff ? 'End of Day' : timeRemaining.formatted}
             </span>
-            <span className="text-[10px] text-serene-text-muted shrink-0">
+            <span className="text-[10px] text-serene-text-muted shrink-0 whitespace-nowrap">
               {timeRemaining.isPastCutoff ? 'Past' : 'Available'}
             </span>
           </div>
         </div>
 
         {/* Quadrant 2: Workload */}
-        <div className="p-2.5 sm:p-3 rounded-xl bg-serene-surfaceAlt-light/60 dark:bg-serene-surfaceAlt-dark/40 border border-serene-border-light/60 dark:border-serene-border-dark/60 flex flex-col justify-center min-w-0">
+        <div className="p-3 sm:p-3.5 rounded-xl bg-serene-surfaceAlt-light/60 dark:bg-serene-surfaceAlt-dark/40 border border-serene-border-light/60 dark:border-serene-border-dark/60 flex flex-col justify-between min-w-0">
           <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-serene-text-secondary dark:text-serene-text-darkSecondary">
             <Hourglass className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
             <span className="truncate">Workload</span>
           </div>
-          <div className="mt-1.5 flex items-baseline justify-between gap-1.5">
-            <span className="text-sm sm:text-base font-bold font-mono text-amber-600 dark:text-amber-400 truncate">
+          <div className="mt-2 flex items-baseline justify-between gap-1.5 min-w-0">
+            <span className="text-sm sm:text-base font-bold font-mono text-amber-600 dark:text-amber-400 whitespace-nowrap">
               {taskLoad.pendingMinutes === 0 ? '0m' : taskLoad.formattedPending}
             </span>
-            <span className="text-[10px] text-serene-text-muted shrink-0">
+            <span className="text-[10px] text-serene-text-muted shrink-0 whitespace-nowrap">
               {taskLoad.pendingCount} {taskLoad.pendingCount === 1 ? 'task' : 'tasks'}
             </span>
           </div>
         </div>
 
         {/* Quadrant 3: Focus Buffer (Adjusted for Calendar Meetings) */}
-        <div className="p-2.5 sm:p-3 rounded-xl bg-serene-surfaceAlt-light/60 dark:bg-serene-surfaceAlt-dark/40 border border-serene-border-light/60 dark:border-serene-border-dark/60 flex flex-col justify-center min-w-0">
+        <div className="p-3 sm:p-3.5 rounded-xl bg-serene-surfaceAlt-light/60 dark:bg-serene-surfaceAlt-dark/40 border border-serene-border-light/60 dark:border-serene-border-dark/60 flex flex-col justify-between min-w-0">
           <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-serene-text-secondary dark:text-serene-text-darkSecondary">
             {displayStatus === 'surplus' ? (
               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
@@ -178,8 +176,8 @@ export const TimeRadarWidget: React.FC<TimeRadarWidgetProps> = ({
             )}
             <span className="truncate">Focus Buffer</span>
           </div>
-          <div className="mt-1.5 flex items-baseline justify-between gap-1.5">
-            <span className={`text-sm sm:text-base font-bold font-mono truncate ${
+          <div className="mt-2 flex items-baseline justify-between gap-1.5 min-w-0">
+            <span className={`text-sm sm:text-base font-bold font-mono whitespace-nowrap ${
               displayStatus === 'surplus'
                 ? 'text-emerald-600 dark:text-emerald-400'
                 : displayStatus === 'tight'
@@ -190,7 +188,7 @@ export const TimeRadarWidget: React.FC<TimeRadarWidgetProps> = ({
               {displayStatus === 'tight' && formattedSurplus}
               {displayStatus === 'overloaded' && `-${formattedSurplus}`}
             </span>
-            <span className={`text-[10px] font-semibold shrink-0 ${
+            <span className={`text-[10px] font-semibold shrink-0 whitespace-nowrap ${
               displayStatus === 'surplus'
                 ? 'text-emerald-700 dark:text-emerald-300'
                 : displayStatus === 'tight'
@@ -203,7 +201,7 @@ export const TimeRadarWidget: React.FC<TimeRadarWidgetProps> = ({
         </div>
 
         {/* Quadrant 4: Calendar Meetings or Open Schedule */}
-        <div className="p-2.5 sm:p-3 rounded-xl bg-serene-surfaceAlt-light/60 dark:bg-serene-surfaceAlt-dark/40 border border-serene-border-light/60 dark:border-serene-border-dark/60 flex flex-col justify-center min-w-0">
+        <div className="p-3 sm:p-3.5 rounded-xl bg-serene-surfaceAlt-light/60 dark:bg-serene-surfaceAlt-dark/40 border border-serene-border-light/60 dark:border-serene-border-dark/60 flex flex-col justify-between min-w-0">
           <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-serene-text-secondary dark:text-serene-text-darkSecondary">
             {busyMinutes > 0 ? (
               <Calendar className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 shrink-0" />
@@ -212,13 +210,13 @@ export const TimeRadarWidget: React.FC<TimeRadarWidgetProps> = ({
             )}
             <span className="truncate">{busyMinutes > 0 ? 'Meetings' : 'Schedule'}</span>
           </div>
-          <div className="mt-1.5 flex items-baseline justify-between gap-1.5">
-            <span className="text-sm sm:text-base font-bold font-mono text-serene-text-primary dark:text-serene-text-darkPrimary truncate">
+          <div className="mt-2 flex items-baseline justify-between gap-1.5 min-w-0">
+            <span className="text-sm sm:text-base font-bold font-mono text-serene-text-primary dark:text-serene-text-darkPrimary whitespace-nowrap">
               {busyMinutes > 0
                 ? `${Math.floor(calendarSummary!.totalBusyMinutesToday / 60)}h ${calendarSummary!.totalBusyMinutesToday % 60}m`
                 : 'Clear Runway'}
             </span>
-            <span className="text-[10px] text-serene-text-muted shrink-0">
+            <span className="text-[10px] text-serene-text-muted shrink-0 whitespace-nowrap">
               {busyMinutes > 0
                 ? `${calendarSummary?.events.filter((e) => !e.isAllDay).length || 0} events`
                 : 'No blocks'}
@@ -247,10 +245,14 @@ export const TimeRadarWidget: React.FC<TimeRadarWidgetProps> = ({
               : 'Capacity overloaded'}
           </span>
         </div>
-        <span className="font-mono text-[10px] shrink-0 ml-2 text-serene-text-secondary dark:text-serene-text-darkSecondary">
-          Cutoff {formattedCutoff}
-        </span>
+        {endHour !== undefined && (
+          <span className="font-mono text-[10px] shrink-0 ml-2 text-serene-text-secondary dark:text-serene-text-darkSecondary">
+            Cutoff {endHour > 12 ? `${endHour - 12}:00 PM` : `${endHour}:00 AM`}
+          </span>
+        )}
       </div>
     </div>
   );
 };
+
+export default TimeRadarWidget;

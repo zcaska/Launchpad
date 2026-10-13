@@ -85,6 +85,12 @@ export const FocusHeroBanner: React.FC<FocusHeroBannerProps> = ({
     return () => clearInterval(timer);
   }, []);
 
+  useEffect(() => {
+    if (!showQuotes) return;
+    const timer = setInterval(() => setQuoteIndex((prev) => (prev + 1) % CALM_QUOTES.length), 10 * 60 * 1000);
+    return () => clearInterval(timer);
+  }, [showQuotes]);
+
   const handleNextQuote = (e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
     setQuoteIndex((prev) => (prev + 1) % CALM_QUOTES.length);
@@ -149,7 +155,15 @@ export const FocusHeroBanner: React.FC<FocusHeroBannerProps> = ({
           </div>
 
           {/* Pending Tasks Section inside Card */}
-          <div className="my-1.5 flex-1 flex flex-col justify-center">
+          <div className={`my-1.5 flex-1 flex flex-col justify-center rounded-xl p-3 backdrop-blur-md ${
+            activeTask?.priority === 'urgent'
+              ? 'bg-red-500/10'
+              : activeTask?.priority === 'high'
+              ? 'bg-rose-500/10'
+              : activeTask?.priority === 'medium'
+              ? 'bg-amber-500/10'
+              : 'bg-slate-500/10'
+          }`}>
             {activeTask ? (
               <div className="space-y-2.5 py-1">
                 {/* Task Carousel Header */}
@@ -313,7 +327,7 @@ export const FocusHeroBanner: React.FC<FocusHeroBannerProps> = ({
           {/* Bottom helper date strip */}
           <div className="mt-2.5 pt-2 border-t border-serene-border-light/40 dark:border-serene-border-dark/40 flex items-center justify-between text-[11px] text-serene-text-muted">
             <span className="text-[10px] font-medium text-serene-text-secondary dark:text-serene-text-darkSecondary">Primary Attention Anchor</span>
-            <span className="font-mono text-[10px] shrink-0 ml-2">{formattedDate}</span>
+            <span className="font-mono text-sm font-semibold shrink-0 ml-2">{formattedDate} · {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
           </div>
         </div>
 

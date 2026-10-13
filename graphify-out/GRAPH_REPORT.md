@@ -1,50 +1,55 @@
-# Graph Report - LaunchPAD  (2026-10-10)
+# Graph Report - LaunchPAD  (2026-10-13)
 
 ## Corpus Check
-- cluster-only mode — file stats not available
+- 75 files · ~93,890 words
+- Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 288 nodes · 654 edges · 23 communities (16 shown, 7 thin omitted)
-- Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS · INFERRED: 2 edges (avg confidence: 0.9)
-- Token cost: 0 input · 0 output
-
-## Graph Freshness
-- Built from commit: `877d078b`
-- Run `git rev-parse HEAD` and compare to check if the graph is stale.
-- Run `graphify update .` after code changes (no API cost).
+- 613 nodes · 1494 edges · 33 communities (22 shown, 11 thin omitted)
+- Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS · INFERRED: 4 edges (avg confidence: 0.85)
+- Token cost: 2,000 input · 700 output
 
 ## Community Hubs (Navigation)
-- LinkItem
-- package.json
-- App.tsx
-- index.ts
-- compilerOptions
-- SettingsModal.tsx
-- TaskManagementScreen.tsx
-- FocusHeroBanner.tsx
-- rules.js
-- manifest.json
-- devDependencies
-- LaunchPad Focus Dashboard & Redirect Hub
-- bookmarkSyncChannel.ts
-- compilerOptions
-- Progressive Disclosure Favicon Grid Plan
-- Build Job
-- Exact Installed Model String Convention
-- Extension README
-- Extension Popup UI
+- UI Components & Icons
+- Folder Actions & Verification
+- Calendar Timeline & UX Heuristics
+- Momentum Metric & History
+- Bookmark Tree & Sidebar Rows
+- Project Dependencies & Ecosystem
+- Core Domain Types & Schemas
+- Settings Modal & Seed State
+- Task Urgency Unit Verification
+- Commitment Radar Visualization
+- Task Urgency & Math Calculations
+- TypeScript Configuration
+- Extension Background Sync
+- Chrome Extension Manifest
+- Focus Card Test Suite
+- Primary Focus Card Workspace
+- Focus Engine & Time Capacity
+- Quick Actions Card
+- TypeScript Node Configuration
+- Agent Architecture & Rules
+- Favicon Grid Architecture
+- GitHub Pages CI/CD
+- Dashboard Class Link UI
+- Dashboard Focus Workspace UI
+- Extension Popup Interface
+- Extension Documentation
+- Web App Entry HTML
+- LaunchPad Branding Assets
 
 ## God Nodes (most connected - your core abstractions)
-1. `App()` - 30 edges
-2. `LinkItem` - 26 edges
-3. `Folder` - 25 edges
-4. `react` - 20 edges
-5. `lucide-react` - 19 edges
-6. `compilerOptions` - 16 edges
-7. `extractDomain()` - 14 edges
-8. `getFaviconUrl()` - 14 edges
-9. `motion` - 12 edges
-10. `QuickNote` - 9 edges
+1. `App()` - 46 edges
+2. `react` - 37 edges
+3. `Folder` - 36 edges
+4. `lucide-react` - 35 edges
+5. `LinkItem` - 35 edges
+6. `QuickNote` - 25 edges
+7. `motion` - 16 edges
+8. `compilerOptions` - 16 edges
+9. `DailyGrowthRecord` - 15 edges
+10. `extractDomain()` - 15 edges
 
 ## Surprising Connections (you probably didn't know these)
 - `SmartSuggestionCard()` --references--> `Context-Scoped Overview Widgets`  [EXTRACTED]
@@ -61,91 +66,115 @@
 ## Import Cycles
 - None detected.
 
-## Communities (23 total, 7 thin omitted)
+## Communities (33 total, 11 thin omitted)
 
-### Community 0 - "LinkItem"
-Cohesion: 0.14
-Nodes (35): lucide-react, motion, react, SmartSuggestionCard(), CategorySectionProps, CompactIconGrid(), CompactIconGridProps, DomainClusterTile() (+27 more)
+### Community 0 - "UI Components & Icons"
+Cohesion: 0.08
+Nodes (53): lucide-react, motion, react, react-dom, FaviconImage(), FaviconImageProps, SmartSuggestionCard(), CategorySection() (+45 more)
 
-### Community 1 - "package.json"
-Cohesion: 0.06
-Nodes (31): dependencies, clsx, lucide-react, motion, react, react-dom, tailwind-merge, name (+23 more)
+### Community 1 - "Folder Actions & Verification"
+Cohesion: 0.08
+Nodes (45): delWith, delWithout, hiddenWith, hiddenWithout, initialFolders, initialLinks, treeVisible, treeWith (+37 more)
 
-### Community 2 - "App.tsx"
+### Community 2 - "Calendar Timeline & UX Heuristics"
+Cohesion: 0.09
+Nodes (40): Focus Dashboard UX Heuristics, CalendarScheduleTimeline(), CalendarScheduleTimelineProps, SafeDescription(), cleanTextPiece(), SafeDescriptionProps, Segment, FocusHeroBanner() (+32 more)
+
+### Community 3 - "Momentum Metric & History"
+Cohesion: 0.09
+Nodes (39): getLocalDateString(), MomentumCard(), MomentumCardProps, MomentumTimeframe, mockGamification, mockGrowthHistory, mockTasks, propsTest (+31 more)
+
+### Community 4 - "Bookmark Tree & Sidebar Rows"
+Cohesion: 0.07
+Nodes (43): BookmarkRow(), isValidUrl(), MenuBtn(), StarDot(), ActivePill(), FolderTreeItem(), FolderTreeItemProps, NOOP_BOOKMARK (+35 more)
+
+### Community 5 - "Project Dependencies & Ecosystem"
+Cohesion: 0.05
+Nodes (42): dependencies, clsx, lucide-react, motion, react, react-dom, tailwind-merge, devDependencies (+34 more)
+
+### Community 6 - "Core Domain Types & Schemas"
+Cohesion: 0.07
+Nodes (38): SmartSuggestionCardProps, DEFAULT_MICRO_QUESTS, BookmarkClassificationConfidence, BookmarkClassificationResult, BookmarkClassificationRule, DaySchedule, FolderColor, GoogleCalendarConfig (+30 more)
+
+### Community 7 - "Settings Modal & Seed State"
 Cohesion: 0.15
-Nodes (27): App(), SmartSuggestionCardProps, Header(), HeaderProps, CategorySection(), FolderCard(), ManageFoldersModal(), DURATION_OPTIONS (+19 more)
+Nodes (26): SettingsModal(), SettingsModalProps, DEFAULT_INITIAL_PREFERENCES, DEFAULT_SEED_DATA, classifyGoogleApiError(), classifyTokenResponseError(), extractPrimaryCalendarEmail(), fetchGoogleCalendarAccountEmail() (+18 more)
 
-### Community 3 - "index.ts"
+### Community 8 - "Task Urgency Unit Verification"
+Cohesion: 0.06
+Nodes (29): collapsedState, denseNodes, denseOverdueTasks, dueTodayInfo, dueTomorrowMorning, emptyDeadlineInfo, expandedState, highMomentumTask (+21 more)
+
+### Community 9 - "Commitment Radar Visualization"
+Cohesion: 0.11
+Nodes (25): CommitmentRadarWidget(), formatTaskCountdown(), RadarViewMode, countdownAi, countdownDsc, countdownEcon, countdownExcel, countdownNoDeadline (+17 more)
+
+### Community 10 - "Task Urgency & Math Calculations"
 Cohesion: 0.12
-Nodes (23): BookmarkClassificationConfidence, BookmarkClassificationResult, BookmarkClassificationRule, DaySchedule, ImportBookmarkResult, OpenRouterConfig, ParsedBookmark, TimeOfDayBucket (+15 more)
+Nodes (18): Subtask, TaskPriority, calculateSessionMomentumIndex(), calculateTaskOpportunityScore(), DEFAULT_VISIBLE_SUBTASKS, getTopOpportunity(), OpportunityRankingOptions, OpportunityScoreBreakdown (+10 more)
 
-### Community 4 - "compilerOptions"
+### Community 11 - "TypeScript Configuration"
 Cohesion: 0.11
 Nodes (17): compilerOptions, allowImportingTsExtensions, isolatedModules, jsx, lib, module, moduleResolution, noEmit (+9 more)
 
-### Community 5 - "SettingsModal.tsx"
-Cohesion: 0.21
-Nodes (14): SettingsModal(), SettingsModalProps, CALM_QUOTES, DEFAULT_INITIAL_PREFERENCES, DEFAULT_MICRO_QUESTS, DEFAULT_SEED_DATA, AppData, LearnedPreferences (+6 more)
+### Community 12 - "Extension Background Sync"
+Cohesion: 0.20
+Nodes (13): getBookmarkFolderHierarchy(), syncAllBookmarks(), walk(), classifyBookmark(), DEFAULT_DOMAIN_CATEGORY_RULES, DEFAULT_KEYWORD_CATEGORY_RULES, extractHostname(), FOLDER_BOOKMARKS (+5 more)
 
-### Community 6 - "TaskManagementScreen.tsx"
-Cohesion: 0.14
-Nodes (15): FilterTab, TaskManagementScreenProps, Subtask, TaskPriority, TaskUrl, drawerVariants, fadeScaleVariants, MICRO_INTERACTIONS (+7 more)
-
-### Community 7 - "FocusHeroBanner.tsx"
-Cohesion: 0.32
-Nodes (10): Focus Dashboard UX Heuristics, FocusHeroBanner(), FocusHeroBannerProps, TimeRadarWidget(), TimeRadarWidgetProps, DailyFocus, QuickNote, BufferSummary (+2 more)
-
-### Community 8 - "rules.js"
-Cohesion: 0.17
-Nodes (11): syncAllBookmarks(), walk(), classifyBookmark(), DEFAULT_DOMAIN_CATEGORY_RULES, DEFAULT_KEYWORD_CATEGORY_RULES, extractHostname(), FOLDER_BOOKMARKS, FOLDER_CLASSES (+3 more)
-
-### Community 9 - "manifest.json"
+### Community 13 - "Chrome Extension Manifest"
 Cohesion: 0.14
 Nodes (13): action, default_popup, default_title, background, service_worker, type, content_scripts, description (+5 more)
 
-### Community 10 - "devDependencies"
-Cohesion: 0.17
-Nodes (12): devDependencies, autoprefixer, gh-pages, postcss, tailwindcss, @tailwindcss/container-queries, @types/node, @types/react (+4 more)
+### Community 14 - "Focus Card Test Suite"
+Cohesion: 0.15
+Nodes (11): CommitmentRadarWidgetProps, PrimaryFocusCardProps, collapsedState, expandedState, mockSubtasks, mockTask, propsTest, urgencyInfo (+3 more)
 
-### Community 11 - "LaunchPad Focus Dashboard & Redirect Hub"
-Cohesion: 0.22
-Nodes (9): Self-Learning Bandit Recommendation Engine, Contextual Intercept Focus System, Intelligent Focus Engine Plan, Time Capacity Engine, LaunchPad HTML Entrypoint, Daily Focus Intention, LaunchPad Focus Dashboard & Redirect Hub, Dual-Mode Quick Scratchpad (+1 more)
+### Community 15 - "Primary Focus Card Workspace"
+Cohesion: 0.26
+Nodes (10): deriveDeadlineMetrics(), formatDeadlineDateLabel(), parseSubtaskContent(), PrimaryFocusCard(), ProcedureSort, formatEventDuration(), formatEventTime(), parseTimeComponents() (+2 more)
 
-### Community 12 - "bookmarkSyncChannel.ts"
+### Community 16 - "Focus Engine & Time Capacity"
 Cohesion: 0.25
-Nodes (5): BOOKMARKS_SYNC_CHANNEL_NAME, BookmarkSyncEventData, BookmarkSyncHandler, BookmarkSyncMessageType, BookmarkSyncPayload
+Nodes (8): Self-Learning Bandit Recommendation Engine, Contextual Intercept Focus System, Intelligent Focus Engine Plan, Time Capacity Engine, Daily Focus Intention, LaunchPad Focus Dashboard & Redirect Hub, Dual-Mode Quick Scratchpad, Time Snatch Extension Integration
 
-### Community 13 - "compilerOptions"
+### Community 17 - "Quick Actions Card"
+Cohesion: 0.32
+Nodes (4): QuickActionsCard(), QuickActionsCardProps, expectedActions, propsTest
+
+### Community 18 - "TypeScript Node Configuration"
 Cohesion: 0.25
 Nodes (7): compilerOptions, allowSyntheticDefaultImports, composite, module, moduleResolution, skipLibCheck, include
 
-### Community 14 - "Progressive Disclosure Favicon Grid Plan"
+### Community 20 - "Agent Architecture & Rules"
+Cohesion: 0.50
+Nodes (4): AGENTS Governance Instructions, Subagent Execution Policy, CLAUDE Architectural Guidelines, Cline Rules Project Context
+
+### Community 21 - "Favicon Grid Architecture"
 Cohesion: 0.67
 Nodes (3): Domain Nesting & Auto-Clustering, Floating Hover Preview Cards, Progressive Disclosure Favicon Grid Plan
 
-### Community 15 - "Build Job"
+### Community 22 - "GitHub Pages CI/CD"
 Cohesion: 1.00
 Nodes (3): Build Job, Deploy Job, Deploy to GitHub Pages Workflow
 
 ## Knowledge Gaps
-- **21 isolated node(s):** `autoprefixer`, `clsx`, `gh-pages`, `postcss`, `tailwind-merge` (+16 more)
-  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 120 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
-- **7 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **26 isolated node(s):** `autoprefixer`, `clsx`, `gh-pages`, `postcss`, `tailwind-merge` (+21 more)
+  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 262 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
+- **11 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `react` connect `LinkItem` to `package.json`, `App.tsx`, `SettingsModal.tsx`, `TaskManagementScreen.tsx`, `FocusHeroBanner.tsx`?**
-  _High betweenness centrality (0.072) - this node is a cross-community bridge._
+- **Why does `react` connect `UI Components & Icons` to `Folder Actions & Verification`, `Calendar Timeline & UX Heuristics`, `Momentum Metric & History`, `Bookmark Tree & Sidebar Rows`, `Project Dependencies & Ecosystem`, `Settings Modal & Seed State`, `Commitment Radar Visualization`, `Primary Focus Card Workspace`, `Quick Actions Card`?**
+  _High betweenness centrality (0.068) - this node is a cross-community bridge._
 - **What connects `autoprefixer`, `clsx`, `gh-pages` to the rest of the system?**
-  _21 weakly-connected nodes found - possible documentation gaps or missing edges._
-- **Should `LinkItem` be split into smaller, more focused modules?**
-  _Cohesion score 0.1360544217687075 - nodes in this community are weakly interconnected._
-- **Why does `lucide-react` connect `LinkItem` to `package.json`, `App.tsx`, `SettingsModal.tsx`, `TaskManagementScreen.tsx`, `FocusHeroBanner.tsx`?**
-  _High betweenness centrality (0.066) - this node is a cross-community bridge._
-- **Should `package.json` be split into smaller, more focused modules?**
-  _Cohesion score 0.058823529411764705 - nodes in this community are weakly interconnected._
-- **Why does `devDependencies` connect `devDependencies` to `package.json`?**
-  _High betweenness centrality (0.054) - this node is a cross-community bridge._
-- **Should `index.ts` be split into smaller, more focused modules?**
-  _Cohesion score 0.12 - nodes in this community are weakly interconnected._
+  _26 weakly-connected nodes found - possible documentation gaps or missing edges._
+- **Should `UI Components & Icons` be split into smaller, more focused modules?**
+  _Cohesion score 0.0848982785602504 - nodes in this community are weakly interconnected._
+- **Why does `lucide-react` connect `UI Components & Icons` to `Folder Actions & Verification`, `Calendar Timeline & UX Heuristics`, `Momentum Metric & History`, `Bookmark Tree & Sidebar Rows`, `Project Dependencies & Ecosystem`, `Settings Modal & Seed State`, `Commitment Radar Visualization`, `Primary Focus Card Workspace`, `Quick Actions Card`?**
+  _High betweenness centrality (0.064) - this node is a cross-community bridge._
+- **Should `Folder Actions & Verification` be split into smaller, more focused modules?**
+  _Cohesion score 0.08051948051948052 - nodes in this community are weakly interconnected._
+- **Why does `QuickNote` connect `Focus Card Test Suite` to `Folder Actions & Verification`, `Calendar Timeline & UX Heuristics`, `Momentum Metric & History`, `Core Domain Types & Schemas`, `Task Urgency Unit Verification`, `Commitment Radar Visualization`, `Task Urgency & Math Calculations`, `Primary Focus Card Workspace`?**
+  _High betweenness centrality (0.035) - this node is a cross-community bridge._
+- **Should `Calendar Timeline & UX Heuristics` be split into smaller, more focused modules?**
+  _Cohesion score 0.09158249158249158 - nodes in this community are weakly interconnected._

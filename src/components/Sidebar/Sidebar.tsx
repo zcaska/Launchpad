@@ -12,7 +12,8 @@ import {
   X,
   Compass,
   EyeOff,
-  Trophy
+  Trophy,
+  User
 } from 'lucide-react';
 import { Folder, LinkItem, FolderTreeNode, GamificationState } from '../../types';
 import { getFolderIcon, FOLDER_COLOR_MAP } from '../../utils/icons';
@@ -50,6 +51,7 @@ interface SidebarProps {
   bookmark?: SidebarBookmarkHandlers;
   onChangeLinks?: (next: LinkItem[]) => void;
   onChangeFolders?: (next: Folder[]) => void;
+  userEmail?: string;
 }
 
 /**
@@ -352,8 +354,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   bookmark,
   onChangeLinks,
   onChangeFolders,
+  userEmail,
 }) => {
-  const totalCount = links.length;
   const favoriteCount = links.filter((l) => l.isFavorite).length;
 
   const activeHero = useMemo(() => {
@@ -502,7 +504,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
 
         {/* Mobile Drawer Content */}
-        <div className="p-3 flex-1 flex flex-col gap-4 overflow-y-auto">
+        <div className="p-3 flex-1 flex flex-col gap-2 overflow-y-auto">
           {/* Navigation Section */}
           <div className="space-y-1">
             <div className="px-3 py-1 text-[11px] font-semibold text-serene-text-muted uppercase tracking-wider">
@@ -588,7 +590,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
 
           {/* Section Divider */}
-          <div className="h-px bg-serene-border-light dark:bg-serene-border-dark my-1 mx-1" />
+          <div className="h-[2px] bg-serene-border-light dark:bg-serene-border-dark my-2 mx-1.5 rounded-full" />
 
           {/* Mobile Folders Hierarchy Section */}
           <div className="space-y-1 flex-1">
@@ -657,7 +659,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </button>
 
         {/* Scrollable Content */}
-        <div className="p-3 flex-1 flex flex-col gap-4 overflow-y-auto">
+        <div className="p-3 flex-1 flex flex-col gap-2 overflow-y-auto">
           {/* Top Navigation Links */}
           <div className="space-y-1">
             {!isCollapsed && (
@@ -806,8 +808,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
           {/* Section Divider */}
           <div
-            className={`h-px bg-serene-border-light dark:bg-serene-border-dark my-1 ${
-              isCollapsed ? 'w-8 mx-auto' : 'mx-1'
+            className={`h-[2px] bg-serene-border-light dark:bg-serene-border-dark my-2 rounded-full ${
+              isCollapsed ? 'w-8 mx-auto' : 'mx-1.5'
             }`}
           />
 
@@ -867,18 +869,41 @@ export const Sidebar: React.FC<SidebarProps> = ({
             )}
           </div>
 
-          {/* Bottom Widget */}
-          {!isCollapsed && (
-            <div className="p-3 bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark rounded-xl border border-serene-border-light dark:border-serene-border-dark text-xs space-y-1 mt-auto shrink-0">
-              <div className="flex items-center justify-between font-semibold text-serene-text-primary dark:text-serene-text-darkPrimary text-[11px]">
-                <span>Curated Hub</span>
-                <span className="font-mono text-serene-primary dark:text-serene-primary-dark">{totalCount} links</span>
+          {/* Bottom User Profile Section matching Image 1 */}
+          <div className="pt-2 mt-auto shrink-0 border-t border-serene-border-light/60 dark:border-serene-border-dark/60">
+            {isCollapsed ? (
+              <div
+                className="w-9 h-9 mx-auto rounded-full bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark border border-serene-border-light dark:border-serene-border-dark flex items-center justify-center text-serene-text-primary dark:text-serene-text-darkPrimary font-bold text-xs shadow-xs"
+                title={userEmail ? `User: ${userEmail}` : 'LaunchPad User'}
+              >
+                {userEmail ? (
+                  <span className="text-serene-primary dark:text-serene-primary-dark font-bold text-xs">
+                    {userEmail.charAt(0).toUpperCase()}
+                  </span>
+                ) : (
+                  <User className="w-4 h-4 text-serene-text-muted" />
+                )}
               </div>
-              <p className="text-[10px] text-serene-text-muted leading-relaxed">
-                Multi-level progressive hierarchy.
-              </p>
-            </div>
-          )}
+            ) : (
+              <div className="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-xl bg-serene-surfaceAlt-light/60 dark:bg-serene-surfaceAlt-dark/60 border border-serene-border-light/60 dark:border-serene-border-dark/60">
+                <div className="w-8 h-8 rounded-full bg-serene-primary/10 dark:bg-serene-primary-dark/20 border border-serene-primary/20 flex items-center justify-center text-serene-primary dark:text-serene-primary-dark font-bold text-xs shrink-0">
+                  {userEmail ? (
+                    userEmail.charAt(0).toUpperCase()
+                  ) : (
+                    <User className="w-3.5 h-3.5 text-serene-primary dark:text-serene-primary-dark" />
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-semibold truncate text-serene-text-primary dark:text-serene-text-darkPrimary">
+                    {userEmail ? userEmail.split('@')[0] : 'LaunchPad User'}
+                  </p>
+                  <p className="text-[10px] text-serene-text-muted truncate">
+                    {userEmail || 'Focus Session Active'}
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </aside>
     </>

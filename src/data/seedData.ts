@@ -8,6 +8,15 @@ export const CALM_QUOTES = [
   { text: "Notice the impulse to distract, breathe through it, and return to purpose.", author: "Mindfulness" },
   { text: "Simplicity is the prerequisite for clarity and deep concentration.", author: "Edsger Dijkstra" },
   { text: "The secret of getting ahead is getting started.", author: "Mark Twain" },
+  { text: "Greatness is not a gift, it's a habit built one focused hour at a time.", author: "Will Durant" },
+  { text: "You do not rise to the level of your goals. You fall to the level of your systems.", author: "James Clear" },
+  { text: "Amateurs sit and wait for inspiration. The rest of us just get up and go to work.", author: "Stephen King" },
+  { text: "Concentrate all your thoughts upon the work in hand. The sun rays do not burn until brought to a focus.", author: "Alexander Graham Bell" },
+  { text: "It is not that we have a short time to live, but that we waste much of it.", author: "Seneca" },
+  { text: "Whether you think you can or you think you can't, you're right.", author: "Henry Ford" },
+  { text: "The only way to do great work is to love what you do.", author: "Steve Jobs" },
+  { text: "Well done is better than well said.", author: "Benjamin Franklin" },
+  { text: "Start where you are. Use what you have. Do what you can.", author: "Arthur Ashe" },
 ];
 
 export const DEFAULT_MICRO_QUESTS: RecommendationCandidate[] = [

@@ -63,6 +63,7 @@ export interface QuickNote {
   subtasks?: Subtask[];
   source?: 'local' | 'google_calendar';
   eventId?: string; // Google Calendar event ID if synced
+  timeSpentSeconds?: number; // Actual focused seconds logged by the focus timer
 }
 
 export interface DailyFocus {
