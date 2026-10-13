@@ -26,7 +26,6 @@ import { moveLinkToFolder } from './utils/sidebarReorder';
 import { GrowthMasteryScreen } from './components/Growth/GrowthMasteryScreen';
 import { PrimaryFocusCard } from './components/Dashboard/PrimaryFocusCard';
 import { CommitmentRadarWidget } from './components/Dashboard/CommitmentRadarWidget';
-import { MomentumCard } from './components/Dashboard/MomentumCard';
 import TimeRadarWidget from './components/Dashboard/TimeRadarWidget';
 import { calculateTaskUrgency } from './utils/taskUrgency';
 import {
@@ -1138,57 +1137,36 @@ export function App() {
               className="flex-1 h-full min-w-0 p-3 sm:p-5 lg:p-6 overflow-y-auto space-y-5 @container"
             >
             
-            {/* Dynamic Focus Dashboard matching Image 1 */}
+            {/* Dynamic Focus Dashboard */}
             {selectedFolderId === null && !searchQuery && (
               <div className="space-y-4 sm:space-y-5 animate-fadeIn">
-                {/* ROW 1: PRIMARY FOCUS (Left) + COMMITMENT RADAR (Right) */}
-                <div className="grid grid-cols-1 @4xl:grid-cols-12 gap-4 sm:gap-5 items-stretch">
-                  <div className="@4xl:col-span-7 flex flex-col">
-                    <PrimaryFocusCard
-                      tasks={appData.quickNotes}
-                      selectedTaskId={selectedFocusTaskId}
-                      onSelectTask={(id) => setSelectedFocusTaskId(id)}
-                      onToggleTask={handleToggleTaskWithTimer}
-                      onToggleSubtask={handleToggleSubtask}
-                      onOpenTaskEdit={() => {
-                        if (selectedFocusTaskId) {
-                          setEditingTaskIdForScreen(selectedFocusTaskId);
-                        }
-                        setActiveView('tasks');
-                      }}
-                      onOpenCalendarSettings={() => setIsSettingsModalOpen(true)}
-                      clockFormat={appData.settings.clockFormat}
-                      focusTimer={focusTimer}
-                      onTimerStart={handleTimerStart}
-                      onTimerPause={handleTimerPause}
-                      onTimerResume={handleTimerResume}
-                      onTimerEnd={handleTimerEnd}
-                    />
-                  </div>
-                  <div className="@4xl:col-span-5 flex flex-col">
-                    <CommitmentRadarWidget
-                      tasks={appData.quickNotes}
-                      onSelectTask={(id) => {
-                        setSelectedFocusTaskId(id);
-                        setEditingTaskIdForScreen(id);
-                        setActiveView('tasks');
-                      }}
-                      onOpenTasks={() => setActiveView('tasks')}
-                      calendarSummary={calendarSummary}
-                    />
-                  </div>
+                {/* ROW 1: PRIMARY FOCUS (Full Width to the edge) */}
+                <div className="w-full flex flex-col">
+                  <PrimaryFocusCard
+                    tasks={appData.quickNotes}
+                    selectedTaskId={selectedFocusTaskId}
+                    onSelectTask={(id) => setSelectedFocusTaskId(id)}
+                    onToggleTask={handleToggleTaskWithTimer}
+                    onToggleSubtask={handleToggleSubtask}
+                    onOpenTaskEdit={() => {
+                      if (selectedFocusTaskId) {
+                        setEditingTaskIdForScreen(selectedFocusTaskId);
+                      }
+                      setActiveView('tasks');
+                    }}
+                    onOpenCalendarSettings={() => setIsSettingsModalOpen(true)}
+                    clockFormat={appData.settings.clockFormat}
+                    focusTimer={focusTimer}
+                    onTimerStart={handleTimerStart}
+                    onTimerPause={handleTimerPause}
+                    onTimerResume={handleTimerResume}
+                    onTimerEnd={handleTimerEnd}
+                  />
                 </div>
 
-                {/* ROW 2: MOMENTUM + TIME RADAR & BUDGET */}
-                <div className="grid grid-cols-1 @2xl:grid-cols-2 @4xl:grid-cols-12 gap-4 sm:gap-5 items-stretch">
+                {/* ROW 2: TIME BUDGET & CAPACITY (Left) + COMMITMENT RADAR (Right) IN VISUAL HARMONY */}
+                <div className="grid grid-cols-1 @4xl:grid-cols-12 gap-4 sm:gap-5 items-stretch">
                   <div className="@4xl:col-span-5 flex flex-col">
-                    <MomentumCard
-                      tasks={appData.quickNotes}
-                      growthHistory={appData.growthHistory}
-                      gamification={appData.gamification}
-                    />
-                  </div>
-                  <div className="@4xl:col-span-7 flex flex-col">
                     <TimeRadarWidget
                       timeRemaining={timeRemaining}
                       taskLoad={taskLoad}
@@ -1199,6 +1177,18 @@ export function App() {
                       onSyncCalendar={() => handleSyncCalendar(false)}
                       isSyncingCalendar={isSyncingCalendar}
                       onOpenCalendarSettings={() => setIsSettingsModalOpen(true)}
+                    />
+                  </div>
+                  <div className="@4xl:col-span-7 flex flex-col">
+                    <CommitmentRadarWidget
+                      tasks={appData.quickNotes}
+                      onSelectTask={(id) => {
+                        setSelectedFocusTaskId(id);
+                        setEditingTaskIdForScreen(id);
+                        setActiveView('tasks');
+                      }}
+                      onOpenTasks={() => setActiveView('tasks')}
+                      calendarSummary={calendarSummary}
                     />
                   </div>
                 </div>

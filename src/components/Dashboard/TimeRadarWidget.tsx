@@ -60,13 +60,13 @@ export const TimeRadarWidget: React.FC<TimeRadarWidgetProps> = ({
     <div className={`@container w-full h-full bg-white dark:bg-serene-surface-dark border border-serene-border-light dark:border-serene-border-dark rounded-2xl p-4 sm:p-5 shadow-subtle hover:shadow-card transition-all flex flex-col justify-between ${className}`}>
       {/* Top Header Row */}
       <div className="flex items-center justify-between gap-3 mb-2">
-        <div className="flex items-center gap-2">
-          <span className="p-1.5 rounded-lg bg-sky-50 dark:bg-sky-950/40 text-sky-600 dark:text-sky-400 shrink-0">
-            <Clock className="w-4 h-4" />
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="w-6 h-6 rounded-full bg-sky-50 dark:bg-sky-950/50 border border-sky-200/80 dark:border-sky-800/60 text-sky-600 dark:text-sky-400 flex items-center justify-center shrink-0 shadow-xs" aria-hidden="true">
+            <Clock className="w-3.5 h-3.5 stroke-[2.2]" />
           </span>
-          <span className="text-[11px] font-bold uppercase tracking-wider text-serene-primary dark:text-serene-primary-dark">
-            Time Radar & Budget
-          </span>
+          <h2 className="text-xs font-bold uppercase tracking-wider text-serene-text-primary dark:text-serene-text-darkPrimary truncate">
+            TIME BUDGET
+          </h2>
           {calendarSummary?.isTokenExpired ? (
             <button
               onClick={onReauthorize || onOpenCalendarSettings}
@@ -130,93 +130,213 @@ export const TimeRadarWidget: React.FC<TimeRadarWidgetProps> = ({
         </div>
       )}
 
-      {/* 2x2 Symmetrical Metric Grid for Visual Harmony */}
-      <div className="grid grid-cols-2 gap-3 my-1.5 flex-1 content-center">
-        {/* Quadrant 1: Time Left */}
-        <div className="p-3 sm:p-3.5 rounded-xl bg-serene-surfaceAlt-light/60 dark:bg-serene-surfaceAlt-dark/40 border border-serene-border-light/60 dark:border-serene-border-dark/60 flex flex-col justify-between min-w-0">
-          <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-serene-text-secondary dark:text-serene-text-darkSecondary">
-            <Clock className="w-3.5 h-3.5 text-serene-primary dark:text-serene-primary-dark shrink-0" />
-            <span className="truncate">Time Left</span>
-          </div>
-          <div className="mt-2 flex items-baseline justify-between gap-1.5 min-w-0">
-            <span className="text-sm sm:text-base font-bold font-mono text-serene-text-primary dark:text-serene-text-darkPrimary whitespace-nowrap">
-              {timeRemaining.isPastCutoff ? 'End of Day' : timeRemaining.formatted}
-            </span>
-            <span className="text-[10px] text-serene-text-muted shrink-0 whitespace-nowrap">
-              {timeRemaining.isPastCutoff ? 'Past' : 'Available'}
-            </span>
-          </div>
-        </div>
-
-        {/* Quadrant 2: Workload */}
-        <div className="p-3 sm:p-3.5 rounded-xl bg-serene-surfaceAlt-light/60 dark:bg-serene-surfaceAlt-dark/40 border border-serene-border-light/60 dark:border-serene-border-dark/60 flex flex-col justify-between min-w-0">
-          <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-serene-text-secondary dark:text-serene-text-darkSecondary">
-            <Hourglass className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
-            <span className="truncate">Workload</span>
-          </div>
-          <div className="mt-2 flex items-baseline justify-between gap-1.5 min-w-0">
-            <span className="text-sm sm:text-base font-bold font-mono text-amber-600 dark:text-amber-400 whitespace-nowrap">
-              {taskLoad.pendingMinutes === 0 ? '0m' : taskLoad.formattedPending}
-            </span>
-            <span className="text-[10px] text-serene-text-muted shrink-0 whitespace-nowrap">
-              {taskLoad.pendingCount} {taskLoad.pendingCount === 1 ? 'task' : 'tasks'}
-            </span>
-          </div>
-        </div>
-
-        {/* Quadrant 3: Focus Buffer (Adjusted for Calendar Meetings) */}
-        <div className="p-3 sm:p-3.5 rounded-xl bg-serene-surfaceAlt-light/60 dark:bg-serene-surfaceAlt-dark/40 border border-serene-border-light/60 dark:border-serene-border-dark/60 flex flex-col justify-between min-w-0">
-          <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-serene-text-secondary dark:text-serene-text-darkSecondary">
-            {displayStatus === 'surplus' ? (
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
-            ) : displayStatus === 'tight' ? (
-              <AlertTriangle className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
-            ) : (
-              <ShieldAlert className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400 shrink-0" />
-            )}
-            <span className="truncate">Focus Buffer</span>
-          </div>
-          <div className="mt-2 flex items-baseline justify-between gap-1.5 min-w-0">
-            <span className={`text-sm sm:text-base font-bold font-mono whitespace-nowrap ${
-              displayStatus === 'surplus'
-                ? 'text-emerald-600 dark:text-emerald-400'
-                : displayStatus === 'tight'
-                ? 'text-amber-600 dark:text-amber-400'
-                : 'text-rose-600 dark:text-rose-400'
-            }`}>
-              {displayStatus === 'surplus' && `+${formattedSurplus}`}
-              {displayStatus === 'tight' && formattedSurplus}
-              {displayStatus === 'overloaded' && `-${formattedSurplus}`}
-            </span>
-            <span className={`text-[10px] font-semibold shrink-0 whitespace-nowrap ${
+      {/* 2. HERO RUNWAY BANNER (High-craft visual focal point) */}
+      <div className={`rounded-xl p-3 sm:p-3.5 border transition-all mt-1 mb-2 ${
+        displayStatus === 'surplus'
+          ? 'bg-emerald-50/70 dark:bg-emerald-950/25 border-emerald-200/70 dark:border-emerald-900/40'
+          : displayStatus === 'tight'
+          ? 'bg-amber-50/70 dark:bg-amber-950/25 border-amber-200/70 dark:border-amber-900/40'
+          : 'bg-rose-50/70 dark:bg-rose-950/25 border-rose-200/70 dark:border-rose-900/40'
+      }`}>
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <span className={`text-[10px] font-bold uppercase tracking-wider block ${
               displayStatus === 'surplus'
                 ? 'text-emerald-700 dark:text-emerald-300'
                 : displayStatus === 'tight'
                 ? 'text-amber-700 dark:text-amber-300'
                 : 'text-rose-700 dark:text-rose-300'
             }`}>
-              {displayStatus === 'surplus' ? 'Surplus' : displayStatus === 'tight' ? 'Tight' : 'Over'}
+              {displayStatus === 'surplus'
+                ? 'Net Focus Runway'
+                : displayStatus === 'tight'
+                ? 'Tight Focus Buffer'
+                : 'Capacity Deficit'}
+            </span>
+            <div className={`text-2xl sm:text-3xl font-extrabold font-mono tracking-tight leading-none mt-1 ${
+              displayStatus === 'surplus'
+                ? 'text-emerald-700 dark:text-emerald-300'
+                : displayStatus === 'tight'
+                ? 'text-amber-700 dark:text-amber-300'
+                : 'text-rose-700 dark:text-rose-300'
+            }`}>
+              {displayStatus === 'surplus' && `+${formattedSurplus}`}
+              {displayStatus === 'tight' && formattedSurplus}
+              {displayStatus === 'overloaded' && `-${formattedSurplus}`}
+            </div>
+            <p className="text-[11px] text-serene-text-muted dark:text-serene-text-darkMuted mt-1 leading-snug">
+              {timeRemaining.isPastCutoff
+                ? 'Workload remaining past bedtime cutoff. Consider deferring non-critical tasks.'
+                : displayStatus === 'surplus'
+                ? 'Clear focus runway to comfortably finish active workload.'
+                : displayStatus === 'tight'
+                ? 'Less than 45m buffer remaining today. Prioritize primary focus.'
+                : 'Estimated workload exceeds day capacity. Plan strategic deferrals.'}
+            </p>
+          </div>
+
+          <span className={`p-2 rounded-xl shrink-0 ${
+            displayStatus === 'surplus'
+              ? 'bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300'
+              : displayStatus === 'tight'
+              ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300'
+              : 'bg-rose-100 dark:bg-rose-900/50 text-rose-700 dark:text-rose-300'
+          }`}>
+            {displayStatus === 'surplus' ? (
+              <CheckCircle2 className="w-5 h-5 stroke-[2.2]" />
+            ) : displayStatus === 'tight' ? (
+              <AlertTriangle className="w-5 h-5 stroke-[2.2]" />
+            ) : (
+              <ShieldAlert className="w-5 h-5 stroke-[2.2]" />
+            )}
+          </span>
+        </div>
+
+        {/* Visual Multi-Segment Capacity Track */}
+        <div className="mt-2.5 pt-2 border-t border-black/5 dark:border-white/5 space-y-1.5">
+          <div className="h-2 w-full bg-black/10 dark:bg-white/10 rounded-full overflow-hidden flex">
+            {(taskLoad.localPendingMinutes ?? taskLoad.pendingMinutes) > 0 && (
+              <div
+                style={{ width: `${Math.min(100, Math.round(((taskLoad.localPendingMinutes ?? taskLoad.pendingMinutes) / Math.max(60, timeRemaining.isPastCutoff ? 0 : timeRemaining.totalMinutes || 120)) * 100))}%` }}
+                className="h-full bg-amber-500 transition-all duration-500"
+                title={`Workload: ${taskLoad.formattedPending}`}
+              />
+            )}
+            {busyMinutes > 0 && (
+              <div
+                style={{ width: `${Math.min(100, Math.round((busyMinutes / Math.max(60, timeRemaining.isPastCutoff ? 0 : timeRemaining.totalMinutes || 120)) * 100))}%` }}
+                className="h-full bg-indigo-500 transition-all duration-500"
+                title={`Meetings: ${Math.floor(busyMinutes / 60)}h ${busyMinutes % 60}m`}
+              />
+            )}
+            {displayStatus === 'surplus' && (
+              <div
+                style={{ width: `${Math.max(0, 100 - Math.min(100, Math.round((((taskLoad.localPendingMinutes ?? taskLoad.pendingMinutes) + busyMinutes) / Math.max(60, timeRemaining.totalMinutes || 120)) * 100)))}%` }}
+                className="h-full bg-emerald-500 transition-all duration-500"
+                title={`Free Runway: ${formattedSurplus}`}
+              />
+            )}
+            {displayStatus === 'overloaded' && (
+              <div
+                className="h-full bg-rose-500 flex-1 animate-pulse"
+                title={`Capacity Deficit: -${formattedSurplus}`}
+              />
+            )}
+          </div>
+
+          <div className="flex items-center justify-between text-[10px] text-serene-text-muted">
+            <span className="flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+              <span>Tasks: <strong className="text-serene-text-primary dark:text-serene-text-darkPrimary">{taskLoad.formattedPending || '0m'}</strong></span>
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
+              <span>Meetings: <strong className="text-serene-text-primary dark:text-serene-text-darkPrimary">{busyMinutes > 0 ? `${busyMinutes}m` : '0m'}</strong></span>
+            </span>
+            <span className="flex items-center gap-1">
+              <span className={`w-1.5 h-1.5 rounded-full ${displayStatus === 'surplus' ? 'bg-emerald-500' : 'bg-rose-500'}`} />
+              <span>Buffer: <strong className={displayStatus === 'surplus' ? 'text-emerald-700 dark:text-emerald-300' : 'text-rose-700 dark:text-rose-300'}>
+                {displayStatus === 'surplus' ? `+${formattedSurplus}` : `-${formattedSurplus}`}
+              </strong></span>
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* 3. THREE DETAILED METRIC ROWS (Clean, non-boxed, hairline dividers) */}
+      <div className="my-1 divide-y divide-serene-border-light/60 dark:divide-serene-border-dark/60 rounded-xl bg-serene-surfaceAlt-light/40 dark:bg-serene-surfaceAlt-dark/30 border border-serene-border-light/60 dark:border-serene-border-dark/60 overflow-hidden flex-1 flex flex-col justify-between">
+        {/* Row 1: Time Left */}
+        <div className="p-2.5 sm:p-3 flex items-center justify-between gap-3 hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-colors flex-1 min-w-0">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <span className="w-7 h-7 rounded-lg bg-sky-50 dark:bg-sky-950/60 text-sky-600 dark:text-sky-400 flex items-center justify-center shrink-0">
+              <Clock className="w-3.5 h-3.5" />
+            </span>
+            <div className="min-w-0">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-serene-text-secondary dark:text-serene-text-darkSecondary block">
+                Day Runway
+              </span>
+              <span className="text-[11px] text-serene-text-muted dark:text-serene-text-darkMuted truncate block">
+                {timeRemaining.isPastCutoff ? 'Bedtime cutoff passed' : `Until ${endHour > 12 ? `${endHour - 12}:00 PM` : `${endHour}:00 AM`} cutoff`}
+              </span>
+            </div>
+          </div>
+          <div className="text-right shrink-0 flex items-center gap-2">
+            <span className={`text-sm font-bold text-serene-text-primary dark:text-serene-text-darkPrimary whitespace-nowrap ${
+              timeRemaining.isPastCutoff ? 'font-sans' : 'font-mono'
+            }`}>
+              {timeRemaining.isPastCutoff ? 'End of Day' : timeRemaining.formatted}
+            </span>
+            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-stone-100 dark:bg-stone-800 text-serene-text-muted">
+              {timeRemaining.isPastCutoff ? 'Past' : 'Available'}
             </span>
           </div>
         </div>
 
-        {/* Quadrant 4: Calendar Meetings or Open Schedule */}
-        <div className="p-3 sm:p-3.5 rounded-xl bg-serene-surfaceAlt-light/60 dark:bg-serene-surfaceAlt-dark/40 border border-serene-border-light/60 dark:border-serene-border-dark/60 flex flex-col justify-between min-w-0">
-          <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-serene-text-secondary dark:text-serene-text-darkSecondary">
-            {busyMinutes > 0 ? (
-              <Calendar className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 shrink-0" />
-            ) : (
-              <Target className="w-3.5 h-3.5 text-serene-primary dark:text-serene-primary-dark shrink-0" />
-            )}
-            <span className="truncate">{busyMinutes > 0 ? 'Meetings' : 'Schedule'}</span>
+        {/* Row 2: Workload */}
+        <div className="p-2.5 sm:p-3 flex items-center justify-between gap-3 hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-colors flex-1 min-w-0">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <span className="w-7 h-7 rounded-lg bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+              <Hourglass className="w-3.5 h-3.5" />
+            </span>
+            <div className="min-w-0">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-serene-text-secondary dark:text-serene-text-darkSecondary block">
+                Task Workload
+              </span>
+              <span className="text-[11px] text-serene-text-muted dark:text-serene-text-darkMuted truncate block">
+                {taskLoad.pendingCount} active {taskLoad.pendingCount === 1 ? 'task' : 'tasks'} in queue
+              </span>
+            </div>
           </div>
-          <div className="mt-2 flex items-baseline justify-between gap-1.5 min-w-0">
-            <span className="text-sm sm:text-base font-bold font-mono text-serene-text-primary dark:text-serene-text-darkPrimary whitespace-nowrap">
+          <div className="text-right shrink-0 flex items-center gap-2">
+            <span className="text-sm font-bold font-mono text-amber-600 dark:text-amber-400 whitespace-nowrap">
+              {taskLoad.pendingMinutes === 0 ? '0m' : taskLoad.formattedPending}
+            </span>
+            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200/60 dark:border-amber-800/50">
+              {taskLoad.pendingCount} {taskLoad.pendingCount === 1 ? 'task' : 'tasks'}
+            </span>
+          </div>
+        </div>
+
+        {/* Row 3: Calendar & Schedule */}
+        <div className="p-2.5 sm:p-3 flex items-center justify-between gap-3 hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-colors flex-1 min-w-0">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <span className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${
+              busyMinutes > 0
+                ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400'
+                : 'bg-teal-50 dark:bg-teal-950/60 text-teal-600 dark:text-teal-400'
+            }`}>
+              {busyMinutes > 0 ? (
+                <Calendar className="w-3.5 h-3.5" />
+              ) : (
+                <Target className="w-3.5 h-3.5" />
+              )}
+            </span>
+            <div className="min-w-0">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-serene-text-secondary dark:text-serene-text-darkSecondary block">
+                Calendar Schedule
+              </span>
+              <span className="text-[11px] text-serene-text-muted dark:text-serene-text-darkMuted truncate block">
+                {calendarSummary?.nextEvent
+                  ? `Next: ${calendarSummary.nextEvent.summary}`
+                  : busyMinutes > 0
+                  ? `${calendarSummary?.events.filter((e) => !e.isAllDay).length || 0} events booked today`
+                  : 'No meetings scheduled today'}
+              </span>
+            </div>
+          </div>
+          <div className="text-right shrink-0 flex items-center gap-2">
+            <span className={`text-sm font-bold text-serene-text-primary dark:text-serene-text-darkPrimary whitespace-nowrap ${
+              busyMinutes > 0 ? 'font-mono' : 'font-sans'
+            }`}>
               {busyMinutes > 0
                 ? `${Math.floor(calendarSummary!.totalBusyMinutesToday / 60)}h ${calendarSummary!.totalBusyMinutesToday % 60}m`
                 : 'Clear Runway'}
             </span>
-            <span className="text-[10px] text-serene-text-muted shrink-0 whitespace-nowrap">
+            <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${
+              busyMinutes > 0
+                ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border-indigo-200/60 dark:border-indigo-800/50'
+                : 'bg-teal-50 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300 border-teal-200/60 dark:border-teal-800/50'
+            }`}>
               {busyMinutes > 0
                 ? `${calendarSummary?.events.filter((e) => !e.isAllDay).length || 0} events`
                 : 'No blocks'}
@@ -225,30 +345,38 @@ export const TimeRadarWidget: React.FC<TimeRadarWidgetProps> = ({
         </div>
       </div>
 
-      {/* Bottom helper bar */}
-      <div className="mt-2 pt-2 border-t border-serene-border-light/40 dark:border-serene-border-dark/40 flex items-center justify-between text-[11px] text-serene-text-muted">
-        <div className="flex items-center gap-1.5 min-w-0">
-          <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+      {/* Bottom Capacity Runway Card matching CommitmentRadarWidget status strip */}
+      <div className="p-3 sm:p-3.5 rounded-2xl bg-serene-surfaceAlt-light/60 dark:bg-serene-surfaceAlt-dark/40 border border-serene-border-light/80 dark:border-serene-border-dark/80 flex items-center justify-between gap-3 min-w-0">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${
             displayStatus === 'surplus'
-              ? 'bg-emerald-500'
+              ? 'bg-emerald-500 ring-4 ring-emerald-100 dark:ring-emerald-950/60'
               : displayStatus === 'tight'
-              ? 'bg-amber-500'
-              : 'bg-rose-500'
+              ? 'bg-amber-500 ring-4 ring-amber-100 dark:ring-amber-950/60'
+              : 'bg-rose-500 ring-4 ring-rose-100 dark:ring-rose-950/60'
           }`} />
-          <span className="truncate font-medium">
-            {busyMinutes > 0
-              ? `${busyMinutes}m in meetings`
-              : displayStatus === 'surplus'
-              ? 'Ample focus runway'
-              : displayStatus === 'tight'
-              ? 'Schedule tight'
-              : 'Capacity overloaded'}
-          </span>
+          <div className="min-w-0">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-serene-text-secondary dark:text-serene-text-darkSecondary block">
+              CAPACITY RUNWAY
+            </span>
+            <span className="text-xs font-semibold text-serene-text-primary dark:text-serene-text-darkPrimary truncate block">
+              {busyMinutes > 0
+                ? `${busyMinutes}m booked · ${displayStatus === 'surplus' ? 'Runway clear' : displayStatus === 'tight' ? 'Tight window' : 'Capacity deficit'}`
+                : displayStatus === 'surplus'
+                ? 'Ample focus runway'
+                : displayStatus === 'tight'
+                ? 'Tight schedule window'
+                : 'Workload exceeds cutoff'}
+            </span>
+          </div>
         </div>
         {endHour !== undefined && (
-          <span className="font-mono text-[10px] shrink-0 ml-2 text-serene-text-secondary dark:text-serene-text-darkSecondary">
-            Cutoff {endHour > 12 ? `${endHour - 12}:00 PM` : `${endHour}:00 AM`}
-          </span>
+          <div className="text-right shrink-0">
+            <span className="text-[10px] text-serene-text-muted block">Day Cutoff</span>
+            <span className="font-mono text-xs font-bold text-serene-text-primary dark:text-serene-text-darkPrimary">
+              {endHour > 12 ? `${endHour - 12}:00 PM` : `${endHour}:00 AM`}
+            </span>
+          </div>
         )}
       </div>
     </div>

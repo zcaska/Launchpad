@@ -664,55 +664,65 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = ({
     )}
 
       {/* 4. FOOTER ACTIONS: timer start/pause, end & log, '...' Overflow Menu */}
-      {(isTimerOnThisTask || bankedSeconds > 0) && (
-        <div className="mt-4 flex items-center gap-1.5 text-xs text-serene-text-muted dark:text-serene-text-darkMuted" role="status" aria-live="polite">
-          <Timer className="w-3.5 h-3.5 shrink-0" />
-          <span className="font-mono font-semibold text-serene-text-primary dark:text-serene-text-darkPrimary">
-            {formatElapsed(liveElapsed)}
-          </span>
-          <span>
-            actual{bankedSeconds > 0 && !isTimerOnThisTask ? ` · ${formatElapsed(bankedSeconds)} logged` : bankedSeconds > 0 ? ` · ${formatElapsed(bankedSeconds)} logged before` : ''}
-            {!focusTimer?.running && isTimerOnThisTask ? ' · paused' : ''}
-          </span>
-        </div>
-      )}
-      <div className="mt-5 pt-3 border-t border-serene-border-light/60 dark:border-serene-border-dark/60 flex items-center gap-2.5">
-        {/* Timer primary button: Start / Pause / Resume with live elapsed */}
-        <button
-          type="button"
-          onClick={handleStartNow}
-          className="flex-1 bg-[#0f4c4c] hover:bg-[#0a3535] active:scale-[0.99] dark:bg-teal-700 dark:hover:bg-teal-600 text-white font-semibold text-xs sm:text-sm py-2.5 px-4 rounded-xl shadow-xs flex items-center justify-center gap-2 transition-all cursor-pointer"
-        >
-          {isTimerOnThisTask && focusTimer?.running ? (
-            <Pause className="w-4 h-4 fill-current shrink-0" />
+      <div className="mt-5 pt-3 border-t border-serene-border-light/60 dark:border-serene-border-dark/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        {/* Left: timer status readout or subtle guidance prompt */}
+        <div className="flex items-center gap-2 min-w-0">
+          {(isTimerOnThisTask || bankedSeconds > 0) ? (
+            <div className="flex items-center gap-1.5 text-xs text-serene-text-muted dark:text-serene-text-darkMuted" role="status" aria-live="polite">
+              <Timer className="w-3.5 h-3.5 shrink-0 text-teal-600 dark:text-teal-400" />
+              <span className="font-mono font-semibold text-serene-text-primary dark:text-serene-text-darkPrimary">
+                {formatElapsed(liveElapsed)}
+              </span>
+              <span className="truncate">
+                actual{bankedSeconds > 0 && !isTimerOnThisTask ? ` · ${formatElapsed(bankedSeconds)} logged` : bankedSeconds > 0 ? ` · ${formatElapsed(bankedSeconds)} logged before` : ''}
+                {!focusTimer?.running && isTimerOnThisTask ? ' · paused' : ''}
+              </span>
+            </div>
           ) : (
-            <Play className="w-4 h-4 fill-current shrink-0" />
+            <div className="flex items-center gap-1.5 text-xs text-serene-text-muted dark:text-serene-text-darkMuted">
+              <Sparkles className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+              <span className="truncate">Active focus target · launch the timer to log deep work</span>
+            </div>
           )}
-          <span>
-            {isTimerOnThisTask
-              ? focusTimer?.running
-                ? `Pause · ${formatElapsed(liveElapsed)}`
-                : `Resume · ${formatElapsed(liveElapsed)}`
-              : 'Start now'}
-          </span>
-        </button>
+        </div>
 
-        {/* End & log button, only while this task is timed */}
-        {isTimerOnThisTask && onTimerEnd && (
+        {/* Right: Primary action buttons */}
+        <div className="flex items-center gap-2.5 shrink-0 self-stretch sm:self-auto">
+          {/* Timer primary button: Start / Pause / Resume with live elapsed */}
           <button
             type="button"
-            onClick={onTimerEnd}
-            title="Stop timer and log actual time to this task"
-            className="inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl border border-rose-200 dark:border-rose-900/60 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-950/70 text-rose-700 dark:text-rose-300 text-xs sm:text-sm font-semibold transition-all cursor-pointer shrink-0"
+            onClick={handleStartNow}
+            className="flex-1 sm:flex-initial sm:min-w-[150px] bg-[#0f4c4c] hover:bg-[#0a3535] active:scale-[0.99] dark:bg-teal-700 dark:hover:bg-teal-600 text-white font-semibold text-xs sm:text-sm py-2.5 px-4 rounded-xl shadow-xs flex items-center justify-center gap-2 transition-all cursor-pointer"
           >
-            <Square className="w-3.5 h-3.5 fill-current shrink-0" />
-            <span>End</span>
+            {isTimerOnThisTask && focusTimer?.running ? (
+              <Pause className="w-4 h-4 fill-current shrink-0" />
+            ) : (
+              <Play className="w-4 h-4 fill-current shrink-0" />
+            )}
+            <span>
+              {isTimerOnThisTask
+                ? focusTimer?.running
+                  ? `Pause · ${formatElapsed(liveElapsed)}`
+                  : `Resume · ${formatElapsed(liveElapsed)}`
+                : 'Start now'}
+            </span>
           </button>
-        )}
 
+          {/* End & log button, only while this task is timed */}
+          {isTimerOnThisTask && onTimerEnd && (
+            <button
+              type="button"
+              onClick={onTimerEnd}
+              title="Stop timer and log actual time to this task"
+              className="inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl border border-rose-200 dark:border-rose-900/60 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-950/70 text-rose-700 dark:text-rose-300 text-xs sm:text-sm font-semibold transition-all cursor-pointer shrink-0"
+            >
+              <Square className="w-3.5 h-3.5 fill-current shrink-0" />
+              <span>End</span>
+            </button>
+          )}
 
-        {/* '...' overflow menu */}
-        <div className="relative shrink-0" ref={overflowMenuRef}>
+          {/* '...' overflow menu */}
+          <div className="relative shrink-0" ref={overflowMenuRef}>
           <button
             type="button"
             onClick={() => setIsOverflowMenuOpen((prev) => !prev)}
@@ -776,5 +786,6 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = ({
         </div>
       </div>
     </div>
+  </div>
   );
 };
