@@ -32,12 +32,7 @@ async function broadcastBookmark(payload) {
   try {
     const tabs = await chrome.tabs.query({});
     for (const tab of tabs) {
-      if (
-        tab.url &&
-        (tab.url.includes('localhost') ||
-          tab.url.includes('127.0.0.1') ||
-          tab.url.includes('zcaska.github.io/Launchpad'))
-      ) {
+      if (tab.id && isLaunchpadUrl(tab.url)) {
         chrome.tabs.sendMessage(tab.id, {
           type: 'LAUNCHPAD_BOOKMARK_CREATED',
           payload,
@@ -158,11 +153,12 @@ const FOCUS_STORAGE_KEY = 'launchpad_focus';
 const TASK_QUEUE_KEY = 'launchpad_task_queue';
 
 function isLaunchpadUrl(url) {
-  return Boolean(
-    url &&
-      (url.includes('localhost') ||
-        url.includes('127.0.0.1') ||
-        url.includes('zcaska.github.io/Launchpad'))
+  if (!url || typeof url !== 'string') return false;
+  const lower = url.toLowerCase();
+  return (
+    lower.includes('zcaska.github.io/launchpad') ||
+    lower.includes('localhost') ||
+    lower.includes('127.0.0.1')
   );
 }
 
@@ -348,12 +344,7 @@ async function syncAllBookmarks() {
     try {
       const tabs = await chrome.tabs.query({});
       for (const tab of tabs) {
-        if (
-          tab.url &&
-          (tab.url.includes('localhost') ||
-            tab.url.includes('127.0.0.1') ||
-            tab.url.includes('zcaska.github.io/Launchpad'))
-        ) {
+        if (tab.id && isLaunchpadUrl(tab.url)) {
           chrome.tabs.sendMessage(tab.id, {
             type: 'LAUNCHPAD_SYNC_BOOKMARKS_BATCH',
             payload: allBookmarks,

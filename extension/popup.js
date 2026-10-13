@@ -102,16 +102,24 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+  // Working site URL for LaunchPAD
+  const LAUNCHPAD_PRODUCTION_URL = 'https://zcaska.github.io/Launchpad/';
+
+  function isLaunchpadUrl(url) {
+    if (!url || typeof url !== 'string') return false;
+    const lower = url.toLowerCase();
+    return (
+      lower.includes('zcaska.github.io/launchpad') ||
+      lower.includes('localhost') ||
+      lower.includes('127.0.0.1')
+    );
+  }
+
   // Handle "Open LaunchPAD"
-  openBtn.addEventListener('click', () => {    // Check if LaunchPAD tab is already open
+  openBtn.addEventListener('click', () => {
+    // Check if LaunchPAD tab is already open
     chrome.tabs.query({}, (tabs) => {
-      const existingTab = tabs.find(
-        (tab) =>
-          tab.url &&
-          (tab.url.includes('localhost:5173') ||
-            tab.url.includes('localhost:3000') ||
-            tab.url.includes('zcaska.github.io/Launchpad'))
-      );
+      const existingTab = tabs.find((tab) => isLaunchpadUrl(tab.url));
 
       if (existingTab && existingTab.id) {
         chrome.tabs.update(existingTab.id, { active: true });
@@ -119,8 +127,8 @@ document.addEventListener('DOMContentLoaded', () => {
           chrome.windows.update(existingTab.windowId, { focused: true });
         }
       } else {
-        // Open default local dev or production URL
-        chrome.tabs.create({ url: 'http://localhost:5173' });
+        // Open the official working site: https://zcaska.github.io/Launchpad/
+        chrome.tabs.create({ url: LAUNCHPAD_PRODUCTION_URL });
       }
     });
   });

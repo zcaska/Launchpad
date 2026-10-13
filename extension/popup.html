@@ -39,17 +39,12 @@
       border-bottom: 1px solid var(--border);
     }
 
-    .logo {
-      width: 28px;
-      height: 28px;
-      border-radius: 6px;
-      background: linear-gradient(135deg, #3b82f6, #8b5cf6);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: bold;
-      font-size: 14px;
-      color: white;
+    .logo-img {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      object-fit: cover;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
     }
 
     .title-group h1 {
@@ -247,10 +242,10 @@
 </head>
 <body>
   <div class="header">
-    <div class="logo">LP</div>
+    <img src="icons/icon-48.png" alt="LaunchPAD" class="logo-img" width="32" height="32">
     <div class="title-group">
       <h1>LaunchPAD Companion</h1>
-      <p>Automatic Bookmark Sync & Categorization</p>
+      <p>Bookmark Sync · Focus Timer · Quick Add</p>
     </div>
   </div>
 

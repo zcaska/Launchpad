@@ -14,6 +14,9 @@ This extension automatically listens for browser bookmark creation events (`chro
   - 💼 **Work & Projects** (`github`, `figma`, `linear`, `jira`, dev tools, localhost)
   - 📚 **Reading List** (`arxiv`, `substack`, `medium`, articles, research papers)
   - ⚡ **Daily Tools & Bookmarks** (AI assistants, mail, calendar, music, utilities)
+- **Live Focus Timer & Badge Sync**: Mirrors the active focus timer directly on your browser toolbar with a real-time badge and controls (Pause/Resume, End).
+- **Quick Task Capture**: Quick entry input right from the extension popup; automatically flushes into LaunchPAD when open or upon next launch.
+- **Official Working Site**: Default target site configured to [https://zcaska.github.io/Launchpad/](https://zcaska.github.io/Launchpad/).
 - **Batch Sync**: One-click "Sync All Bookmarks to LaunchPAD" button in the popup to import all existing browser bookmarks at once.
 - **Zero Cloud / AI Dependencies**: All processing runs locally in your browser with zero latency and complete privacy.
 
@@ -31,7 +34,7 @@ The companion extension is distributed as an unpacked Manifest V3 extension.
    ```text
    C:\Users\AGP\Documents\Projects\LaunchPAD\extension
    ```
-5. The extension icon **LP** will appear in your Chrome toolbar. Click the puzzle icon to pin it.
+5. The extension with the **LaunchPAD star icon** will appear in your Chrome toolbar. Click the puzzle icon to pin it.
 
 ### Microsoft Edge
 1. Open Microsoft Edge and navigate to `edge://extensions/`.
