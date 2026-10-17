@@ -84,10 +84,10 @@
     "semantic_hash": "72c5f56a999c686c59ccd59093eb1e6e"
   },
   "src/components/Modals/ManageFoldersModal.tsx": {
-    "mtime": 1791655508.7416399,
-    "seen": 1791898444.570276,
-    "ast_hash": "449cb5b82dc125e5e69a0151f70e8193",
-    "semantic_hash": "449cb5b82dc125e5e69a0151f70e8193"
+    "mtime": 1792245720.040207,
+    "seen": 1792245777.863584,
+    "ast_hash": "d914587dfcf5d9cc8e8baebd448989d8",
+    "semantic_hash": ""
   },
   "src/components/Modals/SettingsModal.tsx": {
     "mtime": 1792244443.21357,
@@ -138,10 +138,10 @@
     "semantic_hash": "cd138d1fc50ca9cd567bb1c419ec0070"
   },
   "src/utils/icons.ts": {
-    "mtime": 1791549818.238145,
-    "seen": 1791555538.9114034,
-    "ast_hash": "ddd46f1bb4267c16ed07b81f990fc81c",
-    "semantic_hash": "ddd46f1bb4267c16ed07b81f990fc81c"
+    "mtime": 1792245676.4068625,
+    "seen": 1792245777.863584,
+    "ast_hash": "86211cf161b5a40f746032b5c36395b7",
+    "semantic_hash": ""
   },
   "src/utils/recommender.ts": {
     "mtime": 1791551350.004742,
@@ -354,9 +354,9 @@
     "semantic_hash": ""
   },
   "src/components/Dashboard/PrimaryFocusCard.tsx": {
-    "mtime": 1792244410.33751,
-    "seen": 1792244498.7855978,
-    "ast_hash": "a374fbd2f203a1f1e8459b6ae522ae5b",
+    "mtime": 1792245691.8463588,
+    "seen": 1792245777.863584,
+    "ast_hash": "3fe2da6a27232cbbd1e6f6714deb7ee0",
     "semantic_hash": ""
   },
   "src/components/Dashboard/QuickActionsCard.test.ts": {

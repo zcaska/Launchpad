@@ -186,7 +186,7 @@
       "file_type": "code",
       "norm_label": "managefoldersmodalprops",
       "source_file": "src/components/Modals/ManageFoldersModal.tsx",
-      "source_location": "L29"
+      "source_location": "L30"
     },
     {
       "id": "src_components_sidebar_bookmarkrow_bookmarkrowprops",
@@ -1597,7 +1597,7 @@
       "file_type": "code",
       "norm_label": "getfoldericon()",
       "source_file": "src/utils/icons.ts",
-      "source_location": "L301"
+      "source_location": "L970"
     },
     {
       "id": "scratch_test_folder_actions_assert",
@@ -1693,7 +1693,7 @@
       "file_type": "code",
       "norm_label": "managefoldersmodal()",
       "source_file": "src/components/Modals/ManageFoldersModal.tsx",
-      "source_location": "L51"
+      "source_location": "L52"
     },
     {
       "id": "src_components_quicknotes_quicknoteswidget_quicknoteswidget",
@@ -4183,7 +4183,7 @@
       "file_type": "code",
       "norm_label": "folder_color_map",
       "source_file": "src/utils/icons.ts",
-      "source_location": "L305"
+      "source_location": "L974"
     },
     {
       "id": "src_utils_icons_folder_icons",
@@ -4194,7 +4194,7 @@
       "file_type": "code",
       "norm_label": "folder_icons",
       "source_file": "src/utils/icons.ts",
-      "source_location": "L157"
+      "source_location": "L486"
     },
     {
       "id": "src_utils_motion",
@@ -4524,7 +4524,7 @@
       "file_type": "code",
       "norm_label": "available_colors",
       "source_file": "src/components/Modals/ManageFoldersModal.tsx",
-      "source_location": "L38"
+      "source_location": "L39"
     },
     {
       "id": "src_components_modals_managefoldersmodal_available_icons",
@@ -4535,7 +4535,7 @@
       "file_type": "code",
       "norm_label": "available_icons",
       "source_file": "src/components/Modals/ManageFoldersModal.tsx",
-      "source_location": "L49"
+      "source_location": "L50"
     },
     {
       "id": "src_components_quicknotes_quicknoteswidget",
@@ -9844,7 +9844,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/components/Modals/ManageFoldersModal.tsx",
-      "source_location": "L102",
+      "source_location": "L105",
       "weight": 1.0
     },
     {
@@ -9856,7 +9856,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/components/Modals/ManageFoldersModal.tsx",
-      "source_location": "L103",
+      "source_location": "L106",
       "weight": 1.0
     },
     {
@@ -9868,7 +9868,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/components/Modals/ManageFoldersModal.tsx",
-      "source_location": "L233",
+      "source_location": "L236",
       "weight": 1.0
     },
     {
@@ -9880,7 +9880,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/components/Modals/ManageFoldersModal.tsx",
-      "source_location": "L349",
+      "source_location": "L387",
       "weight": 1.0
     },
     {
@@ -9892,7 +9892,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/components/Modals/ManageFoldersModal.tsx",
-      "source_location": "L382",
+      "source_location": "L420",
       "weight": 1.0
     },
     {
@@ -9904,7 +9904,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/components/Modals/ManageFoldersModal.tsx",
-      "source_location": "L563",
+      "source_location": "L636",
       "weight": 1.0
     },
     {
@@ -9916,7 +9916,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/components/Modals/ManageFoldersModal.tsx",
-      "source_location": "L86",
+      "source_location": "L89",
       "weight": 1.0
     },
     {
@@ -9928,7 +9928,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/components/Modals/ManageFoldersModal.tsx",
-      "source_location": "L87",
+      "source_location": "L90",
       "weight": 1.0
     },
     {
@@ -9940,7 +9940,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/components/Modals/ManageFoldersModal.tsx",
-      "source_location": "L91",
+      "source_location": "L94",
       "weight": 1.0
     },
     {
@@ -9952,7 +9952,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/components/Modals/ManageFoldersModal.tsx",
-      "source_location": "L92",
+      "source_location": "L95",
       "weight": 1.0
     },
     {
@@ -12316,7 +12316,7 @@
       "confidence_score": 1.0,
       "context": "field",
       "source_file": "src/components/Modals/ManageFoldersModal.tsx",
-      "source_location": "L32",
+      "source_location": "L33",
       "weight": 1.0
     },
     {
@@ -12328,7 +12328,7 @@
       "confidence_score": 1.0,
       "context": "field",
       "source_file": "src/components/Modals/ManageFoldersModal.tsx",
-      "source_location": "L33",
+      "source_location": "L34",
       "weight": 1.0
     },
     {
@@ -15652,7 +15652,7 @@
       "confidence_score": 1.0,
       "context": "import",
       "source_file": "src/components/Modals/ManageFoldersModal.tsx",
-      "source_location": "L14",
+      "source_location": "L15",
       "weight": 1.0
     },
     {
@@ -15664,7 +15664,7 @@
       "confidence_score": 1.0,
       "context": "import",
       "source_file": "src/components/Modals/ManageFoldersModal.tsx",
-      "source_location": "L14",
+      "source_location": "L15",
       "weight": 1.0
     },
     {
@@ -15676,7 +15676,7 @@
       "confidence_score": 1.0,
       "context": "import",
       "source_file": "src/components/Modals/ManageFoldersModal.tsx",
-      "source_location": "L14",
+      "source_location": "L15",
       "weight": 1.0
     },
     {
@@ -15688,7 +15688,7 @@
       "confidence_score": 1.0,
       "context": "import",
       "source_file": "src/components/Modals/ManageFoldersModal.tsx",
-      "source_location": "L15",
+      "source_location": "L16",
       "weight": 1.0
     },
     {
@@ -15700,7 +15700,7 @@
       "confidence_score": 1.0,
       "context": "import",
       "source_file": "src/components/Modals/ManageFoldersModal.tsx",
-      "source_location": "L15",
+      "source_location": "L16",
       "weight": 1.0
     },
     {
@@ -15712,7 +15712,7 @@
       "confidence_score": 1.0,
       "context": "import",
       "source_file": "src/components/Modals/ManageFoldersModal.tsx",
-      "source_location": "L15",
+      "source_location": "L16",
       "weight": 1.0
     },
     {
@@ -15724,7 +15724,7 @@
       "confidence_score": 1.0,
       "context": "import",
       "source_file": "src/components/Modals/ManageFoldersModal.tsx",
-      "source_location": "L16",
+      "source_location": "L17",
       "weight": 1.0
     },
     {
@@ -15736,7 +15736,7 @@
       "confidence_score": 1.0,
       "context": "import",
       "source_file": "src/components/Modals/ManageFoldersModal.tsx",
-      "source_location": "L16",
+      "source_location": "L17",
       "weight": 1.0
     },
     {
@@ -15748,7 +15748,7 @@
       "confidence_score": 1.0,
       "context": "import",
       "source_file": "src/components/Modals/ManageFoldersModal.tsx",
-      "source_location": "L17",
+      "source_location": "L18",
       "weight": 1.0
     },
     {
@@ -15760,7 +15760,7 @@
       "confidence_score": 1.0,
       "context": "import",
       "source_file": "src/components/Modals/ManageFoldersModal.tsx",
-      "source_location": "L17",
+      "source_location": "L18",
       "weight": 1.0
     },
     {
@@ -15772,7 +15772,7 @@
       "confidence_score": 1.0,
       "context": "import",
       "source_file": "src/components/Modals/ManageFoldersModal.tsx",
-      "source_location": "L17",
+      "source_location": "L18",
       "weight": 1.0
     },
     {
@@ -15784,7 +15784,7 @@
       "confidence_score": 1.0,
       "context": "import",
       "source_file": "src/components/Modals/ManageFoldersModal.tsx",
-      "source_location": "L17",
+      "source_location": "L18",
       "weight": 1.0
     },
     {
@@ -15796,7 +15796,7 @@
       "confidence_score": 1.0,
       "context": "import",
       "source_file": "src/components/Modals/ManageFoldersModal.tsx",
-      "source_location": "L17",
+      "source_location": "L18",
       "weight": 1.0
     },
     {
@@ -15808,7 +15808,7 @@
       "confidence_score": 1.0,
       "context": "import",
       "source_file": "src/components/Modals/ManageFoldersModal.tsx",
-      "source_location": "L17",
+      "source_location": "L18",
       "weight": 1.0
     },
     {
@@ -15820,7 +15820,7 @@
       "confidence_score": 1.0,
       "context": "import",
       "source_file": "src/components/Modals/ManageFoldersModal.tsx",
-      "source_location": "L17",
+      "source_location": "L18",
       "weight": 1.0
     },
     {
@@ -15832,7 +15832,7 @@
       "confidence_score": 1.0,
       "context": "import",
       "source_file": "src/components/Modals/ManageFoldersModal.tsx",
-      "source_location": "L17",
+      "source_location": "L18",
       "weight": 1.0
     },
     {
@@ -15844,7 +15844,7 @@
       "confidence_score": 1.0,
       "context": "import",
       "source_file": "src/components/Modals/ManageFoldersModal.tsx",
-      "source_location": "L27",
+      "source_location": "L28",
       "weight": 1.0
     },
     {
@@ -15856,7 +15856,7 @@
       "confidence_score": 1.0,
       "context": "import",
       "source_file": "src/components/Modals/ManageFoldersModal.tsx",
-      "source_location": "L27",
+      "source_location": "L28",
       "weight": 1.0
     },
     {
@@ -20152,7 +20152,7 @@
       "confidence_score": 1.0,
       "context": "import",
       "source_file": "src/components/Modals/ManageFoldersModal.tsx",
-      "source_location": "L14",
+      "source_location": "L15",
       "weight": 1.0
     },
     {
@@ -20164,7 +20164,7 @@
       "confidence_score": 1.0,
       "context": "import",
       "source_file": "src/components/Modals/ManageFoldersModal.tsx",
-      "source_location": "L15",
+      "source_location": "L16",
       "weight": 1.0
     },
     {
@@ -20176,7 +20176,7 @@
       "confidence_score": 1.0,
       "context": "import",
       "source_file": "src/components/Modals/ManageFoldersModal.tsx",
-      "source_location": "L16",
+      "source_location": "L17",
       "weight": 1.0
     },
     {
@@ -20188,7 +20188,7 @@
       "confidence_score": 1.0,
       "context": "import",
       "source_file": "src/components/Modals/ManageFoldersModal.tsx",
-      "source_location": "L17",
+      "source_location": "L18",
       "weight": 1.0
     },
     {
@@ -20212,7 +20212,7 @@
       "confidence_score": 1.0,
       "context": "import",
       "source_file": "src/components/Modals/ManageFoldersModal.tsx",
-      "source_location": "L27",
+      "source_location": "L28",
       "weight": 1.0
     },
     {
@@ -23668,7 +23668,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/components/Modals/ManageFoldersModal.tsx",
-      "source_location": "L29",
+      "source_location": "L30",
       "weight": 1.0
     },
     {
@@ -23679,7 +23679,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/components/Modals/ManageFoldersModal.tsx",
-      "source_location": "L38",
+      "source_location": "L39",
       "weight": 1.0
     },
     {
@@ -23690,7 +23690,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/components/Modals/ManageFoldersModal.tsx",
-      "source_location": "L49",
+      "source_location": "L50",
       "weight": 1.0
     },
     {
@@ -23701,7 +23701,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/components/Modals/ManageFoldersModal.tsx",
-      "source_location": "L51",
+      "source_location": "L52",
       "weight": 1.0
     },
     {
@@ -25505,7 +25505,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/utils/icons.ts",
-      "source_location": "L157",
+      "source_location": "L486",
       "weight": 1.0
     },
     {
@@ -25516,7 +25516,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/utils/icons.ts",
-      "source_location": "L301",
+      "source_location": "L970",
       "weight": 1.0
     },
     {
@@ -25527,7 +25527,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/utils/icons.ts",
-      "source_location": "L305",
+      "source_location": "L974",
       "weight": 1.0
     },
     {
@@ -27522,5 +27522,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "bf4e4176e3938bd1bf17b2a4f59bd9f5c5ef9799"
+  "built_at_commit": "db2044cdb059318e175f6ac792b0dd5240428fc8"
 }

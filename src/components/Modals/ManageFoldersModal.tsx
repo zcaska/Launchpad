@@ -5,6 +5,7 @@ import {
   Plus, 
   Trash2, 
   Check, 
+  Search,
   SlidersHorizontal,
   ChevronDown,
   Eye,
@@ -61,6 +62,8 @@ export const ManageFoldersModal: React.FC<ManageFoldersModalProps> = ({
   const [newFolderDesc, setNewFolderDesc] = useState('');
   const [newFolderColor, setNewFolderColor] = useState<FolderColor>('forest');
   const [newFolderIcon, setNewFolderIcon] = useState('Folder');
+  const [iconQuery, setIconQuery] = useState('');
+  const [editIconQuery, setEditIconQuery] = useState('');
   const [newFolderParentId, setNewFolderParentId] = useState<string>('');
   const [editingIconFolderId, setEditingIconFolderId] = useState<string | null>(null);
 
@@ -248,28 +251,63 @@ export const ManageFoldersModal: React.FC<ManageFoldersModalProps> = ({
                   Selected: <strong className="text-serene-primary dark:text-serene-primary-dark">{newFolderIcon}</strong>
                 </span>
               </div>
-              
-              <div className="grid grid-cols-8 sm:grid-cols-10 md:grid-cols-13 gap-1.5 p-2 bg-white dark:bg-serene-surface-dark rounded-xl border border-serene-border-light dark:border-serene-border-dark max-h-56 overflow-y-auto">
-                {AVAILABLE_ICONS.map((iconName) => {
-                  const IconComp = FOLDER_ICONS[iconName];
-                  const isSelected = newFolderIcon === iconName;
-                  return (
-                    <button
-                      key={iconName}
-                      type="button"
-                      onClick={() => setNewFolderIcon(iconName)}
-                      title={iconName}
-                      className={`p-2 rounded-lg flex items-center justify-center transition-all ${
-                        isSelected
-                          ? 'bg-serene-primary text-white shadow-2xs scale-105 ring-2 ring-serene-primary/30'
-                          : 'text-serene-text-secondary hover:text-serene-text-primary hover:bg-serene-surfaceAlt-light dark:hover:bg-serene-surfaceAlt-dark'
-                      }`}
-                    >
-                      <IconComp className="w-4 h-4" />
-                    </button>
-                  );
-                })}
+
+              {/* Fast search across the icon catalog */}
+              <div className="relative mb-1.5">
+                <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-serene-text-muted pointer-events-none" />
+                <input
+                  type="text"
+                  value={iconQuery}
+                  onChange={(e) => setIconQuery(e.target.value)}
+                  placeholder={`Search icons by name (e.g. rocket, wallet, plane)...`}
+                  className="w-full pl-8 pr-7 py-1.5 text-xs bg-serene-surfaceAlt-light/60 dark:bg-serene-surfaceAlt-dark/60 border border-serene-border-light dark:border-serene-border-dark rounded-lg text-serene-text-primary dark:text-serene-text-darkPrimary placeholder:text-serene-text-muted/70 focus:outline-none focus:ring-2 focus:ring-serene-primary/30"
+                />
+                {iconQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setIconQuery('')}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 text-serene-text-muted hover:text-serene-text-primary dark:hover:text-serene-text-darkPrimary"
+                    title="Clear search"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
               </div>
+
+              {(() => {
+                const filteredIcons = AVAILABLE_ICONS.filter((name) =>
+                  name.toLowerCase().includes(iconQuery.trim().toLowerCase())
+                );
+                return (
+                  <div className="grid grid-cols-8 sm:grid-cols-10 md:grid-cols-13 gap-1.5 p-2 bg-white dark:bg-serene-surface-dark rounded-xl border border-serene-border-light dark:border-serene-border-dark max-h-56 overflow-y-auto">
+                    {filteredIcons.length === 0 ? (
+                      <div className="col-span-full py-4 text-center text-[11px] text-serene-text-muted">
+                        No icons match "{iconQuery.trim()}"
+                      </div>
+                    ) : (
+                      filteredIcons.map((iconName) => {
+                      const IconComp = FOLDER_ICONS[iconName];
+                      const isSelected = newFolderIcon === iconName;
+                      return (
+                        <button
+                          key={iconName}
+                          type="button"
+                          onClick={() => setNewFolderIcon(iconName)}
+                          title={iconName}
+                          className={`p-2 rounded-lg flex items-center justify-center transition-all ${
+                            isSelected
+                              ? 'bg-serene-primary text-white shadow-2xs scale-105 ring-2 ring-serene-primary/30'
+                              : 'text-serene-text-secondary hover:text-serene-text-primary hover:bg-serene-surfaceAlt-light dark:hover:bg-serene-surfaceAlt-dark'
+                          }`}
+                        >
+                          <IconComp className="w-4 h-4" />
+                        </button>
+                      );
+                      })
+                    )}
+                  </div>
+                );
+              })()}
             </div>
 
             {/* Color selection */}
@@ -435,33 +473,68 @@ export const ManageFoldersModal: React.FC<ManageFoldersModalProps> = ({
                         {/* Inline Icon Picker */}
                         {isPickingIcon && (
                           <div className="pt-2 border-t border-serene-border-light/60 dark:border-serene-border-dark/60 animate-fadeIn">
-                            <div className="text-[10px] text-serene-text-muted mb-1.5 font-medium">
-                              Select new icon for {folder.name}:
-                            </div>
-                            <div className="grid grid-cols-8 sm:grid-cols-10 md:grid-cols-13 gap-1.5 p-2 bg-serene-surfaceAlt-light/60 dark:bg-serene-surfaceAlt-dark/60 rounded-xl max-h-52 overflow-y-auto">
-                              {AVAILABLE_ICONS.map((iconName) => {
-                                const ItemIcon = FOLDER_ICONS[iconName];
-                                const isItemSel = folder.icon === iconName;
-                                return (
+                            <div className="flex items-center justify-between mb-1.5">
+                              <div className="text-[10px] text-serene-text-muted font-medium">
+                                Select new icon for {folder.name}:
+                              </div>
+                              <div className="relative w-40">
+                                <Search className="w-3 h-3 absolute left-2 top-1/2 -translate-y-1/2 text-serene-text-muted pointer-events-none" />
+                                <input
+                                  type="text"
+                                  value={editIconQuery}
+                                  onChange={(e) => setEditIconQuery(e.target.value)}
+                                  placeholder="Search icons..."
+                                  className="w-full pl-7 pr-6 py-1 text-[11px] bg-serene-surfaceAlt-light/60 dark:bg-serene-surfaceAlt-dark/60 border border-serene-border-light dark:border-serene-border-dark rounded-md text-serene-text-primary dark:text-serene-text-darkPrimary placeholder:text-serene-text-muted/70 focus:outline-none focus:ring-2 focus:ring-serene-primary/30"
+                                />
+                                {editIconQuery && (
                                   <button
-                                    key={iconName}
                                     type="button"
-                                    onClick={() => {
-                                      handleUpdateFolder(folder.id, { icon: iconName });
-                                      setEditingIconFolderId(null);
-                                    }}
-                                    title={iconName}
-                                    className={`p-1.5 rounded-lg flex items-center justify-center transition-all ${
-                                      isItemSel
-                                        ? 'bg-serene-primary text-white shadow-2xs scale-105'
-                                        : 'text-serene-text-secondary hover:text-serene-text-primary hover:bg-white dark:hover:bg-serene-surface-dark'
+                                    onClick={() => setEditIconQuery('')}
+                                    className="absolute right-1.5 top-1/2 -translate-y-1/2 p-0.5 text-serene-text-muted hover:text-serene-text-primary dark:hover:text-serene-text-darkPrimary"
+                                    title="Clear search"
+                                  >
+                                    <X className="w-3 h-3" />
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                            {(() => {
+                              const editFiltered = AVAILABLE_ICONS.filter((name) =>
+                                name.toLowerCase().includes(editIconQuery.trim().toLowerCase())
+                              );
+                              return (
+                                <div className="grid grid-cols-8 sm:grid-cols-10 md:grid-cols-13 gap-1.5 p-2 bg-serene-surfaceAlt-light/60 dark:bg-serene-surfaceAlt-dark/60 rounded-xl max-h-52 overflow-y-auto">
+                                  {editFiltered.length === 0 ? (
+                                    <div className="col-span-full py-3 text-center text-[11px] text-serene-text-muted">
+                                      No icons match "{editIconQuery.trim()}"
+                                    </div>
+                                  ) : (
+                                    editFiltered.map((iconName) => {
+                                    const ItemIcon = FOLDER_ICONS[iconName];
+                                    const isItemSel = folder.icon === iconName;
+                                    return (
+                                      <button
+                                        key={iconName}
+                                        type="button"
+                                        onClick={() => {
+                                          handleUpdateFolder(folder.id, { icon: iconName });
+                                          setEditingIconFolderId(null);
+                                        }}
+                                        title={iconName}
+                                        className={`p-1.5 rounded-lg flex items-center justify-center transition-all ${
+                                          isItemSel
+                                            ? 'bg-serene-primary text-white shadow-2xs scale-105'
+                                            : 'text-serene-text-secondary hover:text-serene-text-primary hover:bg-white dark:hover:bg-serene-surface-dark'
                                     }`}
                                   >
                                     <ItemIcon className="w-3.5 h-3.5" />
                                   </button>
                                 );
-                              })}
-                            </div>
+                                    })
+                                  )}
+                                </div>
+                              );
+                            })()}
                           </div>
                         )}
                       </div>

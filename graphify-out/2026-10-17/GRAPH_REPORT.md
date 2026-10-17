@@ -1,7 +1,7 @@
 # Graph Report - LaunchPAD  (2026-10-17)
 
 ## Corpus Check
-- 93 files · ~101,112 words
+- 93 files · ~101,318 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 2 file(s) not represented in the graph (top: (none) 1, .css 1)
 
@@ -11,7 +11,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `47dd5ec1`
+- Built from commit: `bf4e4176`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 

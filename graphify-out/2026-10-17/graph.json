@@ -1597,7 +1597,7 @@
       "file_type": "code",
       "norm_label": "getfoldericon()",
       "source_file": "src/utils/icons.ts",
-      "source_location": "L88"
+      "source_location": "L301"
     },
     {
       "id": "scratch_test_folder_actions_assert",
@@ -4183,7 +4183,7 @@
       "file_type": "code",
       "norm_label": "folder_color_map",
       "source_file": "src/utils/icons.ts",
-      "source_location": "L92"
+      "source_location": "L305"
     },
     {
       "id": "src_utils_icons_folder_icons",
@@ -4194,7 +4194,7 @@
       "file_type": "code",
       "norm_label": "folder_icons",
       "source_file": "src/utils/icons.ts",
-      "source_location": "L45"
+      "source_location": "L157"
     },
     {
       "id": "src_utils_motion",
@@ -9400,7 +9400,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/components/Dashboard/PrimaryFocusCard.tsx",
-      "source_location": "L460",
+      "source_location": "L451",
       "weight": 1.0
     },
     {
@@ -9412,7 +9412,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/components/Dashboard/PrimaryFocusCard.tsx",
-      "source_location": "L626",
+      "source_location": "L617",
       "weight": 1.0
     },
     {
@@ -9424,7 +9424,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/components/Dashboard/PrimaryFocusCard.tsx",
-      "source_location": "L732",
+      "source_location": "L723",
       "weight": 1.0
     },
     {
@@ -25505,7 +25505,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/utils/icons.ts",
-      "source_location": "L45",
+      "source_location": "L157",
       "weight": 1.0
     },
     {
@@ -25516,7 +25516,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/utils/icons.ts",
-      "source_location": "L88",
+      "source_location": "L301",
       "weight": 1.0
     },
     {
@@ -25527,7 +25527,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/utils/icons.ts",
-      "source_location": "L92",
+      "source_location": "L305",
       "weight": 1.0
     },
     {
@@ -27522,5 +27522,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "47dd5ec185a34fb854ba28258d800f9b968fac35"
+  "built_at_commit": "bf4e4176e3938bd1bf17b2a4f59bd9f5c5ef9799"
 }
