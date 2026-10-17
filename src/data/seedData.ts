@@ -168,6 +168,7 @@ export const DEFAULT_SEED_DATA: AppData = {
     openInNewTab: true,
     compactView: false,
     activeMode: 'auto',
+    confettiStyle: 'cascade',
     daySchedule: {
       startHour: 9,
       endHour: 22,

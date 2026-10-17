@@ -74,6 +74,7 @@ export interface DailyFocus {
 }
 
 export type ThemeMode = 'light' | 'dark' | 'system';
+export type ConfettiStyle = 'cascade' | 'burst' | 'sparkle';
 export type TimeOfDayBucket = 'morning' | 'afternoon' | 'evening' | 'night';
 
 export interface DaySchedule {
@@ -204,6 +205,7 @@ export interface AppData {
     openRouter: OpenRouterConfig;
     activeMode: 'auto' | 'work' | 'free';
     googleCalendar?: GoogleCalendarConfig;
+    confettiStyle?: ConfettiStyle;
   };
 }
 

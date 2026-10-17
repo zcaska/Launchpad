@@ -778,6 +778,35 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   />
                 </button>
               </div>
+
+              {/* Confetti celebration style */}
+              <div className="flex items-center justify-between p-2.5 bg-serene-surfaceAlt-light/50 dark:bg-serene-surfaceAlt-dark/50 rounded-lg border border-serene-border-light dark:border-serene-border-dark">
+                <div>
+                  <div className="font-semibold text-serene-text-primary dark:text-serene-text-darkPrimary">
+                    Confetti Celebration
+                  </div>
+                  <div className="text-[10px] text-serene-text-muted">Animation shown when all tasks are done</div>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  {([
+                    { id: 'cascade', label: 'Cascade' },
+                    { id: 'burst', label: 'Burst' },
+                    { id: 'sparkle', label: 'Sparkle' },
+                  ] as const).map(({ id, label }) => (
+                    <button
+                      key={id}
+                      onClick={() => updateSetting('confettiStyle', id)}
+                      className={`px-2.5 py-1.5 text-[11px] font-semibold rounded-md border transition-all ${
+                        (appData.settings.confettiStyle || 'cascade') === id
+                          ? 'bg-serene-primary text-white border-serene-primary shadow-2xs'
+                          : 'bg-white dark:bg-serene-surface-dark text-serene-text-secondary dark:text-serene-text-darkSecondary border-serene-border-light dark:border-serene-border-dark hover:border-serene-primary/40'
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
 

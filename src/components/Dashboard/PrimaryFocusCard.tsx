@@ -21,7 +21,7 @@ import {
   Copy,
   CalendarDays,
 } from 'lucide-react';
-import { QuickNote } from '../../types';
+import { QuickNote, RecommendationCandidate } from '../../types';
 import { FocusTimerState, elapsedSeconds, formatElapsed } from '../../utils/focusTimer';
 import {
   calculateTaskUrgency,
@@ -30,6 +30,7 @@ import {
 } from '../../utils/taskUrgency';
 import { SafeDescription } from '../Common/SafeDescription';
 import { formatEventTime, formatEventDuration } from '../../utils/calendarFormatting';
+import { SmartSuggestionCard } from './SmartSuggestionCard';
 
 export interface PrimaryFocusCardProps {
   tasks: QuickNote[];
@@ -47,6 +48,13 @@ export interface PrimaryFocusCardProps {
   onTimerPause?: () => void;
   onTimerResume?: () => void;
   onTimerEnd?: () => void;
+  /** When true the empty state shows the recommender's smart suggestion (all-tasks-cleared). */
+  showSuggestion?: boolean;
+  suggestionCandidate?: RecommendationCandidate | null;
+  onApproveSuggestion?: (candidate: RecommendationCandidate) => void;
+  onRejectSuggestion?: (candidate: RecommendationCandidate) => void;
+  approvalsCount?: number;
+  rejectionsCount?: number;
 }
 
 type ProcedureSort = 'procedure' | 'pending_first' | 'completed_first';
@@ -169,6 +177,12 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = ({
   onTimerResume,
   onTimerPause,
   onTimerEnd,
+  showSuggestion = false,
+  suggestionCandidate = null,
+  onApproveSuggestion,
+  onRejectSuggestion,
+  approvalsCount = 0,
+  rejectionsCount = 0,
 }) => {
   const [isSubtasksExpanded, setIsSubtasksExpanded] = useState(false);
   const [procedureSort, setProcedureSort] = useState<ProcedureSort>('procedure');
@@ -296,8 +310,10 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = ({
     setIsOverflowMenuOpen(false);
   };
 
-  // EMPTY STATE (No tasks available)
+  // NO-TASK EMPTY STATE. Once the celebration ran and everything stays cleared,
+  // swap in the smart suggestion instead of the static "add a task" message.
   if (!activeTask) {
+    const showSuggestionBlock = showSuggestion;
     return (
       <div
         className={`w-full bg-white dark:bg-serene-surface-dark border border-serene-border-light dark:border-serene-border-dark rounded-2xl p-5 sm:p-6 shadow-subtle ${className}`}
@@ -317,17 +333,35 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = ({
           </span>
         </div>
 
-        <div className="py-10 text-center rounded-2xl border border-dashed border-serene-border-light dark:border-serene-border-dark bg-stone-50/50 dark:bg-stone-900/20">
-          <div className="w-12 h-12 mx-auto rounded-2xl bg-teal-50 dark:bg-teal-950/40 text-teal-700 dark:text-teal-400 flex items-center justify-center mb-3">
-            <Target className="w-6 h-6" />
+        {showSuggestionBlock && (<>
+          <div className="mb-4 flex items-center gap-2 px-3 py-2 rounded-xl bg-teal-50 dark:bg-teal-950/30 border border-teal-200/60 dark:border-teal-900/40">
+            <span className="text-lg">🎉</span>
+            <p className="text-sm font-semibold text-teal-800 dark:text-teal-300">
+              All tasks done for the day — here's a smart suggestion for your clear runway:
+            </p>
           </div>
-          <h3 className="text-sm font-bold text-serene-text-primary dark:text-serene-text-darkPrimary">
-            No active focus task selected
-          </h3>
-          <p className="text-xs text-serene-text-muted dark:text-serene-text-darkMuted mt-1 max-w-sm mx-auto">
-            Add a new action item or select a task from your queue to activate your prime objective.
-          </p>
-        </div>
+          <SmartSuggestionCard
+            candidate={suggestionCandidate}
+            onApprove={(candidate) => onApproveSuggestion?.(candidate)}
+            onReject={(candidate) => onRejectSuggestion?.(candidate)}
+            approvalsCount={approvalsCount}
+            rejectionsCount={rejectionsCount}
+          />
+        </>)}
+
+        {!showSuggestionBlock && (
+          <div className="py-10 text-center rounded-2xl border border-dashed border-serene-border-light dark:border-serene-border-dark bg-stone-50/50 dark:bg-stone-900/20">
+            <div className="w-12 h-12 mx-auto rounded-2xl bg-teal-50 dark:bg-teal-950/40 text-teal-700 dark:text-teal-400 flex items-center justify-center mb-3">
+              <Target className="w-6 h-6" />
+            </div>
+            <h3 className="text-sm font-bold text-serene-text-primary dark:text-serene-text-darkPrimary">
+              No active focus task selected
+            </h3>
+            <p className="text-xs text-serene-text-muted dark:text-serene-text-darkMuted mt-1 max-w-sm mx-auto">
+              Add a new action item or select a task from your queue to activate your prime objective.
+            </p>
+          </div>
+        )}
       </div>
     );
   }

@@ -6,11 +6,11 @@ import { Transition, Variants } from 'motion/react';
  */
 
 export const MOTION_DURATIONS = {
-  instant: 0.1,
-  fast: 0.15,
-  base: 0.22,
-  smooth: 0.32,
-  slow: 0.45,
+  instant: 0.08,
+  fast: 0.12,
+  base: 0.16,
+  smooth: 0.2,
+  slow: 0.28,
 } as const;
 
 export const MOTION_EASINGS = {
@@ -20,10 +20,11 @@ export const MOTION_EASINGS = {
 } as const;
 
 export const MOTION_SPRINGS: Record<string, Transition> = {
-  snappy: { type: 'spring', stiffness: 420, damping: 30 },
-  gentle: { type: 'spring', stiffness: 280, damping: 26 },
-  bouncy: { type: 'spring', stiffness: 500, damping: 24 },
-  drawer: { type: 'spring', stiffness: 360, damping: 34 },
+  snappy: { type: 'spring', stiffness: 520, damping: 34 },
+  gentle: { type: 'spring', stiffness: 400, damping: 30 },
+  bouncy: { type: 'spring', stiffness: 560, damping: 30 },
+  // High damping: one quick glide, no late wobble on the big panel
+  drawer: { type: 'spring', stiffness: 480, damping: 40 },
 };
 
 /**
@@ -37,7 +38,7 @@ export const modalBackdropVariants: Variants = {
   },
   exit: { 
     opacity: 0, 
-    transition: { duration: MOTION_DURATIONS.fast, ease: 'easeIn' } 
+    transition: { duration: MOTION_DURATIONS.instant, ease: 'easeIn' } 
   },
 };
 
@@ -45,18 +46,18 @@ export const modalBackdropVariants: Variants = {
  * Modal Dialog Box Animation (Spring scale & gentle elevation)
  */
 export const modalContentVariants: Variants = {
-  initial: { opacity: 0, scale: 0.95, y: 10 },
+  initial: { opacity: 0, scale: 0.985, y: 6 },
   animate: { 
     opacity: 1, 
     scale: 1, 
     y: 0, 
-    transition: { type: 'spring', stiffness: 420, damping: 30 } 
+    transition: { type: 'spring', stiffness: 520, damping: 34 } 
   },
   exit: { 
     opacity: 0, 
-    scale: 0.96, 
-    y: 6, 
-    transition: { duration: MOTION_DURATIONS.fast, ease: 'easeIn' } 
+    scale: 0.99, 
+    y: 4, 
+    transition: { duration: MOTION_DURATIONS.instant, ease: 'easeIn' } 
   },
 };
 
@@ -64,16 +65,14 @@ export const modalContentVariants: Variants = {
  * Slide-over Drawer (QuickNotes panel from right edge)
  */
 export const drawerVariants: Variants = {
-  initial: { x: '100%', opacity: 0.4 },
+  initial: { x: '100%' },
   animate: { 
     x: 0, 
-    opacity: 1, 
     transition: MOTION_SPRINGS.drawer 
   },
   exit: { 
     x: '100%', 
-    opacity: 0, 
-    transition: { duration: MOTION_DURATIONS.base, ease: MOTION_EASINGS.easeInOutCubic } 
+    transition: { duration: MOTION_DURATIONS.fast, ease: MOTION_EASINGS.easeInOutCubic } 
   },
 };
 
@@ -87,7 +86,7 @@ export const drawerVariants: Variants = {
  * The user is waiting on the view they just asked for, so we enter fast and leave instantly.
  */
 export const pageTransitionVariants: Variants = {
-  initial: { opacity: 0, y: 8 },
+  initial: { opacity: 0, y: 4 },
   animate: { 
     opacity: 1, 
     y: 0, 
@@ -102,14 +101,14 @@ export const staggerContainerVariants: Variants = {
   initial: {},
   animate: {
     transition: {
-      staggerChildren: 0.035,
-      delayChildren: 0.02,
+      staggerChildren: 0.018,
+      delayChildren: 0,
     },
   },
 };
 
 export const staggerItemVariants: Variants = {
-  initial: { opacity: 0, y: 8 },
+  initial: { opacity: 0, y: 4 },
   animate: { 
     opacity: 1, 
     y: 0, 
@@ -117,8 +116,8 @@ export const staggerItemVariants: Variants = {
   },
   exit: { 
     opacity: 0, 
-    scale: 0.96, 
-    transition: { duration: MOTION_DURATIONS.fast } 
+    scale: 0.98, 
+    transition: { duration: MOTION_DURATIONS.instant } 
   },
 };
 
@@ -126,16 +125,15 @@ export const staggerItemVariants: Variants = {
  * Smooth Fade & Scale (For Quote rotation, AI recommendations)
  */
 export const fadeScaleVariants: Variants = {
-  initial: { opacity: 0, scale: 0.98 },
+  initial: { opacity: 0, scale: 0.99 },
   animate: { 
     opacity: 1, 
     scale: 1, 
-    transition: { duration: MOTION_DURATIONS.base, ease: 'easeOut' } 
+    transition: { duration: MOTION_DURATIONS.fast, ease: 'easeOut' } 
   },
   exit: { 
     opacity: 0, 
-    scale: 0.98, 
-    transition: { duration: MOTION_DURATIONS.fast, ease: 'easeIn' } 
+    transition: { duration: MOTION_DURATIONS.instant, ease: 'easeIn' } 
   },
 };
 

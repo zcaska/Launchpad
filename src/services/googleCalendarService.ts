@@ -112,6 +112,11 @@ export function isGoogleTokenExpired(): boolean {
   return getInMemoryGoogleToken() === null;
 }
 
+/** Absolute expiry (epoch ms) of the cached token, or 0 when no valid token is cached. */
+export function getGoogleTokenExpiry(): number {
+  return memoryAccessToken && Date.now() < memoryTokenExpiresAt ? memoryTokenExpiresAt : 0;
+}
+
 /**
  * Dynamically loads Google Identity Services script if not already present
  */

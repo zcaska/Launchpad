@@ -25,6 +25,7 @@ import { Sidebar } from './components/Sidebar/Sidebar';
 import { moveLinkToFolder } from './utils/sidebarReorder';
 import { GrowthMasteryScreen } from './components/Growth/GrowthMasteryScreen';
 import { PrimaryFocusCard } from './components/Dashboard/PrimaryFocusCard';
+import { ConfettiOverlay } from './components/Dashboard/ConfettiOverlay';
 import { CommitmentRadarWidget } from './components/Dashboard/CommitmentRadarWidget';
 import TimeRadarWidget from './components/Dashboard/TimeRadarWidget';
 import { calculateTaskUrgency, toggleTaskInList, toggleSubtaskInList } from './utils/taskUrgency';
@@ -48,6 +49,7 @@ import { classifyBookmark } from './utils/bookmarkClassifier';
 import { calculateCalendarScheduleSummary, syncCalendarEventsToQuickNotes } from './utils/calendarSchedule';
 import { 
   fetchTodayGoogleEvents, 
+  getGoogleTokenExpiry,
   getInMemoryGoogleToken, 
   isGoogleTokenExpired,
   requestGoogleAccessToken,
@@ -75,6 +77,7 @@ import {
 import { 
   generateCandidatePool, 
   getRankedRecommendations, 
+  recordApproval,
   recordRejection 
 } from './utils/recommender';
 import { 
@@ -362,24 +365,24 @@ export function App() {
     try {
       let token = getInMemoryGoogleToken();
       if (!token) {
-        // In silent/background mode:
-        // Do NOT spawn popup windows without user gesture!
-        // Return gracefully, maintaining cached view and marking token expired
-        if (silent) {
-          return;
-        }
-
-        // If user-initiated (clicked Sync Now or Re-authorize):
-        // Request token with user gesture, providing login_hint (userEmail) and prompt: ''
+        // Re-acquire even in silent mode: with prompt:'' and an existing grant, GIS
+        // returns a fresh token with no UI as long as the Google session is alive, so
+        // the connection survives hourly access-token expiry without a user click.
+        // shortcut: gesture-less popups can be blocked by the browser; recovery then
+        // waits for the next user focus/timer cycle below.
         try {
           token = await requestGoogleAccessToken(gcal.clientId, '', gcal.userEmail);
         } catch (err: any) {
+          if (silent) {
+            // A background failure is not a sync error; the polling/focus loop retries.
+            return;
+          }
           const kind = err instanceof GoogleAuthError ? err.kind : 'unknown';
           // A closed popup is a user decision, not a failure: never surface it as a sync error.
           if (kind !== 'user_cancelled') {
             setCalendarSyncError(err.message || 'Authorization failed');
           }
-          if (!silent && kind !== 'user_cancelled' && kind !== 'invalid_config') {
+          if (kind !== 'user_cancelled' && kind !== 'invalid_config') {
             setIsSettingsModalOpen(true);
           }
           return;
@@ -470,6 +473,18 @@ export function App() {
     };
   }, [appData.settings.googleCalendar?.enabled, appData.settings.googleCalendar?.syncIntervalMinutes, handleSyncCalendar]);
 
+  // Proactive token refresh: GIS access tokens live ~1 hour, so schedule a silent sync
+  // a bit before expiry; this keeps an open app from ever showing the expired banner.
+  // Re-runs after every successful sync (lastSyncedAt) to pick up the new expiry.
+  useEffect(() => {
+    if (!appData.settings.googleCalendar?.enabled) return;
+    const expiry = getGoogleTokenExpiry();
+    if (!expiry) return;
+    const delay = Math.max(expiry - Date.now() - 5 * 60 * 1000, 10_000);
+    const refreshTimer = setTimeout(() => handleSyncCalendar(true), delay);
+    return () => clearTimeout(refreshTimer);
+  }, [appData.settings.googleCalendar?.enabled, appData.settings.googleCalendar?.lastSyncedAt, handleSyncCalendar]);
+
   const timeOfDay = useMemo(() => getTimeOfDayBucket(now), [now]);
 
   // Recommender Engine: Candidates & Scored Suggestions
@@ -489,6 +504,39 @@ export function App() {
       learnedPreferences: updatedPrefs,
     }));
   }, [appData.learnedPreferences, timeOfDay]);
+
+  const handleApproveSuggestion = useCallback((candidate: RecommendationCandidate) => {
+    const updatedPrefs = recordApproval(appData.learnedPreferences, candidate, timeOfDay);
+    setAppData((prev) => ({
+      ...prev,
+      learnedPreferences: updatedPrefs,
+    }));
+    window.open(candidate.url, '_blank', 'noopener,noreferrer');
+  }, [appData.learnedPreferences, timeOfDay]);
+
+  // All-tasks-cleared celebration: confetti overlay for ~4s, then a smart suggestion
+  // takes over the Primary Focus empty state. Shown by default whenever the queue
+  // is empty (fresh session included), not only right after the celebration.
+  const [isCelebrating, setIsCelebrating] = useState(false);
+  const [showAllClearSuggestion, setShowAllClearSuggestion] = useState(
+    () => appData.quickNotes.every((t) => t.isDone)
+  );
+  const pendingTaskCount = useMemo(
+    () => appData.quickNotes.filter((t) => !t.isDone).length,
+    [appData.quickNotes]
+  );
+  const prevPendingCountRef = useRef(pendingTaskCount);
+  useEffect(() => {
+    const prev = prevPendingCountRef.current;
+    prevPendingCountRef.current = pendingTaskCount;
+    // Fire only on the transition from "some pending" to "none pending"
+    if (prev <= 0 || pendingTaskCount !== 0) return;
+
+    setIsCelebrating(true);
+    setShowAllClearSuggestion(true);
+    const timer = setTimeout(() => setIsCelebrating(false), 4000);
+    return () => clearTimeout(timer);
+  }, [pendingTaskCount]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -1206,6 +1254,12 @@ export function App() {
                     onTimerPause={handleTimerPause}
                     onTimerResume={handleTimerResume}
                     onTimerEnd={handleTimerEnd}
+                    showSuggestion={showAllClearSuggestion}
+                    suggestionCandidate={currentSuggestion}
+                    onApproveSuggestion={handleApproveSuggestion}
+                    onRejectSuggestion={handleRejectSuggestion}
+                    approvalsCount={appData.learnedPreferences.approvalsCount}
+                    rejectionsCount={appData.learnedPreferences.rejectionsCount}
                   />
                 </div>
 
@@ -1533,6 +1587,11 @@ export function App() {
         onSyncCalendar={() => handleSyncCalendar(false)}
         isSyncingCalendar={isSyncingCalendar}
       />
+
+      {/* Fullscreen celebration when the entire task queue is cleared */}
+      {isCelebrating && (
+        <ConfettiOverlay style={appData.settings.confettiStyle || 'cascade'} />
+      )}
 
       <BookmarkImportModal
         isOpen={isBookmarkImportOpen}

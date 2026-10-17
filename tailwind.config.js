@@ -81,8 +81,9 @@ export default {
         }
       },
       animation: {
-        fadeIn: 'fadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-        scaleIn: 'scaleIn 0.18s cubic-bezier(0.16, 1, 0.3, 1)',
+        fadeIn: 'fadeIn 0.14s cubic-bezier(0.16, 1, 0.3, 1)',
+        'fade-in': 'fadeIn 0.14s cubic-bezier(0.16, 1, 0.3, 1)',
+        scaleIn: 'scaleIn 0.14s cubic-bezier(0.16, 1, 0.3, 1)',
         breathe: 'breathe 8s ease-in-out infinite',
       }
     },
