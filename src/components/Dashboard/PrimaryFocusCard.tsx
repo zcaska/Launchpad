@@ -438,17 +438,8 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = ({
                 </span>
               </div>
 
-              {/* Task Title Row with Direct Checkbox */}
+              {/* Task Title (the left icon tile is the complete/toggle control) */}
               <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => onToggleTask?.(activeTask.id)}
-                  className="w-5 h-5 sm:w-5.5 sm:h-5.5 rounded-md border-2 border-stone-300 dark:border-stone-600 hover:border-teal-600 dark:hover:border-teal-400 flex items-center justify-center shrink-0 transition-all cursor-pointer group/titlechk focus:outline-none focus:ring-2 focus:ring-teal-500/30"
-                  title="Mark task as complete"
-                  aria-label="Mark task as complete"
-                >
-                  <Check className="w-3.5 h-3.5 text-transparent group-hover/titlechk:text-teal-600 dark:group-hover/titlechk:text-teal-400 stroke-[3] transition-colors" />
-                </button>
                 <h3 className="text-base sm:text-lg lg:text-xl font-bold text-serene-text-primary dark:text-serene-text-darkPrimary leading-snug truncate">
                   {activeTask.text}
                 </h3>

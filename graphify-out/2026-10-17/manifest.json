@@ -12,9 +12,9 @@
     "semantic_hash": "ef3ba2a81ba19f8ea5ddf625521e96f0"
   },
   "src/App.tsx": {
-    "mtime": 1792244426.2971766,
-    "seen": 1792244498.7855978,
-    "ast_hash": "f3f6c1b569cee55b758bee3b55e7c927",
+    "mtime": 1792244674.6001372,
+    "seen": 1792245200.6960566,
+    "ast_hash": "65b5dc31ca23a8394a57cc26a3d05122",
     "semantic_hash": ""
   },
   "src/components/Dashboard/FocusHeroBanner.tsx": {
@@ -162,10 +162,10 @@
     "semantic_hash": "bc02cf7329d0f6b30f21e6c6fcb1cb74"
   },
   "tailwind.config.js": {
-    "mtime": 1791877774.291997,
-    "seen": 1791898444.5722759,
-    "ast_hash": "4cfa92e6c2fade37c7da7cbfbf835f04",
-    "semantic_hash": "4cfa92e6c2fade37c7da7cbfbf835f04"
+    "mtime": 1792244925.8622863,
+    "seen": 1792245200.6960566,
+    "ast_hash": "cee4a611a09496f57dd4ef4ccbc2d42b",
+    "semantic_hash": ""
   },
   "tsconfig.json": {
     "mtime": 1791548011.9992917,
@@ -222,10 +222,10 @@
     "semantic_hash": ""
   },
   "src/utils/motion.ts": {
-    "mtime": 1791721309.7730734,
-    "seen": 1791898444.5722759,
-    "ast_hash": "49d2433980cde6c1e042b5fecda899ad",
-    "semantic_hash": "49d2433980cde6c1e042b5fecda899ad"
+    "mtime": 1792244911.8587112,
+    "seen": 1792245200.6960566,
+    "ast_hash": "48dff0768f8d9a7b2de1e2e008742022",
+    "semantic_hash": ""
   },
   ".agents/rules/dashboard-ux.md": {
     "mtime": 1791559975.3442264,

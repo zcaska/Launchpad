@@ -249,7 +249,7 @@ export const ManageFoldersModal: React.FC<ManageFoldersModalProps> = ({
                 </span>
               </div>
               
-              <div className="grid grid-cols-8 sm:grid-cols-10 md:grid-cols-13 gap-1.5 p-2 bg-white dark:bg-serene-surface-dark rounded-xl border border-serene-border-light dark:border-serene-border-dark max-h-32 overflow-y-auto">
+              <div className="grid grid-cols-8 sm:grid-cols-10 md:grid-cols-13 gap-1.5 p-2 bg-white dark:bg-serene-surface-dark rounded-xl border border-serene-border-light dark:border-serene-border-dark max-h-56 overflow-y-auto">
                 {AVAILABLE_ICONS.map((iconName) => {
                   const IconComp = FOLDER_ICONS[iconName];
                   const isSelected = newFolderIcon === iconName;
@@ -438,7 +438,7 @@ export const ManageFoldersModal: React.FC<ManageFoldersModalProps> = ({
                             <div className="text-[10px] text-serene-text-muted mb-1.5 font-medium">
                               Select new icon for {folder.name}:
                             </div>
-                            <div className="grid grid-cols-8 sm:grid-cols-10 md:grid-cols-13 gap-1.5 p-2 bg-serene-surfaceAlt-light/60 dark:bg-serene-surfaceAlt-dark/60 rounded-xl max-h-28 overflow-y-auto">
+                            <div className="grid grid-cols-8 sm:grid-cols-10 md:grid-cols-13 gap-1.5 p-2 bg-serene-surfaceAlt-light/60 dark:bg-serene-surfaceAlt-dark/60 rounded-xl max-h-52 overflow-y-auto">
                               {AVAILABLE_ICONS.map((iconName) => {
                                 const ItemIcon = FOLDER_ICONS[iconName];
                                 const isItemSel = folder.icon === iconName;

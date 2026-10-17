@@ -1,7 +1,7 @@
 # Graph Report - LaunchPAD  (2026-10-17)
 
 ## Corpus Check
-- 93 files · ~101,082 words
+- 93 files · ~101,112 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 2 file(s) not represented in the graph (top: (none) 1, .css 1)
 
