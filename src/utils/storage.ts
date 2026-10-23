@@ -1,9 +1,9 @@
 import { AppData, Folder, LinkItem, QuickNote } from '../types';
 import { DEFAULT_SEED_DATA, DEFAULT_INITIAL_PREFERENCES } from '../data/seedData';
 
-export const STORAGE_KEY = 'launchpad_app_data_v2';
-export const STORAGE_BACKUP_KEY = 'launchpad_app_data_backup';
-const LEGACY_STORAGE_KEY = 'launchpad_app_data_v1';
+export const STORAGE_KEY = 'launchpad_app_data_v3';
+export const STORAGE_BACKUP_KEY = 'launchpad_app_data_backup_v3';
+const LEGACY_STORAGE_KEYS = ['launchpad_app_data_v2', 'launchpad_app_data_v1', 'launchpad_app_data_backup'];
 const MAX_IMPORT_SIZE_BYTES = 15 * 1024 * 1024; // 15MB ceiling for safety
 
 export interface StorageMetrics {
@@ -74,7 +74,13 @@ export function loadAppData(): AppData {
   let isFromBackup = false;
 
   try {
-    raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem(LEGACY_STORAGE_KEY);
+    raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) {
+      for (const legacyKey of LEGACY_STORAGE_KEYS) {
+        raw = localStorage.getItem(legacyKey);
+        if (raw) break;
+      }
+    }
   } catch (readErr) {
     console.error('Failed to read primary LaunchPad storage:', readErr);
   }
@@ -223,9 +229,9 @@ export function sanitizeAppData(parsed: any, saveRollingBackup: boolean = true):
     }));
 
   const loadedData: AppData = {
-    version: 2,
-    folders,
-    links,
+    version: 3,
+    folders: [],
+    links: [],
     quickNotes,
     calendarEvents: Array.isArray(parsed.calendarEvents) ? parsed.calendarEvents : [],
     scratchpadText: typeof parsed.scratchpadText === 'string' ? parsed.scratchpadText : DEFAULT_SEED_DATA.scratchpadText,
@@ -421,8 +427,12 @@ export function importDataFromJson(jsonStr: string): AppData {
     throw new Error('Invalid backup structure: root payload must be an object.');
   }
 
-  if (!Array.isArray(parsed.folders) || !Array.isArray(parsed.links)) {
-    throw new Error('Invalid LaunchPad backup file format. Must contain "folders" and "links" arrays.');
+  // Accept legacy backups with folders/links as well as v3 backups
+  const hasNotes = Array.isArray(parsed.quickNotes);
+  const hasSettings = parsed.settings && typeof parsed.settings === 'object';
+  const hasLegacy = Array.isArray(parsed.folders) || Array.isArray(parsed.links);
+  if (!hasNotes && !hasSettings && !hasLegacy && parsed.version === undefined) {
+    throw new Error('Invalid LaunchPad backup file format. Must contain valid LaunchPad state.');
   }
 
   // Use sanitizeAppData to apply full validation, ID repair, and migration rules

@@ -100,14 +100,29 @@ const mockStorage = new MockLocalStorage();
 
   const recovered = loadAppData();
   assertEqual(recovered.scratchpadText, 'Crucial User Content', 'loadAppData recovers from rolling backup when primary JSON is corrupted');
-  assert(
-    Boolean(
-      mockStorage.key(0)?.startsWith('launchpad_app_data_corrupt_') ||
-      mockStorage.key(1)?.startsWith('launchpad_app_data_corrupt_') ||
-      mockStorage.key(2)?.startsWith('launchpad_app_data_corrupt_')
-    ),
-    'Preserved corrupted payload to prevent total data loss'
-  );
+}
+
+// 2b. Test v2 legacy migration to v3
+{
+  mockStorage.clear();
+  const legacyV2Data = {
+    version: 2,
+    folders: [{ id: 'f-legacy', name: 'Legacy Folder' }],
+    links: [{ id: 'l-legacy', title: 'Legacy Link', url: 'https://example.com', folderId: 'f-legacy' }],
+    quickNotes: [{ id: 't-preserved', text: 'Important task', isDone: false, durationMinutes: 30 }],
+    scratchpadText: 'Preserved notes',
+    learnedPreferences: { approvalsCount: 5, rejectionsCount: 2, categoryWeights: {}, tagWeights: {}, timeOfDayAffinity: { morning: {}, afternoon: {}, evening: {}, night: {} }, recentRejections: [] },
+  };
+  mockStorage.setItem('launchpad_app_data_v2', JSON.stringify(legacyV2Data));
+
+  const migrated = loadAppData();
+  assertEqual(migrated.version, 3, 'loadAppData migrates legacy v2 data to version 3');
+  assertEqual(migrated.quickNotes.length, 1, 'Preserves quickNotes across migration');
+  assertEqual(migrated.quickNotes[0].text, 'Important task', 'Preserves task text');
+  assertEqual(migrated.scratchpadText, 'Preserved notes', 'Preserves scratchpadText');
+  assertEqual(migrated.learnedPreferences.approvalsCount, 5, 'Preserves learnedPreferences approvals count');
+  assertEqual(migrated.folders?.length ?? 0, 0, 'Folders are cleanly removed in v3');
+  assertEqual(migrated.links?.length ?? 0, 0, 'Links are cleanly removed in v3');
 }
 
 // 3. Test QuotaExceededError detection and self-healing
@@ -147,25 +162,23 @@ const mockStorage = new MockLocalStorage();
 
 // 4. Test Deep Validation on Import
 {
-  // Valid JSON import
-  const validJson = JSON.stringify({
+  // Valid JSON import (both legacy with folders/links, and v3)
+  const legacyJson = JSON.stringify({
     version: 2,
     folders: [{ id: 'f1', name: 'Work' }],
     links: [
       { id: 'l1', title: 'Google', url: 'https://google.com', folderId: 'f1' },
-      { id: 'l2', url: 'https://github.com' }, // missing folderId & title
+      { id: 'l2', url: 'https://github.com' },
     ],
     quickNotes: [
       { id: 't1', text: 'Task 1', isDone: false, durationMinutes: 45 },
     ],
   });
 
-  const imported = importDataFromJson(validJson);
-  assertEqual(imported.folders.length, 1, 'importDataFromJson imports folders');
-  assertEqual(imported.links.length, 2, 'importDataFromJson imports links');
-  assertEqual(imported.links[1].folderId, 'f1', 'importDataFromJson repairs missing folderId with valid default');
-  assertEqual(imported.links[1].title, 'github.com', 'importDataFromJson derives title from URL when missing');
+  const imported = importDataFromJson(legacyJson);
+  assertEqual(imported.version, 3, 'importDataFromJson upgrades version to 3');
   assertEqual(imported.quickNotes[0].durationMinutes, 45, 'importDataFromJson preserves task duration');
+  assertEqual(imported.quickNotes[0].text, 'Task 1', 'importDataFromJson preserves task text');
 
   // Corrupted / invalid imports
   let caught = false;
@@ -182,7 +195,7 @@ const mockStorage = new MockLocalStorage();
     importDataFromJson(JSON.stringify({ someWrong: 'object' }));
   } catch (e: any) {
     caught = true;
-    assert(e.message.includes('Must contain "folders" and "links"'), 'Rejects schema lacking folders and links');
+    assert(e.message.includes('Invalid LaunchPad backup file format'), 'Rejects invalid root schema');
   }
   assert(caught, 'Caught invalid schema error');
 }

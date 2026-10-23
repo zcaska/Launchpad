@@ -113,13 +113,15 @@ export interface LearnedPreferences {
 export interface RecommendationCandidate {
   id: string;
   title: string;
-  url: string;
+  url?: string;
+  kind?: 'web' | 'habit';
   description?: string;
-  folderName: string;
+  folderName?: string;
+  category?: string;
   folderId?: string;
   tags: string[];
   durationEstimateMinutes: number;
-  sourceType: 'bookmark' | 'reading_list' | 'micro_quest' | 'ai_web';
+  sourceType: 'bookmark' | 'reading_list' | 'micro_quest' | 'ai_web' | 'curated_web' | 'habit_idea';
   rationale: string;
   score?: number;
 }
@@ -195,8 +197,8 @@ export interface GamificationState {
 
 export interface AppData {
   version: number;
-  folders: Folder[];
-  links: LinkItem[];
+  folders?: Folder[];
+  links?: LinkItem[];
   quickNotes: QuickNote[];
   scratchpadText: string;
   dailyFocus: DailyFocus;
