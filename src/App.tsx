@@ -1007,6 +1007,24 @@ export function App() {
   const petUiActive =
     isAddModalOpen || isManageFoldersOpen || isSettingsModalOpen ||
     isBookmarkImportOpen || isMobileSidebarOpen || isQuickNotesOpen;
+
+  // Recover from any stale pause state previously stored in localStorage
+  useEffect(() => {
+    if (appData.settings.pet?.paused) {
+      setAppData((prev) => ({
+        ...prev,
+        settings: {
+          ...prev.settings,
+          pet: {
+            ...prev.settings.pet,
+            enabled: prev.settings.pet?.enabled !== false,
+            paused: false,
+          },
+        },
+      }));
+    }
+  }, []);
+
   const pet = usePetController({
     enabled: petEnabled,
     paused: petPaused,

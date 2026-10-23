@@ -71,5 +71,15 @@ for (let i = 0; i < 10; i++) {
   assert(target.y <= bounds.maxY, 'Edge target Y never overflows screen bounds');
 }
 
+// 6. Active organic flight roaming in designated section
+const currentPos = { x: 1040, y: 650 };
+for (let i = 0; i < 20; i++) {
+  const flightTarget = calculateRoamTarget(currentPos, currentPos, bounds, 30, 75);
+  const travelDist = Math.hypot(flightTarget.x - currentPos.x, flightTarget.y - currentPos.y);
+  assert(travelDist >= 15, `Flight travel distance is visible (got: ${Math.round(travelDist)}px)`);
+  assert(flightTarget.x >= bounds.minX && flightTarget.x <= bounds.maxX, 'Flight target X strictly within screen');
+  assert(flightTarget.y >= bounds.minY && flightTarget.y <= bounds.maxY, 'Flight target Y strictly within screen');
+}
+
 if (failures > 0) process.exit(1);
 console.log('✅ usePetMotion unit tests passed');

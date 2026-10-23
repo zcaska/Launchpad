@@ -72,35 +72,34 @@ function LaunchpadPetComponent({
     setQuoteVisible(false);
   }, []);
 
-  const clickCountRef = useRef(0);
-  const clickTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const handlePetClick = useCallback(() => {
-    onPet();
-    const quoteCat: QuoteCategory = STATE_QUOTE_CATEGORY_MAP[state] || 'welcomeBack';
-    setQuote(getPetQuote(quoteCat));
-    setQuoteVisible(true);
-
-    clickCountRef.current += 1;
-    if (clickCountRef.current === 1) {
-      clickTimerRef.current = setTimeout(() => {
-        clickCountRef.current = 0;
-      }, 400);
-    } else if (clickCountRef.current >= 2) {
-      if (clickTimerRef.current) clearTimeout(clickTimerRef.current);
-      clickCountRef.current = 0;
-      onTogglePaused();
-    }
-  }, [onPet, onTogglePaused, state]);
-
   // Motion controller: owns position, dragging, roaming flight, and bubble placement
   const motion = usePetMotion({
     roaming: state === 'roaming',
     paused,
     reducedMotion: reduced,
     focusActive: state === 'focused',
-    onPetClick: handlePetClick,
   });
+
+  // Single click: pet reaction, joyful wiggle, heart emote, and thought bubble
+  const handlePetClick = useCallback(() => {
+    if (motion.justDragged) return;
+    onPet();
+    const quoteCat: QuoteCategory = STATE_QUOTE_CATEGORY_MAP[state] || 'welcomeBack';
+    setQuote(getPetQuote(quoteCat));
+    setQuoteVisible(true);
+  }, [motion.justDragged, onPet, state]);
+
+  // Double click: deliberately pause / resume motion
+  const handleDoubleClick = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    onTogglePaused();
+    setQuote(
+      paused
+        ? "Yay, I'm ready to explore!"
+        : "Taking a quick rest! (double-click to wake me)"
+    );
+    setQuoteVisible(true);
+  }, [onTogglePaused, paused]);
 
   const prevStateRef = useRef<PetState>(state);
   useEffect(() => {
@@ -144,6 +143,7 @@ function LaunchpadPetComponent({
           type="button"
           {...motion.handlers}
           onClick={handlePetClick}
+          onDoubleClick={handleDoubleClick}
           onPointerEnter={onPet}
           className={`lp-pet pointer-events-auto block transition-opacity touch-none focus-visible:outline-2 focus-visible:outline-serene-primary dark:focus-visible:outline-serene-primary-dark ${
             motion.isDragging ? 'cursor-grabbing opacity-90' : 'cursor-grab opacity-95 hover:opacity-100'

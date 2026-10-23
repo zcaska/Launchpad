@@ -15,6 +15,7 @@ export interface PetMotionState {
   facing: 1 | -1;
   isFlying: boolean;
   isDragging: boolean;
+  justDragged: boolean;
   placement: 'top' | 'bottom';
   durationMs: number;
   handlers: {
@@ -32,6 +33,7 @@ export const MASCOT_BOUNDS = {
 };
 
 export const MAX_ROAM_RADIUS_PX = 6;
+export const DEFAULT_ROAM_RADIUS_PX = 75;
 
 export function clampCoordinate(val: number, min: number, max: number): number {
   if (min >= max) return min;
@@ -52,20 +54,72 @@ export function getScreenBounds(): { minX: number; maxX: number; minY: number; m
   };
 }
 
+/**
+ * Calculates a flight destination target.
+ * Supports:
+ *  1. calculateRoamTarget(anchor, bounds, maxOffset) -> for bounded orbital drift (legacy compatibility)
+ *  2. calculateRoamTarget(current, anchor, bounds, minDistance, maxRadius) -> for visible organic glides
+ */
 export function calculateRoamTarget(
-  anchor: { x: number; y: number },
-  bounds: { minX: number; maxX: number; minY: number; maxY: number },
-  maxOffset: number = MAX_ROAM_RADIUS_PX
+  currentOrAnchor: { x: number; y: number },
+  anchorOrBounds: { x: number; y: number } | { minX: number; maxX: number; minY: number; maxY: number },
+  boundsOrMaxOffset?: { minX: number; maxX: number; minY: number; maxY: number } | number,
+  minDistance: number = 30,
+  maxRadius: number = DEFAULT_ROAM_RADIUS_PX
 ): { x: number; y: number } {
-  // Ensure visible organic orbital drift bounded strictly by maxOffset
-  const angle = Math.random() * Math.PI * 2;
-  const distance = Math.max(1, (0.5 + Math.random() * 0.5) * maxOffset);
-  const deltaX = Math.round(Math.cos(angle) * distance);
-  const deltaY = Math.round(Math.sin(angle) * distance);
+  // Legacy 3-arg signature: calculateRoamTarget(anchor, bounds, maxOffset)
+  if (
+    boundsOrMaxOffset !== undefined &&
+    typeof boundsOrMaxOffset === 'number' &&
+    'minX' in anchorOrBounds
+  ) {
+    const anchor = currentOrAnchor;
+    const bounds = anchorOrBounds as { minX: number; maxX: number; minY: number; maxY: number };
+    const maxOffset = boundsOrMaxOffset;
 
+    const angle = Math.random() * Math.PI * 2;
+    const distance = Math.max(1, (0.5 + Math.random() * 0.5) * maxOffset);
+    const deltaX = Math.round(Math.cos(angle) * distance);
+    const deltaY = Math.round(Math.sin(angle) * distance);
+
+    return {
+      x: clampCoordinate(anchor.x + deltaX, bounds.minX, bounds.maxX),
+      y: clampCoordinate(anchor.y + deltaY, bounds.minY, bounds.maxY),
+    };
+  }
+
+  // Active flight signature: calculateRoamTarget(current, anchor, bounds, minDistance, maxRadius)
+  const current = currentOrAnchor;
+  const anchor = ('x' in anchorOrBounds ? anchorOrBounds : currentOrAnchor) as { x: number; y: number };
+  const bounds = (
+    boundsOrMaxOffset && typeof boundsOrMaxOffset === 'object' && 'minX' in boundsOrMaxOffset
+      ? boundsOrMaxOffset
+      : 'minX' in anchorOrBounds
+      ? anchorOrBounds
+      : getScreenBounds()
+  ) as { minX: number; maxX: number; minY: number; maxY: number };
+
+  const effectiveMax = typeof maxRadius === 'number' && maxRadius > 10 ? maxRadius : DEFAULT_ROAM_RADIUS_PX;
+  const effectiveMin = Math.min(minDistance, effectiveMax * 0.5);
+
+  for (let attempt = 0; attempt < 12; attempt++) {
+    const angle = Math.random() * Math.PI * 2;
+    const distance = effectiveMin + Math.random() * (effectiveMax - effectiveMin);
+    const targetX = clampCoordinate(Math.round(anchor.x + Math.cos(angle) * distance), bounds.minX, bounds.maxX);
+    const targetY = clampCoordinate(Math.round(anchor.y + Math.sin(angle) * distance), bounds.minY, bounds.maxY);
+
+    const travelDist = Math.hypot(targetX - current.x, targetY - current.y);
+    if (travelDist >= effectiveMin * 0.8) {
+      return { x: targetX, y: targetY };
+    }
+  }
+
+  // Fallback: step away from current towards screen center or opposite side of anchor
+  const stepX = current.x > (bounds.minX + bounds.maxX) / 2 ? -effectiveMin : effectiveMin;
+  const stepY = current.y > (bounds.minY + bounds.maxY) / 2 ? -effectiveMin : effectiveMin;
   return {
-    x: clampCoordinate(anchor.x + deltaX, bounds.minX, bounds.maxX),
-    y: clampCoordinate(anchor.y + deltaY, bounds.minY, bounds.maxY),
+    x: clampCoordinate(current.x + stepX, bounds.minX, bounds.maxX),
+    y: clampCoordinate(current.y + stepY, bounds.minY, bounds.maxY),
   };
 }
 
@@ -112,9 +166,10 @@ export function getDefaultPosition(dockPosition?: { x: number; y: number }): { x
     };
   }
   if (typeof window !== 'undefined') {
-    // Predecided section of site: bottom-right corner perch with comfortable headroom
-    const targetX = Math.max(bounds.minX, bounds.maxX - 28);
-    const targetY = Math.max(bounds.minY, bounds.maxY - 24);
+    // Predecided section of site: bottom-right interactive dock zone
+    // Keeping safe headroom so the mascot sits comfortably inside the screen
+    const targetX = Math.max(bounds.minX, bounds.maxX - 40);
+    const targetY = Math.max(bounds.minY, bounds.maxY - 40);
     return {
       x: clampCoordinate(targetX, bounds.minX, bounds.maxX),
       y: clampCoordinate(targetY, bounds.minY, bounds.maxY),
@@ -140,12 +195,13 @@ export function usePetMotion({
   const [facing, setFacing] = useState<1 | -1>(1);
   const [isFlying, setIsFlying] = useState<boolean>(false);
   const [isDragging, setIsDragging] = useState<boolean>(false);
-  const [durationMs, setDurationMs] = useState<number>(reducedMotion ? 0 : 2200);
+  const [justDragged, setJustDragged] = useState<boolean>(false);
+  const [durationMs, setDurationMs] = useState<number>(reducedMotion ? 0 : 2400);
 
   const posRef = useRef(pos);
   posRef.current = pos;
 
-  // The anchor represents the predecided section/perch point around which 6px roaming occurs
+  // The anchor represents the predecided section/perch point around which roaming occurs
   const anchorRef = useRef<{ x: number; y: number }>(pos);
 
   const onPetClickRef = useRef(onPetClick);
@@ -208,20 +264,23 @@ export function usePetMotion({
       restTimerRef.current = null;
       if (typeof window === 'undefined') return;
 
-      const dur = Math.floor(1800 + Math.random() * 600); // 1800-2400 ms smooth glide
+      const dur = Math.floor(2200 + Math.random() * 800); // 2200-3000 ms smooth glide
       const bounds = getScreenBounds();
-      // Ensure anchor has breathing room from clamp walls so roam moves freely in all directions
-      const safeAnchor = {
-        x: clampCoordinate(anchorRef.current.x, bounds.minX + 8, bounds.maxX - 8),
-        y: clampCoordinate(anchorRef.current.y, bounds.minY + 8, bounds.maxY - 8),
-      };
-      const nextPos = calculateRoamTarget(safeAnchor, bounds, MAX_ROAM_RADIUS_PX);
+
+      // Pick a visible roam target within the designated section / anchor zone
+      const nextPos = calculateRoamTarget(
+        posRef.current,
+        anchorRef.current,
+        bounds,
+        32,
+        DEFAULT_ROAM_RADIUS_PX
+      );
 
       setDurationMs(reducedMotion ? 0 : dur);
       setIsFlying(true);
       setFacing((prevFacing) => {
-        if (nextPos.x < posRef.current.x - 1) return -1;
-        if (nextPos.x > posRef.current.x + 1) return 1;
+        if (nextPos.x < posRef.current.x - 2) return -1;
+        if (nextPos.x > posRef.current.x + 2) return 1;
         return prevFacing;
       });
       posRef.current = nextPos;
@@ -231,8 +290,9 @@ export function usePetMotion({
         flightTimerRef.current = null;
         setIsFlying(false);
 
-        // Schedule next gentle micro-drift after 4–7s rest at perch
-        const nextRest = 4200 + Math.random() * 2800;
+        // Schedule next gentle flight after rest at perch
+        // Active roaming cue: 3.5s - 5.5s; Normal idle: 7s - 13s
+        const nextRest = roaming ? (3500 + Math.random() * 2000) : (7000 + Math.random() * 6000);
         scheduleFlightRef.current(nextRest);
       }, dur);
     }, delayMs);
@@ -248,21 +308,14 @@ export function usePetMotion({
       return;
     }
 
-    // Active: schedule gentle exploratory flight after initial perch delay (~4000ms)
-    const initialDelay = roaming ? 400 : 4000;
+    // Active: schedule gentle exploratory flight after initial perch delay (2500ms or 500ms if roaming)
+    const initialDelay = roaming ? 500 : 2500;
     scheduleFlightRef.current(initialDelay);
 
     return () => {
       clearTimers();
     };
-  }, [paused, isDragging, focusActive, reducedMotion, clearTimers]);
-
-  // If roaming is explicitly passed as true from controller, immediately trigger exploratory glide
-  useEffect(() => {
-    if (roaming && !paused && !isDragging && !focusActive && !reducedMotion) {
-      scheduleFlightRef.current(400);
-    }
-  }, [roaming, paused, isDragging, focusActive, reducedMotion]);
+  }, [paused, isDragging, focusActive, reducedMotion, roaming, clearTimers]);
 
   // Pointer drag handlers
   const onPointerDown = useCallback((e: React.PointerEvent<HTMLElement>) => {
@@ -272,6 +325,9 @@ export function usePetMotion({
     dragStartRef.current = { x: e.clientX, y: e.clientY };
     posStartRef.current = { x: posRef.current.x, y: posRef.current.y };
     hasMovedPastThresholdRef.current = false;
+    setJustDragged(false);
+
+    // Pointer capture is deferred to onPointerMove dist >= 5 to preserve native click synthesis
   }, []);
 
   const onPointerMove = useCallback((e: React.PointerEvent<HTMLElement>) => {
@@ -285,6 +341,7 @@ export function usePetMotion({
     if (!hasMovedPastThresholdRef.current) {
       if (dist >= 5) {
         hasMovedPastThresholdRef.current = true;
+        setJustDragged(true);
         setIsDragging(true);
         setDurationMs(0);
         try {
@@ -301,9 +358,9 @@ export function usePetMotion({
     const targetX = clampCoordinate(posStartRef.current.x + dx, bounds.minX, bounds.maxX);
     const targetY = clampCoordinate(posStartRef.current.y + dy, bounds.minY, bounds.maxY);
 
-    if (targetX < posRef.current.x) {
+    if (targetX < posRef.current.x - 1) {
       setFacing(-1);
-    } else if (targetX > posRef.current.x) {
+    } else if (targetX > posRef.current.x + 1) {
       setFacing(1);
     }
 
@@ -330,8 +387,16 @@ export function usePetMotion({
     if (wasDragging) {
       setIsDragging(false);
       const finalPos = posRef.current;
-      anchorRef.current = finalPos;
+      anchorRef.current = finalPos; // Update roam anchor to user's dropped location
       savePosition(finalPos);
+
+      // Keep justDragged true briefly so click listeners don't treat drag release as click
+      setTimeout(() => {
+        setJustDragged(false);
+      }, 120);
+
+      // Resume gentle exploratory loop around new anchor
+      scheduleFlightRef.current(3500);
     }
   }, []);
 
@@ -353,6 +418,7 @@ export function usePetMotion({
 
     if (wasDragging) {
       setIsDragging(false);
+      setJustDragged(false);
       const finalPos = posRef.current;
       anchorRef.current = finalPos;
       savePosition(finalPos);
@@ -364,6 +430,7 @@ export function usePetMotion({
     facing,
     isFlying,
     isDragging,
+    justDragged,
     placement: calculatePlacement(pos.y),
     durationMs,
     handlers: {
