@@ -11,8 +11,8 @@
 
   .dark {
     --color-bg-primary: #000000;
-    --color-surface-primary: #0a0a0a;
-    --color-border-subtle: #222225;
+    --color-surface-primary: #141417;
+    --color-border-subtle: #2e2e36;
   }
 
   body {

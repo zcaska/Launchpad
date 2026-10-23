@@ -7,7 +7,6 @@ import {
   X,
   Compass,
   Trophy,
-  User,
   FileText,
   Lightbulb,
   Sparkles,
@@ -71,7 +70,6 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
   isMobileOpen = false,
   onCloseMobile,
   gamification,
-  userEmail,
   onOpenScratchpad,
   suggestionCandidate,
   onApproveSuggestion,
@@ -294,23 +292,6 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
               </div>
             </div>
           )}
-
-          {/* User Profile in Mobile Drawer */}
-          <div className="pt-2 mt-auto shrink-0 border-t border-serene-border-light/70 dark:border-serene-border-dark/70">
-            <div className="w-full flex items-center gap-3 px-3 py-2 rounded-xl bg-serene-surfaceAlt-light/70 dark:bg-serene-surfaceAlt-dark/70 border border-serene-border-light/60 dark:border-serene-border-dark/60">
-              <div className="w-9 h-9 rounded-xl bg-serene-primary/10 dark:bg-serene-primary-dark/20 border border-serene-primary/20 flex items-center justify-center text-serene-primary dark:text-serene-primary-dark font-bold text-sm shrink-0">
-                {userEmail ? userEmail.charAt(0).toUpperCase() : <User className="w-4 h-4 text-serene-primary" />}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-semibold truncate text-serene-text-primary dark:text-serene-text-darkPrimary">
-                  {userEmail ? userEmail.split('@')[0] : 'LaunchPad User'}
-                </p>
-                <p className="text-[11px] text-serene-text-muted truncate">
-                  {userEmail || 'Focus Session Active'}
-                </p>
-              </div>
-            </div>
-          </div>
         </div>
       </aside>
 
@@ -319,7 +300,7 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
           In-flow flex item: relative h-full shrink-0 (NEVER overlaps main content)
           ========================================================================= */}
       <aside
-        className={`relative h-full bg-white/70 dark:bg-serene-surface-dark/70 backdrop-blur-md border-r border-serene-border-light dark:border-serene-border-dark hidden md:flex flex-col shrink-0 transition-all duration-300 select-none ${
+        className={`relative h-full bg-white/80 dark:bg-serene-surface-dark/95 backdrop-blur-md border-r border-serene-border-light dark:border-serene-border-dark hidden md:flex flex-col shrink-0 transition-all duration-300 select-none ${
           isCollapsed ? 'w-[76px]' : 'w-64 lg:w-72'
         }`}
       >
@@ -569,40 +550,6 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                   <span className="sr-only">Focus Spark: {suggestionCandidate.title}</span>
                 </button>
               )
-            )}
-          </div>
-
-          {/* Bottom User Avatar Section */}
-          <div className="pt-2 mt-auto shrink-0 border-t border-serene-border-light/70 dark:border-serene-border-dark/70">
-            {isCollapsed ? (
-              <div
-                className="w-12 h-12 mx-auto rounded-xl bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark border border-serene-border-light dark:border-serene-border-dark flex items-center justify-center text-serene-primary dark:text-serene-primary-dark font-bold text-sm shadow-xs"
-                title={userEmail ? `User: ${userEmail}` : 'LaunchPad User'}
-              >
-                {userEmail ? (
-                  <span>{userEmail.charAt(0).toUpperCase()}</span>
-                ) : (
-                  <User className="w-5 h-5 text-serene-text-muted" />
-                )}
-              </div>
-            ) : (
-              <div className="w-full flex items-center gap-3 px-3 py-2 rounded-xl bg-serene-surfaceAlt-light/70 dark:bg-serene-surfaceAlt-dark/70 border border-serene-border-light/60 dark:border-serene-border-dark/60">
-                <div className="w-9 h-9 rounded-xl bg-serene-primary/10 dark:bg-serene-primary-dark/20 border border-serene-primary/20 flex items-center justify-center text-serene-primary dark:text-serene-primary-dark font-bold text-sm shrink-0">
-                  {userEmail ? (
-                    userEmail.charAt(0).toUpperCase()
-                  ) : (
-                    <User className="w-4 h-4 text-serene-primary dark:text-serene-primary-dark" />
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-semibold truncate text-serene-text-primary dark:text-serene-text-darkPrimary">
-                    {userEmail ? userEmail.split('@')[0] : 'LaunchPad User'}
-                  </p>
-                  <p className="text-[11px] text-serene-text-muted truncate">
-                    {userEmail || 'Focus Session Active'}
-                  </p>
-                </div>
-              </div>
             )}
           </div>
         </div>

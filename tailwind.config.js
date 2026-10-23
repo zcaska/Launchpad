@@ -15,23 +15,23 @@ export default {
           },
           surface: {
             light: '#ffffff',
-            dark: '#0a0a0a',
+            dark: '#141417',
           },
           surfaceAlt: {
             light: '#f3f2f5',
-            dark: '#141416',
+            dark: '#212126',
           },
           border: {
             light: '#e2e0e5',
-            dark: '#222225',
+            dark: '#2e2e36',
           },
           primary: {
             DEFAULT: '#264d44',
             hover: '#1d3c35',
             light: '#3e655b',
             soft: '#e6f3ef',
-            dark: '#2dd4bf',
-            darkHover: '#5eead4',
+            dark: '#34d399',
+            darkHover: '#6ee7b7',
           },
           secondary: {
             DEFAULT: '#416279',
@@ -43,8 +43,8 @@ export default {
             secondary: '#5f6764',
             muted: '#54625e',
             darkPrimary: '#ffffff',
-            darkSecondary: '#a1a1aa',
-            darkMuted: '#71717a',
+            darkSecondary: '#d4d4dc',
+            darkMuted: '#a1a1aa',
           },
           accent: {
             amber: '#d97706',
