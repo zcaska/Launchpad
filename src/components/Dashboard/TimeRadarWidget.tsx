@@ -29,7 +29,7 @@ interface TimeRadarWidgetProps {
   onReauthorize?: () => void;
 }
 
-export const TimeRadarWidget: React.FC<TimeRadarWidgetProps> = ({
+export const TimeRadarWidget: React.FC<TimeRadarWidgetProps> = React.memo(({
   timeRemaining,
   taskLoad,
   buffer,
@@ -243,8 +243,8 @@ export const TimeRadarWidget: React.FC<TimeRadarWidgetProps> = ({
         </div>
       </div>
 
-      {/* 3. THREE DETAILED METRIC ROWS (Clean, non-boxed, hairline dividers) */}
-      <div className="my-1 divide-y divide-serene-border-light/60 dark:divide-serene-border-dark/60 rounded-xl bg-serene-surfaceAlt-light/40 dark:bg-serene-surfaceAlt-dark/30 border border-serene-border-light/60 dark:border-serene-border-dark/60 overflow-hidden flex-1 flex flex-col justify-between">
+      {/* 3. THREE DETAILED METRIC ROWS (Clean, non-boxed, hairline dividers - hidden on mobile to match inspo) */}
+      <div className="hidden md:flex my-1 divide-y divide-serene-border-light/60 dark:divide-serene-border-dark/60 rounded-xl bg-serene-surfaceAlt-light/40 dark:bg-serene-surfaceAlt-dark/30 border border-serene-border-light/60 dark:border-serene-border-dark/60 overflow-hidden flex-1 flex-col justify-between">
         {/* Row 1: Time Left */}
         <div className="p-2.5 sm:p-3 flex items-center justify-between gap-3 hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-colors flex-1 min-w-0">
           <div className="flex items-center gap-2.5 min-w-0">
@@ -381,6 +381,8 @@ export const TimeRadarWidget: React.FC<TimeRadarWidgetProps> = ({
       </div>
     </div>
   );
-};
+});
+
+TimeRadarWidget.displayName = 'TimeRadarWidget';
 
 export default TimeRadarWidget;

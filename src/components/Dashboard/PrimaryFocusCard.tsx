@@ -195,17 +195,26 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
   const [copyFeedback, setCopyFeedback] = useState(false);
   const [previewTaskId, setPreviewTaskId] = useState<string | null>(null);
 
-  const procedureMenuRef = useRef<HTMLDivElement>(null);
-  const overflowMenuRef = useRef<HTMLDivElement>(null);
+  const desktopProcedureRef = useRef<HTMLDivElement>(null);
+  const mobileProcedureRef = useRef<HTMLDivElement>(null);
+  const desktopOverflowRef = useRef<HTMLDivElement>(null);
+  const mobileOverflowRef = useRef<HTMLDivElement>(null);
 
   // Close menus when clicking outside
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       const target = e.target as Node;
-      if (procedureMenuRef.current && !procedureMenuRef.current.contains(target)) {
+      const isInsideProcedure =
+        (desktopProcedureRef.current && desktopProcedureRef.current.contains(target)) ||
+        (mobileProcedureRef.current && mobileProcedureRef.current.contains(target));
+      if (!isInsideProcedure) {
         setIsProcedureMenuOpen(false);
       }
-      if (overflowMenuRef.current && !overflowMenuRef.current.contains(target)) {
+
+      const isInsideOverflow =
+        (desktopOverflowRef.current && desktopOverflowRef.current.contains(target)) ||
+        (mobileOverflowRef.current && mobileOverflowRef.current.contains(target));
+      if (!isInsideOverflow) {
         setIsOverflowMenuOpen(false);
       }
     }
