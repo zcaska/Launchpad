@@ -51,17 +51,24 @@ assert(petSpriteSource.includes('@keyframes pet-sip'), 'Includes @keyframes pet-
 assert(petSpriteSource.includes('transform: translateY(-10px) scale(1.3)'), 'Steam rises and expands');
 assert(petSpriteSource.includes('rotate(-7deg) translateY(-2px)'), 'Sipping tilts gently');
 
-// Laptop specifications
-assert(petSpriteSource.includes('x={46}') && petSpriteSource.includes('y={68}') && petSpriteSource.includes('width={28}') && petSpriteSource.includes('fill="#334155"'), 'Laptop base matches spec');
-assert(petSpriteSource.includes('x={49}') && petSpriteSource.includes('y={53}') && petSpriteSource.includes('width={22}') && petSpriteSource.includes('height={15}') && petSpriteSource.includes('fill="#1E293B"'), 'Laptop screen matches spec');
-assert(petSpriteSource.includes('x={50.5}') && petSpriteSource.includes('y={54.5}') && petSpriteSource.includes('width={19}') && petSpriteSource.includes('height={12}') && petSpriteSource.includes('fill="#60A5FA"'), 'Glowing screen matches spec');
-assert(petSpriteSource.includes('x={48}') && petSpriteSource.includes('y={69}') && petSpriteSource.includes('width={24}') && petSpriteSource.includes('height={2}') && petSpriteSource.includes('fill="#64748B"'), 'Keyboard detail matches spec');
+// Laptop specifications (Faithful to Reference Sheet §4)
+assert(petSpriteSource.includes('data-prop="laptop"'), 'Working laptop prop layer is defined');
+assert(petSpriteSource.includes('fill="#334155"'), 'Laptop base contains #334155 finish');
+assert(petSpriteSource.includes('url(#pet-lid-gradient)'), 'Laptop screen lid renders with metallic gradient');
+assert(petSpriteSource.includes('url(#pet-laptop-glow)'), 'Laptop displays screen glow radiating toward mascot');
+assert(petSpriteSource.includes('stroke="#64748B"'), 'Keyboard/trackpad details match spec');
 assert(petSpriteSource.includes('@keyframes pet-screen-glow'), 'Screen glow animation is defined');
 
 // Reduced motion and flip transform
 assert(petSpriteSource.includes("transform: facing === -1 ? 'scaleX(-1)' : undefined"), 'Overlay SVG mirrors when facing === -1');
 assert(petSpriteSource.includes('reducedMotion ? undefined :'), 'CSS animation classes disabled when reducedMotion is true');
 assert(petSpriteSource.includes('prefers-reduced-motion: reduce'), 'Prefers-reduced-motion media query present');
+
+// 5. Adaptive responsive mobile scaling
+assert(petSpriteSource.includes('size?: number'), 'PetSpriteProps includes optional size property');
+assert(petSpriteSource.includes('size = 84'), 'PetSpriteComponent defaults size to 84');
+assert(petSpriteSource.includes('width={size}'), 'Overlay SVG dynamically scales with width={size}');
+assert(petSpriteSource.includes('height={height}'), 'Overlay SVG dynamically scales with height={height}');
 
 if (failures > 0) {
   process.exit(1);

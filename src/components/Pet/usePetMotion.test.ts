@@ -6,7 +6,9 @@ import {
   MASCOT_BOUNDS,
   getScreenBounds,
   calculateRoamTarget,
+  calculateRoamWaypoint,
   getDefaultPosition,
+  getAdaptiveMascotSize,
 } from './usePetMotion';
 
 let failures = 0;
@@ -43,7 +45,9 @@ assert(typeof calculatePlacement === 'function', 'calculatePlacement is exported
 assert(typeof usePetMotion === 'function', 'usePetMotion is exported as function');
 assert(typeof getScreenBounds === 'function', 'getScreenBounds is exported as function');
 assert(typeof calculateRoamTarget === 'function', 'calculateRoamTarget is exported as function');
+assert(typeof calculateRoamWaypoint === 'function', 'calculateRoamWaypoint is exported as function');
 assert(typeof getDefaultPosition === 'function', 'getDefaultPosition is exported as function');
+assert(typeof getAdaptiveMascotSize === 'function', 'getAdaptiveMascotSize is exported as function');
 
 // 4. Mascot screen containment & roaming limits
 assert(MAX_ROAM_RADIUS_PX === 6, 'Max roam radius is exactly 6px on all sides');
@@ -69,6 +73,46 @@ for (let i = 0; i < 10; i++) {
   const target = calculateRoamTarget(edgeAnchor, bounds, MAX_ROAM_RADIUS_PX);
   assert(target.x <= bounds.maxX, 'Edge target X never overflows screen bounds');
   assert(target.y <= bounds.maxY, 'Edge target Y never overflows screen bounds');
+}
+
+// 6. Adaptive Mascot Sizing across Mobile, Tablet, and Desktop screens
+assert(getAdaptiveMascotSize(360) === 56, 'Mobile (360px): size is 56px');
+assert(getAdaptiveMascotSize(375) === 56, 'Mobile (375px): size is 56px');
+assert(getAdaptiveMascotSize(412) === 56, 'Mobile (412px): size is 56px');
+assert(getAdaptiveMascotSize(600) === 68, 'Tablet (600px): size is 68px');
+assert(getAdaptiveMascotSize(768) === 84, 'Desktop (768px): size is 84px');
+assert(getAdaptiveMascotSize(1440) === 84, 'Large Desktop (1440px): size is 84px');
+
+// 7. Mobile Viewport Bounds & Safe Insets
+const mobileBounds = getScreenBounds(375, 667);
+assert(mobileBounds.isMobile === true, 'Viewport 375x667 recognized as mobile');
+assert(mobileBounds.size === 56, 'Mobile mascot size is 56px');
+assert(mobileBounds.minY === 56, 'Mobile top safe inset protects sticky header (>=56px)');
+assert(mobileBounds.maxY < 667 - 56, 'Mobile bottom safe inset protects bottom bar/gesture pill');
+assert(mobileBounds.minX === 8, 'Mobile padding is 8px');
+assert(mobileBounds.maxX === 375 - 56 - 8, 'Mobile maxX accounts for 56px mascot + padding');
+
+// Default position on mobile
+const mobileDefault = getDefaultPosition(undefined, 375, 667);
+assert(mobileDefault.x >= mobileBounds.minX && mobileDefault.x <= mobileBounds.maxX, 'Mobile default X is in bounds');
+assert(mobileDefault.y >= mobileBounds.minY && mobileDefault.y <= mobileBounds.maxY, 'Mobile default Y is in bounds');
+
+// Mobile Roam Waypoint generation
+for (let i = 0; i < 15; i++) {
+  const wp = calculateRoamWaypoint(375, 667, mobileBounds);
+  assert(wp.x >= mobileBounds.minX && wp.x <= mobileBounds.maxX, `Mobile waypoint X (${wp.x}) stays within bounds`);
+  assert(wp.y >= mobileBounds.minY && wp.y <= mobileBounds.maxY, `Mobile waypoint Y (${wp.y}) stays within bounds`);
+}
+
+// Desktop Roam Waypoint generation
+const desktopBounds = getScreenBounds(1440, 900);
+assert(desktopBounds.isMobile === false, 'Viewport 1440x900 recognized as desktop');
+assert(desktopBounds.size === 84, 'Desktop mascot size is 84px');
+
+for (let i = 0; i < 15; i++) {
+  const wp = calculateRoamWaypoint(1440, 900, desktopBounds);
+  assert(wp.x >= desktopBounds.minX && wp.x <= desktopBounds.maxX, `Desktop waypoint X (${wp.x}) stays within bounds`);
+  assert(wp.y >= desktopBounds.minY && wp.y <= desktopBounds.maxY, `Desktop waypoint Y (${wp.y}) stays within bounds`);
 }
 
 if (failures > 0) process.exit(1);

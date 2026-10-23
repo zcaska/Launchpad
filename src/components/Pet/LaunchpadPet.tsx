@@ -181,6 +181,7 @@ function LaunchpadPetComponent({
             isSippingCoffee={state === 'coffee-break'}
             reducedMotion={reduced}
             petted={petted}
+            size={motion.size}
           />
         </button>
       </div>

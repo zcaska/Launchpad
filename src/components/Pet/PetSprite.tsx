@@ -28,6 +28,7 @@ export interface PetSpriteProps {
   isSippingCoffee: boolean;
   reducedMotion: boolean;
   petted: boolean;
+  size?: number;
 }
 
 /**
@@ -262,7 +263,9 @@ function PetSpriteComponent({
   isSippingCoffee = false,
   reducedMotion,
   petted,
+  size = 84,
 }: PetSpriteProps) {
+  const height = Math.round((size * 100) / 120);
   const [idleMicroExpr, setIdleMicroExpr] = useState<'calm' | 'curious' | 'welcoming'>('calm');
 
   useEffect(() => {
@@ -480,7 +483,7 @@ function PetSpriteComponent({
           rightFinAngle={visual.rightFinAngle}
           glow={visual.glow || isStreakMaster}
           sparkles={visual.sparkles}
-          size={84}
+          size={size}
           facing={facing}
           reducedMotion={reducedMotion}
           className={isFlying ? 'animate-pulse' : undefined}
@@ -489,8 +492,8 @@ function PetSpriteComponent({
         {/* Animated props overlay (steaming coffee mug & working laptop) */}
         {(showCoffeeMug || showLaptop) && (
           <svg
-            width={84}
-            height={70}
+            width={size}
+            height={height}
             viewBox="0 0 120 100"
             fill="none"
             xmlns="http://www.w3.org/2000/svg"
