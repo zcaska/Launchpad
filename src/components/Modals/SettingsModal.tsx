@@ -14,7 +14,6 @@ import {
   Zap,
   Key,
   BarChart2,
-  BookmarkCheck,
   Calendar,
   ExternalLink,
   ChevronDown,
@@ -26,7 +25,6 @@ import {
 } from 'lucide-react';
 import { AppData, GoogleCalendarConfig } from '../../types';
 import { exportDataAsJson, importDataFromJson, getStorageMetrics } from '../../utils/storage';
-import { exportNetscapeBookmarks } from '../../utils/bookmarkParser';
 import { DEFAULT_INITIAL_PREFERENCES } from '../../data/seedData';
 import { modalBackdropVariants, modalContentVariants } from '../../utils/motion';
 import { Mascot } from '../Pet/Mascot';
@@ -49,7 +47,6 @@ interface SettingsModalProps {
   appData: AppData;
   onUpdateAppData: (data: AppData) => void;
   onResetData: () => void;
-  onOpenBookmarkImport?: () => void;
   onSyncCalendar?: () => Promise<void>;
   isSyncingCalendar?: boolean;
 }
@@ -60,7 +57,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   appData,
   onUpdateAppData,
   onResetData,
-  onOpenBookmarkImport,
   onSyncCalendar,
   isSyncingCalendar = false,
 }) => {
@@ -78,19 +74,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
   const handleExport = () => {
     exportDataAsJson(appData);
-  };
-
-  const handleExportBookmarksHtml = () => {
-    const html = exportNetscapeBookmarks(appData.links, appData.folders);
-    const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `launchpad-bookmarks-${new Date().toISOString().slice(0, 10)}.html`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -434,7 +417,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     OpenRouter API Fallback (Optional)
                   </h4>
                   <p className="text-[10px] text-serene-text-muted">
-                    Fetch AI web ideas when your local bookmark library is exhausted.
+                    Fetch AI web ideas for fresh focus inspirations.
                   </p>
                 </div>
               </div>
@@ -775,7 +758,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     />
                   </div>
                   <div className="flex items-center justify-between text-[10px] text-serene-text-muted">
-                    <span>{metrics.linkCount} bookmarks · {metrics.folderCount} folders · {metrics.taskCount} tasks</span>
+                    <span>{metrics.taskCount} active tasks · Focus queue active</span>
                     <span>{metrics.hasBackup ? '✓ Rolling backup active' : 'Backup pending'}</span>
                   </div>
                 </div>
@@ -810,41 +793,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     Import Backup (.json)
                   </div>
                   <div className="text-[10px] text-serene-text-muted">Restore data from file</div>
-                </div>
-              </button>
-
-              {onOpenBookmarkImport && (
-                <button
-                  onClick={() => {
-                    onClose();
-                    onOpenBookmarkImport();
-                  }}
-                  className="p-3 bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark hover:bg-white dark:hover:bg-serene-surface-dark border border-serene-border-light dark:border-serene-border-dark rounded-xl flex items-center gap-3 transition-all hover:border-serene-primary/40 group text-left"
-                >
-                  <div className="p-2 rounded-lg bg-serene-primary/10 dark:bg-serene-primary/20 text-serene-primary dark:text-serene-primary-dark">
-                    <BookmarkCheck className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <div className="font-semibold text-serene-text-primary dark:text-serene-text-darkPrimary">
-                      Import Browser Bookmarks
-                    </div>
-                    <div className="text-[10px] text-serene-text-muted">HTML file import with auto-categorization</div>
-                  </div>
-                </button>
-              )}
-
-              <button
-                onClick={handleExportBookmarksHtml}
-                className="p-3 bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark hover:bg-white dark:hover:bg-serene-surface-dark border border-serene-border-light dark:border-serene-border-dark rounded-xl flex items-center gap-3 transition-all hover:border-serene-primary/40 group text-left"
-              >
-                <div className="p-2 rounded-lg bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300">
-                  <Download className="w-4 h-4" />
-                </div>
-                <div>
-                  <div className="font-semibold text-serene-text-primary dark:text-serene-text-darkPrimary">
-                    Export Bookmarks (.html)
-                  </div>
-                  <div className="text-[10px] text-serene-text-muted">Standard Netscape format for any browser</div>
                 </div>
               </button>
 
@@ -1047,7 +995,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           <div className="p-3 rounded-xl border border-rose-200 dark:border-rose-900/40 bg-rose-50/50 dark:bg-rose-950/20 flex items-center justify-between">
             <div>
               <div className="font-semibold text-rose-800 dark:text-rose-300">Reset Default Seed Data</div>
-              <div className="text-[10px] text-rose-600 dark:text-rose-400">Restore fresh default folders & sample links</div>
+              <div className="text-[10px] text-rose-600 dark:text-rose-400">Restore fresh default settings & empty queue</div>
             </div>
             <button
               onClick={handleResetConfirm}
