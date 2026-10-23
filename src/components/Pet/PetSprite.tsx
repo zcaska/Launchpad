@@ -33,11 +33,12 @@ export interface PetSpriteProps {
 /**
  * Maps the app behavioral state machine (PetState) to the Mascot visual specification
  */
-function resolveMascotVisual(
+export function resolveMascotVisual(
   state: PetState,
   petted: boolean,
   isDragging: boolean,
-  idleMicroExpr: 'calm' | 'curious' | 'welcoming' = 'calm'
+  idleMicroExpr: 'calm' | 'curious' | 'welcoming' = 'calm',
+  isSippingCoffee: boolean = false
 ): {
   expression: MascotExpressionId;
   pose?: MascotPoseId;
@@ -61,6 +62,17 @@ function resolveMascotVisual(
   if (isDragging) {
     return {
       expression: 'surprised',
+      leftFinAngle: 12,
+      rightFinAngle: 12,
+      glow: false,
+      sparkles: false,
+    };
+  }
+
+  // Active sipping coffee: relaxed forward fins
+  if (isSippingCoffee) {
+    return {
+      expression: 'calm',
       leftFinAngle: 12,
       rightFinAngle: 12,
       glow: false,
@@ -103,8 +115,8 @@ function resolveMascotVisual(
       return {
         expression: 'focused',
         pose: 'focus',
-        leftFinAngle: 4,
-        rightFinAngle: 4,
+        leftFinAngle: -6,
+        rightFinAngle: -6,
         glow: true,
         sparkles: false,
       };
@@ -158,8 +170,8 @@ function resolveMascotVisual(
     case 'coffee-break':
       return {
         expression: 'calm',
-        leftFinAngle: 2,
-        rightFinAngle: 2,
+        leftFinAngle: 12,
+        rightFinAngle: 12,
         glow: false,
         sparkles: false,
       };
@@ -210,6 +222,7 @@ function PetSpriteComponent({
   facing,
   isFlying,
   isDragging,
+  isSippingCoffee = false,
   reducedMotion,
   petted,
 }: PetSpriteProps) {
@@ -254,14 +267,19 @@ function PetSpriteComponent({
     };
   }, [state, petted, isDragging, reducedMotion]);
 
-  const visual = resolveMascotVisual(state, petted, isDragging, idleMicroExpr);
+  const visual = resolveMascotVisual(state, petted, isDragging, idleMicroExpr, isSippingCoffee);
 
   // Streak master tier adds a rich warm amber ambient aura
   const isStreakMaster = tier === 'streak-master';
 
+  const showCoffeeMug = Boolean(isSippingCoffee || state === 'coffee-break');
+  const showLaptop = state === 'focused';
+
   return (
     <div
       className={`lp-sprite relative inline-flex items-center justify-center ${
+        reducedMotion ? 'lp-reduced' : ''
+      } ${
         isStreakMaster ? 'drop-shadow-[0_0_12px_rgba(255,122,60,0.55)]' : ''
       }`}
       aria-label={`Launchpad Mascot: ${state}`}
@@ -278,6 +296,150 @@ function PetSpriteComponent({
         reducedMotion={reducedMotion}
         className={isFlying ? 'animate-pulse' : undefined}
       />
+
+      {/* Animated props overlay (steaming coffee mug & working laptop) */}
+      {(showCoffeeMug || showLaptop) && (
+        <svg
+          width={84}
+          height={70}
+          viewBox="0 0 120 100"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          className="absolute top-0 left-0 pointer-events-none select-none"
+          aria-hidden="true"
+          style={{
+            overflow: 'visible',
+            transform: facing === -1 ? 'scaleX(-1)' : undefined,
+          }}
+        >
+          <style>{`
+            .pet-steam {
+              animation: pet-steam 2.2s ease-out infinite;
+              transform-box: fill-box;
+              transform-origin: 50% 100%;
+            }
+            .pet-sip {
+              animation: pet-sip 2.8s ease-in-out infinite;
+              transform-box: fill-box;
+              transform-origin: 69px 74px;
+            }
+            .pet-screen-glow {
+              animation: pet-screen-glow 2s ease-in-out infinite;
+            }
+
+            @keyframes pet-steam {
+              0% { transform: translateY(0) scale(0.8); opacity: 0.8; }
+              100% { transform: translateY(-10px) scale(1.3); opacity: 0; }
+            }
+
+            @keyframes pet-sip {
+              0%, 100% { transform: rotate(0deg); }
+              50% { transform: rotate(-7deg) translateY(-2px); }
+            }
+
+            @keyframes pet-screen-glow {
+              0%, 100% { opacity: 0.82; }
+              50% { opacity: 1; }
+            }
+
+            @media (prefers-reduced-motion: reduce) {
+              .pet-steam,
+              .pet-sip,
+              .pet-screen-glow {
+                animation: none !important;
+              }
+            }
+            .lp-reduced .pet-steam,
+            .lp-reduced .pet-sip,
+            .lp-reduced .pet-screen-glow {
+              animation: none !important;
+            }
+          `}</style>
+
+          {/* Steaming Coffee Mug */}
+          {showCoffeeMug && (
+            <g
+              data-prop="coffee-mug"
+              className={reducedMotion ? undefined : 'pet-sip'}
+              transform-box="fill-box"
+              transform-origin="69px 74px"
+            >
+              {/* Animated rising steam puffs */}
+              <g
+                className={reducedMotion ? undefined : 'pet-steam'}
+                transform-box="fill-box"
+                transform-origin="50% 100%"
+              >
+                <path
+                  d="M 66 58 Q 64 54 66.5 50.5"
+                  stroke="#E2E8F0"
+                  strokeWidth={1.4}
+                  strokeLinecap="round"
+                  fill="none"
+                  opacity={0.7}
+                />
+                <path
+                  d="M 70.5 57.5 Q 72.5 53.5 69.5 49.5"
+                  stroke="#E2E8F0"
+                  strokeWidth={1.3}
+                  strokeLinecap="round"
+                  fill="none"
+                  opacity={0.65}
+                />
+                <circle cx={67.5} cy={54} r={1.2} fill="#E2E8F0" opacity={0.6} />
+                <circle cx={71} cy={51} r={1.0} fill="#E2E8F0" opacity={0.5} />
+              </g>
+
+              {/* Mug Body: warm coffee mug tone (#8D5B4C, #A36B5B) */}
+              <rect x={63} y={62} width={13} height={11} rx={2.5} fill="#8D5B4C" />
+              <rect x={63} y={62} width={13} height={3} rx={1.5} fill="#A36B5B" />
+              <ellipse cx={69.5} cy={63} rx={5} ry={1.2} fill="#3D2314" opacity={0.85} />
+
+              {/* Mug Handle: strokeWidth=2.2 */}
+              <path
+                d="M 76 64 C 80.5 64 80.5 70.5 76 70.5"
+                stroke="#8D5B4C"
+                strokeWidth={2.2}
+                strokeLinecap="round"
+                fill="none"
+              />
+            </g>
+          )}
+
+          {/* Working Laptop */}
+          {showLaptop && (
+            <g data-prop="laptop">
+              {/* Laptop open screen */}
+              <rect x={49} y={53} width={22} height={15} rx={1.5} fill="#1E293B" />
+
+              {/* Laptop glowing screen display */}
+              <rect
+                x={50.5}
+                y={54.5}
+                width={19}
+                height={12}
+                rx={1}
+                fill="#60A5FA"
+                className={reducedMotion ? undefined : 'pet-screen-glow'}
+              />
+
+              {/* Screen code/content lines */}
+              <g opacity={0.85}>
+                <rect x={52.5} y={56.5} width={7} height={1} rx={0.5} fill="#FFFFFF" opacity={0.9} />
+                <rect x={52.5} y={58.5} width={13} height={1} rx={0.5} fill="#FFFFFF" opacity={0.7} />
+                <rect x={54.5} y={60.5} width={10} height={1} rx={0.5} fill="#FFFFFF" opacity={0.7} />
+                <rect x={52.5} y={62.5} width={6} height={1} rx={0.5} fill="#93C5FD" opacity={0.8} />
+              </g>
+
+              {/* Laptop base */}
+              <rect x={46} y={68} width={28} height={4} rx={1.5} fill="#334155" />
+
+              {/* Keyboard detail */}
+              <rect x={48} y={69} width={24} height={2} rx={0.5} fill="#64748B" />
+            </g>
+          )}
+        </svg>
+      )}
 
       {/* Sleeping 'z z z' floating cue overhead */}
       {state === 'sleeping' && (
