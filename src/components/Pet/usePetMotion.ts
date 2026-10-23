@@ -302,7 +302,7 @@ export function usePetMotion({
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    if (paused || isDragging || focusActive || reducedMotion) {
+    if (paused || isDragging || focusActive) {
       clearTimers();
       setIsFlying(false);
       return;
@@ -315,7 +315,7 @@ export function usePetMotion({
     return () => {
       clearTimers();
     };
-  }, [paused, isDragging, focusActive, reducedMotion, roaming, clearTimers]);
+  }, [paused, isDragging, focusActive, roaming, clearTimers]);
 
   // Pointer drag handlers
   const onPointerDown = useCallback((e: React.PointerEvent<HTMLElement>) => {

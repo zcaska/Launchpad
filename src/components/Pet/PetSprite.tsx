@@ -431,20 +431,20 @@ function PetSpriteComponent({
           50% { opacity: 1; }
         }
 
-        /* Accessibility: Strict Reduced-Motion Suppression */
+        /* Accessibility: In-app reduced-motion suppression (.lp-reduced) */
         @media (prefers-reduced-motion: reduce) {
-          .lp-sprite-motion,
-          .pet-motion-idle-float,
-          .pet-motion-focus-steady,
-          .pet-motion-routine-bounce,
-          .pet-motion-major-celebration,
-          .pet-motion-return-greeting,
-          .pet-motion-low-energy,
-          .pet-motion-coffee-float,
-          .pet-motion-petted,
-          .pet-steam,
-          .pet-sip,
-          .pet-screen-glow {
+          .lp-reduced .lp-sprite-motion,
+          .lp-reduced .pet-motion-idle-float,
+          .lp-reduced .pet-motion-focus-steady,
+          .lp-reduced .pet-motion-routine-bounce,
+          .lp-reduced .pet-motion-major-celebration,
+          .lp-reduced .pet-motion-return-greeting,
+          .lp-reduced .pet-motion-low-energy,
+          .lp-reduced .pet-motion-coffee-float,
+          .lp-reduced .pet-motion-petted,
+          .lp-reduced .pet-steam,
+          .lp-reduced .pet-sip,
+          .lp-reduced .pet-screen-glow {
             animation: none !important;
             transition: none !important;
           }

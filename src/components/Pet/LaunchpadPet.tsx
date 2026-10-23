@@ -39,26 +39,14 @@ function LaunchpadPetComponent({
 }: LaunchpadPetProps) {
   const state: PetState = controller.state;
 
-  const [reduced, setReduced] = useState(
-    () => typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
-  );
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
-    const on = () => setReduced(mq.matches);
-    mq.addEventListener('change', on);
-    return () => mq.removeEventListener('change', on);
-  }, []);
-
   // Hovering/petting reaction: a quick wiggle and a heart.
   const [petted, setPetted] = useState(false);
   const petTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const onPet = useCallback(() => {
-    if (reduced) return;
     setPetted(true);
     if (petTimerRef.current) clearTimeout(petTimerRef.current);
     petTimerRef.current = setTimeout(() => setPetted(false), 1000);
-  }, [reduced]);
+  }, []);
 
   useEffect(() => () => {
     if (petTimerRef.current) clearTimeout(petTimerRef.current);
@@ -76,7 +64,7 @@ function LaunchpadPetComponent({
   const motion = usePetMotion({
     roaming: state === 'roaming',
     paused,
-    reducedMotion: reduced,
+    reducedMotion: paused,
     focusActive: state === 'focused',
   });
 
@@ -126,7 +114,7 @@ function LaunchpadPetComponent({
       style={{
         transform: `translate3d(${motion.pos.x}px, ${motion.pos.y}px, 0)`,
         transition:
-          reduced || motion.isDragging
+          paused || motion.isDragging
             ? undefined
             : `transform ${motion.durationMs}ms cubic-bezier(0.4, 0, 0.2, 1)`,
       }}
@@ -169,7 +157,7 @@ function LaunchpadPetComponent({
             isFlying={motion.isFlying}
             isDragging={motion.isDragging}
             isSippingCoffee={state === 'coffee-break'}
-            reducedMotion={reduced}
+            reducedMotion={paused}
             petted={petted}
           />
         </button>

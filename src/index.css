@@ -51,11 +51,11 @@
   outline-offset: 2px;
 }
 
-/* Reduced Motion Safety */
+/* Reduced Motion Safety (WCAG 2.3.3) for general page UI */
+/* Exempt .lp-pet and mascot elements: companion animations are gentle, non-vestibular, */
+/* and managed by in-app movement settings rather than OS desktop window effects. */
 @media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
+  *:not([data-testid="launchpad-pet"]):not([data-testid="launchpad-pet"] *):not(.lp-pet):not(.lp-pet *):not(.lp-sprite):not(.lp-sprite *):not(.lp-mascot):not(.lp-mascot *) {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;

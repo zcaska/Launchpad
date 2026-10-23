@@ -76,16 +76,8 @@ export function usePetController(opts: PetControllerOptions): PetController {
   const lastOverwhelmedRef = useRef(0);
   const lastCoffeeRef = useRef(0);
 
-  // System reduced-motion: gates hopping/roaming/particles at the source.
-  const [vibrateOk, setVibrateOk] = useState(
-    () => typeof window === 'undefined' || !window.matchMedia('(prefers-reduced-motion: reduce)').matches
-  );
-  useEffect(() => {
-    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
-    const onChange = () => setVibrateOk(!mq.matches);
-    mq.addEventListener('change', onChange);
-    return () => mq.removeEventListener('change', onChange);
-  }, []);
+  // Behavioral variations & roaming are active unless movement is explicitly paused in settings
+  const vibrateOk = !opts.paused;
 
   const apply = useCallback((next: PetState) => {
     stateRef.current = next;
