@@ -19,9 +19,9 @@ export const ConfirmDeleteModal: React.FC<ConfirmDeleteModalProps> = ({
   isOpen,
   onClose,
   onConfirm,
-  title = 'Delete Bookmark',
+  title = 'Confirm Delete',
   itemName,
-  description = 'Are you sure you want to delete this bookmark? This action cannot be undone.',
+  description = 'Are you sure you want to delete this item? This action cannot be undone.',
   confirmText = 'Delete',
   cancelText = 'Cancel',
 }) => {

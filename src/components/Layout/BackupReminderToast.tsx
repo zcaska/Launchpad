@@ -23,7 +23,7 @@ export const BackupReminderToast: React.FC<BackupReminderToastProps> = ({
             <ShieldAlert className="w-4 h-4" />
           </div>
           <p className="text-xs sm:text-sm text-serene-text-primary dark:text-serene-text-darkPrimary font-medium">
-            It has been <span className="font-semibold text-amber-700 dark:text-amber-400">{daysSinceLastBackup} days</span> since your last backup. Keep your hero levels, growth stats, and bookmarks safe.
+            It has been <span className="font-semibold text-amber-700 dark:text-amber-400">{daysSinceLastBackup} days</span> since your last backup. Keep your hero levels, growth stats, and tasks safe.
           </p>
         </div>
 

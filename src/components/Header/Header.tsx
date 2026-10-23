@@ -27,8 +27,6 @@ interface HeaderProps {
   onSelectView?: (view: 'dashboard' | 'tasks' | 'growth') => void;
   pendingTasksCount?: number;
   onToggleMobileSidebar?: () => void;
-  onOpenAddModal?: () => void;
-  onOpenBookmarkImport?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
