@@ -10,9 +10,9 @@
   }
 
   .dark {
-    --color-bg-primary: #13171d;
-    --color-surface-primary: #1c2127;
-    --color-border-subtle: #35404d;
+    --color-bg-primary: #000000;
+    --color-surface-primary: #0a0a0a;
+    --color-border-subtle: #222225;
   }
 
   body {
@@ -47,7 +47,7 @@
 }
 
 .dark *:focus-visible {
-  outline: 2px solid #a5cfc3;
+  outline: 2px solid #2dd4bf;
   outline-offset: 2px;
 }
 

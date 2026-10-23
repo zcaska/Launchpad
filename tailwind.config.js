@@ -11,40 +11,40 @@ export default {
         serene: {
           bg: {
             light: '#faf9fb',
-            dark: '#13171d',
+            dark: '#000000',
           },
           surface: {
             light: '#ffffff',
-            dark: '#1c2127',
+            dark: '#0a0a0a',
           },
           surfaceAlt: {
             light: '#f3f2f5',
-            dark: '#252b33',
+            dark: '#141416',
           },
           border: {
             light: '#e2e0e5',
-            dark: '#35404d',
+            dark: '#222225',
           },
           primary: {
             DEFAULT: '#264d44',
             hover: '#1d3c35',
             light: '#3e655b',
             soft: '#e6f3ef',
-            dark: '#a5cfc3',
-            darkHover: '#b8dcce',
+            dark: '#2dd4bf',
+            darkHover: '#5eead4',
           },
           secondary: {
             DEFAULT: '#416279',
             light: '#e8f2f8',
-            dark: '#a9cbe5',
+            dark: '#38bdf8',
           },
           text: {
             primary: '#1b1c1e',
             secondary: '#5f6764',
             muted: '#54625e',
-            darkPrimary: '#f2f1f4',
-            darkSecondary: '#9ca7a3',
-            darkMuted: '#8e9c97',
+            darkPrimary: '#ffffff',
+            darkSecondary: '#a1a1aa',
+            darkMuted: '#71717a',
           },
           accent: {
             amber: '#d97706',
