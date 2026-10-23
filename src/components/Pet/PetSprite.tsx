@@ -263,13 +263,25 @@ function Heart({ x, y, className }: { x: number; y: number; className?: string }
   );
 }
 
-function Glyphs({ state, tier, petted }: { state: PetState; tier: PetTier; petted: boolean }) {
+function Glyphs({
+  state,
+  tier,
+  petted,
+  facing,
+}: {
+  state: PetState;
+  tier: PetTier;
+  petted: boolean;
+  facing: 1 | -1;
+}) {
+  const flipX = (x: number) => (facing === -1 ? 100 - x : x);
+
   return (
     <g aria-hidden="true">
       {tier === 'active' && (
         <g fill={C.green}>
-          <circle cx={56} cy={14} r={3} />
-          <rect x={54} y={15} width={3} height={7} rx={1.5} />
+          <circle cx={flipX(56)} cy={14} r={3} />
+          <rect x={facing === -1 ? 43 : 54} y={15} width={3} height={7} rx={1.5} />
         </g>
       )}
       {(state === 'celebration-streak' || tier === 'streak-master') && (
@@ -280,32 +292,62 @@ function Glyphs({ state, tier, petted }: { state: PetState; tier: PetTier; pette
       )}
       {state === 'sleeping' && (
         <g fill={C.dark} opacity={0.7}>
-          <text x={72} y={22} fontSize={14} fontWeight="bold" className="pet-zbud">
+          <text
+            x={facing === -1 ? 28 : 72}
+            y={22}
+            fontSize={14}
+            fontWeight="bold"
+            textAnchor={facing === -1 ? 'end' : 'start'}
+            className="pet-zbud"
+          >
             z
           </text>
-          <text x={80} y={16} fontSize={10} fontWeight="bold" className="pet-zbud pet-zb2">
+          <text
+            x={facing === -1 ? 20 : 80}
+            y={16}
+            fontSize={10}
+            fontWeight="bold"
+            textAnchor={facing === -1 ? 'end' : 'start'}
+            className="pet-zbud pet-zb2"
+          >
             z
           </text>
-          <text x={86} y={12} fontSize={7} fontWeight="bold" className="pet-zbud pet-zb3">
+          <text
+            x={facing === -1 ? 14 : 86}
+            y={12}
+            fontSize={7}
+            fontWeight="bold"
+            textAnchor={facing === -1 ? 'end' : 'start'}
+            className="pet-zbud pet-zb3"
+          >
             z
           </text>
         </g>
       )}
       {state === 'curious' && (
         <g fill={C.dark}>
-          <text x={74} y={24} fontSize={20} fontWeight="bold" className="pet-look">
+          <text
+            x={facing === -1 ? 26 : 74}
+            y={24}
+            fontSize={20}
+            fontWeight="bold"
+            textAnchor={facing === -1 ? 'end' : 'start'}
+            className="pet-look"
+          >
             ?
           </text>
         </g>
       )}
       {state === 'thinking' && (
         <g fill={C.dark} opacity={0.7}>
-          <circle cx={66} cy={18} r={2.5} className="pet-zbud" />
-          <circle cx={74} cy={16} r={2.5} className="pet-zbud pet-zb2" />
-          <circle cx={82} cy={14} r={2.5} className="pet-zbud pet-zb3" />
+          <circle cx={flipX(66)} cy={18} r={2.5} className="pet-zbud" />
+          <circle cx={flipX(74)} cy={16} r={2.5} className="pet-zbud pet-zb2" />
+          <circle cx={flipX(82)} cy={14} r={2.5} className="pet-zbud pet-zb3" />
         </g>
       )}
-      {state === 'welcome-back' && <Heart x={14} y={12} className="pet-heart" />}
+      {state === 'welcome-back' && (
+        <Heart x={facing === -1 ? 76 : 14} y={12} className="pet-heart" />
+      )}
       {state === 'overwhelmed' && (
         <g fill={C.blue}>
           <circle cx={18} cy={40} r={3.5} className="pet-drop" />
@@ -316,7 +358,14 @@ function Glyphs({ state, tier, petted }: { state: PetState; tier: PetTier; pette
       )}
       {state === 'focused' && (
         <g fill={C.dark} opacity={0.8}>
-          <text x={76} y={22} fontSize={16} fontWeight="bold" className="pet-float">
+          <text
+            x={facing === -1 ? 24 : 76}
+            y={22}
+            fontSize={16}
+            fontWeight="bold"
+            textAnchor={facing === -1 ? 'end' : 'start'}
+            className="pet-float"
+          >
             ♪
           </text>
         </g>
@@ -337,8 +386,8 @@ function Glyphs({ state, tier, petted }: { state: PetState; tier: PetTier; pette
       )}
       {petted && (
         <>
-          <Heart x={70} y={12} className="pet-heart" />
-          <Spark x={20} y={28} color={C.body} />
+          <Heart x={facing === -1 ? 20 : 70} y={12} className="pet-heart" />
+          <Spark x={flipX(20)} y={28} color={C.body} />
         </>
       )}
     </g>
@@ -395,6 +444,7 @@ function PetSpriteComponent({
       width={80}
       height={80}
       viewBox="0 0 100 100"
+      shapeRendering="geometricPrecision"
       className={`lp-sprite w-14 h-14 sm:w-20 sm:h-20 ${reducedMotion ? 'lp-reduced' : ''} ${
         tier === 'streak-master' ? 'pet-glow' : ''
       }`}
@@ -589,7 +639,7 @@ function PetSpriteComponent({
           )}
         </g>
       </g>
-      <Glyphs state={state} tier={tier} petted={petted} />
+      <Glyphs state={state} tier={tier} petted={petted} facing={facing} />
     </svg>
   );
 }

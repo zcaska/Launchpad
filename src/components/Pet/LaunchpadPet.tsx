@@ -136,7 +136,6 @@ function LaunchpadPetComponent({
           type="button"
           {...motion.handlers}
           onPointerEnter={onPet}
-          onDoubleClick={onTogglePaused}
           className={`lp-pet pointer-events-auto block transition-opacity touch-none focus-visible:outline-2 focus-visible:outline-serene-primary dark:focus-visible:outline-serene-primary-dark ${
             motion.isDragging ? 'cursor-grabbing opacity-90' : 'cursor-grab opacity-95 hover:opacity-100'
           }`}
