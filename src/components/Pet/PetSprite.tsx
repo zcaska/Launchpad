@@ -1,4 +1,4 @@
-import { memo } from 'react';
+import { memo, useState, useEffect } from 'react';
 import type { PetState, PetTier } from '../../utils/petState';
 import { Mascot } from './Mascot';
 import {
@@ -36,7 +36,8 @@ export interface PetSpriteProps {
 function resolveMascotVisual(
   state: PetState,
   petted: boolean,
-  isDragging: boolean
+  isDragging: boolean,
+  idleMicroExpr: 'calm' | 'curious' | 'welcoming' = 'calm'
 ): {
   expression: MascotExpressionId;
   pose?: MascotPoseId;
@@ -174,6 +175,24 @@ function resolveMascotVisual(
 
     case 'idle':
     default:
+      if (idleMicroExpr === 'curious') {
+        return {
+          expression: 'curious',
+          leftFinAngle: 10,
+          rightFinAngle: -2,
+          glow: false,
+          sparkles: false,
+        };
+      }
+      if (idleMicroExpr === 'welcoming') {
+        return {
+          expression: 'welcoming',
+          leftFinAngle: 8,
+          rightFinAngle: 8,
+          glow: false,
+          sparkles: false,
+        };
+      }
       return {
         expression: 'calm',
         pose: 'idle',
@@ -194,7 +213,48 @@ function PetSpriteComponent({
   reducedMotion,
   petted,
 }: PetSpriteProps) {
-  const visual = resolveMascotVisual(state, petted, isDragging);
+  const [idleMicroExpr, setIdleMicroExpr] = useState<'calm' | 'curious' | 'welcoming'>('calm');
+
+  useEffect(() => {
+    if (state !== 'idle' || petted || isDragging || reducedMotion) {
+      setIdleMicroExpr('calm');
+      return;
+    }
+
+    let cycleTimeout: ReturnType<typeof setTimeout> | null = null;
+    let revertTimeout: ReturnType<typeof setTimeout> | null = null;
+    let isCancelled = false;
+
+    const scheduleDrift = () => {
+      // Ambient interval between 12-16s of calm
+      const calmDuration = 12000 + Math.random() * 4000;
+
+      cycleTimeout = setTimeout(() => {
+        if (isCancelled) return;
+        // Occasionally show gentle micro-attentive curiosity ('curious' or 'welcoming')
+        const nextExpr: 'curious' | 'welcoming' = Math.random() < 0.5 ? 'curious' : 'welcoming';
+        setIdleMicroExpr(nextExpr);
+
+        // Hold for 3-4s, then smoothly return to 'calm'
+        const peekDuration = 3200 + Math.random() * 800;
+        revertTimeout = setTimeout(() => {
+          if (isCancelled) return;
+          setIdleMicroExpr('calm');
+          scheduleDrift();
+        }, peekDuration);
+      }, calmDuration);
+    };
+
+    scheduleDrift();
+
+    return () => {
+      isCancelled = true;
+      if (cycleTimeout) clearTimeout(cycleTimeout);
+      if (revertTimeout) clearTimeout(revertTimeout);
+    };
+  }, [state, petted, isDragging, reducedMotion]);
+
+  const visual = resolveMascotVisual(state, petted, isDragging, idleMicroExpr);
 
   // Streak master tier adds a rich warm amber ambient aura
   const isStreakMaster = tier === 'streak-master';

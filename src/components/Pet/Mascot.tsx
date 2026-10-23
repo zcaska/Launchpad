@@ -416,15 +416,25 @@ function MascotComponent({
       </defs>
 
       <style>{`
-        .lp-mascot .mascot-float    { animation: mascot-float 3.4s ease-in-out infinite; }
-        .lp-mascot .mascot-fin-l    { transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1); }
-        .lp-mascot .mascot-fin-r    { transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1); }
-        .lp-mascot .mascot-sparkle  { animation: mascot-sparkle 1.8s ease-in-out infinite; }
-        .lp-mascot .mascot-eye-blink{ animation: mascot-blink 4.8s steps(1, end) infinite; transform-origin: center; }
+        .lp-mascot .mascot-float       { animation: mascot-float 3.6s ease-in-out infinite; }
+        .lp-mascot .mascot-fin-l       { transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1); }
+        .lp-mascot .mascot-fin-r       { transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1); }
+        .lp-mascot .mascot-fin-breathe-l { animation: mascot-fin-breathe-l 3.6s ease-in-out infinite; transform-origin: 26px 54px; }
+        .lp-mascot .mascot-fin-breathe-r { animation: mascot-fin-breathe-r 3.6s ease-in-out infinite; transform-origin: 94px 54px; }
+        .lp-mascot .mascot-sparkle     { animation: mascot-sparkle 1.8s ease-in-out infinite; }
+        .lp-mascot .mascot-eye-blink   { animation: mascot-blink 4.8s steps(1, end) infinite; transform-box: fill-box; transform-origin: 50% 50%; }
 
         @keyframes mascot-float {
-          0%, 100% { transform: translateY(0); }
-          50%      { transform: translateY(-3px); }
+          0%, 100% { transform: translateY(0px); }
+          50%      { transform: translateY(-3.5px); }
+        }
+        @keyframes mascot-fin-breathe-l {
+          0%, 100% { transform: rotate(0deg); }
+          50%      { transform: rotate(-2.5deg); }
+        }
+        @keyframes mascot-fin-breathe-r {
+          0%, 100% { transform: rotate(0deg); }
+          50%      { transform: rotate(2.5deg); }
         }
         @keyframes mascot-sparkle {
           0%, 100% { opacity: 0; transform: scale(0.3); }
@@ -482,16 +492,21 @@ function MascotComponent({
               transformOrigin: '26px 54px',
             }}
           >
-            <path
-              d="M 26 49 C 16 46, 7 51, 6 60 C 5 67, 13 70, 26 59 Z"
-              fill={`url(#${ids.leftFinGrad})`}
-            />
-            {/* Soft inner texture highlight on fin */}
-            <path
-              d="M 24 51 C 18 49, 11 53, 10 59 C 14 57, 19 55, 25 54 Z"
-              fill={P.highlight}
-              opacity={0.55}
-            />
+            <g
+              className={!reducedMotion ? 'mascot-fin-breathe-l' : undefined}
+              style={{ transformOrigin: '26px 54px' }}
+            >
+              <path
+                d="M 26 49 C 16 46, 7 51, 6 60 C 5 67, 13 70, 26 59 Z"
+                fill={`url(#${ids.leftFinGrad})`}
+              />
+              {/* Soft inner texture highlight on fin */}
+              <path
+                d="M 24 51 C 18 49, 11 53, 10 59 C 14 57, 19 55, 25 54 Z"
+                fill={P.highlight}
+                opacity={0.55}
+              />
+            </g>
           </g>
 
           {/*
@@ -507,16 +522,21 @@ function MascotComponent({
               transformOrigin: '94px 54px',
             }}
           >
-            <path
-              d="M 94 49 C 104 46, 113 51, 114 60 C 115 67, 107 70, 94 59 Z"
-              fill={`url(#${ids.rightFinGrad})`}
-            />
-            {/* Soft inner texture highlight on fin */}
-            <path
-              d="M 96 51 C 102 49, 109 53, 110 59 C 106 57, 101 55, 95 54 Z"
-              fill={P.highlight}
-              opacity={0.55}
-            />
+            <g
+              className={!reducedMotion ? 'mascot-fin-breathe-r' : undefined}
+              style={{ transformOrigin: '94px 54px' }}
+            >
+              <path
+                d="M 94 49 C 104 46, 113 51, 114 60 C 115 67, 107 70, 94 59 Z"
+                fill={`url(#${ids.rightFinGrad})`}
+              />
+              {/* Soft inner texture highlight on fin */}
+              <path
+                d="M 96 51 C 102 49, 109 53, 110 59 C 106 57, 101 55, 95 54 Z"
+                fill={P.highlight}
+                opacity={0.55}
+              />
+            </g>
           </g>
 
           {/*
