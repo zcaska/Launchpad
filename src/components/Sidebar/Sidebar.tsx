@@ -84,7 +84,7 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
 
   const heroLevelBadge = activeHero ? `Lvl ${activeHero.level}` : 'Lvl 1';
 
-  const handleNavClick = (view: 'dashboard' | 'tasks' | 'growth') => {
+  const handleMobileNavClick = (view: 'dashboard' | 'tasks' | 'growth') => {
     if (onSelectView) {
       onSelectView(view);
     }
@@ -95,121 +95,101 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
 
   const getSuggestionIcon = (cand: RecommendationCandidate) => {
     const text = (cand.title + ' ' + (cand.tags || []).join(' ')).toLowerCase();
-    if (text.includes('book') || text.includes('reading')) return <BookOpen className="w-4 h-4 text-amber-500" />;
-    if (text.includes('mail') || text.includes('inbox')) return <Mail className="w-4 h-4 text-sky-500" />;
+    if (text.includes('book') || text.includes('reading')) return <BookOpen className="w-4.5 h-4.5 text-amber-500" />;
+    if (text.includes('mail') || text.includes('inbox')) return <Mail className="w-4.5 h-4.5 text-sky-500" />;
     if (text.includes('posture') || text.includes('hydrate') || text.includes('breath') || text.includes('coffee')) {
-      return <Coffee className="w-4 h-4 text-emerald-500" />;
+      return <Coffee className="w-4.5 h-4.5 text-emerald-500" />;
     }
-    return <Sparkles className="w-4 h-4 text-amber-500" />;
+    return <Sparkles className="w-4.5 h-4.5 text-amber-500" />;
   };
 
   const isHabit = suggestionCandidate?.kind === 'habit' || !suggestionCandidate?.url;
 
   return (
     <>
-      {/* Mobile Backdrop */}
+      {/* =========================================================================
+          1. MOBILE OFF-CANVAS DRAWER (< md)
+          ========================================================================= */}
       {isMobileOpen && (
         <div
-          className="fixed inset-0 bg-black/40 backdrop-blur-xs z-40 lg:hidden"
+          className="fixed inset-0 bg-black/40 backdrop-blur-xs z-40 md:hidden"
           onClick={onCloseMobile}
         />
       )}
 
-      {/* Main Sidebar Container */}
       <aside
-        className={`fixed top-0 bottom-0 left-0 z-50 flex flex-col bg-white/95 dark:bg-serene-surface-dark/95 backdrop-blur-md border-r border-serene-border-light dark:border-serene-border-dark transition-all duration-300 ease-in-out ${
-          isCollapsed ? 'w-16' : 'w-64 sm:w-72'
-        } ${isMobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}
+        className={`fixed inset-y-0 left-0 z-50 w-72 max-w-[85vw] bg-white dark:bg-serene-surface-dark shadow-2xl flex flex-col md:hidden transition-transform duration-300 ease-in-out border-r border-serene-border-light dark:border-serene-border-dark ${
+          isMobileOpen ? 'translate-x-0' : '-translate-x-full pointer-events-none'
+        }`}
       >
-        <div className="flex flex-col h-full p-3 select-none">
-          {/* Header & Logo */}
-          <div className="flex items-center justify-between mb-4 pb-3 border-b border-serene-border-light/60 dark:border-serene-border-dark/60">
-            {!isCollapsed ? (
-              <div className="flex items-center gap-2.5 px-1 min-w-0">
-                <div className="w-8 h-8 rounded-xl bg-serene-primary flex items-center justify-center text-white font-bold text-sm shadow-xs shrink-0">
-                  <Compass className="w-4 h-4 text-white" />
-                </div>
-                <div className="min-w-0">
-                  <h1 className="text-sm font-bold tracking-tight text-serene-text-primary dark:text-serene-text-darkPrimary truncate">
-                    LaunchPad
-                  </h1>
-                  <p className="text-[10px] text-serene-text-muted truncate">
-                    Focus Station
-                  </p>
-                </div>
-              </div>
-            ) : (
-              <div className="w-8 h-8 mx-auto rounded-xl bg-serene-primary flex items-center justify-center text-white font-bold text-sm shadow-xs">
-                <Compass className="w-4 h-4 text-white" />
-              </div>
-            )}
-
-            {/* Desktop Collapse / Mobile Close */}
-            <div className="flex items-center gap-1">
-              <button
-                onClick={onToggleCollapse}
-                title={isCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'}
-                className="hidden lg:flex p-1.5 rounded-lg text-serene-text-muted hover:text-serene-text-primary dark:hover:text-serene-text-darkPrimary hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
-              >
-                {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
-              </button>
-              <button
-                onClick={onCloseMobile}
-                className="lg:hidden p-1.5 rounded-lg text-serene-text-muted hover:text-serene-text-primary dark:hover:text-serene-text-darkPrimary"
-              >
-                <X className="w-4 h-4" />
-              </button>
+        {/* Mobile Drawer Header */}
+        <div className="flex items-center justify-between p-4 border-b border-serene-border-light/70 dark:border-serene-border-dark/70 shrink-0">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-serene-primary/10 text-serene-primary dark:text-serene-primary-dark flex items-center justify-center font-bold">
+              <Compass className="w-5 h-5 stroke-[2]" />
+            </div>
+            <div>
+              <span className="font-bold text-sm text-serene-text-primary dark:text-serene-text-darkPrimary block leading-tight">
+                Navigation & Focus
+              </span>
+              <span className="text-[10px] text-serene-text-muted">LaunchPad</span>
             </div>
           </div>
+          <button
+            type="button"
+            onClick={onCloseMobile}
+            className="p-1.5 rounded-lg text-serene-text-muted hover:text-serene-text-primary dark:hover:text-serene-text-darkPrimary hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+            aria-label="Close navigation"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
 
-          {/* Primary Navigation */}
+        {/* Mobile Navigation List */}
+        <div className="p-3 flex-1 flex flex-col gap-2 overflow-y-auto">
           <div className="space-y-1">
-            {!isCollapsed && (
-              <span className="px-2 text-[10px] font-bold uppercase tracking-wider text-serene-text-muted">
-                Workspace
-              </span>
-            )}
+            <div className="px-3 py-1.5 text-[11px] font-bold text-serene-text-muted uppercase tracking-wider">
+              Workspace
+            </div>
 
-            {/* Focus Dashboard */}
+            {/* Overview / Dashboard */}
             <button
-              onClick={() => handleNavClick('dashboard')}
-              title={isCollapsed ? 'Focus Dashboard' : undefined}
-              className={`relative w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
+              type="button"
+              onClick={() => handleMobileNavClick('dashboard')}
+              className={`relative w-full flex items-center gap-3.5 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all ${
                 currentView === 'dashboard'
                   ? 'text-white'
                   : 'text-serene-text-secondary dark:text-serene-text-darkSecondary hover:bg-serene-surfaceAlt-light dark:hover:bg-serene-surfaceAlt-dark'
               }`}
             >
               {currentView === 'dashboard' && (
-                <ActivePill layoutId="activeNavPill" tone="primary" transition={{ type: 'spring', bounce: 0.15, duration: 0.3 }} />
+                <ActivePill layoutId="navPillMobile" tone="primary" transition={{ type: 'spring', bounce: 0.15, duration: 0.3 }} />
               )}
-              <Compass className="w-4 h-4 shrink-0" />
-              {!isCollapsed && <span className="truncate">Overview</span>}
+              <Compass className={`w-5 h-5 shrink-0 stroke-[2] ${currentView === 'dashboard' ? 'text-white' : 'text-serene-primary dark:text-serene-primary-dark'}`} />
+              <span className="flex-1 text-left truncate">Overview</span>
             </button>
 
             {/* Tasks & Action Items */}
             <button
-              onClick={() => handleNavClick('tasks')}
-              title={isCollapsed ? `Tasks (${pendingTasksCount} pending)` : undefined}
-              className={`relative w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
+              type="button"
+              onClick={() => handleMobileNavClick('tasks')}
+              className={`relative w-full flex items-center gap-3.5 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all ${
                 currentView === 'tasks'
                   ? 'text-white'
                   : 'text-serene-text-secondary dark:text-serene-text-darkSecondary hover:bg-serene-surfaceAlt-light dark:hover:bg-serene-surfaceAlt-dark'
               }`}
             >
               {currentView === 'tasks' && (
-                <ActivePill layoutId="activeNavPill" tone="primary" transition={{ type: 'spring', bounce: 0.15, duration: 0.3 }} />
+                <ActivePill layoutId="navPillMobile" tone="primary" transition={{ type: 'spring', bounce: 0.15, duration: 0.3 }} />
               )}
-              <div className="flex items-center gap-3 min-w-0">
-                <CheckSquare className="w-4 h-4 shrink-0" />
-                {!isCollapsed && <span className="truncate">Tasks & Queue</span>}
-              </div>
+              <CheckSquare className={`w-5 h-5 shrink-0 stroke-[2] ${currentView === 'tasks' ? 'text-white' : 'text-teal-600 dark:text-teal-400'}`} />
+              <span className="flex-1 text-left truncate">Tasks & Queue</span>
               {pendingTasksCount > 0 && (
                 <span
-                  className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-full ${
+                  className={`text-xs font-mono font-bold px-2 py-0.5 rounded-full ${
                     currentView === 'tasks'
-                      ? 'bg-white/20 text-white'
-                      : 'bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-300'
+                      ? 'bg-white/25 text-white'
+                      : 'bg-teal-500/15 text-teal-700 dark:text-teal-300 border border-teal-500/20'
                   }`}
                 >
                   {pendingTasksCount}
@@ -219,98 +199,344 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
 
             {/* Growth & Mastery */}
             <button
-              onClick={() => handleNavClick('growth')}
-              title={isCollapsed ? `Growth (${heroLevelBadge})` : undefined}
-              className={`relative w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
+              type="button"
+              onClick={() => handleMobileNavClick('growth')}
+              className={`relative w-full flex items-center gap-3.5 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all ${
                 currentView === 'growth'
                   ? 'text-white'
                   : 'text-serene-text-secondary dark:text-serene-text-darkSecondary hover:bg-serene-surfaceAlt-light dark:hover:bg-serene-surfaceAlt-dark'
               }`}
             >
               {currentView === 'growth' && (
-                <ActivePill layoutId="activeNavPill" tone="primary" transition={{ type: 'spring', bounce: 0.15, duration: 0.3 }} />
+                <ActivePill layoutId="navPillMobile" tone="primary" transition={{ type: 'spring', bounce: 0.15, duration: 0.3 }} />
               )}
-              <div className="flex items-center gap-3 min-w-0">
-                <Trophy className="w-4 h-4 shrink-0 text-amber-500" />
-                {!isCollapsed && <span className="truncate">Growth & Mastery</span>}
-              </div>
-              {!isCollapsed && (
-                <span
-                  className={`text-[10px] font-medium px-1.5 py-0.5 rounded-md ${
-                    currentView === 'growth'
-                      ? 'bg-white/20 text-white'
-                      : 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'
-                  }`}
-                >
-                  {heroLevelBadge}
-                </span>
-              )}
+              <Trophy className={`w-5 h-5 shrink-0 stroke-[2] ${currentView === 'growth' ? 'text-white' : 'text-amber-500 dark:text-amber-400'}`} />
+              <span className="flex-1 text-left truncate">Growth & Mastery</span>
+              <span
+                className={`text-xs font-semibold px-2 py-0.5 rounded-md ${
+                  currentView === 'growth'
+                    ? 'bg-white/25 text-white'
+                    : 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/20'
+                }`}
+              >
+                {heroLevelBadge}
+              </span>
             </button>
 
             {/* Scratchpad Toggle */}
             {onOpenScratchpad && (
               <button
+                type="button"
                 onClick={() => {
                   onOpenScratchpad();
                   if (onCloseMobile) onCloseMobile();
                 }}
-                title={isCollapsed ? 'Quick Scratchpad' : undefined}
-                className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-medium text-serene-text-secondary dark:text-serene-text-darkSecondary hover:bg-serene-surfaceAlt-light dark:hover:bg-serene-surfaceAlt-dark transition-colors"
+                className="w-full flex items-center gap-3.5 px-3.5 py-2.5 rounded-xl text-sm font-medium text-serene-text-secondary dark:text-serene-text-darkSecondary hover:bg-serene-surfaceAlt-light dark:hover:bg-serene-surfaceAlt-dark transition-colors cursor-pointer"
               >
-                <FileText className="w-4 h-4 shrink-0 text-stone-500" />
-                {!isCollapsed && <span className="truncate">Scratchpad</span>}
+                <FileText className="w-5 h-5 shrink-0 stroke-[2] text-stone-500 dark:text-stone-400" />
+                <span className="flex-1 text-left truncate">Scratchpad</span>
+              </button>
+            )}
+          </div>
+
+          {/* Section Divider */}
+          <div className="h-[1px] bg-serene-border-light/70 dark:bg-serene-border-dark/70 my-2 mx-1" />
+
+          {/* Focus Spark Card in Mobile Drawer */}
+          {suggestionCandidate && (
+            <div className="rounded-2xl bg-amber-500/5 dark:bg-amber-500/10 border border-amber-500/20 p-3.5 flex flex-col justify-between shadow-2xs space-y-3">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <span className="p-1.5 rounded-lg bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+                    {getSuggestionIcon(suggestionCandidate)}
+                  </span>
+                  <span className="text-xs font-bold uppercase tracking-wider text-amber-800 dark:text-amber-300">
+                    Focus Spark
+                  </span>
+                </div>
+                <span className="inline-flex items-center gap-1 text-xs font-semibold text-serene-text-muted">
+                  <Clock className="w-3.5 h-3.5" />
+                  {suggestionCandidate.durationEstimateMinutes}m
+                </span>
+              </div>
+              <div>
+                <h4 className="text-sm font-bold text-serene-text-primary dark:text-serene-text-darkPrimary leading-snug line-clamp-2">
+                  {suggestionCandidate.title}
+                </h4>
+                {suggestionCandidate.description && (
+                  <p className="text-xs text-serene-text-secondary dark:text-serene-text-darkSecondary mt-1 line-clamp-2 leading-relaxed">
+                    {suggestionCandidate.description}
+                  </p>
+                )}
+              </div>
+              <div className="flex items-center justify-between gap-2 pt-2 border-t border-amber-500/15">
+                <button
+                  type="button"
+                  onClick={() => onRejectSuggestion?.(suggestionCandidate)}
+                  className="px-2.5 py-1.5 rounded-lg text-xs font-medium text-serene-text-secondary dark:text-serene-text-darkSecondary hover:bg-stone-200/60 dark:hover:bg-stone-800/60 transition-colors flex items-center gap-1.5"
+                >
+                  <RotateCw className="w-3.5 h-3.5" />
+                  <span>Another</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onApproveSuggestion?.(suggestionCandidate);
+                    if (suggestionCandidate.url) {
+                      window.open(suggestionCandidate.url, '_blank', 'noopener,noreferrer');
+                    }
+                  }}
+                  className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-serene-primary hover:bg-serene-primary-hover text-white shadow-xs transition-all flex items-center gap-1.5"
+                >
+                  {isHabit ? <Check className="w-3.5 h-3.5" /> : <ExternalLink className="w-3.5 h-3.5" />}
+                  <span>{isHabit ? "I'll do this" : "Open"}</span>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* User Profile in Mobile Drawer */}
+          <div className="pt-2 mt-auto shrink-0 border-t border-serene-border-light/70 dark:border-serene-border-dark/70">
+            <div className="w-full flex items-center gap-3 px-3 py-2 rounded-xl bg-serene-surfaceAlt-light/70 dark:bg-serene-surfaceAlt-dark/70 border border-serene-border-light/60 dark:border-serene-border-dark/60">
+              <div className="w-9 h-9 rounded-xl bg-serene-primary/10 dark:bg-serene-primary-dark/20 border border-serene-primary/20 flex items-center justify-center text-serene-primary dark:text-serene-primary-dark font-bold text-sm shrink-0">
+                {userEmail ? userEmail.charAt(0).toUpperCase() : <User className="w-4 h-4 text-serene-primary" />}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-semibold truncate text-serene-text-primary dark:text-serene-text-darkPrimary">
+                  {userEmail ? userEmail.split('@')[0] : 'LaunchPad User'}
+                </p>
+                <p className="text-[11px] text-serene-text-muted truncate">
+                  {userEmail || 'Focus Session Active'}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      {/* =========================================================================
+          2. DESKTOP PERSISTENT SIDEBAR (>= md)
+          In-flow flex item: relative h-full shrink-0 (NEVER overlaps main content)
+          ========================================================================= */}
+      <aside
+        className={`relative h-full bg-white/70 dark:bg-serene-surface-dark/70 backdrop-blur-md border-r border-serene-border-light dark:border-serene-border-dark hidden md:flex flex-col shrink-0 transition-all duration-300 select-none ${
+          isCollapsed ? 'w-[76px]' : 'w-64 lg:w-72'
+        }`}
+      >
+        {/* Floating Border Collapse/Expand Trigger Button */}
+        <button
+          type="button"
+          onClick={onToggleCollapse}
+          title={isCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'}
+          aria-label={isCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'}
+          className="absolute -right-3 top-5 w-6 h-6 bg-white dark:bg-serene-surface-dark border border-serene-border-light dark:border-serene-border-dark rounded-full flex items-center justify-center text-serene-text-muted hover:text-serene-primary dark:hover:text-serene-primary-dark shadow-xs z-30 transition-transform hover:scale-110 cursor-pointer"
+        >
+          {isCollapsed ? <ChevronRight className="w-3.5 h-3.5" /> : <ChevronLeft className="w-3.5 h-3.5" />}
+        </button>
+
+        {/* Desktop Sidebar Scrollable Content */}
+        <div className="p-3 flex-1 flex flex-col gap-2 overflow-y-auto">
+          {/* Top Section / Header */}
+          {!isCollapsed ? (
+            <div className="px-3 pt-2 pb-1 text-xs font-bold text-serene-text-muted uppercase tracking-wider">
+              Workspace
+            </div>
+          ) : (
+            <div className="pt-2" />
+          )}
+
+          {/* Primary Navigation Items */}
+          <div className="space-y-1.5">
+            {/* Overview / Focus Dashboard */}
+            <button
+              type="button"
+              onClick={() => onSelectView?.('dashboard')}
+              title={isCollapsed ? 'Focus Dashboard' : undefined}
+              className={`relative flex items-center transition-all cursor-pointer ${
+                isCollapsed
+                  ? 'w-12 h-12 mx-auto justify-center rounded-xl'
+                  : 'w-full gap-3.5 px-3.5 py-2.5 rounded-xl text-sm font-semibold'
+              } ${
+                currentView === 'dashboard'
+                  ? 'text-white'
+                  : 'text-serene-text-secondary dark:text-serene-text-darkSecondary hover:bg-serene-surfaceAlt-light dark:hover:bg-serene-surfaceAlt-dark hover:text-serene-text-primary dark:hover:text-serene-text-darkPrimary'
+              }`}
+            >
+              {currentView === 'dashboard' && (
+                <ActivePill layoutId="navPillDesktop" tone="primary" transition={{ type: 'spring', bounce: 0.15, duration: 0.3 }} />
+              )}
+              <Compass
+                className={`shrink-0 stroke-[2] ${
+                  isCollapsed ? 'w-6 h-6' : 'w-5 h-5'
+                } ${
+                  currentView === 'dashboard' ? 'text-white' : 'text-serene-primary dark:text-serene-primary-dark'
+                }`}
+              />
+              {!isCollapsed && <span className="flex-1 text-left truncate">Overview</span>}
+            </button>
+
+            {/* Tasks & Action Items */}
+            <button
+              type="button"
+              onClick={() => onSelectView?.('tasks')}
+              title={isCollapsed ? `Tasks (${pendingTasksCount} pending)` : undefined}
+              className={`relative flex items-center transition-all cursor-pointer ${
+                isCollapsed
+                  ? 'w-12 h-12 mx-auto justify-center rounded-xl'
+                  : 'w-full gap-3.5 px-3.5 py-2.5 rounded-xl text-sm font-semibold'
+              } ${
+                currentView === 'tasks'
+                  ? 'text-white'
+                  : 'text-serene-text-secondary dark:text-serene-text-darkSecondary hover:bg-serene-surfaceAlt-light dark:hover:bg-serene-surfaceAlt-dark hover:text-serene-text-primary dark:hover:text-serene-text-darkPrimary'
+              }`}
+            >
+              {currentView === 'tasks' && (
+                <ActivePill layoutId="navPillDesktop" tone="primary" transition={{ type: 'spring', bounce: 0.15, duration: 0.3 }} />
+              )}
+              <CheckSquare
+                className={`shrink-0 stroke-[2] ${
+                  isCollapsed ? 'w-6 h-6' : 'w-5 h-5'
+                } ${
+                  currentView === 'tasks' ? 'text-white' : 'text-teal-600 dark:text-teal-400'
+                }`}
+              />
+              {!isCollapsed ? (
+                <>
+                  <span className="flex-1 text-left truncate">Tasks & Queue</span>
+                  {pendingTasksCount > 0 && (
+                    <span
+                      className={`text-xs font-mono font-bold px-2 py-0.5 rounded-full ${
+                        currentView === 'tasks'
+                          ? 'bg-white/25 text-white'
+                          : 'bg-teal-500/15 text-teal-700 dark:text-teal-300 border border-teal-500/20'
+                      }`}
+                    >
+                      {pendingTasksCount}
+                    </span>
+                  )}
+                </>
+              ) : (
+                pendingTasksCount > 0 && (
+                  <span className="absolute -top-1 -right-1 min-w-[20px] h-5 px-1 rounded-full bg-rose-500 text-white font-mono font-bold text-[10px] flex items-center justify-center shadow-xs">
+                    {pendingTasksCount > 99 ? '99+' : pendingTasksCount}
+                  </span>
+                )
+              )}
+            </button>
+
+            {/* Growth & Mastery */}
+            <button
+              type="button"
+              onClick={() => onSelectView?.('growth')}
+              title={isCollapsed ? `Growth & Mastery (${heroLevelBadge})` : undefined}
+              className={`relative flex items-center transition-all cursor-pointer ${
+                isCollapsed
+                  ? 'w-12 h-12 mx-auto justify-center rounded-xl'
+                  : 'w-full gap-3.5 px-3.5 py-2.5 rounded-xl text-sm font-semibold'
+              } ${
+                currentView === 'growth'
+                  ? 'text-white'
+                  : 'text-serene-text-secondary dark:text-serene-text-darkSecondary hover:bg-serene-surfaceAlt-light dark:hover:bg-serene-surfaceAlt-dark hover:text-serene-text-primary dark:hover:text-serene-text-darkPrimary'
+              }`}
+            >
+              {currentView === 'growth' && (
+                <ActivePill layoutId="navPillDesktop" tone="primary" transition={{ type: 'spring', bounce: 0.15, duration: 0.3 }} />
+              )}
+              <Trophy
+                className={`shrink-0 stroke-[2] ${
+                  isCollapsed ? 'w-6 h-6' : 'w-5 h-5'
+                } ${
+                  currentView === 'growth' ? 'text-white' : 'text-amber-500 dark:text-amber-400'
+                }`}
+              />
+              {!isCollapsed && (
+                <>
+                  <span className="flex-1 text-left truncate">Growth & Mastery</span>
+                  <span
+                    className={`text-xs font-semibold px-2 py-0.5 rounded-md ${
+                      currentView === 'growth'
+                        ? 'bg-white/25 text-white'
+                        : 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/20'
+                    }`}
+                  >
+                    {heroLevelBadge}
+                  </span>
+                </>
+              )}
+            </button>
+
+            {/* Quick Scratchpad */}
+            {onOpenScratchpad && (
+              <button
+                type="button"
+                onClick={onOpenScratchpad}
+                title={isCollapsed ? 'Quick Scratchpad' : undefined}
+                className={`flex items-center transition-all cursor-pointer ${
+                  isCollapsed
+                    ? 'w-12 h-12 mx-auto justify-center rounded-xl'
+                    : 'w-full gap-3.5 px-3.5 py-2.5 rounded-xl text-sm font-medium'
+                } text-serene-text-secondary dark:text-serene-text-darkSecondary hover:bg-serene-surfaceAlt-light dark:hover:bg-serene-surfaceAlt-dark hover:text-serene-text-primary dark:hover:text-serene-text-darkPrimary`}
+              >
+                <FileText
+                  className={`shrink-0 stroke-[2] text-stone-500 dark:text-stone-400 ${
+                    isCollapsed ? 'w-6 h-6' : 'w-5 h-5'
+                  }`}
+                />
+                {!isCollapsed && <span className="flex-1 text-left truncate">Scratchpad</span>}
               </button>
             )}
           </div>
 
           {/* Section Divider */}
           <div
-            className={`h-[1px] bg-serene-border-light dark:bg-serene-border-dark my-3.5 ${
+            className={`h-[1px] bg-serene-border-light/70 dark:bg-serene-border-dark/70 my-2 ${
               isCollapsed ? 'w-8 mx-auto' : 'mx-1'
             }`}
           />
 
           {/* Embedded Live Focus Spark Idea Card */}
-          <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
+          <div className="flex-1 flex flex-col justify-start min-h-0">
             {!isCollapsed ? (
               suggestionCandidate ? (
-                <div className="rounded-2xl bg-serene-surfaceAlt-light/60 dark:bg-serene-surfaceAlt-dark/60 border border-serene-border-light/80 dark:border-serene-border-dark/80 p-3 flex flex-col justify-between shadow-2xs space-y-2.5">
-                  <div className="flex items-center justify-between gap-1.5">
-                    <div className="flex items-center gap-1.5">
-                      <span className="p-1 rounded-md bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400">
+                <div className="rounded-2xl bg-amber-500/5 dark:bg-amber-500/10 border border-amber-500/20 p-3.5 flex flex-col justify-between shadow-2xs space-y-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <span className="p-1.5 rounded-lg bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center">
                         {getSuggestionIcon(suggestionCandidate)}
                       </span>
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-serene-text-muted">
+                      <span className="text-xs font-bold uppercase tracking-wider text-amber-800 dark:text-amber-300">
                         Focus Spark
                       </span>
                     </div>
-                    <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-serene-text-muted">
-                      <Clock className="w-3 h-3" />
+                    <span className="inline-flex items-center gap-1 text-xs font-semibold text-serene-text-muted">
+                      <Clock className="w-3.5 h-3.5" />
                       {suggestionCandidate.durationEstimateMinutes}m
                     </span>
                   </div>
 
                   <div>
-                    <h4 className="text-xs font-bold text-serene-text-primary dark:text-serene-text-darkPrimary leading-snug line-clamp-2">
+                    <h4 className="text-sm font-bold text-serene-text-primary dark:text-serene-text-darkPrimary leading-snug line-clamp-2">
                       {suggestionCandidate.title}
                     </h4>
                     {suggestionCandidate.description && (
-                      <p className="text-[11px] text-serene-text-secondary dark:text-serene-text-darkSecondary mt-1 line-clamp-2 leading-relaxed">
+                      <p className="text-xs text-serene-text-secondary dark:text-serene-text-darkSecondary mt-1 line-clamp-2 leading-relaxed">
                         {suggestionCandidate.description}
                       </p>
                     )}
                   </div>
 
-                  <div className="flex items-center justify-between gap-1.5 pt-1 border-t border-serene-border-light/50 dark:border-serene-border-dark/50">
+                  <div className="flex items-center justify-between gap-2 pt-2 border-t border-amber-500/15">
                     <button
+                      type="button"
                       onClick={() => onRejectSuggestion?.(suggestionCandidate)}
                       title="Next focus suggestion"
-                      className="px-2 py-1 rounded-lg text-[10px] font-semibold text-serene-text-secondary dark:text-serene-text-darkSecondary hover:bg-stone-200/60 dark:hover:bg-stone-800/60 transition-colors flex items-center gap-1"
+                      className="px-2.5 py-1.5 rounded-lg text-xs font-medium text-serene-text-secondary dark:text-serene-text-darkSecondary hover:bg-stone-200/60 dark:hover:bg-stone-800/60 transition-colors flex items-center gap-1.5 cursor-pointer"
                     >
-                      <RotateCw className="w-3 h-3" />
+                      <RotateCw className="w-3.5 h-3.5" />
                       <span>Another</span>
                     </button>
                     <button
+                      type="button"
                       onClick={() => {
                         onApproveSuggestion?.(suggestionCandidate);
                         if (suggestionCandidate.url) {
@@ -318,61 +544,61 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                         }
                       }}
                       title={isHabit ? "Commit to this habit" : "Open resource"}
-                      className="px-2.5 py-1 rounded-lg text-[10px] font-semibold bg-serene-primary hover:bg-serene-primary-hover text-white shadow-2xs transition-all flex items-center gap-1"
+                      className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-serene-primary hover:bg-serene-primary-hover text-white shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
                     >
-                      {isHabit ? <Check className="w-3 h-3" /> : <ExternalLink className="w-3 h-3" />}
+                      {isHabit ? <Check className="w-3.5 h-3.5" /> : <ExternalLink className="w-3.5 h-3.5" />}
                       <span>{isHabit ? "I'll do this" : "Open"}</span>
                     </button>
                   </div>
                 </div>
               ) : (
-                <div className="p-3 text-center rounded-xl border border-dashed border-serene-border-light dark:border-serene-border-dark text-[11px] text-serene-text-muted">
-                  <Lightbulb className="w-4 h-4 mx-auto mb-1 text-amber-500" />
+                <div className="p-4 text-center rounded-2xl border border-dashed border-serene-border-light dark:border-serene-border-dark text-xs text-serene-text-muted">
+                  <Lightbulb className="w-5 h-5 mx-auto mb-1.5 text-amber-500" />
                   <span>Runway clear</span>
                 </div>
               )
             ) : (
               suggestionCandidate && (
                 <button
+                  type="button"
                   onClick={() => onRejectSuggestion?.(suggestionCandidate)}
-                  title={`Focus Spark: ${suggestionCandidate.title}`}
-                  className="w-10 h-10 mx-auto rounded-xl bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark border border-serene-border-light dark:border-serene-border-dark flex items-center justify-center text-amber-500 hover:text-amber-600 transition-colors shadow-2xs"
+                  title={`Focus Spark: ${suggestionCandidate.title} (Click for another)`}
+                  className="w-12 h-12 mx-auto rounded-xl bg-amber-500/10 dark:bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-500 hover:text-amber-600 dark:hover:text-amber-400 hover:scale-105 transition-all shadow-2xs cursor-pointer group"
                 >
-                  <Lightbulb className="w-4.5 h-4.5" />
+                  <Lightbulb className="w-6 h-6 transition-transform group-hover:rotate-12" />
+                  <span className="sr-only">Focus Spark: {suggestionCandidate.title}</span>
                 </button>
               )
             )}
           </div>
 
           {/* Bottom User Avatar Section */}
-          <div className="pt-2 mt-auto shrink-0 border-t border-serene-border-light/60 dark:border-serene-border-dark/60">
+          <div className="pt-2 mt-auto shrink-0 border-t border-serene-border-light/70 dark:border-serene-border-dark/70">
             {isCollapsed ? (
               <div
-                className="w-9 h-9 mx-auto rounded-full bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark border border-serene-border-light dark:border-serene-border-dark flex items-center justify-center text-serene-text-primary dark:text-serene-text-darkPrimary font-bold text-xs shadow-xs"
+                className="w-12 h-12 mx-auto rounded-xl bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark border border-serene-border-light dark:border-serene-border-dark flex items-center justify-center text-serene-primary dark:text-serene-primary-dark font-bold text-sm shadow-xs"
                 title={userEmail ? `User: ${userEmail}` : 'LaunchPad User'}
               >
                 {userEmail ? (
-                  <span className="text-serene-primary dark:text-serene-primary-dark font-bold text-xs">
-                    {userEmail.charAt(0).toUpperCase()}
-                  </span>
+                  <span>{userEmail.charAt(0).toUpperCase()}</span>
                 ) : (
-                  <User className="w-4 h-4 text-serene-text-muted" />
+                  <User className="w-5 h-5 text-serene-text-muted" />
                 )}
               </div>
             ) : (
-              <div className="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-xl bg-serene-surfaceAlt-light/60 dark:bg-serene-surfaceAlt-dark/60 border border-serene-border-light/60 dark:border-serene-border-dark/60">
-                <div className="w-8 h-8 rounded-full bg-serene-primary/10 dark:bg-serene-primary-dark/20 border border-serene-primary/20 flex items-center justify-center text-serene-primary dark:text-serene-primary-dark font-bold text-xs shrink-0">
+              <div className="w-full flex items-center gap-3 px-3 py-2 rounded-xl bg-serene-surfaceAlt-light/70 dark:bg-serene-surfaceAlt-dark/70 border border-serene-border-light/60 dark:border-serene-border-dark/60">
+                <div className="w-9 h-9 rounded-xl bg-serene-primary/10 dark:bg-serene-primary-dark/20 border border-serene-primary/20 flex items-center justify-center text-serene-primary dark:text-serene-primary-dark font-bold text-sm shrink-0">
                   {userEmail ? (
                     userEmail.charAt(0).toUpperCase()
                   ) : (
-                    <User className="w-3.5 h-3.5 text-serene-primary dark:text-serene-primary-dark" />
+                    <User className="w-4 h-4 text-serene-primary dark:text-serene-primary-dark" />
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-semibold truncate text-serene-text-primary dark:text-serene-text-darkPrimary">
                     {userEmail ? userEmail.split('@')[0] : 'LaunchPad User'}
                   </p>
-                  <p className="text-[10px] text-serene-text-muted truncate">
+                  <p className="text-[11px] text-serene-text-muted truncate">
                     {userEmail || 'Focus Session Active'}
                   </p>
                 </div>
