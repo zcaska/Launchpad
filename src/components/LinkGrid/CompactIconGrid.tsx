@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { LinkItem, Folder } from '../../types';
 import { clusterLinksByDomain } from '../../utils/domainCluster';
 import { FaviconTile } from './FaviconTile';
@@ -15,7 +15,7 @@ interface CompactIconGridProps {
   openInNewTab?: boolean;
 }
 
-export const CompactIconGrid: React.FC<CompactIconGridProps> = ({
+export const CompactIconGrid: React.FC<CompactIconGridProps> = React.memo(({
   links,
   folders,
   onToggleFavorite,
@@ -25,7 +25,10 @@ export const CompactIconGrid: React.FC<CompactIconGridProps> = ({
   onLinkClick,
   openInNewTab = true,
 }) => {
-  const { standaloneLinks, domainGroups } = clusterLinksByDomain(links, 2);
+  const { standaloneLinks, domainGroups } = useMemo(
+    () => clusterLinksByDomain(links, 2),
+    [links]
+  );
 
   if (links.length === 0) {
     return (
@@ -71,4 +74,6 @@ export const CompactIconGrid: React.FC<CompactIconGridProps> = ({
       </div>
     </div>
   );
-};
+});
+
+CompactIconGrid.displayName = 'CompactIconGrid';

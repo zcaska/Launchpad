@@ -480,3 +480,45 @@ export async function fetchTodayGoogleEvents(
 
   return allItems;
 }
+
+export interface UserCalendarSummary {
+  id: string;
+  summary: string;
+  description?: string;
+  primary?: boolean;
+  backgroundColor?: string;
+}
+
+/**
+ * Fetches the user's accessible Google Calendars via the CalendarList API.
+ */
+export async function fetchUserCalendarList(token: string): Promise<UserCalendarSummary[]> {
+  const url = 'https://www.googleapis.com/calendar/v3/users/me/calendarList';
+  try {
+    const res = await fetch(url, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: 'application/json',
+      },
+    });
+
+    if (!res.ok) {
+      return [];
+    }
+
+    const data = await res.json();
+    if (!Array.isArray(data.items)) {
+      return [];
+    }
+
+    return data.items.map((item: any) => ({
+      id: item.id || '',
+      summary: (item.summary || 'Untitled Calendar').trim(),
+      description: item.description || undefined,
+      primary: Boolean(item.primary),
+      backgroundColor: item.backgroundColor || undefined,
+    })).filter((c: UserCalendarSummary) => Boolean(c.id));
+  } catch {
+    return [];
+  }
+}

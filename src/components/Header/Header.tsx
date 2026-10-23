@@ -58,12 +58,12 @@ export const Header: React.FC<HeaderProps> = ({
         <div className="flex items-center justify-between gap-2 sm:gap-4">
           
           {/* Logo & Brand + Mobile Sidebar Hamburger */}
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
             {onToggleMobileSidebar && (
               <button
                 type="button"
                 onClick={onToggleMobileSidebar}
-                className="md:hidden p-1.5 sm:p-2 rounded-lg bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark text-serene-text-secondary hover:text-serene-text-primary dark:text-serene-text-darkSecondary dark:hover:text-serene-text-darkPrimary border border-serene-border-light dark:border-serene-border-dark transition-colors"
+                className="md:hidden p-1.5 sm:p-2 rounded-lg bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark text-serene-text-secondary hover:text-serene-text-primary dark:text-serene-text-darkSecondary dark:hover:text-serene-text-darkPrimary border border-serene-border-light dark:border-serene-border-dark transition-colors shrink-0"
                 title="Toggle Navigation Menu"
                 aria-label="Toggle Navigation Menu"
               >
@@ -74,12 +74,12 @@ export const Header: React.FC<HeaderProps> = ({
             <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-serene-primary-soft dark:bg-serene-primary/20 text-serene-primary dark:text-serene-primary-dark border border-serene-primary/25 dark:border-serene-primary/30 flex items-center justify-center shadow-xs shrink-0 transition-transform hover:scale-105">
               <Rocket className="w-4 h-4 sm:w-5 sm:h-5 stroke-[2.2]" />
             </div>
-            <div>
+            <div className="min-w-0">
               <div className="flex items-center gap-1.5 sm:gap-2">
-                <h1 className="text-sm sm:text-base font-bold tracking-tight text-serene-text-primary dark:text-serene-text-darkPrimary">
+                <h1 className="text-sm sm:text-base font-bold tracking-tight text-serene-text-primary dark:text-serene-text-darkPrimary truncate">
                   LaunchPad
                 </h1>
-                <span className="hidden sm:inline-block text-[10px] uppercase font-semibold tracking-wider px-1.5 py-0.5 rounded bg-serene-primary-soft dark:bg-serene-primary/20 text-serene-primary dark:text-serene-primary-dark border border-serene-primary/20 dark:border-transparent">
+                <span className="hidden sm:inline-block text-[10px] uppercase font-semibold tracking-wider px-1.5 py-0.5 rounded bg-serene-primary-soft dark:bg-serene-primary/20 text-serene-primary dark:text-serene-primary-dark border border-serene-primary/20 dark:border-transparent shrink-0">
                   Focus Hub
                 </span>
               </div>
@@ -118,11 +118,11 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
 
           {/* Action Buttons */}
-          <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+          <div className="flex items-center gap-0.5 sm:gap-2 shrink-0">
             {/* Quick Add Link Button */}
             <button
               onClick={onOpenAddModal}
-              className="inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3.5 py-1.5 sm:py-2 bg-serene-primary hover:bg-serene-primary-hover text-white text-xs font-semibold rounded-lg shadow-sm hover:shadow transition-all"
+              className="inline-flex items-center gap-1 sm:gap-1.5 px-1.5 sm:px-3.5 py-1.5 sm:py-2 bg-serene-primary hover:bg-serene-primary-hover text-white text-xs font-semibold rounded-lg shadow-sm hover:shadow transition-all"
             >
               <Plus className="w-4 h-4" />
               <span className="hidden sm:inline">Add Resource</span>
@@ -133,7 +133,7 @@ export const Header: React.FC<HeaderProps> = ({
               <button
                 onClick={() => onSelectView(activeView === 'tasks' ? 'dashboard' : 'tasks')}
                 title={activeView === 'tasks' ? "Back to Dashboard" : "Open Tasks Screen"}
-                className={`p-1.5 sm:p-2 rounded-lg border transition-all flex items-center gap-1 ${
+                className={`p-1 sm:p-2 rounded-lg border transition-all flex items-center gap-1 ${
                   activeView === 'tasks'
                     ? 'bg-serene-primary text-white border-serene-primary shadow-xs'
                     : 'bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark border-serene-border-light dark:border-serene-border-dark text-serene-text-secondary hover:text-serene-text-primary dark:text-serene-text-darkSecondary dark:hover:text-serene-text-darkPrimary'
@@ -154,7 +154,7 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               onClick={onToggleQuickNotes}
               title="Toggle Quick Scratchpad & Tasks"
-              className={`p-1.5 sm:p-2 rounded-lg border transition-all ${
+              className={`p-1 sm:p-2 rounded-lg border transition-all ${
                 isQuickNotesOpen
                   ? 'bg-serene-primary-soft dark:bg-serene-primary/30 border-serene-primary/40 text-serene-primary dark:text-serene-primary-dark'
                   : 'bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark border-serene-border-light dark:border-serene-border-dark text-serene-text-secondary hover:text-serene-text-primary dark:text-serene-text-darkSecondary dark:hover:text-serene-text-darkPrimary'
@@ -167,7 +167,7 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               onClick={toggleTheme}
               title={`Current theme: ${theme}. Click to change.`}
-              className="p-1.5 sm:p-2 bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark border border-serene-border-light dark:border-serene-border-dark text-serene-text-secondary hover:text-serene-text-primary dark:text-serene-text-darkSecondary dark:hover:text-serene-text-darkPrimary rounded-lg transition-colors"
+              className="p-1 sm:p-2 bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark border border-serene-border-light dark:border-serene-border-dark text-serene-text-secondary hover:text-serene-text-primary dark:text-serene-text-darkSecondary dark:hover:text-serene-text-darkPrimary rounded-lg transition-colors"
             >
               {theme === 'light' && <Sun className="w-4 h-4 text-amber-500" />}
               {theme === 'dark' && <Moon className="w-4 h-4 text-sky-400" />}
@@ -179,7 +179,7 @@ export const Header: React.FC<HeaderProps> = ({
               <button
                 onClick={onOpenBookmarkImport}
                 title="Import Browser Bookmarks (.html)"
-                className="p-1.5 sm:p-2 bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark border border-serene-border-light dark:border-serene-border-dark text-serene-text-secondary hover:text-serene-text-primary dark:text-serene-text-darkSecondary dark:hover:text-serene-text-darkPrimary rounded-lg transition-colors"
+                className="hidden sm:inline-flex p-2 bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark border border-serene-border-light dark:border-serene-border-dark text-serene-text-secondary hover:text-serene-text-primary dark:text-serene-text-darkSecondary dark:hover:text-serene-text-darkPrimary rounded-lg transition-colors"
               >
                 <BookmarkCheck className="w-4 h-4" />
               </button>
@@ -189,7 +189,7 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               onClick={onOpenSettingsModal}
               title="Settings, Backup & Help"
-              className="p-1.5 sm:p-2 bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark border border-serene-border-light dark:border-serene-border-dark text-serene-text-secondary hover:text-serene-text-primary dark:text-serene-text-darkSecondary dark:hover:text-serene-text-darkPrimary rounded-lg transition-colors"
+              className="p-1 sm:p-2 bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark border border-serene-border-light dark:border-serene-border-dark text-serene-text-secondary hover:text-serene-text-primary dark:text-serene-text-darkSecondary dark:hover:text-serene-text-darkPrimary rounded-lg transition-colors"
             >
               <Settings className="w-4 h-4" />
             </button>

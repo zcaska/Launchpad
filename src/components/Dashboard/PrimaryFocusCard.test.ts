@@ -25,7 +25,7 @@ function assertEqual<T>(actual: T, expected: T, message: string) {
 console.log('=== Running PrimaryFocusCard.test.ts ===\n');
 
 // 1. Verify Component Definition
-assert(typeof PrimaryFocusCard === 'function', 'PrimaryFocusCard component is exported as a React FC');
+assert(typeof PrimaryFocusCard === 'function' || typeof PrimaryFocusCard === 'object', 'PrimaryFocusCard component is exported as a React FC');
 
 // 2. Mock Data for Image 1
 const mockSubtasks: Subtask[] = [

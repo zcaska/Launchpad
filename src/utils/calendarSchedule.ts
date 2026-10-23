@@ -34,10 +34,18 @@ export function mergeIntervals(
 
 /**
  * Normalizes raw Google Calendar v3 API item into CalendarEventItem.
- * Returns null for cancelled events.
+ * Returns null for cancelled events and events declined by the user.
  */
 export function normalizeGoogleCalendarEvent(rawItem: any): CalendarEventItem | null {
   if (!rawItem || rawItem.status === 'cancelled') return null;
+
+  // Filter out events explicitly declined by the user
+  if (Array.isArray(rawItem.attendees)) {
+    const selfAttendee = rawItem.attendees.find((a: any) => a?.self === true);
+    if (selfAttendee?.responseStatus === 'declined') {
+      return null;
+    }
+  }
 
   const isAllDay = Boolean(rawItem.start?.date && !rawItem.start?.dateTime);
   const startStr = rawItem.start?.dateTime || rawItem.start?.date || '';
@@ -274,7 +282,15 @@ export function syncCalendarEventsToQuickNotes(
       }
     }
 
-    const duration = evt.durationMinutes > 0 ? evt.durationMinutes : 30;
+    // Multi-day duration clamping: clamp duration to today's active window
+    // so multi-day events (e.g. 72h) don't distort today's workload capacity.
+    const nowRef = new Date();
+    const dayStartMs = new Date(nowRef.getFullYear(), nowRef.getMonth(), nowRef.getDate(), 0, 0, 0, 0).getTime();
+    const dayEndMs = new Date(nowRef.getFullYear(), nowRef.getMonth(), nowRef.getDate(), 23, 59, 59, 999).getTime();
+    const clampedStart = Math.max(dayStartMs, evt.startMs);
+    const clampedEnd = Math.min(dayEndMs, evt.endMs);
+    const activeMinutesToday = Math.max(0, Math.round((clampedEnd - clampedStart) / 60000));
+    const duration = activeMinutesToday > 0 ? activeMinutesToday : (evt.durationMinutes > 0 ? evt.durationMinutes : 30);
 
     // Collect extracted class/meeting links and Google Calendar event links
     const linkList: TaskUrl[] = [];

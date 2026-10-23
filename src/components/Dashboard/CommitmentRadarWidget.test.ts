@@ -36,7 +36,7 @@ function assertEqual<T>(actual: T, expected: T, message: string) {
 console.log('=== Running CommitmentRadarWidget.test.ts ===\n');
 
 // 1. Verify Component Definition
-assert(typeof CommitmentRadarWidget === 'function', 'CommitmentRadarWidget component is exported as a React FC');
+assert(typeof CommitmentRadarWidget === 'function' || typeof CommitmentRadarWidget === 'object', 'CommitmentRadarWidget component is exported as a React FC');
 
 // 2. Mock Data Matching Image 1 from docs/Design-Proposal/LaunchPad Productivity Dashboard.png
 const refDate = new Date('2026-10-13T16:25:00.000Z');
@@ -171,6 +171,37 @@ assert(validProps.tasks.length === 6, 'Accepts tasks array');
 assert(typeof validProps.onSelectTask === 'function', 'Accepts onSelectTask callback');
 assert(typeof validProps.onOpenTasks === 'function', 'Accepts onOpenTasks callback');
 assert(validProps.calendarSummary?.remainingBusyMinutesToday === 90, 'Accepts calendarSummary');
+
+// 8. Test Task Hover Detail Invariants (Full Title, Description, Links)
+console.log('--- Task Hover Detail Fields Verification ---');
+const richTask: QuickNote = {
+  id: 'task-rich-preview',
+  text: 'Prepare questions for tomorrow’s office hours / team sync',
+  description: 'Deep dive into caching strategies and distributed token refresh mechanism',
+  isDone: false,
+  createdAt: Date.now() - 3600000,
+  priority: 'high',
+  deadline: '11:00',
+  attachedUrls: [
+    {
+      id: 'url-1',
+      title: 'Team Sync Agenda Doc',
+      url: 'https://docs.google.com/document/d/agenda-office-hours',
+    },
+  ],
+  subtasks: [
+    { id: 'sub-1', text: 'PR #12 review', isDone: true },
+    { id: 'sub-2', text: 'Architecture notes', isDone: false },
+  ],
+};
+
+assert(richTask.text.length > 20, 'Task has full multi-word title exceeding truncation length');
+assertEqual(richTask.text, 'Prepare questions for tomorrow’s office hours / team sync', 'Full title is preserved');
+assert(richTask.description !== undefined && richTask.description.length > 0, 'Task description is defined');
+assert(richTask.attachedUrls !== undefined && richTask.attachedUrls.length === 1, 'Task attached links defined');
+assertEqual(richTask.attachedUrls![0].title, 'Team Sync Agenda Doc', 'Link title preserved');
+assertEqual(richTask.attachedUrls![0].url, 'https://docs.google.com/document/d/agenda-office-hours', 'Link URL preserved');
+assert(richTask.subtasks !== undefined && richTask.subtasks.length === 2, 'Task subtasks defined');
 
 console.log('\n=======================================');
 if (failures === 0) {

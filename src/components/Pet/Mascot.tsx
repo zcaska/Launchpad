@@ -42,6 +42,8 @@ export interface MascotProps {
   facing?: 1 | -1;
   /** Disable internal CSS micro-animations if reduced motion is requested */
   reducedMotion?: boolean;
+  /** Whether the mascot is currently gliding or moving */
+  isFlying?: boolean;
 }
 
 /**
@@ -306,6 +308,7 @@ function MascotComponent({
   className = '',
   facing = 1,
   reducedMotion = false,
+  isFlying = false,
 }: MascotProps) {
   const uid = useId().replace(/:/g, '');
 
@@ -360,7 +363,7 @@ function MascotComponent({
       shapeRendering="geometricPrecision"
       className={`lp-mascot select-none transition-transform duration-300 ${
         reducedMotion ? 'lp-reduced' : ''
-      } ${className}`.trim()}
+      } ${isFlying ? 'mascot-is-flying' : ''} ${className}`.trim()}
       aria-hidden="true"
       style={{
         overflow: 'visible',
@@ -412,25 +415,31 @@ function MascotComponent({
       </defs>
 
       <style>{`
-        .lp-mascot .mascot-float       { animation: mascot-float 3.6s ease-in-out infinite; }
+        .lp-mascot .mascot-float       { animation: mascot-float 3.2s ease-in-out infinite; transform-box: fill-box; transform-origin: 50% 65%; }
         .lp-mascot .mascot-fin-l       { transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1); }
         .lp-mascot .mascot-fin-r       { transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1); }
-        .lp-mascot .mascot-fin-breathe-l { animation: mascot-fin-breathe-l 3.6s ease-in-out infinite; transform-origin: 26px 54px; }
-        .lp-mascot .mascot-fin-breathe-r { animation: mascot-fin-breathe-r 3.6s ease-in-out infinite; transform-origin: 94px 54px; }
+        .lp-mascot .mascot-fin-breathe-l { animation: mascot-fin-breathe-l 3.2s ease-in-out infinite; transform-origin: 26px 54px; }
+        .lp-mascot .mascot-fin-breathe-r { animation: mascot-fin-breathe-r 3.2s ease-in-out infinite; transform-origin: 94px 54px; }
+        .lp-mascot.mascot-is-flying .mascot-fin-breathe-l { animation: mascot-fin-flutter 0.3s ease-in-out infinite !important; }
+        .lp-mascot.mascot-is-flying .mascot-fin-breathe-r { animation: mascot-fin-flutter 0.3s ease-in-out infinite !important; }
         .lp-mascot .mascot-sparkle     { animation: mascot-sparkle 1.8s ease-in-out infinite; }
         .lp-mascot .mascot-eye-blink   { animation: mascot-blink 4.8s steps(1, end) infinite; transform-box: fill-box; transform-origin: 50% 50%; }
 
         @keyframes mascot-float {
-          0%, 100% { transform: translateY(0px); }
-          50%      { transform: translateY(-3.5px); }
+          0%, 100% { transform: scale(1, 1); }
+          50%      { transform: scale(1.02, 0.98); }
         }
         @keyframes mascot-fin-breathe-l {
           0%, 100% { transform: rotate(0deg); }
-          50%      { transform: rotate(-2.5deg); }
+          50%      { transform: rotate(-7deg); }
         }
         @keyframes mascot-fin-breathe-r {
           0%, 100% { transform: rotate(0deg); }
-          50%      { transform: rotate(2.5deg); }
+          50%      { transform: rotate(7deg); }
+        }
+        @keyframes mascot-fin-flutter {
+          0%, 100% { transform: rotate(0deg); }
+          50%      { transform: rotate(-12deg); }
         }
         @keyframes mascot-sparkle {
           0%, 100% { opacity: 0; transform: scale(0.3); }

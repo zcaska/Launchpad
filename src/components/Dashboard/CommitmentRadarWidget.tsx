@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import {
   Plus,
   Info,
@@ -7,8 +7,13 @@ import {
   Compass,
   List,
   Clock,
+  ExternalLink,
+  Link2,
+  Check,
+  X,
 } from 'lucide-react';
 import { QuickNote, CalendarScheduleSummary } from '../../types';
+import { TaskPreviewPopUp } from '../Tasks/TaskPreviewPopUp';
 import {
   projectTasksToRadarCoordinates,
   RADAR_VIEWBOX,
@@ -22,6 +27,7 @@ import {
 export interface CommitmentRadarWidgetProps {
   tasks: QuickNote[];
   onSelectTask?: (id: string) => void;
+  onPreviewTask?: (id: string) => void;
   onOpenTasks?: () => void;
   className?: string;
   calendarSummary?: CalendarScheduleSummary;
@@ -141,20 +147,63 @@ function truncateText(str: string, maxLength: number = 16): string {
   return str.length > maxLength ? `${str.slice(0, maxLength - 1)}…` : str;
 }
 
-export const CommitmentRadarWidget: React.FC<CommitmentRadarWidgetProps> = ({
+export const CommitmentRadarWidget: React.FC<CommitmentRadarWidgetProps> = React.memo(({
   tasks,
   onSelectTask,
+  onPreviewTask,
   onOpenTasks,
   className = '',
   calendarSummary,
 }) => {
   const [viewMode, setViewMode] = useState<RadarViewMode>('radar');
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
+  const [previewTaskId, setPreviewTaskId] = useState<string | null>(null);
   const [selectedLegendTier, setSelectedLegendTier] = useState<UrgencyTier | 'critical_all' | null>(null);
   const [showHeaderTooltip, setShowHeaderTooltip] = useState(false);
   const [showCenterCaptionTooltip, setShowCenterCaptionTooltip] = useState(false);
   // Legend starts collapsed so it never covers the radar; opened on demand.
   const [isLegendOpen, setIsLegendOpen] = useState(false);
+  const [hoveredTaskId, setHoveredTaskId] = useState<string | null>(null);
+  const hoverTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const clearHoverTimeout = () => {
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+      hoverTimeoutRef.current = null;
+    }
+  };
+
+  const handleTaskMouseEnter = (taskId: string) => {
+    clearHoverTimeout();
+    setHoveredTaskId(taskId);
+    setActiveTaskId(taskId);
+  };
+
+  const handleTaskMouseLeave = () => {
+    clearHoverTimeout();
+    hoverTimeoutRef.current = setTimeout(() => {
+      setHoveredTaskId(null);
+      setActiveTaskId(null);
+    }, 250);
+  };
+
+  const handleCardMouseEnter = () => {
+    clearHoverTimeout();
+  };
+
+  const handleCardMouseLeave = () => {
+    clearHoverTimeout();
+    hoverTimeoutRef.current = setTimeout(() => {
+      setHoveredTaskId(null);
+      setActiveTaskId(null);
+    }, 200);
+  };
+
+  useEffect(() => {
+    return () => {
+      clearHoverTimeout();
+    };
+  }, []);
 
   const [now, setNow] = useState<Date>(() => new Date());
 
@@ -281,21 +330,20 @@ export const CommitmentRadarWidget: React.FC<CommitmentRadarWidgetProps> = ({
     return projectedNodes.filter((n) => n.tier === selectedLegendTier);
   }, [projectedNodes, selectedLegendTier]);
 
-  // Sorted nodes: active/hovered node is pushed to the end so it renders on top in SVG
-  const sortedNodes = useMemo(() => {
-    if (!activeTaskId) return visibleNodes;
-    return [...visibleNodes].sort((a, b) => {
-      if (a.task.id === activeTaskId) return 1;
-      if (b.task.id === activeTaskId) return -1;
-      return 0;
-    });
-  }, [visibleNodes, activeTaskId]);
+  // Stable nodes list: keep deterministic order so hover does not cause DOM reordering or jitter
+  const sortedNodes = visibleNodes;
+
+  const activeNode = useMemo(() => {
+    if (!hoveredTaskId) return null;
+    return sortedNodes.find((n) => n.task.id === hoveredTaskId) || null;
+  }, [sortedNodes, hoveredTaskId]);
 
   return (
-    <div
-      className={`@container w-full h-full bg-white dark:bg-serene-surface-dark border border-serene-border-light dark:border-serene-border-dark rounded-2xl p-4 sm:p-5 shadow-subtle hover:shadow-card transition-all flex flex-col justify-between select-none ${className}`}
-      data-testid="commitment-radar-widget"
-    >
+    <>
+      <div
+        className={`@container w-full h-full bg-white dark:bg-serene-surface-dark border border-serene-border-light dark:border-serene-border-dark rounded-2xl p-4 sm:p-5 shadow-subtle hover:shadow-card transition-all flex flex-col justify-between select-none ${className}`}
+        data-testid="commitment-radar-widget"
+      >
       {/* ===================================================================== */}
       {/* 1. TOP HEADER ROW                                                     */}
       {/* ===================================================================== */}
@@ -369,7 +417,8 @@ export const CommitmentRadarWidget: React.FC<CommitmentRadarWidgetProps> = ({
               className="text-xs font-semibold text-serene-primary dark:text-serene-primary-dark hover:underline flex items-center gap-1 transition-colors group cursor-pointer"
               title="Open task management"
             >
-              <span>View all tasks</span>
+              <span className="hidden sm:inline">View all tasks</span>
+              <span className="sm:hidden">All tasks</span>
               <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
             </button>
           )}
@@ -380,7 +429,7 @@ export const CommitmentRadarWidget: React.FC<CommitmentRadarWidgetProps> = ({
       {/* 2. MAIN BODY: RADAR GRAPHIC OR ACCESSIBLE LIST VIEW                   */}
       {/* ===================================================================== */}
       {viewMode === 'radar' ? (
-        <div className="relative w-full flex-1 flex flex-col justify-center items-center my-0 min-h-[290px] overflow-hidden">
+        <div className="relative w-full flex-1 flex flex-col justify-center items-center my-0 min-h-[290px] overflow-visible">
           {/* Collapsed legend toggle — panel opens on demand instead of covering the radar */}
           <div className="absolute top-1 right-1 z-20 flex flex-col items-end gap-1.5">
             <button
@@ -529,13 +578,15 @@ export const CommitmentRadarWidget: React.FC<CommitmentRadarWidgetProps> = ({
             )}
           </div>
 
-          {/* SVG Concentric Radar graphic with mountain silhouettes */}
-          <svg
-            viewBox="0 0 500 400"
-            className="w-full h-auto max-h-[360px] overflow-visible select-none"
-            role="img"
-            aria-label="Commitment radar concentric visualization"
-          >
+          {/* Radar graphic container with aspect ratio locked to SVG viewBox (5:4) */}
+          <div className="relative w-full aspect-[5/4] max-h-[360px] max-w-[450px] mx-auto flex items-center justify-center">
+            {/* SVG Concentric Radar graphic with mountain silhouettes */}
+            <svg
+              viewBox="0 0 500 400"
+              className="w-full h-full overflow-visible select-none"
+              role="img"
+              aria-label="Commitment radar concentric visualization"
+            >
             <defs>
               {/* Radial glow for coral center */}
               <radialGradient id="coralCenterGlow" cx="50%" cy="50%" r="50%">
@@ -667,6 +718,27 @@ export const CommitmentRadarWidget: React.FC<CommitmentRadarWidgetProps> = ({
               </text>
             </g>
 
+            {/* 2B-2. Ambient Radar Pulses (separated so interactive task <g> bounding boxes are completely static) */}
+            <g className="radar-ambient-pulses pointer-events-none" aria-hidden="true">
+              {sortedNodes.map((node) => {
+                const tierMeta = TIER_PRESENTATION_MAP[node.tier] || TIER_PRESENTATION_MAP.no_deadline;
+                return (
+                  <circle
+                    key={`pulse-${node.task.id}`}
+                    cx={node.x}
+                    cy={node.y}
+                    r={node.nodeSize + 6}
+                    fill="none"
+                    stroke={tierMeta.legendDotColor}
+                    strokeWidth="1.5"
+                    strokeOpacity="0.4"
+                    className="animate-ping origin-center"
+                    style={{ animationDuration: '3s' }}
+                  />
+                );
+              })}
+            </g>
+
             {/* =============================================================== */}
             {/* 2C. DYNAMIC TASK MARKER DOTS & CALLOUT LABELS                   */}
             {/* =============================================================== */}
@@ -692,10 +764,11 @@ export const CommitmentRadarWidget: React.FC<CommitmentRadarWidgetProps> = ({
                     className="cursor-pointer group"
                     onClick={() => {
                       setActiveTaskId(node.task.id);
-                      onSelectTask?.(node.task.id);
+                      setPreviewTaskId(node.task.id);
+                      onPreviewTask?.(node.task.id);
                     }}
-                    onMouseEnter={() => setActiveTaskId(node.task.id)}
-                    onMouseLeave={() => setActiveTaskId(null)}
+                    onMouseEnter={() => handleTaskMouseEnter(node.task.id)}
+                    onMouseLeave={handleTaskMouseLeave}
                     tabIndex={0}
                     role="button"
                     aria-label={`${node.task.text}: ${countdown}`}
@@ -703,22 +776,21 @@ export const CommitmentRadarWidget: React.FC<CommitmentRadarWidgetProps> = ({
                       if (e.key === 'Enter' || e.key === ' ') {
                         e.preventDefault();
                         setActiveTaskId(node.task.id);
-                        onSelectTask?.(node.task.id);
+                        setPreviewTaskId(node.task.id);
+                        onPreviewTask?.(node.task.id);
                       }
                     }}
                   >
-                    {/* Animated Pulse Ring */}
-                    <circle
-                      cx={node.x}
-                      cy={node.y}
-                      r={node.nodeSize + 6}
-                      fill="none"
-                      stroke={tierMeta.legendDotColor}
-                      strokeWidth="1.5"
-                      strokeOpacity="0.4"
-                      className="animate-ping origin-center"
-                      style={{ animationDuration: '3s' }}
-                    />
+                    {/* Seamless hover hit area bridging dot and pill to prevent dead-zones */}
+                    {showCallout && (
+                      <path
+                        d={`M ${node.x} ${node.y} L ${labelX + (isRightHalf ? 0 : boxWidth)} ${labelY + boxHeight / 2}`}
+                        stroke="transparent"
+                        strokeWidth="28"
+                        strokeLinecap="round"
+                        className="cursor-pointer"
+                      />
+                    )}
 
                     {/* Ambient Glow Halo */}
                     <circle
@@ -727,7 +799,16 @@ export const CommitmentRadarWidget: React.FC<CommitmentRadarWidgetProps> = ({
                       r={node.nodeSize + 3}
                       fill={tierMeta.legendDotColor}
                       fillOpacity={isActive ? 0.4 : 0.2}
-                      className="transition-all duration-200"
+                      className="transition-all duration-200 pointer-events-none"
+                    />
+
+                    {/* Generous invisible hit target circle ensuring stable hover boundary */}
+                    <circle
+                      cx={node.x}
+                      cy={node.y}
+                      r={node.nodeSize + 8}
+                      fill="transparent"
+                      className="cursor-pointer"
                     />
 
                     {/* Center Marker Dot */}
@@ -738,14 +819,14 @@ export const CommitmentRadarWidget: React.FC<CommitmentRadarWidgetProps> = ({
                       fill={tierMeta.legendDotColor}
                       stroke="#ffffff"
                       strokeWidth="2"
-                      className="drop-shadow-sm transition-transform duration-200 group-hover:scale-110"
+                      className="drop-shadow-sm transition-transform duration-200 pointer-events-none"
                     />
 
                     {/* Callout Card Pill matching Image 1 */}
                     {showCallout && (
                       <g
                         className={`transition-all duration-200 ${
-                          isActive ? 'opacity-100 scale-105' : 'opacity-90 group-hover:opacity-100'
+                          isActive ? 'opacity-100 drop-shadow-lg' : 'opacity-90 group-hover:opacity-100'
                         }`}
                       >
                         {/* Pill Card Background */}
@@ -791,7 +872,172 @@ export const CommitmentRadarWidget: React.FC<CommitmentRadarWidgetProps> = ({
               })}
             </g>
           </svg>
+
+          {/* Interactive Task Detail Hover Popover */}
+          {activeNode && (() => {
+            const tierMeta = TIER_PRESENTATION_MAP[activeNode.tier] || TIER_PRESENTATION_MAP.no_deadline;
+            const countdown = formatTaskCountdown(activeNode.task, now);
+            const isRight = activeNode.x >= RADAR_VIEWBOX.centerX;
+            const isTop = activeNode.y < 110;
+            const isBottom = activeNode.y > 270;
+
+            const style: React.CSSProperties = {
+              position: 'absolute',
+              zIndex: 30,
+            };
+
+            if (isRight) {
+              style.right = `${Math.max(2, 100 - (activeNode.x / RADAR_VIEWBOX.width) * 100)}%`;
+              style.marginRight = '14px';
+            } else {
+              style.left = `${Math.max(2, (activeNode.x / RADAR_VIEWBOX.width) * 100)}%`;
+              style.marginLeft = '14px';
+            }
+
+            if (isTop) {
+              style.top = `${Math.max(2, (activeNode.y / RADAR_VIEWBOX.height) * 100)}%`;
+            } else if (isBottom) {
+              style.bottom = `${Math.max(2, 100 - (activeNode.y / RADAR_VIEWBOX.height) * 100)}%`;
+            } else {
+              style.top = `${(activeNode.y / RADAR_VIEWBOX.height) * 100}%`;
+              style.transform = 'translateY(-50%)';
+            }
+
+            return (
+              <div
+                role="tooltip"
+                aria-label={`Task details: ${activeNode.task.text}`}
+                onMouseEnter={handleCardMouseEnter}
+                onMouseLeave={handleCardMouseLeave}
+                style={style}
+                className="w-[280px] sm:w-[310px] max-w-[calc(100vw-32px)] bg-white/95 dark:bg-serene-surface-dark/95 backdrop-blur-md border border-serene-border-light dark:border-serene-border-dark rounded-xl sm:rounded-2xl p-3 sm:p-3.5 shadow-modal text-left animate-fadeIn pointer-events-auto"
+              >
+                {/* Header: Tier, Countdown, Priority, Close */}
+                <div className="flex items-center justify-between gap-1.5 mb-2 flex-wrap">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span
+                      className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold"
+                      style={{
+                        backgroundColor: `${tierMeta.legendDotColor}18`,
+                        color: tierMeta.legendDotColor,
+                      }}
+                    >
+                      <span
+                        className="w-1.5 h-1.5 rounded-full shrink-0"
+                        style={{ backgroundColor: tierMeta.legendDotColor }}
+                      />
+                      {tierMeta.legendLabel}
+                    </span>
+
+                    <span className="inline-flex items-center gap-1 text-[10px] font-mono font-medium text-serene-text-secondary dark:text-serene-text-darkSecondary">
+                      <Clock className="w-3 h-3 shrink-0" />
+                      {countdown}
+                    </span>
+                  </div>
+
+                  {activeNode.task.priority && (
+                    <span
+                      className={`text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${
+                        activeNode.task.priority === 'urgent'
+                          ? 'bg-red-500 text-white'
+                          : activeNode.task.priority === 'high'
+                          ? 'bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300'
+                          : activeNode.task.priority === 'medium'
+                          ? 'bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300'
+                          : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
+                      }`}
+                    >
+                      {activeNode.task.priority}
+                    </span>
+                  )}
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setHoveredTaskId(null);
+                      setActiveTaskId(null);
+                    }}
+                    className="p-0.5 rounded text-serene-text-muted hover:text-serene-text-primary hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+                    aria-label="Close task details"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+
+                {/* Full Title (untruncated) */}
+                <h4 className="text-xs sm:text-sm font-bold text-serene-text-primary dark:text-serene-text-darkPrimary leading-snug break-words mb-2">
+                  {activeNode.task.text}
+                </h4>
+
+                {/* Description (if present) */}
+                {activeNode.task.description && (
+                  <div className="mb-2.5">
+                    <div className="text-[10px] font-bold uppercase tracking-wider text-serene-text-secondary dark:text-serene-text-darkSecondary mb-1">
+                      Description
+                    </div>
+                    <div className="text-xs leading-relaxed text-serene-text-muted dark:text-serene-text-darkMuted bg-serene-surfaceAlt-light/70 dark:bg-serene-surfaceAlt-dark/50 p-2 rounded-lg border border-serene-border-light/60 dark:border-serene-border-dark/60 max-h-24 overflow-y-auto">
+                      {activeNode.task.description}
+                    </div>
+                  </div>
+                )}
+
+                {/* Attached Links (if present) */}
+                {activeNode.task.attachedUrls && activeNode.task.attachedUrls.length > 0 && (
+                  <div className="mb-2.5">
+                    <div className="text-[10px] font-bold uppercase tracking-wider text-serene-text-secondary dark:text-serene-text-darkSecondary mb-1 flex items-center gap-1">
+                      <Link2 className="w-3 h-3" />
+                      <span>Attached Links ({activeNode.task.attachedUrls.length})</span>
+                    </div>
+                    <div className="space-y-1">
+                      {activeNode.task.attachedUrls.map((link) => (
+                        <a
+                          key={link.id}
+                          href={link.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          className="flex items-center gap-1.5 px-2 py-1 rounded-md text-[11px] font-medium bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark border border-serene-border-light/70 dark:border-serene-border-dark/70 text-serene-primary dark:text-serene-primary-dark hover:bg-serene-primary-soft dark:hover:bg-serene-primary/20 transition-colors group"
+                        >
+                          <ExternalLink className="w-3 h-3 shrink-0 group-hover:text-serene-primary dark:group-hover:text-serene-primary-dark transition-colors" />
+                          <span className="truncate flex-1">
+                            {link.title || link.url.replace(/^https?:\/\//, '')}
+                          </span>
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Subtasks Progress (if present) */}
+                {activeNode.task.subtasks && activeNode.task.subtasks.length > 0 && (
+                  <div className="flex items-center justify-between text-[11px] font-medium text-serene-text-muted dark:text-serene-text-darkMuted mb-2 px-0.5">
+                    <span className="flex items-center gap-1">
+                      <Check className="w-3 h-3 text-emerald-500" />
+                      <span>Subtasks</span>
+                    </span>
+                    <span className="font-mono text-[10px]">
+                      {activeNode.task.subtasks.filter((s) => s.isDone).length} / {activeNode.task.subtasks.length} done
+                    </span>
+                  </div>
+                )}
+
+                {/* Footer Action: Click to Open / Preview */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPreviewTaskId(activeNode.task.id);
+                    onPreviewTask?.(activeNode.task.id);
+                  }}
+                  className="w-full mt-1 py-1.5 px-2.5 rounded-lg text-[11px] font-semibold bg-serene-primary hover:bg-serene-primary-hover text-white shadow-sm transition-colors flex items-center justify-center gap-1.5"
+                >
+                  <span>View Full Task Details</span>
+                  <ArrowRight className="w-3 h-3" />
+                </button>
+              </div>
+            );
+          })()}
         </div>
+      </div>
       ) : (
         /* =================================================================== */
         /* 2D. ACCESSIBLE LIST VIEW ALTERNATIVE                                 */
@@ -813,7 +1059,7 @@ export const CommitmentRadarWidget: React.FC<CommitmentRadarWidgetProps> = ({
               return (
                 <div
                   key={node.task.id}
-                  onClick={() => onSelectTask?.(node.task.id)}
+                  onClick={() => onPreviewTask?.(node.task.id)}
                   className="p-2.5 rounded-xl bg-serene-surfaceAlt-light/60 dark:bg-serene-surfaceAlt-dark/40 border border-serene-border-light/70 dark:border-serene-border-dark/70 hover:border-serene-primary/50 dark:hover:border-serene-primary-dark/50 transition-all flex items-center justify-between gap-3 cursor-pointer group"
                 >
                   <div className="flex items-center gap-2.5 min-w-0">
@@ -970,5 +1216,19 @@ export const CommitmentRadarWidget: React.FC<CommitmentRadarWidgetProps> = ({
         </div>
       </div>
     </div>
+
+    {previewTaskId && tasks.some((t) => t.id === previewTaskId) && (
+      <TaskPreviewPopUp
+        task={tasks.find((t) => t.id === previewTaskId)!}
+        onClose={() => setPreviewTaskId(null)}
+        onOpenTask={(id) => {
+          setPreviewTaskId(null);
+          onSelectTask?.(id);
+        }}
+      />
+    )}
+    </>
   );
-};
+});
+
+CommitmentRadarWidget.displayName = 'CommitmentRadarWidget';

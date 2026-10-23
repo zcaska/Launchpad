@@ -28,3 +28,16 @@ Bugs/
 stitch_landing_pad_focus_dashboard/
 .project-context/
 docs/
+
+# >>> agent local-only (managed by the Antigravity harness) >>>
+.agent-local/
+.project-context/
+.agents/
+graphify-out/
+docs/superpowers/
+.playwright-mcp/
+playwright-report/
+test-results/
+.gemini/
+.clinerules/00-project-context.md
+# <<< agent local-only <<<

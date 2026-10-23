@@ -851,6 +851,48 @@ export function rankTasksByOpportunity(
 }
 
 /**
+ * Derives human-friendly countdown strings matching Image 1:
+ * "5h 35m left", "2 days left", "4 days left", "6 days left", "1 week left",
+ * "18m overdue", "No deadline"
+ */
+export function formatTaskCountdown(task: QuickNote, refDate: Date = new Date()): string {
+  const urgency = calculateTaskUrgency(task.deadline, refDate);
+
+  if (!urgency.deadlineDate || urgency.diffMs === null) {
+    return 'No deadline';
+  }
+
+  const diffMs = urgency.diffMs;
+
+  if (diffMs < 0) {
+    const overdueMins = Math.max(1, Math.round(Math.abs(diffMs) / 60000));
+    if (overdueMins < 60) return `${overdueMins}m overdue`;
+    const hours = Math.floor(overdueMins / 60);
+    const mins = overdueMins % 60;
+    if (hours < 24) {
+      const timeStr = hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
+      return `Overdue by ${timeStr}`;
+    }
+    const days = Math.floor(hours / 24);
+    const remHours = hours % 24;
+    return `Overdue by ${days}d ${remHours}h`;
+  }
+
+  const totalMinutes = Math.max(1, Math.round(diffMs / 60000));
+  const hours = Math.floor(totalMinutes / 60);
+  const mins = totalMinutes % 60;
+
+  if (hours < 24) {
+    const timeStr = hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
+    return `${timeStr} left`;
+  }
+
+  const days = Math.floor(hours / 24);
+  const remHours = hours % 24;
+  return `${days}d ${remHours}h left`;
+}
+
+/**
  * Returns the single top recommended Next Opportunity task.
  */
 export function getTopOpportunity(

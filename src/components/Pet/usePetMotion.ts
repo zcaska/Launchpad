@@ -17,8 +17,6 @@ export interface PetMotionState {
   isDragging: boolean;
   placement: 'top' | 'bottom';
   durationMs: number;
-  size: number;
-  isMobile: boolean;
   handlers: {
     onPointerDown: (e: React.PointerEvent<HTMLElement>) => void;
     onPointerMove: (e: React.PointerEvent<HTMLElement>) => void;
@@ -40,90 +38,17 @@ export function clampCoordinate(val: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, val));
 }
 
-/**
- * Calculates adaptive mascot size based on viewport width:
- * - Mobile (<480px): 56px (compact, unobtrusive on 360-430px screens)
- * - Tablet (480px–767px): 68px
- * - Desktop (>=768px): 84px
- */
-export function getAdaptiveMascotSize(viewportWidth?: number): number {
-  const w = viewportWidth ?? (typeof window !== 'undefined' ? window.innerWidth : 1200);
-  if (w < 480) return 56;
-  if (w < 768) return 68;
-  return 84;
-}
-
-/**
- * Calculates safe screen bounds accounting for screen dimensions, mascot size,
- * mobile sticky headers (top ~56px), and mobile bottom navigation / gesture bars (~64px).
- */
-export function getScreenBounds(
-  viewportWidth?: number,
-  viewportHeight?: number,
-  mascotSize?: number
-): {
-  minX: number;
-  maxX: number;
-  minY: number;
-  maxY: number;
-  size: number;
-  height: number;
-  padding: number;
-  isMobile: boolean;
-} {
-  const w = viewportWidth ?? (typeof window !== 'undefined' ? window.innerWidth : 1200);
-  const h = viewportHeight ?? (typeof window !== 'undefined' ? window.innerHeight : 800);
-  const isMobile = w < 640;
-  const size = mascotSize ?? getAdaptiveMascotSize(w);
-  const mascotHeight = Math.round((size * 100) / 120);
-  const padding = w < 480 ? 8 : w < 768 ? 10 : 12;
-
-  // Protect sticky header (top ~56px) and bottom navigation / gesture pill (bottom ~64px) on mobile
-  const topSafeInset = isMobile ? 56 : padding;
-  const bottomSafeInset = isMobile ? 64 : padding;
-
-  const maxX = Math.max(padding, w - size - padding);
-  const maxY = Math.max(topSafeInset, h - mascotHeight - bottomSafeInset);
-
-  return {
-    minX: padding,
-    maxX,
-    minY: topSafeInset,
-    maxY,
-    size,
-    height: mascotHeight,
-    padding,
-    isMobile,
-  };
-}
-
-/**
- * Calculates next autonomous roam waypoint adapted to screen dimensions:
- * - On mobile: explores the right-side safe corridor without obstructing center content
- * - On desktop: explores the right margin band
- */
-export function calculateRoamWaypoint(
-  width: number,
-  height: number,
-  bounds: { minX: number; maxX: number; minY: number; maxY: number; size?: number; padding?: number; isMobile: boolean }
-): { x: number; y: number } {
-  if (bounds.isMobile) {
-    const size = bounds.size ?? 56;
-    const padding = bounds.padding ?? 8;
-    // Right margin corridor on mobile (e.g. within 12-40px from right edge)
-    const targetX = width - (padding + size + Math.random() * Math.min(32, width * 0.1));
-    const targetY = bounds.minY + 12 + Math.random() * Math.max(20, bounds.maxY - bounds.minY - 24);
-    return {
-      x: clampCoordinate(Math.round(targetX), bounds.minX, bounds.maxX),
-      y: clampCoordinate(Math.round(targetY), bounds.minY, bounds.maxY),
-    };
+export function getScreenBounds(): { minX: number; maxX: number; minY: number; maxY: number } {
+  if (typeof window === 'undefined') {
+    return { minX: 12, maxX: 1200, minY: 12, maxY: 800 };
   }
-  // Desktop right corridor: window.innerWidth - 32..88, vertical 15%..80%
-  const targetX = width - (32 + Math.random() * 56);
-  const targetY = height * (0.15 + Math.random() * 0.65);
+  const maxX = Math.max(MASCOT_BOUNDS.padding, window.innerWidth - MASCOT_BOUNDS.width - MASCOT_BOUNDS.padding);
+  const maxY = Math.max(MASCOT_BOUNDS.padding, window.innerHeight - MASCOT_BOUNDS.height - MASCOT_BOUNDS.padding);
   return {
-    x: clampCoordinate(Math.round(targetX), bounds.minX, bounds.maxX),
-    y: clampCoordinate(Math.round(targetY), bounds.minY, bounds.maxY),
+    minX: MASCOT_BOUNDS.padding,
+    maxX,
+    minY: MASCOT_BOUNDS.padding,
+    maxY,
   };
 }
 
@@ -132,15 +57,15 @@ export function calculateRoamTarget(
   bounds: { minX: number; maxX: number; minY: number; maxY: number },
   maxOffset: number = MAX_ROAM_RADIUS_PX
 ): { x: number; y: number } {
-  const deltaX = (Math.random() * 2 - 1) * maxOffset;
-  const deltaY = (Math.random() * 2 - 1) * maxOffset;
-
-  const rawX = Math.round(anchor.x + deltaX);
-  const rawY = Math.round(anchor.y + deltaY);
+  // Ensure visible organic orbital drift bounded strictly by maxOffset
+  const angle = Math.random() * Math.PI * 2;
+  const distance = Math.max(1, (0.5 + Math.random() * 0.5) * maxOffset);
+  const deltaX = Math.round(Math.cos(angle) * distance);
+  const deltaY = Math.round(Math.sin(angle) * distance);
 
   return {
-    x: clampCoordinate(rawX, bounds.minX, bounds.maxX),
-    y: clampCoordinate(rawY, bounds.minY, bounds.maxY),
+    x: clampCoordinate(anchor.x + deltaX, bounds.minX, bounds.maxX),
+    y: clampCoordinate(anchor.y + deltaY, bounds.minY, bounds.maxY),
   };
 }
 
@@ -178,24 +103,18 @@ function savePosition(pos: { x: number; y: number }): void {
   }
 }
 
-export function getDefaultPosition(
-  dockPosition?: { x: number; y: number },
-  viewportWidth?: number,
-  viewportHeight?: number
-): { x: number; y: number } {
-  const w = viewportWidth ?? (typeof window !== 'undefined' ? window.innerWidth : 1200);
-  const h = viewportHeight ?? (typeof window !== 'undefined' ? window.innerHeight : 800);
-  const bounds = getScreenBounds(w, h);
+export function getDefaultPosition(dockPosition?: { x: number; y: number }): { x: number; y: number } {
+  const bounds = getScreenBounds();
   if (dockPosition) {
     return {
       x: clampCoordinate(dockPosition.x, bounds.minX, bounds.maxX),
       y: clampCoordinate(dockPosition.y, bounds.minY, bounds.maxY),
     };
   }
-  if (typeof window !== 'undefined' || viewportWidth !== undefined) {
-    const isMobile = w < 640;
-    const targetX = w - (isMobile ? 68 : 96);
-    const targetY = h - (isMobile ? 78 : 96);
+  if (typeof window !== 'undefined') {
+    // Predecided section of site: bottom-right corner perch with comfortable headroom
+    const targetX = Math.max(bounds.minX, bounds.maxX - 28);
+    const targetY = Math.max(bounds.minY, bounds.maxY - 24);
     return {
       x: clampCoordinate(targetX, bounds.minX, bounds.maxX),
       y: clampCoordinate(targetY, bounds.minY, bounds.maxY),
@@ -223,12 +142,10 @@ export function usePetMotion({
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const [durationMs, setDurationMs] = useState<number>(reducedMotion ? 0 : 2200);
 
-  const [screenInfo, setScreenInfo] = useState(() => getScreenBounds());
-
   const posRef = useRef(pos);
   posRef.current = pos;
 
-  // The anchor represents the perch point around which roaming occurs
+  // The anchor represents the predecided section/perch point around which 6px roaming occurs
   const anchorRef = useRef<{ x: number; y: number }>(pos);
 
   const onPetClickRef = useRef(onPetClick);
@@ -237,18 +154,16 @@ export function usePetMotion({
   const dragStartRef = useRef<{ x: number; y: number } | null>(null);
   const posStartRef = useRef<{ x: number; y: number } | null>(null);
   const activePointerIdRef = useRef<number | null>(null);
-  const pointerTypeRef = useRef<string>('mouse');
   const hasMovedPastThresholdRef = useRef(false);
 
   const flightTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const restTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Re-clamp position and home anchor on window resize or mobile orientation change
+  // Re-clamp position and home anchor on window resize so mascot NEVER exits screen
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const onResize = () => {
       const bounds = getScreenBounds();
-      setScreenInfo(bounds);
       setPos((prev) => {
         const clampedX = clampCoordinate(prev.x, bounds.minX, bounds.maxX);
         const clampedY = clampCoordinate(prev.y, bounds.minY, bounds.maxY);
@@ -263,11 +178,7 @@ export function usePetMotion({
       }
     };
     window.addEventListener('resize', onResize);
-    window.addEventListener('orientationchange', onResize);
-    return () => {
-      window.removeEventListener('resize', onResize);
-      window.removeEventListener('orientationchange', onResize);
-    };
+    return () => window.removeEventListener('resize', onResize);
   }, []);
 
   const clearTimers = useCallback(() => {
@@ -297,13 +208,14 @@ export function usePetMotion({
       restTimerRef.current = null;
       if (typeof window === 'undefined') return;
 
+      const dur = Math.floor(1800 + Math.random() * 600); // 1800-2400 ms smooth glide
       const bounds = getScreenBounds();
-      const dur = Math.floor(
-        (bounds.isMobile ? 3800 : 4500) + Math.random() * (bounds.isMobile ? 1400 : 2000)
-      );
-
-      // Autonomous exploratory flight waypoint adapted to mobile / desktop screen dimensions
-      const nextPos = calculateRoamWaypoint(window.innerWidth, window.innerHeight, bounds);
+      // Ensure anchor has breathing room from clamp walls so roam moves freely in all directions
+      const safeAnchor = {
+        x: clampCoordinate(anchorRef.current.x, bounds.minX + 8, bounds.maxX - 8),
+        y: clampCoordinate(anchorRef.current.y, bounds.minY + 8, bounds.maxY - 8),
+      };
+      const nextPos = calculateRoamTarget(safeAnchor, bounds, MAX_ROAM_RADIUS_PX);
 
       setDurationMs(reducedMotion ? 0 : dur);
       setIsFlying(true);
@@ -318,12 +230,9 @@ export function usePetMotion({
       flightTimerRef.current = setTimeout(() => {
         flightTimerRef.current = null;
         setIsFlying(false);
-        const landingPos = nextPos;
-        anchorRef.current = landingPos;
-        savePosition(landingPos);
 
-        // Schedule next gentle exploratory flight after 16–28s rest at perch
-        const nextRest = 16000 + Math.random() * 12000;
+        // Schedule next gentle micro-drift after 4–7s rest at perch
+        const nextRest = 4200 + Math.random() * 2800;
         scheduleFlightRef.current(nextRest);
       }, dur);
     }, delayMs);
@@ -355,21 +264,14 @@ export function usePetMotion({
     }
   }, [roaming, paused, isDragging, focusActive, reducedMotion]);
 
-  // Pointer drag handlers (supporting mouse, pen, and mobile touch)
+  // Pointer drag handlers
   const onPointerDown = useCallback((e: React.PointerEvent<HTMLElement>) => {
     if (e.button !== 0) return;
 
-    pointerTypeRef.current = e.pointerType || 'mouse';
     activePointerIdRef.current = e.pointerId;
     dragStartRef.current = { x: e.clientX, y: e.clientY };
     posStartRef.current = { x: posRef.current.x, y: posRef.current.y };
     hasMovedPastThresholdRef.current = false;
-
-    try {
-      e.currentTarget.setPointerCapture?.(e.pointerId);
-    } catch {
-      // Ignore
-    }
   }, []);
 
   const onPointerMove = useCallback((e: React.PointerEvent<HTMLElement>) => {
@@ -380,14 +282,16 @@ export function usePetMotion({
     const dy = e.clientY - dragStartRef.current.y;
     const dist = Math.hypot(dx, dy);
 
-    // Touch threshold is 8px to prevent accidental drag during mobile finger taps; mouse threshold is 5px
-    const dragThreshold = pointerTypeRef.current === 'touch' ? 8 : 5;
-
     if (!hasMovedPastThresholdRef.current) {
-      if (dist >= dragThreshold) {
+      if (dist >= 5) {
         hasMovedPastThresholdRef.current = true;
         setIsDragging(true);
         setDurationMs(0);
+        try {
+          e.currentTarget.setPointerCapture?.(e.pointerId);
+        } catch {
+          // Ignore
+        }
       } else {
         return;
       }
@@ -428,8 +332,6 @@ export function usePetMotion({
       const finalPos = posRef.current;
       anchorRef.current = finalPos;
       savePosition(finalPos);
-    } else {
-      onPetClickRef.current?.();
     }
   }, []);
 
@@ -464,8 +366,6 @@ export function usePetMotion({
     isDragging,
     placement: calculatePlacement(pos.y),
     durationMs,
-    size: screenInfo.size,
-    isMobile: screenInfo.isMobile,
     handlers: {
       onPointerDown,
       onPointerMove,

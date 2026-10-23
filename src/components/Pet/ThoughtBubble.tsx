@@ -78,8 +78,8 @@ export function ThoughtBubble({
         </div>
       )}
 
-      {/* Main Frosted Thought Bubble (Horizontal layout with defined width, responsive mobile scaling, and multi-line text wrapping) */}
-      <div className="relative px-3.5 sm:px-4 py-2 sm:py-2.5 w-[180px] xs:w-[210px] sm:w-[240px] max-w-[calc(100vw-76px)] rounded-2xl bg-white/95 dark:bg-stone-900/95 text-stone-800 dark:text-stone-100 text-[11px] sm:text-xs md:text-[13px] font-medium leading-snug tracking-normal shadow-lg backdrop-blur-md border border-stone-200/90 dark:border-stone-700/90 text-center animate-in fade-in zoom-in-95 duration-200">
+      {/* Main Frosted Thought Bubble (Horizontal layout with defined width and multi-line text wrapping) */}
+      <div className="relative px-4 py-2.5 w-[210px] sm:w-[240px] max-w-[calc(100vw-110px)] rounded-2xl bg-white/95 dark:bg-stone-900/95 text-stone-800 dark:text-stone-100 text-xs sm:text-[13px] font-medium leading-snug tracking-normal shadow-lg backdrop-blur-md border border-stone-200/90 dark:border-stone-700/90 text-center animate-in fade-in zoom-in-95 duration-200">
         <p className="m-0 select-text break-words whitespace-normal leading-snug">{quote}</p>
       </div>
     </div>

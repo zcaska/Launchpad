@@ -717,7 +717,7 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
       {/* 2. BODY CONTENT: Tasks Grid/List + Collapsible Scratchpad Panel */}
       <div className="flex-1 flex overflow-hidden relative">
         {/* Main Task Cards Flow */}
-        <main className="flex-1 p-4 sm:p-6 overflow-y-auto space-y-4">
+        <main className="flex-1 p-4 sm:p-6 pb-20 sm:pb-6 overflow-y-auto space-y-4">
           {filteredTasks.length === 0 ? (
             <div className="py-20 text-center rounded-2xl border border-dashed border-serene-border-light dark:border-serene-border-dark bg-white/40 dark:bg-serene-surface-dark/40 flex flex-col items-center justify-center p-6">
               <div className="w-12 h-12 rounded-2xl bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark flex items-center justify-center text-serene-text-muted mb-3">

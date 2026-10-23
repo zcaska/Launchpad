@@ -25,15 +25,20 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { AppData, GoogleCalendarConfig } from '../../types';
-import { exportDataAsJson, importDataFromJson } from '../../utils/storage';
+import { exportDataAsJson, importDataFromJson, getStorageMetrics } from '../../utils/storage';
 import { exportNetscapeBookmarks } from '../../utils/bookmarkParser';
 import { DEFAULT_INITIAL_PREFERENCES } from '../../data/seedData';
 import { modalBackdropVariants, modalContentVariants } from '../../utils/motion';
+import { Mascot } from '../Pet/Mascot';
+import { MascotShowcaseModal } from '../Pet/MascotShowcaseModal';
 import { 
   requestGoogleAccessToken, 
   revokeGoogleAuthorization, 
   isGoogleTokenExpired,
+  getInMemoryGoogleToken,
   fetchGoogleCalendarAccountEmail,
+  fetchUserCalendarList,
+  UserCalendarSummary,
   GoogleAuthError
 } from '../../services/googleCalendarService';
 import { isCalendarTask } from '../../utils/calendarSchedule';
@@ -60,6 +65,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   isSyncingCalendar = false,
 }) => {
   const [copiedUrl, setCopiedUrl] = useState(false);
+  const [isMascotShowcaseOpen, setIsMascotShowcaseOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const currentAppUrl = window.location.href;
@@ -162,6 +168,29 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [gcalError, setGcalError] = useState<string | null>(null);
   const [gcalSuccessMsg, setGcalSuccessMsg] = useState<string | null>(null);
   const [isGuideOpen, setIsGuideOpen] = useState(false);
+  const [userCalendars, setUserCalendars] = useState<UserCalendarSummary[]>([]);
+  const [isLoadingCalendars, setIsLoadingCalendars] = useState(false);
+
+  const handleLoadUserCalendars = async () => {
+    const token = getInMemoryGoogleToken();
+    if (!token) {
+      setGcalError('Please re-authorize to load available calendars.');
+      return;
+    }
+    setIsLoadingCalendars(true);
+    try {
+      const list = await fetchUserCalendarList(token);
+      if (list.length > 0) {
+        setUserCalendars(list);
+      } else {
+        setGcalError('No calendars found for this account.');
+      }
+    } catch {
+      setGcalError('Could not fetch calendars. Please check your connection.');
+    } finally {
+      setIsLoadingCalendars(false);
+    }
+  };
 
   const gcalConfig: GoogleCalendarConfig = appData.settings.googleCalendar || {
     enabled: false,
@@ -253,8 +282,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   };
 
   return (
-    <AnimatePresence>
-      {isOpen && (
+    <>
+      <AnimatePresence>
+        {isOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <motion.div 
             className="fixed inset-0 bg-black/40 backdrop-blur-xs" 
@@ -307,7 +337,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 type="text"
                 readOnly
                 value={currentAppUrl}
-                className="flex-1 bg-white dark:bg-serene-surface-dark px-3 py-1.5 rounded-lg border border-serene-border-light dark:border-serene-border-dark font-mono text-[11px] text-serene-text-primary dark:text-serene-text-darkPrimary select-all"
+                className="flex-1 min-w-0 bg-white dark:bg-serene-surface-dark px-3 py-1.5 rounded-lg border border-serene-border-light dark:border-serene-border-dark font-mono text-[11px] text-serene-text-primary dark:text-serene-text-darkPrimary select-all"
               />
               <button
                 onClick={handleCopyUrl}
@@ -412,7 +442,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               <button
                 type="button"
                 onClick={() => updateOpenRouter('enabled', !appData.settings.openRouter.enabled)}
-                className={`w-10 h-5 rounded-full transition-colors relative ${
+                className={`w-10 h-5 shrink-0 rounded-full transition-colors relative ${
                   appData.settings.openRouter.enabled ? 'bg-serene-primary' : 'bg-slate-300 dark:bg-slate-700'
                 }`}
               >
@@ -593,6 +623,66 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               </div>
             )}
 
+            {/* Calendar Selection & Polling Interval */}
+            {gcalConfig.enabled && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-2 border-t border-serene-border-light/60 dark:border-serene-border-dark/60">
+                <div>
+                  <label className="block text-[11px] font-semibold text-serene-text-secondary dark:text-serene-text-darkSecondary mb-1">
+                    Calendar to Sync
+                  </label>
+                  <div className="flex items-center gap-1.5">
+                    <input
+                      type="text"
+                      value={gcalConfig.calendarId || 'primary'}
+                      onChange={(e) => updateGoogleCalendar('calendarId', e.target.value.trim() || 'primary')}
+                      placeholder="primary"
+                      className="flex-1 px-2.5 py-1.5 text-xs rounded-lg border border-serene-border-light dark:border-serene-border-dark bg-white dark:bg-serene-surface-dark font-mono text-serene-text-primary dark:text-serene-text-darkPrimary"
+                    />
+                    {userCalendars.length === 0 && (
+                      <button
+                        type="button"
+                        onClick={handleLoadUserCalendars}
+                        disabled={isLoadingCalendars}
+                        className="px-2 py-1.5 text-[10px] font-semibold text-serene-primary dark:text-serene-primary-dark hover:underline shrink-0"
+                      >
+                        {isLoadingCalendars ? 'Loading...' : 'Browse'}
+                      </button>
+                    )}
+                  </div>
+                  {userCalendars.length > 0 && (
+                    <select
+                      value={gcalConfig.calendarId || 'primary'}
+                      onChange={(e) => updateGoogleCalendar('calendarId', e.target.value)}
+                      className="mt-1 w-full px-2 py-1 text-xs rounded-lg border border-serene-border-light dark:border-serene-border-dark bg-white dark:bg-serene-surface-dark text-serene-text-primary dark:text-serene-text-darkPrimary"
+                    >
+                      {userCalendars.map((cal) => (
+                        <option key={cal.id} value={cal.id}>
+                          {cal.summary} {cal.primary ? '(Primary)' : ''}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-semibold text-serene-text-secondary dark:text-serene-text-darkSecondary mb-1">
+                    Auto-Sync Polling Interval
+                  </label>
+                  <select
+                    value={gcalConfig.syncIntervalMinutes || 5}
+                    onChange={(e) => updateGoogleCalendar('syncIntervalMinutes', Number(e.target.value))}
+                    className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-serene-border-light dark:border-serene-border-dark bg-white dark:bg-serene-surface-dark text-serene-text-primary dark:text-serene-text-darkPrimary"
+                  >
+                    <option value={2}>Every 2 minutes</option>
+                    <option value={5}>Every 5 minutes (default)</option>
+                    <option value={10}>Every 10 minutes</option>
+                    <option value={15}>Every 15 minutes</option>
+                    <option value={30}>Every 30 minutes</option>
+                  </select>
+                </div>
+              </div>
+            )}
+
             {/* Actions */}
             <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
               <div className="text-[10px] text-serene-text-muted">
@@ -655,8 +745,42 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           <div className="space-y-3">
             <h3 className="font-bold text-serene-text-primary dark:text-serene-text-darkPrimary flex items-center gap-1.5">
               <Download className="w-3.5 h-3.5 text-serene-primary dark:text-serene-primary-dark" />
-              <span>Data Backup & Portability</span>
+              <span>Data Backup & Storage Health</span>
             </h3>
+
+            {/* Storage Health & Capacity */}
+            {(() => {
+              const metrics = getStorageMetrics();
+              return (
+                <div className="p-3 bg-serene-surfaceAlt-light/60 dark:bg-serene-surfaceAlt-dark/60 rounded-xl border border-serene-border-light dark:border-serene-border-dark space-y-2">
+                  <div className="flex items-center justify-between text-xs font-semibold">
+                    <span className="text-serene-text-primary dark:text-serene-text-darkPrimary flex items-center gap-1.5">
+                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                      <span>Local Storage Health</span>
+                    </span>
+                    <span className="text-serene-text-secondary dark:text-serene-text-darkSecondary font-mono text-[11px]">
+                      {metrics.usedFormatted} used ({metrics.quotaUsagePercent}%)
+                    </span>
+                  </div>
+                  <div className="w-full h-1.5 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
+                    <div
+                      className={`h-full rounded-full transition-all duration-300 ${
+                        metrics.quotaUsagePercent > 80
+                          ? 'bg-rose-500'
+                          : metrics.quotaUsagePercent > 50
+                          ? 'bg-amber-500'
+                          : 'bg-emerald-500'
+                      }`}
+                      style={{ width: `${Math.max(2, metrics.quotaUsagePercent)}%` }}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between text-[10px] text-serene-text-muted">
+                    <span>{metrics.linkCount} bookmarks · {metrics.folderCount} folders · {metrics.taskCount} tasks</span>
+                    <span>{metrics.hasBackup ? '✓ Rolling backup active' : 'Backup pending'}</span>
+                  </div>
+                </div>
+              );
+            })()}
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
               <button
@@ -767,7 +891,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 </div>
                 <button
                   onClick={() => updateSetting('openInNewTab', !appData.settings.openInNewTab)}
-                  className={`w-10 h-5 rounded-full transition-colors relative ${
+                  className={`w-10 h-5 shrink-0 rounded-full transition-colors relative ${
                     appData.settings.openInNewTab ? 'bg-serene-primary' : 'bg-slate-300 dark:bg-slate-700'
                   }`}
                 >
@@ -780,14 +904,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               </div>
 
               {/* Confetti celebration style */}
-              <div className="flex items-center justify-between p-2.5 bg-serene-surfaceAlt-light/50 dark:bg-serene-surfaceAlt-dark/50 rounded-lg border border-serene-border-light dark:border-serene-border-dark">
-                <div>
+              <div className="flex flex-wrap items-center justify-between gap-2 p-2.5 bg-serene-surfaceAlt-light/50 dark:bg-serene-surfaceAlt-dark/50 rounded-lg border border-serene-border-light dark:border-serene-border-dark">
+                <div className="min-w-0">
                   <div className="font-semibold text-serene-text-primary dark:text-serene-text-darkPrimary">
                     Confetti Celebration
                   </div>
                   <div className="text-[10px] text-serene-text-muted">Animation shown when all tasks are done</div>
                 </div>
-                <div className="flex items-center gap-1.5">
+                <div className="flex flex-wrap items-center gap-1.5">
                   {([
                     { id: 'cascade', label: 'Cascade' },
                     { id: 'burst', label: 'Burst' },
@@ -807,6 +931,88 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   ))}
                 </div>
               </div>
+
+              {/* Launchpad Pet enable */}
+              <div className="flex items-center justify-between p-2.5 bg-serene-surfaceAlt-light/50 dark:bg-serene-surfaceAlt-dark/50 rounded-lg border border-serene-border-light dark:border-serene-border-dark">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-lg bg-orange-500/10 dark:bg-orange-500/20 border border-orange-500/20 flex items-center justify-center shrink-0">
+                    <Mascot size={26} expression="welcoming" />
+                  </div>
+                  <div>
+                    <div className="font-semibold text-serene-text-primary dark:text-serene-text-darkPrimary flex items-center gap-1.5">
+                      <span>Launchpad Mascot Pet</span>
+                      <button
+                        type="button"
+                        onClick={() => setIsMascotShowcaseOpen(true)}
+                        className="text-[10px] px-1.5 py-0.5 rounded bg-orange-500/15 text-orange-600 dark:text-orange-400 border border-orange-500/30 hover:bg-orange-500/25 transition-colors font-medium"
+                      >
+                        Model Sheet & Assets →
+                      </button>
+                    </div>
+                    <div className="text-[10px] text-serene-text-muted">Floating-pebble companion that reacts to tasks & focus</div>
+                  </div>
+                </div>
+                <button
+                  onClick={() => updateSetting('pet', { ...(appData.settings.pet || {}), enabled: !(appData.settings.pet?.enabled !== false) })}
+                  className={`w-10 h-5 shrink-0 rounded-full transition-colors relative ${
+                    appData.settings.pet?.enabled !== false ? 'bg-serene-primary' : 'bg-slate-300 dark:bg-slate-700'
+                  }`}
+                  aria-label="Toggle Launchpad pet"
+                >
+                  <span
+                    className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform ${
+                      appData.settings.pet?.enabled !== false ? 'transform translate-x-5' : ''
+                    }`}
+                  />
+                </button>
+              </div>
+
+              {/* Pet movement pause */}
+              <div className="flex items-center justify-between p-2.5 bg-serene-surfaceAlt-light/50 dark:bg-serene-surfaceAlt-dark/50 rounded-lg border border-serene-border-light dark:border-serene-border-dark">
+                <div>
+                  <div className="font-semibold text-serene-text-primary dark:text-serene-text-darkPrimary">
+                    Pet Movement
+                  </div>
+                  <div className="text-[10px] text-serene-text-muted">Let it wander, or keep it sitting still</div>
+                </div>
+                <button
+                  onClick={() => updateSetting('pet', { enabled: appData.settings.pet?.enabled !== false, paused: !appData.settings.pet?.paused })}
+                  className={`w-10 h-5 shrink-0 rounded-full transition-colors relative ${
+                    !appData.settings.pet?.paused ? 'bg-serene-primary' : 'bg-slate-300 dark:bg-slate-700'
+                  }`}
+                  aria-label="Toggle pet movement"
+                  title="Movement pauses automatically during focus sessions"
+                >
+                  <span
+                    className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform ${
+                      !appData.settings.pet?.paused ? 'transform translate-x-5' : ''
+                    }`}
+                  />
+                </button>
+              </div>
+
+              {/* Streak celebrations */}
+              <div className="flex items-center justify-between p-2.5 bg-serene-surfaceAlt-light/50 dark:bg-serene-surfaceAlt-dark/50 rounded-lg border border-serene-border-light dark:border-serene-border-dark">
+                <div>
+                  <div className="font-semibold text-serene-text-primary dark:text-serene-text-darkPrimary">
+                    Streak Celebrations
+                  </div>
+                  <div className="text-[10px] text-serene-text-muted">Crown animation at 3, 7, 14-day milestones</div>
+                </div>
+                <button
+                  onClick={() => updateSetting('pet', { ...(appData.settings.pet || {}), streakCelebrationsEnabled: !(appData.settings.pet?.streakCelebrationsEnabled !== false) })}
+                  className={`w-10 h-5 shrink-0 rounded-full transition-colors relative ${
+                    appData.settings.pet?.streakCelebrationsEnabled !== false ? 'bg-serene-primary' : 'bg-slate-300 dark:bg-slate-700'
+                  }`}
+                  aria-label="Toggle streak celebrations"
+                >
+                  <span
+                    className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform ${
+                      appData.settings.pet?.streakCelebrationsEnabled !== false ? 'transform translate-x-5' : ''
+                    }`}
+                  />
+                </button>
+              </div>
             </div>
           </div>
 
@@ -824,15 +1030,15 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               </div>
               <div className="flex items-center justify-between p-2 bg-serene-surfaceAlt-light/40 dark:bg-serene-surfaceAlt-dark/40 rounded-lg">
                 <span className="text-serene-text-secondary dark:text-serene-text-darkSecondary">Quick Add Link</span>
-                <kbd className="px-1.5 py-0.5 bg-white dark:bg-serene-surface-dark border border-serene-border-light dark:border-serene-border-dark rounded font-mono text-[10px]">N</kbd>
+                <kbd className="px-1.5 py-0.5 bg-white dark:bg-serene-surface-dark border border-serene-border-light dark:border-serene-border-dark rounded font-mono text-[10px]">Ctrl+N</kbd>
               </div>
               <div className="flex items-center justify-between p-2 bg-serene-surfaceAlt-light/40 dark:bg-serene-surfaceAlt-dark/40 rounded-lg">
                 <span className="text-serene-text-secondary dark:text-serene-text-darkSecondary">Reject / Show Next</span>
-                <kbd className="px-1.5 py-0.5 bg-white dark:bg-serene-surface-dark border border-serene-border-light dark:border-serene-border-dark rounded font-mono text-[10px]">R</kbd>
+                <kbd className="px-1.5 py-0.5 bg-white dark:bg-serene-surface-dark border border-serene-border-light dark:border-serene-border-dark rounded font-mono text-[10px]">Ctrl+R</kbd>
               </div>
               <div className="flex items-center justify-between p-2 bg-serene-surfaceAlt-light/40 dark:bg-serene-surfaceAlt-dark/40 rounded-lg">
                 <span className="text-serene-text-secondary dark:text-serene-text-darkSecondary">Toggle Scratchpad</span>
-                <kbd className="px-1.5 py-0.5 bg-white dark:bg-serene-surface-dark border border-serene-border-light dark:border-serene-border-dark rounded font-mono text-[10px]">Q</kbd>
+                <kbd className="px-1.5 py-0.5 bg-white dark:bg-serene-surface-dark border border-serene-border-light dark:border-serene-border-dark rounded font-mono text-[10px]">Ctrl+Q</kbd>
               </div>
             </div>
           </div>
@@ -867,5 +1073,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         </div>
       )}
     </AnimatePresence>
-  );
+    <MascotShowcaseModal
+      isOpen={isMascotShowcaseOpen}
+      onClose={() => setIsMascotShowcaseOpen(false)}
+    />
+  </>
+);
 };

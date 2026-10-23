@@ -77,6 +77,15 @@ export type ThemeMode = 'light' | 'dark' | 'system';
 export type ConfettiStyle = 'cascade' | 'burst' | 'sparkle';
 export type TimeOfDayBucket = 'morning' | 'afternoon' | 'evening' | 'night';
 
+// Launchpad Pet preferences (optional so older persisted data stays valid)
+export interface PetSettings {
+  enabled?: boolean;   // show the pet at all
+  paused?: boolean;    // pause roaming/movement only (pet stays visible)
+  streakCount?: number;            // consecutive days with at least one task completed
+  lastStreakDate?: string;         // ISO date of the last day that counted toward the streak
+  streakCelebrationsEnabled?: boolean; // show the crown + celebration animation at milestones
+};
+
 export interface DaySchedule {
   startHour: number; // e.g. 9 (9:00 AM)
   endHour: number;   // e.g. 22 (10:00 PM)
@@ -206,6 +215,7 @@ export interface AppData {
     activeMode: 'auto' | 'work' | 'free';
     googleCalendar?: GoogleCalendarConfig;
     confettiStyle?: ConfettiStyle;
+    pet?: PetSettings;
   };
 }
 
@@ -258,3 +268,5 @@ export interface ImportBookmarkResult {
   createdFolders?: Folder[];
   categoryDistribution?: Record<string, number>;
 }
+
+

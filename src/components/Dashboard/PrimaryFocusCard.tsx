@@ -403,10 +403,10 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
         </div>
 
         {/* 2. ACTIVE TASK HIGHLIGHT CARD (ROUNDED PINK/ROSE-TINTED CONTAINER) */}
-        <div className="bg-[#fff5f5] dark:bg-rose-950/25 border border-rose-100 dark:border-rose-900/40 rounded-2xl p-4.5 space-y-3.5 transition-colors">
-          <div className="flex flex-row items-center justify-between gap-3.5">
-            {/* Left section: Icon box + Badges + Title + Description */}
-            <div className="flex items-start gap-3.5 min-w-0 flex-1">
+        <div className="bg-[#fff5f5] dark:bg-rose-950/25 border border-rose-100 dark:border-rose-900/40 rounded-2xl p-5 lg:p-5.5 transition-colors">
+          <div className="flex flex-row items-center justify-between gap-6 lg:gap-8">
+            {/* Left section: Icon box + Badges + Title + Description + Metadata Pills */}
+            <div className="flex items-center gap-4 lg:gap-5 min-w-0 flex-1">
               {/* Task Icon in elevated rounded container with direct completion toggle */}
               <button
                 type="button"
@@ -429,35 +429,33 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
                 </div>
               </button>
 
-              <div className="min-w-0 flex-1">
+              <div className="min-w-0 flex-1 space-y-1.5">
                 {/* Badges Row */}
-                <div className="flex items-center gap-1.5 flex-wrap mb-1">
+                <div className="flex items-center gap-2 flex-wrap">
                   <span
-                    className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${priorityColorClass}`}
+                    className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider ${priorityColorClass}`}
                   >
                     {(activeTask.priority || 'high').toUpperCase()}
                   </span>
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300">
+                  <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300">
                     {urgency.badgeText.toUpperCase()}
                   </span>
                 </div>
 
                 {/* Task Title */}
-                <div className="flex items-center gap-2">
-                  <h3
-                    className="text-lg lg:text-xl font-bold text-serene-text-primary dark:text-serene-text-darkPrimary leading-snug truncate cursor-pointer hover:text-teal-600 dark:hover:text-teal-400 transition-colors"
-                    onClick={() => {
-                      onPreviewTask?.(activeTask.id);
-                      setPreviewTaskId(activeTask.id);
-                    }}
-                  >
-                    {activeTask.text}
-                  </h3>
-                </div>
+                <h3
+                  className="text-lg lg:text-xl font-bold text-serene-text-primary dark:text-serene-text-darkPrimary leading-snug line-clamp-2 cursor-pointer hover:text-teal-600 dark:hover:text-teal-400 transition-colors"
+                  onClick={() => {
+                    onPreviewTask?.(activeTask.id);
+                    setPreviewTaskId(activeTask.id);
+                  }}
+                >
+                  {activeTask.text}
+                </h3>
 
                 {/* Multiline Description with safe sanitization */}
                 {activeTask.description && (
-                  <div className="mt-0.5">
+                  <div>
                     <SafeDescription
                       text={activeTask.description}
                       className="text-xs sm:text-sm text-serene-text-muted dark:text-serene-text-darkMuted"
@@ -465,19 +463,65 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
                     />
                   </div>
                 )}
+
+                {/* Metadata Pills Row */}
+                <div className="flex items-center gap-2 flex-wrap pt-0.5">
+                  {/* Source pill */}
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg text-xs font-medium bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border border-blue-200/70 dark:border-blue-900/40">
+                    <Calendar className="w-3.5 h-3.5 shrink-0" />
+                    <span>{isCalendarTask ? 'Calendar Event' : 'Focus Task'}</span>
+                  </div>
+
+                  {/* Duration pill */}
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg text-xs font-medium bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 border border-purple-200/70 dark:border-purple-900/40">
+                    <Timer className="w-3.5 h-3.5 shrink-0" />
+                    <span>{durationEstimate} estimated</span>
+                  </div>
+
+                  {/* Subtasks summary pill */}
+                  {subtaskState.totalCount > 0 && (
+                    <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg text-xs font-medium bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300 border border-stone-200/70 dark:border-stone-700/60">
+                      <ListTodo className="w-3.5 h-3.5 shrink-0" />
+                      <span>
+                        {subtaskState.completedCount}/{subtaskState.totalCount} subtasks
+                      </span>
+                    </div>
+                  )}
+
+                  {/* External / Calendar Link pill */}
+                  {isCalendarTask ? (
+                    <button
+                      onClick={onOpenCalendarSettings}
+                      type="button"
+                      className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg text-xs font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border border-emerald-200/70 dark:border-emerald-900/40 hover:underline transition-colors cursor-pointer"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5 shrink-0" />
+                      <span>Google Calendar</span>
+                    </button>
+                  ) : activeTask.attachedUrls && activeTask.attachedUrls.length > 0 ? (
+                    <a
+                      href={activeTask.attachedUrls[0].url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg text-xs font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border border-emerald-200/70 dark:border-emerald-900/40 hover:underline transition-colors"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5 shrink-0" />
+                      <span>{activeTask.attachedUrls[0].title || 'Reference Link'}</span>
+                    </a>
+                  ) : null}
+                </div>
               </div>
             </div>
 
             {/* Right section: Deadline Block with visual progress bar */}
-            <div className="pl-5 border-l border-rose-200/60 dark:border-rose-900/40 flex flex-col justify-center items-start shrink-0 min-w-[190px] lg:min-w-[220px]">
+            <div className="pl-6 lg:pl-8 border-l border-rose-200 dark:border-rose-900/50 flex flex-col justify-center items-start shrink-0 min-w-[200px] lg:min-w-[220px]">
               <div className="w-full">
-                <div className="flex items-center gap-1.5 text-rose-500 dark:text-rose-400 mb-1.5">
-                  <Clock className="w-4.5 h-4.5 shrink-0" />
-                  <span className="text-xs sm:text-sm font-bold uppercase tracking-wider">Deadline</span>
+                <div className="flex items-center gap-1.5 text-rose-500 dark:text-rose-400 mb-1">
+                  <Clock className="w-4 h-4 shrink-0" />
+                  <span className="text-xs font-bold uppercase tracking-wider">Deadline</span>
                 </div>
-                <div className="text-lg lg:text-xl font-black text-rose-600 dark:text-rose-400 leading-snug">
-                  <div>{deadlineDateLabel}</div>
-                  <div className="font-mono text-sm sm:text-base font-extrabold">{deadlineTimeLabel}</div>
+                <div className="text-base lg:text-lg font-bold text-rose-600 dark:text-rose-400 leading-snug">
+                  {deadlineDateLabel} · <span className="font-mono text-sm font-semibold">{deadlineTimeLabel}</span>
                 </div>
                 <div className="text-xs sm:text-sm font-semibold text-rose-700/80 dark:text-rose-300/80 mt-1">
                   {deadlineMetrics.countdownText}
@@ -485,60 +529,13 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
               </div>
 
               {/* Visual Deadline Progress Bar */}
-              <div className="w-full h-2.5 bg-rose-200/80 dark:bg-rose-950/80 rounded-full overflow-hidden mt-2.5">
+              <div className="w-full h-2 bg-rose-200/80 dark:bg-rose-950/80 rounded-full overflow-hidden mt-2">
                 <div
                   className="h-full bg-rose-500 rounded-full transition-all duration-300"
                   style={{ width: `${deadlineMetrics.progressPercent}%` }}
                 />
               </div>
             </div>
-          </div>
-
-          {/* Metadata Pills Row */}
-          <div className="flex items-center gap-2 flex-wrap pt-1">
-            {/* Source pill */}
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border border-blue-200/70 dark:border-blue-900/40">
-              <Calendar className="w-3.5 h-3.5 shrink-0" />
-              <span>{isCalendarTask ? 'Calendar Event' : 'Focus Task'}</span>
-            </div>
-
-            {/* Duration pill */}
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 border border-purple-200/70 dark:border-purple-900/40">
-              <Timer className="w-3.5 h-3.5 shrink-0" />
-              <span>{durationEstimate} estimated</span>
-            </div>
-
-            {/* Subtasks summary pill */}
-            {subtaskState.totalCount > 0 && (
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300 border border-stone-200/70 dark:border-stone-700/60">
-                <ListTodo className="w-3.5 h-3.5 shrink-0" />
-                <span>
-                  {subtaskState.completedCount}/{subtaskState.totalCount} subtasks
-                </span>
-              </div>
-            )}
-
-            {/* External / Calendar Link pill */}
-            {isCalendarTask ? (
-              <button
-                onClick={onOpenCalendarSettings}
-                type="button"
-                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border border-emerald-200/70 dark:border-emerald-900/40 hover:underline transition-colors cursor-pointer"
-              >
-                <ExternalLink className="w-3.5 h-3.5 shrink-0" />
-                <span>Google Calendar</span>
-              </button>
-            ) : activeTask.attachedUrls && activeTask.attachedUrls.length > 0 ? (
-              <a
-                href={activeTask.attachedUrls[0].url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border border-emerald-200/70 dark:border-emerald-900/40 hover:underline transition-colors"
-              >
-                <ExternalLink className="w-3.5 h-3.5 shrink-0" />
-                <span>{activeTask.attachedUrls[0].title || 'Reference Link'}</span>
-              </a>
-            ) : null}
           </div>
         </div>
 

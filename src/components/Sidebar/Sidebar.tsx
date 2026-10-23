@@ -334,7 +334,7 @@ const FolderTreeItem: React.FC<FolderTreeItemProps> = ({
   );
 };
 
-export const Sidebar: React.FC<SidebarProps> = ({
+export const Sidebar: React.FC<SidebarProps> = React.memo(({
   folders,
   links,
   selectedFolderId,
@@ -908,4 +908,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </aside>
     </>
   );
-};
+});
+
+Sidebar.displayName = 'Sidebar';
+

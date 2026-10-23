@@ -1021,7 +1021,11 @@ export function App() {
       ...prev,
       settings: {
         ...prev.settings,
-        pet: { enabled: prev.settings.pet?.enabled !== false, paused: !prev.settings.pet?.paused },
+        pet: {
+          ...prev.settings.pet,
+          enabled: prev.settings.pet?.enabled !== false,
+          paused: !prev.settings.pet?.paused,
+        },
       },
     }));
   };

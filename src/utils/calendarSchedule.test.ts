@@ -382,6 +382,41 @@ console.log('--- Testing calendarSchedule.ts ---');
     true,
     'syncCalendarEventsToQuickNotes: user completed status is preserved on future task without re-unchecking'
   );
+
+  // Test 4: Declined attendee event filtering
+  const declinedEventRaw = {
+    id: 'declined-meeting-1',
+    summary: 'Optional Team Hangout',
+    start: { dateTime: new Date(Date.now() + 3600000).toISOString() },
+    end: { dateTime: new Date(Date.now() + 7200000).toISOString() },
+    attendees: [
+      { email: 'colleague@example.com', responseStatus: 'accepted' },
+      { email: 'user@example.com', self: true, responseStatus: 'declined' },
+    ],
+    status: 'confirmed',
+  };
+  const normDeclined = normalizeGoogleCalendarEvent(declinedEventRaw);
+  assertEqual(normDeclined, null, 'normalizeGoogleCalendarEvent: returns null for user-declined events');
+
+  // Test 5: Multi-day event clamping
+  const multiDayEvent: CalendarEventItem = {
+    id: 'multi-day-hackathon',
+    summary: '3-Day Global Hackathon',
+    startTime: new Date(Date.now() - 86400000).toISOString(), // started yesterday
+    endTime: new Date(Date.now() + 2 * 86400000).toISOString(), // ends day after tomorrow
+    startMs: Date.now() - 86400000,
+    endMs: Date.now() + 2 * 86400000,
+    durationMinutes: 4320, // 72 hours
+    isAllDay: false,
+    status: 'confirmed',
+  };
+  const multiDayTasks = syncCalendarEventsToQuickNotes([], [multiDayEvent]);
+  assertEqual(multiDayTasks.length, 1, 'syncCalendarEventsToQuickNotes: syncs multi-day event');
+  const firstMultiTask = multiDayTasks[0];
+  assert(
+    Boolean(firstMultiTask && firstMultiTask.durationMinutes && firstMultiTask.durationMinutes <= 1440),
+    `syncCalendarEventsToQuickNotes: multi-day duration is clamped to today (got ${firstMultiTask?.durationMinutes}m, expected <= 1440m)`
+  );
 }
 
 if (failures === 0) {

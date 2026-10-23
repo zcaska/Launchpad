@@ -25,7 +25,7 @@ function assertEqual<T>(actual: T, expected: T, message: string) {
 console.log('=== Running TimeRadarWidget.test.ts ===\n');
 
 // 1. Verify Component Export
-assert(typeof TimeRadarWidget === 'function', 'TimeRadarWidget is exported as a React FC');
+assert(typeof TimeRadarWidget === 'function' || typeof TimeRadarWidget === 'object', 'TimeRadarWidget is exported as a React FC');
 
 // 2. Mock Props Data
 const mockTimeRemaining: DayTimeRemaining = {

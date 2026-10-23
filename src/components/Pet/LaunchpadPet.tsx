@@ -64,16 +64,18 @@ function LaunchpadPetComponent({
     if (petTimerRef.current) clearTimeout(petTimerRef.current);
   }, []);
 
-  // Click tracking: single click pets, double click toggles paused movement
+  // Quotes & thought bubble display
+  const [quote, setQuote] = useState<string | null>(null);
+  const [quoteVisible, setQuoteVisible] = useState(false);
+
+  const onDismissQuote = useCallback(() => {
+    setQuoteVisible(false);
+  }, []);
+
   const clickCountRef = useRef(0);
   const clickTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const lastClickTimeRef = useRef(0);
 
   const handlePetClick = useCallback(() => {
-    const now = Date.now();
-    if (now - lastClickTimeRef.current < 80) return; // Prevent duplicate pointerup + click triggers
-    lastClickTimeRef.current = now;
-
     onPet();
     const quoteCat: QuoteCategory = STATE_QUOTE_CATEGORY_MAP[state] || 'welcomeBack';
     setQuote(getPetQuote(quoteCat));
@@ -83,17 +85,13 @@ function LaunchpadPetComponent({
     if (clickCountRef.current === 1) {
       clickTimerRef.current = setTimeout(() => {
         clickCountRef.current = 0;
-      }, 350);
+      }, 400);
     } else if (clickCountRef.current >= 2) {
       if (clickTimerRef.current) clearTimeout(clickTimerRef.current);
       clickCountRef.current = 0;
       onTogglePaused();
     }
   }, [onPet, onTogglePaused, state]);
-
-  useEffect(() => () => {
-    if (clickTimerRef.current) clearTimeout(clickTimerRef.current);
-  }, []);
 
   // Motion controller: owns position, dragging, roaming flight, and bubble placement
   const motion = usePetMotion({
@@ -103,14 +101,6 @@ function LaunchpadPetComponent({
     focusActive: state === 'focused',
     onPetClick: handlePetClick,
   });
-
-  // Quotes & thought bubble display
-  const [quote, setQuote] = useState<string | null>(null);
-  const [quoteVisible, setQuoteVisible] = useState(false);
-
-  const onDismissQuote = useCallback(() => {
-    setQuoteVisible(false);
-  }, []);
 
   const prevStateRef = useRef<PetState>(state);
   useEffect(() => {
@@ -181,7 +171,6 @@ function LaunchpadPetComponent({
             isSippingCoffee={state === 'coffee-break'}
             reducedMotion={reduced}
             petted={petted}
-            size={motion.size}
           />
         </button>
       </div>

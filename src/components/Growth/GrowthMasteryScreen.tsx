@@ -428,7 +428,7 @@ export const GrowthMasteryScreen: React.FC<GrowthMasteryScreenProps> = ({
             </div>
 
             {/* Modern Segmented Tab Control */}
-            <div className="inline-flex p-1 rounded-2xl bg-white dark:bg-serene-surface-dark border border-serene-border-light dark:border-serene-border-dark shadow-subtle shrink-0">
+            <div className="flex w-full sm:inline-flex sm:w-auto flex-wrap sm:flex-nowrap p-1 rounded-2xl bg-white dark:bg-serene-surface-dark border border-serene-border-light dark:border-serene-border-dark shadow-subtle sm:shrink-0">
               <button
                 onClick={() => setActiveTab('weekly')}
                 className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all duration-150 ${

@@ -28,7 +28,6 @@ export interface PetSpriteProps {
   isSippingCoffee: boolean;
   reducedMotion: boolean;
   petted: boolean;
-  size?: number;
 }
 
 /**
@@ -263,9 +262,7 @@ function PetSpriteComponent({
   isSippingCoffee = false,
   reducedMotion,
   petted,
-  size = 84,
 }: PetSpriteProps) {
-  const height = Math.round((size * 100) / 120);
   const [idleMicroExpr, setIdleMicroExpr] = useState<'calm' | 'curious' | 'welcoming'>('calm');
 
   useEffect(() => {
@@ -355,7 +352,7 @@ function PetSpriteComponent({
         /* 1. Context-aware gentle floating (6-12px vertical range, easeInOutCubic) */
         @keyframes pet-idle-float {
           0%, 100% { transform: translateY(0px) rotate(0deg); }
-          50%      { transform: translateY(-7px) rotate(0.4deg); }
+          50%      { transform: translateY(-9px) rotate(0.6deg); }
         }
 
         /* 2. Focused working float (calm, low amplitude, stable over laptop) */
@@ -483,17 +480,17 @@ function PetSpriteComponent({
           rightFinAngle={visual.rightFinAngle}
           glow={visual.glow || isStreakMaster}
           sparkles={visual.sparkles}
-          size={size}
+          size={84}
           facing={facing}
           reducedMotion={reducedMotion}
-          className={isFlying ? 'animate-pulse' : undefined}
+          isFlying={isFlying}
         />
 
         {/* Animated props overlay (steaming coffee mug & working laptop) */}
         {(showCoffeeMug || showLaptop) && (
           <svg
-            width={size}
-            height={height}
+            width={84}
+            height={70}
             viewBox="0 0 120 100"
             fill="none"
             xmlns="http://www.w3.org/2000/svg"
@@ -511,13 +508,13 @@ function PetSpriteComponent({
               data-prop="coffee-mug"
               className={reducedMotion ? undefined : 'pet-sip'}
               transform-box="fill-box"
-              transform-origin="69px 74px"
+              style={{ transformOrigin: '69px 74px' }}
             >
               {/* Animated rising steam puffs */}
               <g
                 className={reducedMotion ? undefined : 'pet-steam'}
                 transform-box="fill-box"
-                transform-origin="50% 100%"
+                style={{ transformOrigin: '50% 100%' }}
               >
                 <path
                   d="M 66 58 Q 64 54 66.5 50.5"

@@ -169,6 +169,7 @@ export const DEFAULT_SEED_DATA: AppData = {
     compactView: false,
     activeMode: 'auto',
     confettiStyle: 'cascade',
+    pet: { enabled: true },
     daySchedule: {
       startHour: 9,
       endHour: 22,
