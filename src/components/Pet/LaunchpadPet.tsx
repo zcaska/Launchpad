@@ -91,6 +91,7 @@ function LaunchpadPetComponent({
     roaming: state === 'roaming',
     paused,
     reducedMotion: reduced,
+    focusActive: state === 'focused',
     onPetClick: handlePetClick,
   });
 

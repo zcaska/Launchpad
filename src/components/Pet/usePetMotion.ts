@@ -2,10 +2,11 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import type React from 'react';
 
 export interface PetMotionOptions {
-  roaming: boolean;
+  roaming?: boolean;
   paused: boolean;
   reducedMotion: boolean;
   dockPosition?: { x: number; y: number };
+  focusActive?: boolean;
   onPetClick?: () => void;
 }
 
@@ -85,10 +86,11 @@ function getDefaultPosition(dockPosition?: { x: number; y: number }): { x: numbe
 }
 
 export function usePetMotion({
-  roaming,
+  roaming = false,
   paused,
   reducedMotion,
   dockPosition,
+  focusActive = false,
   onPetClick,
 }: PetMotionOptions): PetMotionState {
   const [pos, setPos] = useState<{ x: number; y: number }>(() => {
@@ -130,73 +132,100 @@ export function usePetMotion({
         if (clampedX === prev.x && clampedY === prev.y) return prev;
         return { x: clampedX, y: clampedY };
       });
+      if (savedPosRef.current) {
+        savedPosRef.current = {
+          x: clampCoordinate(savedPosRef.current.x, 16, maxX),
+          y: clampCoordinate(savedPosRef.current.y, 16, maxY),
+        };
+      }
     };
     window.addEventListener('resize', onResize);
     return () => window.removeEventListener('resize', onResize);
   }, []);
 
-  // Roaming gentle flight along right margin
+  const clearTimers = useCallback(() => {
+    if (flightTimerRef.current) {
+      clearTimeout(flightTimerRef.current);
+      flightTimerRef.current = null;
+    }
+    if (restTimerRef.current) {
+      clearTimeout(restTimerRef.current);
+      restTimerRef.current = null;
+    }
+  }, []);
+
+  const scheduleFlightRef = useRef<(delayMs: number) => void>(() => {});
+
+  scheduleFlightRef.current = (delayMs: number) => {
+    if (restTimerRef.current) {
+      clearTimeout(restTimerRef.current);
+      restTimerRef.current = null;
+    }
+    // If already in flight, do not start a new flight
+    if (flightTimerRef.current) {
+      return;
+    }
+
+    restTimerRef.current = setTimeout(() => {
+      restTimerRef.current = null;
+      if (typeof window === 'undefined') return;
+
+      const dur = Math.floor(4500 + Math.random() * 2000); // 4500-6500 ms
+      const maxX = Math.max(16, window.innerWidth - 72);
+      const maxY = Math.max(16, window.innerHeight - 72);
+
+      const nextX = clampCoordinate(window.innerWidth - (32 + Math.random() * 56), 16, maxX);
+      const nextY = clampCoordinate(window.innerHeight * (0.15 + Math.random() * 0.65), 16, maxY);
+
+      setDurationMs(reducedMotion ? 0 : dur);
+      setIsFlying(true);
+      setFacing((prevFacing) => {
+        if (nextX < posRef.current.x) return -1;
+        if (nextX > posRef.current.x) return 1;
+        return prevFacing;
+      });
+      posRef.current = { x: nextX, y: nextY };
+      setPos({ x: nextX, y: nextY });
+
+      flightTimerRef.current = setTimeout(() => {
+        flightTimerRef.current = null;
+        setIsFlying(false);
+        const landingPos = { x: nextX, y: nextY };
+        savedPosRef.current = landingPos;
+        savePosition(landingPos);
+
+        // Schedule next gentle exploratory flight after 16–28s rest
+        const nextRest = 16000 + Math.random() * 12000;
+        scheduleFlightRef.current(nextRest);
+      }, dur);
+    }, delayMs);
+  };
+
+  // Autonomous wander loop lifecycle
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    if (paused || isDragging) {
-      if (flightTimerRef.current) clearTimeout(flightTimerRef.current);
-      if (restTimerRef.current) clearTimeout(restTimerRef.current);
+    if (paused || isDragging || focusActive || reducedMotion) {
+      clearTimers();
       setIsFlying(false);
       return;
     }
 
-    if (roaming) {
-      let cancelled = false;
+    // Active: schedule gentle exploratory flight after initial perch delay (~4000ms)
+    const initialDelay = roaming ? 400 : 4000;
+    scheduleFlightRef.current(initialDelay);
 
-      const scheduleFlight = (delayMs: number) => {
-        restTimerRef.current = setTimeout(() => {
-          if (cancelled) return;
+    return () => {
+      clearTimers();
+    };
+  }, [paused, isDragging, focusActive, reducedMotion, clearTimers]);
 
-          const dur = Math.floor(4500 + Math.random() * 2000); // 4500-6500 ms
-          const maxX = Math.max(16, window.innerWidth - 72);
-          const maxY = Math.max(16, window.innerHeight - 72);
-
-          const nextX = clampCoordinate(window.innerWidth - (32 + Math.random() * 56), 16, maxX);
-          const nextY = clampCoordinate(window.innerHeight * (0.15 + Math.random() * 0.65), 16, maxY);
-
-          setDurationMs(reducedMotion ? 0 : dur);
-          setIsFlying(true);
-          setFacing((prevFacing) => {
-            if (nextX < posRef.current.x) return -1;
-            if (nextX > posRef.current.x) return 1;
-            return prevFacing;
-          });
-          setPos({ x: nextX, y: nextY });
-
-          flightTimerRef.current = setTimeout(() => {
-            if (cancelled) return;
-            setIsFlying(false);
-            const restDur = Math.floor(1500 + Math.random() * 1500);
-            scheduleFlight(restDur);
-          }, dur);
-        }, delayMs);
-      };
-
-      scheduleFlight(600);
-
-      return () => {
-        cancelled = true;
-        if (flightTimerRef.current) clearTimeout(flightTimerRef.current);
-        if (restTimerRef.current) clearTimeout(restTimerRef.current);
-      };
-    } else {
-      setIsFlying(false);
-      const target = savedPosRef.current;
-      if (target && (posRef.current.x !== target.x || posRef.current.y !== target.y)) {
-        const dur = reducedMotion ? 0 : 2200;
-        setDurationMs(dur);
-        if (target.x < posRef.current.x) setFacing(-1);
-        else if (target.x > posRef.current.x) setFacing(1);
-        setPos(target);
-      }
+  // If roaming is explicitly passed as true from controller, immediately trigger exploratory glide
+  useEffect(() => {
+    if (roaming && !paused && !isDragging && !focusActive && !reducedMotion) {
+      scheduleFlightRef.current(400);
     }
-  }, [roaming, paused, isDragging, reducedMotion]);
+  }, [roaming, paused, isDragging, focusActive, reducedMotion]);
 
   // Pointer drag handlers
   const onPointerDown = useCallback((e: React.PointerEvent<HTMLElement>) => {
@@ -243,6 +272,7 @@ export function usePetMotion({
       setFacing(1);
     }
 
+    posRef.current = { x: targetX, y: targetY };
     setPos({ x: targetX, y: targetY });
   }, []);
 

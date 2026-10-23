@@ -33,5 +33,15 @@ assert(typeof clampCoordinate === 'function', 'clampCoordinate is exported as fu
 assert(typeof calculatePlacement === 'function', 'calculatePlacement is exported as function');
 assert(typeof usePetMotion === 'function', 'usePetMotion is exported as function');
 
+// 4. Autonomous roaming waypoint generation within right corridor
+const maxX = 1200 - 72;
+const maxY = 800 - 72;
+for (let i = 0; i < 10; i++) {
+  const targetX = clampCoordinate(1200 - (32 + Math.random() * 56), 16, maxX);
+  const targetY = clampCoordinate(800 * (0.15 + Math.random() * 0.65), 16, maxY);
+  assert(targetX >= 1200 - 90 && targetX <= maxX, 'Target X stays in right margin');
+  assert(targetY >= 800 * 0.15 && targetY <= 800 * 0.80, 'Target Y stays in vertical band');
+}
+
 if (failures > 0) process.exit(1);
 console.log('✅ usePetMotion unit tests passed');
