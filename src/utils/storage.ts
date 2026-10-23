@@ -1,4 +1,4 @@
-import { AppData, Folder, LinkItem, QuickNote } from '../types';
+import { AppData, QuickNote } from '../types';
 import { DEFAULT_SEED_DATA, DEFAULT_INITIAL_PREFERENCES } from '../data/seedData';
 
 export const STORAGE_KEY = 'launchpad_app_data_v3';
@@ -196,38 +196,6 @@ export function sanitizeAppData(parsed: any, saveRollingBackup: boolean = true):
 
   const growthHistory = typeof parsed.growthHistory === 'object' && parsed.growthHistory !== null ? parsed.growthHistory : {};
 
-  // Validate and sanitize folders
-  const rawFolders = Array.isArray(parsed.folders) ? parsed.folders : DEFAULT_SEED_DATA.folders;
-  const folders: Folder[] = rawFolders.map((f: any, idx: number) => ({
-    id: typeof f.id === 'string' && f.id ? f.id : `folder-${idx}-${Date.now()}`,
-    name: typeof f.name === 'string' && f.name.trim() ? f.name.trim() : 'Unnamed Folder',
-    icon: typeof f.icon === 'string' ? f.icon : 'folder',
-    color: typeof f.color === 'string' ? f.color : 'amber',
-    isCustom: Boolean(f.isCustom),
-    parentId: typeof f.parentId === 'string' ? f.parentId : undefined,
-    isHidden: Boolean(f.isHidden),
-    order: typeof f.order === 'number' ? f.order : idx,
-  }));
-
-  // Validate and sanitize links
-  const rawLinks = Array.isArray(parsed.links) ? parsed.links : DEFAULT_SEED_DATA.links;
-  const validFolderIds = new Set(folders.map((f) => f.id));
-  const defaultFolderId = folders[0]?.id || 'f-general';
-
-  const links: LinkItem[] = rawLinks
-    .filter((l: any) => l && typeof l.url === 'string' && l.url.trim())
-    .map((l: any, idx: number) => ({
-      id: typeof l.id === 'string' && l.id ? l.id : `link-${idx}-${Date.now()}`,
-      title: typeof l.title === 'string' && l.title.trim() ? l.title.trim() : (l.url.replace(/^https?:\/\//, '').split('/')[0] || 'Saved Link'),
-      url: l.url.trim(),
-      folderId: validFolderIds.has(l.folderId) ? l.folderId : defaultFolderId,
-      isFavorite: Boolean(l.isFavorite),
-      tags: Array.isArray(l.tags) ? l.tags.filter((t: any) => typeof t === 'string' && t.trim()) : [],
-      createdAt: typeof l.createdAt === 'number' ? l.createdAt : Date.now(),
-      clickCount: typeof l.clickCount === 'number' ? l.clickCount : 0,
-      customIcon: typeof l.customIcon === 'string' ? l.customIcon : undefined,
-    }));
-
   const loadedData: AppData = {
     version: 3,
     folders: [],
@@ -248,7 +216,7 @@ export function sanitizeAppData(parsed: any, saveRollingBackup: boolean = true):
   };
 
   // Keep a fresh rolling backup of valid data
-  if (saveRollingBackup && typeof localStorage !== 'undefined' && loadedData.links.length > 0) {
+  if (saveRollingBackup && typeof localStorage !== 'undefined' && loadedData.quickNotes.length > 0) {
     try {
       localStorage.setItem(STORAGE_BACKUP_KEY, JSON.stringify(loadedData));
     } catch {

@@ -207,8 +207,8 @@ const mockStorage = new MockLocalStorage();
   const metrics = getStorageMetrics();
   assert(metrics.usedBytes > 0, 'getStorageMetrics computes positive usedBytes');
   assert(typeof metrics.usedFormatted === 'string', 'getStorageMetrics provides formatted size string');
-  assertEqual(metrics.folderCount, DEFAULT_SEED_DATA.folders.length, 'getStorageMetrics counts folders');
-  assertEqual(metrics.linkCount, DEFAULT_SEED_DATA.links.length, 'getStorageMetrics counts links');
+  assertEqual(metrics.folderCount, DEFAULT_SEED_DATA.folders?.length ?? 0, 'getStorageMetrics counts folders');
+  assertEqual(metrics.linkCount, DEFAULT_SEED_DATA.links?.length ?? 0, 'getStorageMetrics counts links');
 }
 
 console.log('------------------------------------');

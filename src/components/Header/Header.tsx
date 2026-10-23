@@ -1,7 +1,6 @@
 import React from 'react';
 import { 
   Search, 
-  Plus, 
   Sun, 
   Moon, 
   Laptop, 
@@ -11,16 +10,15 @@ import {
   Rocket,
   CheckSquare,
   Menu,
-  BookmarkCheck
+  Lightbulb
 } from 'lucide-react';
 import { ThemeMode } from '../../types';
 
 interface HeaderProps {
   searchQuery: string;
   onSearchChange: (query: string) => void;
-  onOpenAddModal: () => void;
+  onOpenSparkIdea?: () => void;
   onOpenSettingsModal: () => void;
-  onOpenBookmarkImport?: () => void;
   onToggleQuickNotes: () => void;
   isQuickNotesOpen: boolean;
   theme: ThemeMode;
@@ -29,14 +27,15 @@ interface HeaderProps {
   onSelectView?: (view: 'dashboard' | 'tasks' | 'growth') => void;
   pendingTasksCount?: number;
   onToggleMobileSidebar?: () => void;
+  onOpenAddModal?: () => void;
+  onOpenBookmarkImport?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
   searchQuery,
   onSearchChange,
-  onOpenAddModal,
+  onOpenSparkIdea,
   onOpenSettingsModal,
-  onOpenBookmarkImport,
   onToggleQuickNotes,
   isQuickNotesOpen,
   theme,
@@ -89,7 +88,7 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
           </div>
 
-          {/* Desktop Search Filter Box (hidden on mobile, rendered below) */}
+          {/* Desktop Search Filter Box */}
           <div className="hidden sm:block flex-1 max-w-xs md:max-w-md lg:max-w-lg relative">
             <div className="relative flex items-center">
               <Search className="w-4 h-4 absolute left-3 text-serene-text-muted pointer-events-none" />
@@ -97,7 +96,7 @@ export const Header: React.FC<HeaderProps> = ({
                 type="text"
                 value={searchQuery}
                 onChange={(e) => onSearchChange(e.target.value)}
-                placeholder="Search links, tags, or folders... (Ctrl+K)"
+                placeholder="Search focus tasks & action items... (Ctrl+K)"
                 className="w-full pl-9 pr-14 py-1.5 sm:py-2 bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark rounded-lg text-xs sm:text-sm text-serene-text-primary dark:text-serene-text-darkPrimary border border-serene-border-light dark:border-serene-border-dark placeholder:text-serene-text-muted focus:outline-none focus:ring-2 focus:ring-serene-primary/40 focus:border-serene-primary transition-all"
               />
               <div className="absolute right-2.5 flex items-center gap-1">
@@ -118,22 +117,25 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
 
           {/* Action Buttons */}
-          <div className="flex items-center gap-0.5 sm:gap-2 shrink-0">
-            {/* Quick Add Link Button */}
-            <button
-              onClick={onOpenAddModal}
-              className="inline-flex items-center gap-1 sm:gap-1.5 px-1.5 sm:px-3.5 py-1.5 sm:py-2 bg-serene-primary hover:bg-serene-primary-hover text-white text-xs font-semibold rounded-lg shadow-sm hover:shadow transition-all"
-            >
-              <Plus className="w-4 h-4" />
-              <span className="hidden sm:inline">Add Resource</span>
-            </button>
+          <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+            {/* Spark Focus Idea Button */}
+            {onOpenSparkIdea && (
+              <button
+                onClick={onOpenSparkIdea}
+                title="Spark a smart focus idea or curated reading"
+                className="inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 bg-amber-500 hover:bg-amber-600 text-white text-xs font-semibold rounded-lg shadow-sm hover:shadow transition-all"
+              >
+                <Lightbulb className="w-4 h-4 shrink-0" />
+                <span className="hidden sm:inline">Spark Idea</span>
+              </button>
+            )}
 
             {/* Tasks Screen View Toggle Button */}
             {onSelectView && (
               <button
                 onClick={() => onSelectView(activeView === 'tasks' ? 'dashboard' : 'tasks')}
                 title={activeView === 'tasks' ? "Back to Dashboard" : "Open Tasks Screen"}
-                className={`p-1 sm:p-2 rounded-lg border transition-all flex items-center gap-1 ${
+                className={`p-1.5 sm:p-2 rounded-lg border transition-all flex items-center gap-1 ${
                   activeView === 'tasks'
                     ? 'bg-serene-primary text-white border-serene-primary shadow-xs'
                     : 'bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark border-serene-border-light dark:border-serene-border-dark text-serene-text-secondary hover:text-serene-text-primary dark:text-serene-text-darkSecondary dark:hover:text-serene-text-darkPrimary'
@@ -153,8 +155,8 @@ export const Header: React.FC<HeaderProps> = ({
             {/* Quick Notes Toggle */}
             <button
               onClick={onToggleQuickNotes}
-              title="Toggle Quick Scratchpad & Tasks"
-              className={`p-1 sm:p-2 rounded-lg border transition-all ${
+              title="Toggle Quick Scratchpad"
+              className={`p-1.5 sm:p-2 rounded-lg border transition-all ${
                 isQuickNotesOpen
                   ? 'bg-serene-primary-soft dark:bg-serene-primary/30 border-serene-primary/40 text-serene-primary dark:text-serene-primary-dark'
                   : 'bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark border-serene-border-light dark:border-serene-border-dark text-serene-text-secondary hover:text-serene-text-primary dark:text-serene-text-darkSecondary dark:hover:text-serene-text-darkPrimary'
@@ -167,29 +169,18 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               onClick={toggleTheme}
               title={`Current theme: ${theme}. Click to change.`}
-              className="p-1 sm:p-2 bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark border border-serene-border-light dark:border-serene-border-dark text-serene-text-secondary hover:text-serene-text-primary dark:text-serene-text-darkSecondary dark:hover:text-serene-text-darkPrimary rounded-lg transition-colors"
+              className="p-1.5 sm:p-2 bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark border border-serene-border-light dark:border-serene-border-dark text-serene-text-secondary hover:text-serene-text-primary dark:text-serene-text-darkSecondary dark:hover:text-serene-text-darkPrimary rounded-lg transition-colors"
             >
               {theme === 'light' && <Sun className="w-4 h-4 text-amber-500" />}
               {theme === 'dark' && <Moon className="w-4 h-4 text-sky-400" />}
               {theme === 'system' && <Laptop className="w-4 h-4 text-serene-text-muted" />}
             </button>
 
-            {/* Browser Bookmark Import Quick Trigger */}
-            {onOpenBookmarkImport && (
-              <button
-                onClick={onOpenBookmarkImport}
-                title="Import Browser Bookmarks (.html)"
-                className="hidden sm:inline-flex p-2 bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark border border-serene-border-light dark:border-serene-border-dark text-serene-text-secondary hover:text-serene-text-primary dark:text-serene-text-darkSecondary dark:hover:text-serene-text-darkPrimary rounded-lg transition-colors"
-              >
-                <BookmarkCheck className="w-4 h-4" />
-              </button>
-            )}
-
             {/* Settings Modal Trigger */}
             <button
               onClick={onOpenSettingsModal}
               title="Settings, Backup & Help"
-              className="p-1 sm:p-2 bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark border border-serene-border-light dark:border-serene-border-dark text-serene-text-secondary hover:text-serene-text-primary dark:text-serene-text-darkSecondary dark:hover:text-serene-text-darkPrimary rounded-lg transition-colors"
+              className="p-1.5 sm:p-2 bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark border border-serene-border-light dark:border-serene-border-dark text-serene-text-secondary hover:text-serene-text-primary dark:text-serene-text-darkSecondary dark:hover:text-serene-text-darkPrimary rounded-lg transition-colors"
             >
               <Settings className="w-4 h-4" />
             </button>
@@ -204,7 +195,7 @@ export const Header: React.FC<HeaderProps> = ({
               type="text"
               value={searchQuery}
               onChange={(e) => onSearchChange(e.target.value)}
-              placeholder="Search links, tags, or folders..."
+              placeholder="Search focus tasks..."
               className="w-full pl-9 pr-12 py-1.5 bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark rounded-lg text-xs text-serene-text-primary dark:text-serene-text-darkPrimary border border-serene-border-light dark:border-serene-border-dark placeholder:text-serene-text-muted focus:outline-none focus:ring-2 focus:ring-serene-primary/40 focus:border-serene-primary transition-all"
             />
             {searchQuery && (
