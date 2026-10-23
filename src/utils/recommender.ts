@@ -5,49 +5,15 @@ import {
   RecommendationCandidate, 
   TimeOfDayBucket 
 } from '../types';
-import { DEFAULT_MICRO_QUESTS } from '../data/seedData';
+import { CURATED_FOCUS_SUGGESTIONS, DEFAULT_MICRO_QUESTS } from '../data/seedData';
 import { getTimeOfDayBucket } from './timeBudget';
 
 export function generateCandidatePool(
-  links: LinkItem[],
-  folders: Folder[]
+  _links?: LinkItem[],
+  _folders?: Folder[]
 ): RecommendationCandidate[] {
-  const folderMap = new Map(folders.map((f) => [f.id, f.name]));
-  const candidates: RecommendationCandidate[] = [];
-
-  // 1. Add user links/bookmarks
-  links.forEach((link) => {
-    const folderName = folderMap.get(link.folderId) || 'Bookmarks';
-    const isReadingList = folderName.toLowerCase().includes('reading') || link.tags.some(t => t.toLowerCase().includes('reading'));
-    
-    // Estimate reading/engagement time based on description/tags
-    let duration = 15;
-    if (isReadingList) duration = 20;
-    if (link.tags.some(t => ['tool', 'ai', 'mail', 'calendar'].includes(t.toLowerCase()))) duration = 10;
-    if (link.tags.some(t => ['study', 'course', 'hw', 'assignment'].includes(t.toLowerCase()))) duration = 30;
-
-    candidates.push({
-      id: `link-${link.id}`,
-      title: link.title,
-      url: link.url,
-      description: link.description,
-      folderName,
-      folderId: link.folderId,
-      tags: link.tags || [],
-      durationEstimateMinutes: duration,
-      sourceType: isReadingList ? 'reading_list' : 'bookmark',
-      rationale: isReadingList
-        ? 'Unread article from your saved Reading List'
-        : `Productive tool from your ${folderName} collection`,
-    });
-  });
-
-  // 2. Add high-value built-in micro quests
-  DEFAULT_MICRO_QUESTS.forEach((quest) => {
-    candidates.push({ ...quest });
-  });
-
-  return candidates;
+  const basePool = CURATED_FOCUS_SUGGESTIONS || DEFAULT_MICRO_QUESTS;
+  return basePool.map((quest) => ({ ...quest }));
 }
 
 export function scoreCandidate(
@@ -57,9 +23,11 @@ export function scoreCandidate(
 ): number {
   let score = 5.0; // baseline score
 
+  const categoryKey = candidate.category || candidate.folderName || candidate.folderId;
+
   // 1. Category weight
-  if (candidate.folderId && prefs.categoryWeights[candidate.folderId]) {
-    score += prefs.categoryWeights[candidate.folderId] * 2.0;
+  if (categoryKey && prefs.categoryWeights[categoryKey]) {
+    score += prefs.categoryWeights[categoryKey] * 2.0;
   }
 
   // 2. Tag weights
@@ -73,12 +41,16 @@ export function scoreCandidate(
 
   // 3. Time-of-day affinity
   const timeAffinityMap = prefs.timeOfDayAffinity[timeOfDay] || {};
-  if (candidate.folderId && timeAffinityMap[candidate.folderId]) {
-    score += timeAffinityMap[candidate.folderId] * 2.5;
+  if (categoryKey && timeAffinityMap[categoryKey]) {
+    score += timeAffinityMap[categoryKey] * 2.5;
   }
 
   // 4. Source type bias
-  if (candidate.sourceType === 'reading_list') {
+  if (candidate.sourceType === 'curated_web') {
+    score += 1.6;
+  } else if (candidate.sourceType === 'habit_idea') {
+    score += 1.4;
+  } else if (candidate.sourceType === 'reading_list') {
     score += 1.8;
   } else if (candidate.sourceType === 'micro_quest') {
     score += 1.2;
@@ -90,7 +62,7 @@ export function scoreCandidate(
     (r) => r.id === candidate.id && r.timestamp > twoHoursAgo
   );
   if (wasRecentlyRejected) {
-    score -= 15.0; // severe temporary penalty
+    score -= 40.0; // severe temporary penalty
   }
 
   // 6. Multi-Armed Bandit Epsilon exploration noise (random factor)
@@ -144,9 +116,11 @@ export function recordApproval(
   const newTagWeights = { ...prevPrefs.tagWeights };
   const newTimeAffinity = { ...prevPrefs.timeOfDayAffinity };
 
+  const categoryKey = candidate.category || candidate.folderName || candidate.folderId;
+
   // Boost category (+1.0)
-  if (candidate.folderId) {
-    newCategoryWeights[candidate.folderId] = (newCategoryWeights[candidate.folderId] || 0) + 1.0;
+  if (categoryKey) {
+    newCategoryWeights[categoryKey] = (newCategoryWeights[categoryKey] || 0) + 1.0;
   }
 
   // Boost tags (+0.6)
@@ -155,9 +129,9 @@ export function recordApproval(
   });
 
   // Boost time-of-day affinity (+1.2)
-  if (candidate.folderId) {
+  if (categoryKey) {
     if (!newTimeAffinity[timeOfDay]) newTimeAffinity[timeOfDay] = {};
-    newTimeAffinity[timeOfDay][candidate.folderId] = (newTimeAffinity[timeOfDay][candidate.folderId] || 0) + 1.2;
+    newTimeAffinity[timeOfDay][categoryKey] = (newTimeAffinity[timeOfDay][categoryKey] || 0) + 1.2;
   }
 
   return {
@@ -178,9 +152,11 @@ export function recordRejection(
   const newTagWeights = { ...prevPrefs.tagWeights };
   const newTimeAffinity = { ...prevPrefs.timeOfDayAffinity };
 
+  const categoryKey = candidate.category || candidate.folderName || candidate.folderId;
+
   // Slight penalty on category (-0.4)
-  if (candidate.folderId) {
-    newCategoryWeights[candidate.folderId] = Math.max(-5, (newCategoryWeights[candidate.folderId] || 0) - 0.4);
+  if (categoryKey) {
+    newCategoryWeights[categoryKey] = Math.max(-5, (newCategoryWeights[categoryKey] || 0) - 0.4);
   }
 
   // Slight penalty on tags (-0.3)
@@ -189,9 +165,9 @@ export function recordRejection(
   });
 
   // Suppress time of day category (-0.5)
-  if (candidate.folderId) {
+  if (categoryKey) {
     if (!newTimeAffinity[timeOfDay]) newTimeAffinity[timeOfDay] = {};
-    newTimeAffinity[timeOfDay][candidate.folderId] = (newTimeAffinity[timeOfDay][candidate.folderId] || 0) - 0.5;
+    newTimeAffinity[timeOfDay][categoryKey] = (newTimeAffinity[timeOfDay][categoryKey] || 0) - 0.5;
   }
 
   // Add to recent rejections (keep latest 30)

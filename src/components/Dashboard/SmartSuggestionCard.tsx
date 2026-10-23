@@ -8,7 +8,11 @@ import {
   Clock, 
   Zap, 
   Globe, 
-  Lightbulb
+  Lightbulb,
+  BookOpen,
+  Mail,
+  Coffee,
+  Compass
 } from 'lucide-react';
 import { RecommendationCandidate } from '../../types';
 import { extractDomain, getFaviconUrl } from '../../utils/favicon';
@@ -45,19 +49,31 @@ export const SmartSuggestionCard: React.FC<SmartSuggestionCardProps> = ({
           Great job! All focus recommendations explored.
         </h3>
         <p className="text-xs text-serene-text-muted max-w-md mx-auto">
-          Add more articles to your Reading List or bookmarks to train your recommendation engine.
+          Your focus runway is clear. Take a deep breath or check back shortly for fresh high-signal sparks.
         </p>
       </div>
     );
   }
 
-  const domain = extractDomain(candidate.url);
-  const faviconUrl = getFaviconUrl(candidate.url, 32);
+  const isHabit = candidate.kind === 'habit' || !candidate.url;
+  const domain = candidate.url ? extractDomain(candidate.url) : null;
+  const faviconUrl = candidate.url ? getFaviconUrl(candidate.url, 32) : null;
+
+  const getHabitIcon = (cand: RecommendationCandidate) => {
+    const text = (cand.title + ' ' + (cand.tags || []).join(' ')).toLowerCase();
+    if (text.includes('book') || text.includes('reading')) return <BookOpen className="w-5 h-5 text-amber-600 dark:text-amber-400" />;
+    if (text.includes('mail') || text.includes('inbox')) return <Mail className="w-5 h-5 text-sky-600 dark:text-sky-400" />;
+    if (text.includes('posture') || text.includes('hydrate') || text.includes('breath') || text.includes('coffee')) return <Coffee className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />;
+    if (text.includes('walk') || text.includes('outside')) return <Compass className="w-5 h-5 text-teal-600 dark:text-teal-400" />;
+    return <Sparkles className="w-5 h-5 text-amber-500" />;
+  };
 
   const handleApproveClick = () => {
     setIsApproving(true);
     onApprove(candidate);
-    window.open(candidate.url, '_blank', 'noopener,noreferrer');
+    if (candidate.url) {
+      window.open(candidate.url, '_blank', 'noopener,noreferrer');
+    }
     setTimeout(() => setIsApproving(false), 500);
   };
 
@@ -75,7 +91,7 @@ export const SmartSuggestionCard: React.FC<SmartSuggestionCardProps> = ({
             <Lightbulb className="w-4 h-4" />
           </span>
           <span className="text-xs font-bold uppercase tracking-wider text-serene-primary dark:text-serene-primary-dark">
-            Smart Focus Alternative
+            {isHabit ? 'Mindful Focus Habit' : 'Smart Focus Alternative'}
           </span>
           <span className="text-[10px] px-2 py-0.5 rounded-full bg-serene-primary-soft dark:bg-serene-primary/20 text-serene-primary dark:text-serene-primary-dark font-mono font-medium">
             Learned from {approvalsCount + rejectionsCount} signals
@@ -106,9 +122,11 @@ export const SmartSuggestionCard: React.FC<SmartSuggestionCardProps> = ({
           {/* Main Candidate Card Item */}
           <div className="flex flex-col @lg:flex-row @lg:items-center justify-between gap-3.5 sm:gap-4 p-3.5 sm:p-4 rounded-xl bg-white dark:bg-serene-surface-dark border border-serene-border-light dark:border-serene-border-dark shadow-subtle">
             <div className="flex items-start gap-3 min-w-0 flex-1">
-              {/* Favicon */}
+              {/* Icon / Favicon */}
               <div className="w-10 h-10 rounded-xl bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark border border-serene-border-light/60 dark:border-serene-border-dark flex items-center justify-center shrink-0 overflow-hidden shadow-2xs">
-                {faviconUrl ? (
+                {isHabit ? (
+                  getHabitIcon(candidate)
+                ) : faviconUrl ? (
                   <img
                     src={faviconUrl}
                     alt=""
@@ -133,7 +151,7 @@ export const SmartSuggestionCard: React.FC<SmartSuggestionCardProps> = ({
                 )}
                 <div className="flex items-center gap-1.5 mt-2 flex-wrap">
                   <span className="text-[10px] font-mono text-serene-text-muted bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark px-1.5 py-0.5 rounded border border-serene-border-light dark:border-serene-border-dark">
-                    {domain}
+                    {domain || candidate.category || (isHabit ? 'Habit Idea' : 'Curated Web')}
                   </span>
                   {candidate.tags.slice(0, 3).map((tag, idx) => (
                     <span
@@ -162,11 +180,17 @@ export const SmartSuggestionCard: React.FC<SmartSuggestionCardProps> = ({
               {/* Approve button */}
               <button
                 onClick={handleApproveClick}
-                title="Start this activity (Press 'Enter')"
+                title={isHabit ? "I'll do this activity (Press 'Enter')" : "Open this resource (Press 'Enter')"}
                 className="w-full @lg:w-auto px-4 py-2 bg-serene-primary hover:bg-serene-primary-hover text-white text-xs font-semibold rounded-xl shadow-sm hover:shadow transition-all flex items-center justify-center gap-1.5 text-center"
               >
-                {isApproving ? <Check className="w-3.5 h-3.5 shrink-0" /> : <ExternalLink className="w-3.5 h-3.5 shrink-0" />}
-                <span className="truncate">Approve & Open</span>
+                {isApproving ? (
+                  <Check className="w-3.5 h-3.5 shrink-0" />
+                ) : isHabit ? (
+                  <Check className="w-3.5 h-3.5 shrink-0 text-emerald-200" />
+                ) : (
+                  <ExternalLink className="w-3.5 h-3.5 shrink-0" />
+                )}
+                <span className="truncate">{isHabit ? "I'll do this" : "Approve & Open"}</span>
               </button>
             </div>
           </div>
