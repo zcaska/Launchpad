@@ -1,8 +1,7 @@
 import { 
   generateCandidatePool, 
   getRankedRecommendations, 
-  recordRejection, 
-  recordApproval 
+  recordRejection 
 } from '../utils/recommender';
 import { DEFAULT_INITIAL_PREFERENCES } from '../data/seedData';
 import { toggleTaskInList } from '../utils/taskUrgency';
