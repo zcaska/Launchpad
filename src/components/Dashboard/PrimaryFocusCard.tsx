@@ -56,6 +56,7 @@ export interface PrimaryFocusCardProps {
   suggestionCandidate?: RecommendationCandidate | null;
   onApproveSuggestion?: (candidate: RecommendationCandidate) => void;
   onRejectSuggestion?: (candidate: RecommendationCandidate) => void;
+  onNextSuggestion?: () => void;
   approvalsCount?: number;
   rejectionsCount?: number;
 }
@@ -185,6 +186,7 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
   suggestionCandidate = null,
   onApproveSuggestion,
   onRejectSuggestion,
+  onNextSuggestion,
   approvalsCount = 0,
   rejectionsCount = 0,
 }) => {
@@ -352,6 +354,7 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
             candidate={suggestionCandidate}
             onApprove={(candidate) => onApproveSuggestion?.(candidate)}
             onReject={(candidate) => onRejectSuggestion?.(candidate)}
+            onNext={onNextSuggestion}
             approvalsCount={approvalsCount}
             rejectionsCount={rejectionsCount}
           />

@@ -16,7 +16,8 @@ import {
   Clock,
   BookOpen,
   Mail,
-  Coffee
+  Coffee,
+  Plus
 } from 'lucide-react';
 import { Folder, LinkItem, GamificationState, RecommendationCandidate } from '../../types';
 import { getHeroById } from '../../data/heroRoster';
@@ -32,9 +33,11 @@ export interface SidebarProps {
   gamification?: GamificationState;
   userEmail?: string;
   onOpenScratchpad?: () => void;
+  onOpenAddTask?: () => void;
   suggestionCandidate?: RecommendationCandidate | null;
   onApproveSuggestion?: (candidate: RecommendationCandidate) => void;
   onRejectSuggestion?: (candidate: RecommendationCandidate) => void;
+  onNextSuggestion?: () => void;
   // Legacy props kept optional for backward compatibility
   folders?: Folder[];
   links?: LinkItem[];
@@ -71,9 +74,11 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
   onCloseMobile,
   gamification,
   onOpenScratchpad,
+  onOpenAddTask,
   suggestionCandidate,
   onApproveSuggestion,
   onRejectSuggestion,
+  onNextSuggestion,
 }) => {
   const activeHero = useMemo(() => {
     if (!gamification?.activeHeroId) return null;
@@ -146,9 +151,42 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
         {/* Mobile Navigation List */}
         <div className="p-3 flex-1 flex flex-col gap-2 overflow-y-auto">
           <div className="space-y-1">
-            <div className="px-3 py-1.5 text-[11px] font-bold text-serene-text-muted uppercase tracking-wider">
-              Workspace
+            <div className="flex items-center justify-between px-3 py-1.5">
+              <span className="text-[11px] font-bold text-serene-text-muted uppercase tracking-wider">
+                Workspace
+              </span>
+              {onOpenAddTask && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onOpenAddTask();
+                    if (onCloseMobile) onCloseMobile();
+                  }}
+                  className="inline-flex items-center gap-1 text-xs font-semibold text-serene-primary dark:text-serene-primary-dark hover:underline cursor-pointer"
+                >
+                  <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
+                  <span>Add Task</span>
+                </button>
+              )}
             </div>
+
+            {/* Quick Add Task Button for Mobile */}
+            {onOpenAddTask && (
+              <button
+                type="button"
+                onClick={() => {
+                  onOpenAddTask();
+                  if (onCloseMobile) onCloseMobile();
+                }}
+                className="w-full mb-1.5 flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-semibold bg-serene-primary/10 dark:bg-serene-primary/15 text-serene-primary dark:text-serene-primary-dark hover:bg-serene-primary/20 dark:hover:bg-serene-primary/25 border border-serene-primary/25 transition-all cursor-pointer shadow-2xs group"
+              >
+                <Plus className="w-4 h-4 transition-transform group-hover:rotate-90 duration-200 stroke-[2.5]" />
+                <span className="flex-1 text-left font-bold">New Focus Task</span>
+                <span className="text-[10px] font-mono opacity-70 bg-white/60 dark:bg-black/50 px-1.5 py-0.5 rounded border border-serene-primary/20">
+                  N
+                </span>
+              </button>
+            )}
 
             {/* Overview / Dashboard */}
             <button
@@ -252,10 +290,23 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                     Focus Spark
                   </span>
                 </div>
-                <span className="inline-flex items-center gap-1 text-xs font-semibold text-serene-text-muted">
-                  <Clock className="w-3.5 h-3.5" />
-                  {suggestionCandidate.durationEstimateMinutes}m
-                </span>
+                <div className="flex items-center gap-1.5">
+                  {onNextSuggestion && (
+                    <button
+                      type="button"
+                      onClick={onNextSuggestion}
+                      title="Shuffle next suggestion (no penalty)"
+                      aria-label="Shuffle next suggestion"
+                      className="p-1 rounded-md text-amber-600 dark:text-amber-400 hover:bg-amber-500/15 transition-colors cursor-pointer"
+                    >
+                      <RotateCw className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                  <span className="inline-flex items-center gap-1 text-xs font-semibold text-serene-text-muted">
+                    <Clock className="w-3.5 h-3.5" />
+                    {suggestionCandidate.durationEstimateMinutes}m
+                  </span>
+                </div>
               </div>
               <div>
                 <h4 className="text-sm font-bold text-serene-text-primary dark:text-serene-text-darkPrimary leading-snug line-clamp-2">
@@ -267,28 +318,42 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                   </p>
                 )}
               </div>
-              <div className="flex items-center justify-between gap-2 pt-2 border-t border-amber-500/15">
+              <div className="flex items-center justify-between gap-1.5 pt-2 border-t border-amber-500/15">
                 <button
                   type="button"
-                  onClick={() => onRejectSuggestion?.(suggestionCandidate)}
-                  className="px-2.5 py-1.5 rounded-lg text-xs font-medium text-serene-text-secondary dark:text-serene-text-darkSecondary hover:bg-stone-200/60 dark:hover:bg-stone-800/60 transition-colors flex items-center gap-1.5"
+                  onClick={onNextSuggestion || (() => onRejectSuggestion?.(suggestionCandidate))}
+                  title="Shuffle to another suggestion without penalty"
+                  className="px-2.5 py-1.5 rounded-lg text-xs font-medium text-serene-text-secondary dark:text-serene-text-darkSecondary hover:bg-stone-200/60 dark:hover:bg-stone-800/60 transition-colors flex items-center gap-1.5 cursor-pointer"
                 >
                   <RotateCw className="w-3.5 h-3.5" />
-                  <span>Another</span>
+                  <span>Next Idea</span>
                 </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    onApproveSuggestion?.(suggestionCandidate);
-                    if (suggestionCandidate.url) {
-                      window.open(suggestionCandidate.url, '_blank', 'noopener,noreferrer');
-                    }
-                  }}
-                  className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-serene-primary hover:bg-serene-primary-hover text-white shadow-xs transition-all flex items-center gap-1.5"
-                >
-                  {isHabit ? <Check className="w-3.5 h-3.5" /> : <ExternalLink className="w-3.5 h-3.5" />}
-                  <span>{isHabit ? "I'll do this" : "Open"}</span>
-                </button>
+                <div className="flex items-center gap-1">
+                  {onRejectSuggestion && (
+                    <button
+                      type="button"
+                      onClick={() => onRejectSuggestion(suggestionCandidate)}
+                      title="Don't suggest this again (dislike)"
+                      aria-label="Don't suggest this again"
+                      className="p-1.5 rounded-lg text-xs font-medium text-serene-text-muted hover:text-rose-500 hover:bg-rose-500/10 transition-colors cursor-pointer"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onApproveSuggestion?.(suggestionCandidate);
+                      if (suggestionCandidate.url) {
+                        window.open(suggestionCandidate.url, '_blank', 'noopener,noreferrer');
+                      }
+                    }}
+                    className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-serene-primary hover:bg-serene-primary-hover text-white shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
+                  >
+                    {isHabit ? <Check className="w-3.5 h-3.5" /> : <ExternalLink className="w-3.5 h-3.5" />}
+                    <span>{isHabit ? "I'll do this" : "Open"}</span>
+                  </button>
+                </div>
               </div>
             </div>
           )}
@@ -319,11 +384,36 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
         <div className="p-3 flex-1 flex flex-col gap-2 overflow-y-auto">
           {/* Top Section / Header */}
           {!isCollapsed ? (
-            <div className="px-3 pt-2 pb-1 text-xs font-bold text-serene-text-muted uppercase tracking-wider">
-              Workspace
+            <div className="flex items-center justify-between px-3 pt-2 pb-1">
+              <span className="text-xs font-bold text-serene-text-muted uppercase tracking-wider">
+                Workspace
+              </span>
+              {onOpenAddTask && (
+                <button
+                  type="button"
+                  onClick={onOpenAddTask}
+                  title="Add new task (N)"
+                  className="px-2 py-0.5 rounded-md text-serene-primary dark:text-serene-primary-dark hover:bg-serene-primary/10 dark:hover:bg-serene-primary/20 transition-colors flex items-center gap-1 text-xs font-semibold cursor-pointer"
+                >
+                  <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
+                  <span>Add Task</span>
+                </button>
+              )}
             </div>
           ) : (
-            <div className="pt-2" />
+            <div className="pt-2 flex flex-col items-center">
+              {onOpenAddTask && (
+                <button
+                  type="button"
+                  onClick={onOpenAddTask}
+                  title="Quick Add Task (N)"
+                  className="w-12 h-12 rounded-xl bg-serene-primary/15 dark:bg-serene-primary/20 text-serene-primary dark:text-serene-primary-dark hover:bg-serene-primary hover:text-white dark:hover:bg-serene-primary dark:hover:text-black border border-serene-primary/30 flex items-center justify-center transition-all shadow-xs cursor-pointer group mb-1.5"
+                >
+                  <Plus className="w-6 h-6 transition-transform group-hover:rotate-90 duration-200 stroke-[2.5]" />
+                  <span className="sr-only">Quick Add Task (N)</span>
+                </button>
+              )}
+            </div>
           )}
 
           {/* Primary Navigation Items */}
@@ -489,10 +579,23 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                         Focus Spark
                       </span>
                     </div>
-                    <span className="inline-flex items-center gap-1 text-xs font-semibold text-serene-text-muted">
-                      <Clock className="w-3.5 h-3.5" />
-                      {suggestionCandidate.durationEstimateMinutes}m
-                    </span>
+                    <div className="flex items-center gap-1.5">
+                      {onNextSuggestion && (
+                        <button
+                          type="button"
+                          onClick={onNextSuggestion}
+                          title="Shuffle next suggestion (no penalty)"
+                          aria-label="Shuffle next suggestion"
+                          className="p-1 rounded-md text-amber-600 dark:text-amber-400 hover:bg-amber-500/15 transition-colors cursor-pointer"
+                        >
+                          <RotateCw className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                      <span className="inline-flex items-center gap-1 text-xs font-semibold text-serene-text-muted">
+                        <Clock className="w-3.5 h-3.5" />
+                        {suggestionCandidate.durationEstimateMinutes}m
+                      </span>
+                    </div>
                   </div>
 
                   <div>
@@ -506,30 +609,43 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                     )}
                   </div>
 
-                  <div className="flex items-center justify-between gap-2 pt-2 border-t border-amber-500/15">
+                  <div className="flex items-center justify-between gap-1.5 pt-2 border-t border-amber-500/15">
                     <button
                       type="button"
-                      onClick={() => onRejectSuggestion?.(suggestionCandidate)}
-                      title="Next focus suggestion"
+                      onClick={onNextSuggestion || (() => onRejectSuggestion?.(suggestionCandidate))}
+                      title="Next focus suggestion without penalty"
                       className="px-2.5 py-1.5 rounded-lg text-xs font-medium text-serene-text-secondary dark:text-serene-text-darkSecondary hover:bg-stone-200/60 dark:hover:bg-stone-800/60 transition-colors flex items-center gap-1.5 cursor-pointer"
                     >
                       <RotateCw className="w-3.5 h-3.5" />
-                      <span>Another</span>
+                      <span>Next Idea</span>
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        onApproveSuggestion?.(suggestionCandidate);
-                        if (suggestionCandidate.url) {
-                          window.open(suggestionCandidate.url, '_blank', 'noopener,noreferrer');
-                        }
-                      }}
-                      title={isHabit ? "Commit to this habit" : "Open resource"}
-                      className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-serene-primary hover:bg-serene-primary-hover text-white shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
-                    >
-                      {isHabit ? <Check className="w-3.5 h-3.5" /> : <ExternalLink className="w-3.5 h-3.5" />}
-                      <span>{isHabit ? "I'll do this" : "Open"}</span>
-                    </button>
+                    <div className="flex items-center gap-1">
+                      {onRejectSuggestion && (
+                        <button
+                          type="button"
+                          onClick={() => onRejectSuggestion(suggestionCandidate)}
+                          title="Don't suggest this again (dislike)"
+                          aria-label="Don't suggest this again"
+                          className="p-1.5 rounded-lg text-xs font-medium text-serene-text-muted hover:text-rose-500 hover:bg-rose-500/10 transition-colors cursor-pointer"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onApproveSuggestion?.(suggestionCandidate);
+                          if (suggestionCandidate.url) {
+                            window.open(suggestionCandidate.url, '_blank', 'noopener,noreferrer');
+                          }
+                        }}
+                        title={isHabit ? "Commit to this habit" : "Open resource"}
+                        className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-serene-primary hover:bg-serene-primary-hover text-white shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
+                      >
+                        {isHabit ? <Check className="w-3.5 h-3.5" /> : <ExternalLink className="w-3.5 h-3.5" />}
+                        <span>{isHabit ? "I'll do this" : "Open"}</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
               ) : (
@@ -542,8 +658,8 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
               suggestionCandidate && (
                 <button
                   type="button"
-                  onClick={() => onRejectSuggestion?.(suggestionCandidate)}
-                  title={`Focus Spark: ${suggestionCandidate.title} (Click for another)`}
+                  onClick={onNextSuggestion || (() => onRejectSuggestion?.(suggestionCandidate))}
+                  title={`Focus Spark: ${suggestionCandidate.title} (Click to shuffle next suggestion)`}
                   className="w-12 h-12 mx-auto rounded-xl bg-amber-500/10 dark:bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-500 hover:text-amber-600 dark:hover:text-amber-400 hover:scale-105 transition-all shadow-2xs cursor-pointer group"
                 >
                   <Lightbulb className="w-6 h-6 transition-transform group-hover:rotate-12" />

@@ -8,11 +8,12 @@ import {
   Clock, 
   Zap, 
   Globe, 
-  Lightbulb,
-  BookOpen,
-  Mail,
-  Coffee,
-  Compass
+  Lightbulb, 
+  BookOpen, 
+  Mail, 
+  Coffee, 
+  Compass,
+  X
 } from 'lucide-react';
 import { RecommendationCandidate } from '../../types';
 import { extractDomain, getFaviconUrl } from '../../utils/favicon';
@@ -22,6 +23,7 @@ interface SmartSuggestionCardProps {
   candidate: RecommendationCandidate | null;
   onApprove: (candidate: RecommendationCandidate) => void;
   onReject: (candidate: RecommendationCandidate) => void;
+  onNext?: () => void;
   onFetchAiIdea?: () => void;
   isOpenRouterEnabled?: boolean;
   isAiLoading?: boolean;
@@ -33,6 +35,7 @@ export const SmartSuggestionCard: React.FC<SmartSuggestionCardProps> = ({
   candidate,
   onApprove,
   onReject,
+  onNext,
   onFetchAiIdea,
   isOpenRouterEnabled = false,
   isAiLoading = false,
@@ -165,23 +168,43 @@ export const SmartSuggestionCard: React.FC<SmartSuggestionCardProps> = ({
               </div>
             </div>
 
-            {/* Action Controls: Responsive layout - 2 equal columns when stacked, flex row when side-by-side */}
-            <div className="grid grid-cols-2 @lg:flex @lg:items-center gap-2 shrink-0 pt-2.5 @lg:pt-0 border-t @lg:border-t-0 border-serene-border-light/50 dark:border-serene-border-dark/50">
-              {/* Reject button */}
+            {/* Action Controls: Responsive layout */}
+            <div className="flex items-center gap-2 shrink-0 pt-2.5 @lg:pt-0 border-t @lg:border-t-0 border-serene-border-light/50 dark:border-serene-border-dark/50">
+              {/* Next Idea / Shuffle button without penalty */}
               <button
-                onClick={handleRejectClick}
-                title="Not feeling this right now (Press 'R')"
-                className="w-full @lg:w-auto px-3 py-2 bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark hover:bg-rose-50 dark:hover:bg-rose-950/30 hover:text-rose-600 dark:hover:text-rose-400 border border-serene-border-light dark:border-serene-border-dark text-xs font-semibold rounded-xl transition-all flex items-center justify-center gap-1.5 text-center"
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (onNext) {
+                    onNext();
+                  } else {
+                    onReject(candidate);
+                  }
+                }}
+                title="Shuffle next suggestion without penalty (Press 'R')"
+                className="flex-1 @lg:flex-initial px-3 py-2 bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark hover:bg-amber-500/10 hover:text-amber-600 dark:hover:text-amber-400 border border-serene-border-light dark:border-serene-border-dark text-xs font-semibold rounded-xl transition-all flex items-center justify-center gap-1.5 text-center cursor-pointer"
               >
                 <RotateCw className="w-3.5 h-3.5 shrink-0" />
-                <span className="truncate">Another (R)</span>
+                <span className="truncate">Next Idea (R)</span>
+              </button>
+
+              {/* Dismiss / Dislike button */}
+              <button
+                type="button"
+                onClick={handleRejectClick}
+                title="Don't suggest this again (dislike)"
+                aria-label="Don't suggest this again"
+                className="p-2 bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark hover:bg-rose-50 dark:hover:bg-rose-950/30 text-serene-text-muted hover:text-rose-600 dark:hover:text-rose-400 border border-serene-border-light dark:border-serene-border-dark rounded-xl transition-all flex items-center justify-center cursor-pointer"
+              >
+                <X className="w-3.5 h-3.5" />
               </button>
 
               {/* Approve button */}
               <button
+                type="button"
                 onClick={handleApproveClick}
                 title={isHabit ? "I'll do this activity (Press 'Enter')" : "Open this resource (Press 'Enter')"}
-                className="w-full @lg:w-auto px-4 py-2 bg-serene-primary hover:bg-serene-primary-hover text-white text-xs font-semibold rounded-xl shadow-sm hover:shadow transition-all flex items-center justify-center gap-1.5 text-center"
+                className="flex-1 @lg:flex-initial px-4 py-2 bg-serene-primary hover:bg-serene-primary-hover text-white text-xs font-semibold rounded-xl shadow-sm hover:shadow transition-all flex items-center justify-center gap-1.5 text-center cursor-pointer"
               >
                 {isApproving ? (
                   <Check className="w-3.5 h-3.5 shrink-0" />

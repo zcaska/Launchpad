@@ -32,6 +32,7 @@ import {
   elapsedSeconds,
 } from './utils/focusTimer';
 import { QuickNotesWidget } from './components/QuickNotes/QuickNotesWidget';
+import { QuickAddTaskModal } from './components/Modals/QuickAddTaskModal';
 
 // Code-split heavy screens and modals into on-demand bundles for 0ms initial load
 const GrowthMasteryScreen = lazy(() =>
@@ -85,6 +86,7 @@ export function App() {
   }, [appData.settings.googleCalendar]);
 
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+  const [isQuickAddTaskOpen, setIsQuickAddTaskOpen] = useState(false);
   const [isQuickNotesOpen, setIsQuickNotesOpen] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
@@ -207,6 +209,11 @@ export function App() {
     setAppData((prev) => {
       const { updatedTasks, toggledTask, isNowDone } = toggleTaskInList(prev.quickNotes, taskId);
       if (isNowDone && toggledTask) {
+        if (updatedTasks.length > 0 && updatedTasks.every((t) => t.isDone)) {
+          setIsCelebrating(true);
+          setShowAllClearSuggestion(true);
+          setTimeout(() => setIsCelebrating(false), 4500);
+        }
         const gamificationResult = recordTaskCompletion(
           prev.gamification,
           prev.growthHistory,
@@ -271,12 +278,13 @@ export function App() {
   );
 
   const prevPendingCountRef = useRef(pendingTaskCount);
+  const prevPendingForCelebrationRef = useRef(pendingTaskCount);
   const pet = usePetController({
     enabled: petEnabled,
     paused: petPaused,
     focusActive: Boolean(focusTimer?.running),
     pendingCount: pendingTaskCount,
-    uiActive: isSettingsModalOpen || isSparkIdeaModalOpen || isQuickNotesOpen,
+    uiActive: isSettingsModalOpen || isSparkIdeaModalOpen || isQuickNotesOpen || isQuickAddTaskOpen,
   });
 
   // Pet Event triggers
@@ -376,10 +384,20 @@ export function App() {
     return generateCandidatePool();
   }, []);
 
-  const currentSuggestion = useMemo(() => {
-    const ranked = getRankedRecommendations(candidatePool, appData.learnedPreferences, timeOfDay, 1);
-    return ranked[0] || null;
+  const [suggestionOffset, setSuggestionOffset] = useState(0);
+
+  const rankedSuggestions = useMemo(() => {
+    return getRankedRecommendations(candidatePool, appData.learnedPreferences, timeOfDay, candidatePool.length || 50);
   }, [candidatePool, appData.learnedPreferences, timeOfDay]);
+
+  const currentSuggestion = useMemo(() => {
+    if (rankedSuggestions.length === 0) return null;
+    return rankedSuggestions[suggestionOffset % rankedSuggestions.length];
+  }, [rankedSuggestions, suggestionOffset]);
+
+  const handleNextSuggestion = useCallback(() => {
+    setSuggestionOffset((prev) => prev + 1);
+  }, []);
 
   const handleRejectSuggestion = useCallback((candidate: RecommendationCandidate) => {
     const updatedPrefs = recordRejection(appData.learnedPreferences, candidate, timeOfDay);
@@ -387,6 +405,7 @@ export function App() {
       ...prev,
       learnedPreferences: updatedPrefs,
     }));
+    setSuggestionOffset((prev) => prev + 1);
   }, [appData.learnedPreferences, timeOfDay]);
 
   const handleApproveSuggestion = useCallback((candidate: RecommendationCandidate) => {
@@ -398,6 +417,7 @@ export function App() {
     if (candidate.url) {
       window.open(candidate.url, '_blank', 'noopener,noreferrer');
     }
+    setSuggestionOffset((prev) => prev + 1);
   }, [appData.learnedPreferences, timeOfDay]);
 
   // All-tasks-cleared celebration
@@ -407,11 +427,12 @@ export function App() {
   );
 
   useEffect(() => {
-    const prev = prevPendingCountRef.current;
+    const prev = prevPendingForCelebrationRef.current;
+    prevPendingForCelebrationRef.current = pendingTaskCount;
     if (prev > 0 && pendingTaskCount === 0 && appData.quickNotes.length > 0) {
       setIsCelebrating(true);
       setShowAllClearSuggestion(true);
-      const timer = setTimeout(() => setIsCelebrating(false), 4000);
+      const timer = setTimeout(() => setIsCelebrating(false), 4500);
       return () => clearTimeout(timer);
     }
     if (pendingTaskCount === 0 && appData.quickNotes.length > 0) {
@@ -433,9 +454,17 @@ export function App() {
         return;
       }
 
+      // N -> Quick Add Task (when not typing in an input)
+      if (!isInput && !e.ctrlKey && !e.metaKey && !e.altKey && (e.key === 'n' || e.key === 'N')) {
+        e.preventDefault();
+        setIsQuickAddTaskOpen(true);
+        return;
+      }
+
       // Escape -> close open modals or drawers
       if (e.key === 'Escape') {
-        if (isSparkIdeaModalOpen) setIsSparkIdeaModalOpen(false);
+        if (isQuickAddTaskOpen) setIsQuickAddTaskOpen(false);
+        else if (isSparkIdeaModalOpen) setIsSparkIdeaModalOpen(false);
         else if (isSettingsModalOpen) setIsSettingsModalOpen(false);
         else if (isMobileSidebarOpen) setIsMobileSidebarOpen(false);
         else if (isQuickNotesOpen) setIsQuickNotesOpen(false);
@@ -447,16 +476,42 @@ export function App() {
         if (e.key.toLowerCase() === 'q') {
           e.preventDefault();
           setIsQuickNotesOpen((prev) => !prev);
-        } else if (e.key.toLowerCase() === 'r' && currentSuggestion) {
+        } else if (e.key.toLowerCase() === 'r') {
           e.preventDefault();
-          handleRejectSuggestion(currentSuggestion);
+          handleNextSuggestion();
         }
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isSparkIdeaModalOpen, isSettingsModalOpen, isMobileSidebarOpen, isQuickNotesOpen, currentSuggestion, handleRejectSuggestion]);
+  }, [isQuickAddTaskOpen, isSparkIdeaModalOpen, isSettingsModalOpen, isMobileSidebarOpen, isQuickNotesOpen, handleNextSuggestion]);
+
+  const handleAddQuickTask = useCallback((taskData: {
+    text: string;
+    durationMinutes: number;
+    priority: 'low' | 'medium' | 'high';
+    deadline?: string;
+  }) => {
+    const newNote: QuickNote = {
+      id: `task-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      text: taskData.text.trim(),
+      isDone: false,
+      createdAt: Date.now(),
+      durationMinutes: taskData.durationMinutes || 30,
+      priority: taskData.priority || 'medium',
+      deadline: taskData.deadline || undefined,
+    };
+    setAppData((prev) => {
+      const updatedNotes = [newNote, ...prev.quickNotes];
+      const updated = {
+        ...prev,
+        quickNotes: updatedNotes,
+      };
+      saveAppData(updated);
+      return updated;
+    });
+  }, []);
 
   const handleUpdateNotes = (newNotes: QuickNote[]) => {
     setAppData((prev) => ({ ...prev, quickNotes: newNotes }));
@@ -545,9 +600,11 @@ export function App() {
           gamification={appData.gamification}
           userEmail={appData.settings.googleCalendar?.userEmail}
           onOpenScratchpad={() => setIsQuickNotesOpen(true)}
+          onOpenAddTask={() => setIsQuickAddTaskOpen(true)}
           suggestionCandidate={currentSuggestion}
           onApproveSuggestion={handleApproveSuggestion}
           onRejectSuggestion={handleRejectSuggestion}
+          onNextSuggestion={handleNextSuggestion}
         />
 
         {/* Launchpad Pet */}
@@ -660,6 +717,7 @@ export function App() {
                     suggestionCandidate={currentSuggestion}
                     onApproveSuggestion={handleApproveSuggestion}
                     onRejectSuggestion={handleRejectSuggestion}
+                    onNextSuggestion={handleNextSuggestion}
                     approvalsCount={appData.learnedPreferences.approvalsCount}
                     rejectionsCount={appData.learnedPreferences.rejectionsCount}
                   />
@@ -774,6 +832,7 @@ export function App() {
                   setIsSparkIdeaModalOpen(false);
                 }}
                 onReject={handleRejectSuggestion}
+                onNext={handleNextSuggestion}
                 approvalsCount={appData.learnedPreferences.approvalsCount}
                 rejectionsCount={appData.learnedPreferences.rejectionsCount}
               />
@@ -781,6 +840,16 @@ export function App() {
           </div>
         )}
       </AnimatePresence>
+
+      {/* Quick Add Task Modal */}
+      <QuickAddTaskModal
+        isOpen={isQuickAddTaskOpen}
+        onClose={() => setIsQuickAddTaskOpen(false)}
+        onAddTask={handleAddQuickTask}
+        onOpenFullTasksView={() => {
+          setActiveView('tasks');
+        }}
+      />
 
       {/* Settings Modal */}
       {isSettingsModalOpen && (
