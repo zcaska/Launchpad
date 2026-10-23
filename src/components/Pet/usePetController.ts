@@ -220,7 +220,9 @@ export function usePetController(opts: PetControllerOptions): PetController {
       const o = optsRef.current;
       if (!o.enabled) return;
       if (away >= WELCOME_MS || stateRef.current === 'sleeping') {
-        dispatch('feed-user-wake'); // sleeping → welcome-back; focused stays quiet
+        dispatch('feed-user-wake'); // sleeping → welcome-back (long reunion); focused stays quiet
+      } else if (away >= 60_000 && stateRef.current === 'idle' && !o.focusActive) {
+        dispatch('feed-return-short'); // short absence → brief subtle greeting (0.8–1.2s)
       }
     };
 

@@ -126,26 +126,22 @@ function Eye({
   }
 
   if (shape === 'focused_slant') {
-    // Determined, inward-slanted gaze (\ /)
-    const slantDx = isLeft ? 1.5 : -1.5;
+    // Calm, attentive gaze — softly focused on the work below, never angry or frowning
+    const slantDx = isLeft ? 0.8 : -0.8;
     return (
       <g>
-        <ellipse cx={cx + slantDx * 0.4} cy={cy + 0.5} rx={baseRx * 0.95} ry={Math.max(3, baseRy * 0.78)} fill={P.eyeDark} />
-        {/* Inward brow line */}
+        <ellipse cx={cx + slantDx * 0.3} cy={cy + 0.6} rx={baseRx * 0.95} ry={Math.max(2.8, baseRy * 0.8)} fill={P.eyeDark} />
+        {/* Gentle, calm attentive upper lid contour (soft horizontal curve, no angry diagonal slant) */}
         <path
-          d={
-            isLeft
-              ? `M ${cx - 6} ${cy - 4} L ${cx + 5} ${cy - 1.5}`
-              : `M ${cx - 5} ${cy - 1.5} L ${cx + 6} ${cy - 4}`
-          }
+          d={`M ${cx - 5} ${cy - 2.2} Q ${cx} ${cy - 3.2} ${cx + 5} ${cy - 2.2}`}
           stroke={P.shadow}
-          strokeWidth={2.2}
+          strokeWidth={1.4}
           strokeLinecap="round"
           fill="none"
-          opacity={0.8}
+          opacity={0.5}
         />
-        {/* Specular highlights */}
-        <circle cx={cx - 1.4} cy={cy - 1.2} r={1.6} fill={P.eyeHighlight} />
+        {/* Specular highlight */}
+        <circle cx={cx - 1.2} cy={cy - 0.6} r={1.6} fill={P.eyeHighlight} />
       </g>
     );
   }
