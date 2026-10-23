@@ -2,17 +2,12 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
-  MASCOT_PALETTE,
   MASCOT_EXPRESSIONS,
-  MASCOT_STATE_POSES,
   MASCOT_ANIMATION_CONTRACT,
 } from './mascotManifest';
 import {
   nextPet,
-  PET_TRANSIENT_MS,
   PetContext,
-  PetCue,
-  PetState,
 } from '../../utils/petState';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -159,6 +154,8 @@ assert(petSpriteSource.includes('pet-motion-low-energy'), 'PetSprite binds pet-m
 assert(petSpriteSource.includes('lp-sprite-motion'), 'Mascot and props share lp-sprite-motion synchronized wrapper');
 assert(petSpriteSource.includes('data-prop="laptop"'), 'Working laptop prop layer is defined');
 assert(petSpriteSource.includes('data-prop="coffee-mug"'), 'Steaming coffee mug prop layer is defined');
+assert(petSpriteSource.includes('pet-laptop-glow'), 'Laptop emits inward luminous screen glow toward mascot');
+assert(petSpriteSource.includes('pet-lid-gradient'), 'Laptop lid renders back metallic finish with Launchpad emblem');
 
 // Strict reduced-motion suppression
 assert(petSpriteSource.includes('prefers-reduced-motion: reduce'), 'Prefers-reduced-motion media query present');

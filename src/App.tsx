@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef, lazy, Suspense } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Search, 
@@ -14,18 +14,20 @@ import {
   LinkItem, 
   QuickNote, 
   ThemeMode,
-  RecommendationCandidate 
+  RecommendationCandidate,
+  PetSettings,
 } from './types';
-import { loadAppData, saveAppData, exportDataAsJson, importDataFromJson } from './utils/storage';
+import { loadAppData, saveAppData, saveAppDataDebounced, exportDataAsJson, importDataFromJson } from './utils/storage';
 import { recordTaskCompletion } from './utils/gamification';
 import { DEFAULT_SEED_DATA } from './data/seedData';
 import { Header } from './components/Header/Header';
 import { BackupReminderToast } from './components/Layout/BackupReminderToast';
 import { Sidebar } from './components/Sidebar/Sidebar';
 import { moveLinkToFolder } from './utils/sidebarReorder';
-import { GrowthMasteryScreen } from './components/Growth/GrowthMasteryScreen';
 import { PrimaryFocusCard } from './components/Dashboard/PrimaryFocusCard';
-import { ConfettiOverlay } from './components/Dashboard/ConfettiOverlay';
+import LaunchpadPet from './components/Pet/LaunchpadPet';
+import { usePetController } from './components/Pet/usePetController';
+import { petTierForStreak } from './utils/petState';
 import { CommitmentRadarWidget } from './components/Dashboard/CommitmentRadarWidget';
 import TimeRadarWidget from './components/Dashboard/TimeRadarWidget';
 import { calculateTaskUrgency, toggleTaskInList, toggleSubtaskInList } from './utils/taskUrgency';
@@ -38,13 +40,29 @@ import {
 import { CompactIconGrid } from './components/LinkGrid/CompactIconGrid';
 import { CalendarScheduleTimeline } from './components/Calendar/CalendarScheduleTimeline';
 import { QuickNotesWidget } from './components/QuickNotes/QuickNotesWidget';
-import { TaskManagementScreen } from './components/Tasks/TaskManagementScreen';
 import { AddEditLinkModal } from './components/Modals/AddEditLinkModal';
-import { ManageFoldersModal } from './components/Modals/ManageFoldersModal';
-import { SettingsModal } from './components/Modals/SettingsModal';
-import { BookmarkImportModal } from './components/Modals/BookmarkImportModal';
 import { ConfirmDeleteModal } from './components/Modals/ConfirmDeleteModal';
 import { FolderActionDialog } from './components/Modals/FolderActionDialog';
+
+// Code-split heavy screens and modals into on-demand bundles for 0ms initial load
+const GrowthMasteryScreen = lazy(() =>
+  import('./components/Growth/GrowthMasteryScreen').then((m) => ({ default: m.GrowthMasteryScreen }))
+);
+const TaskManagementScreen = lazy(() =>
+  import('./components/Tasks/TaskManagementScreen').then((m) => ({ default: m.TaskManagementScreen }))
+);
+const ManageFoldersModal = lazy(() =>
+  import('./components/Modals/ManageFoldersModal').then((m) => ({ default: m.ManageFoldersModal }))
+);
+const SettingsModal = lazy(() =>
+  import('./components/Modals/SettingsModal').then((m) => ({ default: m.SettingsModal }))
+);
+const BookmarkImportModal = lazy(() =>
+  import('./components/Modals/BookmarkImportModal').then((m) => ({ default: m.BookmarkImportModal }))
+);
+const ConfettiOverlay = lazy(() =>
+  import('./components/Dashboard/ConfettiOverlay').then((m) => ({ default: m.ConfettiOverlay }))
+);
 import { classifyBookmark } from './utils/bookmarkClassifier';
 import { calculateCalendarScheduleSummary, syncCalendarEventsToQuickNotes } from './utils/calendarSchedule';
 import { 
@@ -283,9 +301,9 @@ export function App() {
     return () => clearTimeout(timer);
   }, [syncToast]);
 
-  // Auto-save on state change
+  // Auto-save on state change (debounced to prevent main thread blocking)
   useEffect(() => {
-    saveAppData(appData);
+    saveAppDataDebounced(appData, 250);
   }, [appData]);
 
   // Theme management
@@ -423,7 +441,6 @@ export function App() {
             },
           },
         };
-        saveAppData(updated);
         return updated;
       });
     } catch (err: any) {
@@ -564,8 +581,8 @@ export function App() {
         return;
       }
 
-      // Quick keybinds (only when not inside an input)
-      if (!isInput) {
+      // Quick keybinds (only when Ctrl/Cmd is pressed and not inside an input)
+      if (!isInput && (e.ctrlKey || e.metaKey)) {
         if (e.key.toLowerCase() === 'n') {
           e.preventDefault();
           setEditingLink(null);
@@ -804,6 +821,7 @@ export function App() {
 
   const handleToggleTask = (taskId: string) => {
     let becameDone = false;
+    let streakMilestone: number | null = null;
 
     setAppData((prev) => {
       const { updatedTasks, toggledTask, isNowDone } = toggleTaskInList(
@@ -827,21 +845,49 @@ export function App() {
         nextGrowthHistory = result.history;
       }
 
-      return {
+      const base = {
         ...prev,
         quickNotes: updatedTasks,
         gamification: nextGamification,
         growthHistory: nextGrowthHistory,
       };
+
+      // Streak tracking: consecutive calendar days with at least one task completed.
+      // Counts once per day; resets if a day is skipped.
+      if (isNowDone) {
+        const today = new Date().toISOString().slice(0, 10);
+        const prevPet = prev.settings.pet as PetSettings | undefined;
+        const yesterday = new Date(Date.now() - 86_400_000).toISOString().slice(0, 10);
+        const lastDate = prevPet?.lastStreakDate;
+
+        if (lastDate !== today) {
+          let count = prevPet?.streakCount ?? 0;
+          count = lastDate === yesterday ? count + 1 : 1;
+          const pet: PetSettings = { ...prevPet, streakCount: count, lastStreakDate: today };
+          const milestones = [3, 7, 14];
+          if (milestones.includes(count) && prevPet?.streakCelebrationsEnabled !== false) {
+            streakMilestone = count;
+          }
+          return { ...base, settings: { ...prev.settings, pet } };
+        }
+      }
+
+      return base;
     });
 
     if (becameDone) {
       setSelectedFocusTaskId((prev) => (prev === taskId ? null : prev));
+      const wasFocusedTask = focusTimer?.taskId === taskId;
+      const task = appData.quickNotes.find((t) => t.id === taskId);
+      const isMajor = wasFocusedTask || task?.priority === 'high';
+      petCueRef.current(isMajor ? 'feed-major-task-done' : 'feed-task-done');
+      if (streakMilestone) petCueRef.current('feed-streak-milestone');
     }
   };
 
   const handleToggleSubtask = (taskId: string, subtaskId: string) => {
     let becameDone = false;
+    let streakMilestone: number | null = null;
 
     setAppData((prev) => {
       const { updatedTasks, parentTask, parentBecameDone } = toggleSubtaskInList(
@@ -866,20 +912,46 @@ export function App() {
         nextGrowthHistory = result.history;
       }
 
-      return {
+      const base = {
         ...prev,
         quickNotes: updatedTasks,
         gamification: nextGamification,
         growthHistory: nextGrowthHistory,
       };
+
+      // Streak tracking: consecutive calendar days with at least one task completed.
+      if (becameDone) {
+        const today = new Date().toISOString().slice(0, 10);
+        const prevPet = prev.settings.pet as PetSettings | undefined;
+        const yesterday = new Date(Date.now() - 86_400_000).toISOString().slice(0, 10);
+        const lastDate = prevPet?.lastStreakDate;
+
+        if (lastDate !== today) {
+          let count = prevPet?.streakCount ?? 0;
+          count = lastDate === yesterday ? count + 1 : 1;
+          const pet: PetSettings = { ...prevPet, streakCount: count, lastStreakDate: today };
+          const milestones = [3, 7, 14];
+          if (milestones.includes(count) && prevPet?.streakCelebrationsEnabled !== false) {
+            streakMilestone = count;
+          }
+          return { ...base, settings: { ...prev.settings, pet } };
+        }
+      }
+
+      return base;
     });
 
     if (becameDone) {
+      const wasFocusedTask = focusTimer?.taskId === taskId;
       if (focusTimer?.taskId === taskId) {
         bankElapsedIntoTask(taskId, elapsedSeconds(focusTimer));
         persistTimer(null);
       }
+      const task = appData.quickNotes.find((t) => t.id === taskId);
+      const isMajor = wasFocusedTask || task?.priority === 'high';
+      petCueRef.current(isMajor ? 'feed-major-task-done' : 'feed-task-done');
       setSelectedFocusTaskId((prev) => (prev === taskId ? null : prev));
+      if (streakMilestone) petCueRef.current('feed-streak-milestone');
     }
   };
 
@@ -927,6 +999,40 @@ export function App() {
     bankElapsedIntoTask(focusTimer.taskId, elapsedSeconds(focusTimer));
     persistTimer(null);
   };
+
+  // ---- Launchpad Pet: behavioral controller fed by real app events ----
+  const petEnabled = appData.settings.pet?.enabled !== false;
+  const petPaused = !!appData.settings.pet?.paused;
+  const petTier = petTierForStreak(appData.settings.pet?.streakCount);
+  const petUiActive =
+    isAddModalOpen || isManageFoldersOpen || isSettingsModalOpen ||
+    isBookmarkImportOpen || isMobileSidebarOpen || isQuickNotesOpen;
+  const pet = usePetController({
+    enabled: petEnabled,
+    paused: petPaused,
+    focusActive: !!focusTimer?.running,
+    pendingCount: pendingTaskCount,
+    uiActive: petUiActive,
+  });
+  const petCueRef = useRef(pet.cue);
+  petCueRef.current = pet.cue;
+  const handleTogglePetPaused = () => {
+    setAppData((prev) => ({
+      ...prev,
+      settings: {
+        ...prev.settings,
+        pet: { enabled: prev.settings.pet?.enabled !== false, paused: !prev.settings.pet?.paused },
+      },
+    }));
+  };
+
+  // New task anywhere (extension, task screen, import) → brief curious look.
+  const prevTaskCountRef = useRef(appData.quickNotes.length);
+  useEffect(() => {
+    const prev = prevTaskCountRef.current;
+    prevTaskCountRef.current = appData.quickNotes.length;
+    if (appData.quickNotes.length > prev) petCueRef.current('feed-task-added');
+  }, [appData.quickNotes.length]);
 
   // Completing the timed task banks its elapsed time automatically.
   const handleToggleTaskWithTimer = (taskId: string) => {
@@ -1155,6 +1261,11 @@ export function App() {
           userEmail={appData.settings.googleCalendar?.userEmail}
         />
 
+        {/* Launchpad Pet: lives in the workspace corner, below toasts/confetti */}
+        {petEnabled && (
+          <LaunchpadPet controller={pet} paused={petPaused} onTogglePaused={handleTogglePetPaused} tier={petTier} />
+        )}
+
         {/* Content Area: Independent scroll container with container queries */}
         <AnimatePresence mode="wait" initial={false}>
           {activeView === 'growth' ? (
@@ -1166,29 +1277,31 @@ export function App() {
               exit="exit"
               className="flex-1 h-full min-w-0 p-0 overflow-hidden @container"
             >
-              <GrowthMasteryScreen
-                gamification={appData.gamification}
-                growthHistory={appData.growthHistory}
-                onSelectHero={(id) => {
-                  setAppData((prev) => {
-                    const updated = { ...prev, gamification: { ...prev.gamification, activeHeroId: id } };
-                    saveAppData(updated);
-                    return updated;
-                  });
-                }}
-                onExportBackup={handleQuickBackup}
-                onImportBackup={(jsonStr) => {
-                  try {
-                    const imported = importDataFromJson(jsonStr);
-                    setAppData(imported);
-                    saveAppData(imported);
-                    alert("Progress and data imported successfully!");
-                  } catch (err: any) {
-                    alert("Import failed: " + (err.message || "Invalid backup file"));
-                  }
-                }}
-                onBackToDashboard={() => setActiveView("dashboard")}
-              />
+              <Suspense fallback={<div className="p-8 text-center text-sm text-serene-text-muted">Loading Growth & Mastery...</div>}>
+                <GrowthMasteryScreen
+                  gamification={appData.gamification}
+                  growthHistory={appData.growthHistory}
+                  onSelectHero={(id) => {
+                    setAppData((prev) => {
+                      const updated = { ...prev, gamification: { ...prev.gamification, activeHeroId: id } };
+                      saveAppData(updated);
+                      return updated;
+                    });
+                  }}
+                  onExportBackup={handleQuickBackup}
+                  onImportBackup={(jsonStr) => {
+                    try {
+                      const imported = importDataFromJson(jsonStr);
+                      setAppData(imported);
+                      saveAppData(imported);
+                      alert("Progress and data imported successfully!");
+                    } catch (err: any) {
+                      alert("Import failed: " + (err.message || "Invalid backup file"));
+                    }
+                  }}
+                  onBackToDashboard={() => setActiveView("dashboard")}
+                />
+              </Suspense>
             </motion.main>
           ) : activeView === 'tasks' ? (
             <motion.main
@@ -1199,26 +1312,28 @@ export function App() {
               exit="exit"
               className="flex-1 h-full min-w-0 p-0 overflow-hidden @container"
             >
-              <TaskManagementScreen
-                notes={appData.quickNotes}
-                scratchpadText={appData.scratchpadText}
-                onUpdateNotes={handleUpdateNotes}
-                onUpdateScratchpad={handleUpdateScratchpad}
-                onBackToDashboard={() => {
-                  setEditingTaskIdForScreen(null);
-                  setActiveView('dashboard');
-                }}
-                calendarEvents={appData.calendarEvents || []}
-                onSyncCalendar={() => handleSyncCalendar(false)}
-                isSyncingCalendar={isSyncingCalendar}
-                onOpenSettings={() => setIsSettingsModalOpen(true)}
-                onReauthorize={() => handleSyncCalendar(false)}
-                isTokenExpired={calendarSummary.isTokenExpired}
-                syncError={calendarSummary.syncError}
-                initialTaskId={editingTaskIdForScreen}
-                onToggleTask={handleToggleTaskWithTimer}
-                onToggleSubtask={handleToggleSubtask}
-              />
+              <Suspense fallback={<div className="p-8 text-center text-sm text-serene-text-muted">Loading Tasks...</div>}>
+                <TaskManagementScreen
+                  notes={appData.quickNotes}
+                  scratchpadText={appData.scratchpadText}
+                  onUpdateNotes={handleUpdateNotes}
+                  onUpdateScratchpad={handleUpdateScratchpad}
+                  onBackToDashboard={() => {
+                    setEditingTaskIdForScreen(null);
+                    setActiveView('dashboard');
+                  }}
+                  calendarEvents={appData.calendarEvents || []}
+                  onSyncCalendar={() => handleSyncCalendar(false)}
+                  isSyncingCalendar={isSyncingCalendar}
+                  onOpenSettings={() => setIsSettingsModalOpen(true)}
+                  onReauthorize={() => handleSyncCalendar(false)}
+                  isTokenExpired={calendarSummary.isTokenExpired}
+                  syncError={calendarSummary.syncError}
+                  initialTaskId={editingTaskIdForScreen}
+                  onToggleTask={handleToggleTaskWithTimer}
+                  onToggleSubtask={handleToggleSubtask}
+                />
+              </Suspense>
             </motion.main>
           ) : (
             <motion.main
@@ -1227,7 +1342,7 @@ export function App() {
               initial="initial"
               animate="animate"
               exit="exit"
-              className="flex-1 h-full min-w-0 p-3 sm:p-5 lg:p-6 overflow-y-auto space-y-5 @container"
+              className="flex-1 h-full min-w-0 p-3 sm:p-5 lg:p-6 pb-20 sm:pb-5 lg:pb-6 overflow-y-auto space-y-5 @container"
             >
             
             {/* Dynamic Focus Dashboard */}
@@ -1239,6 +1354,7 @@ export function App() {
                     tasks={appData.quickNotes}
                     selectedTaskId={selectedFocusTaskId}
                     onSelectTask={(id) => setSelectedFocusTaskId(id)}
+                    onPreviewTask={(id) => setSelectedFocusTaskId(id)}
                     onToggleTask={handleToggleTaskWithTimer}
                     onToggleSubtask={handleToggleSubtask}
                     onOpenTaskEdit={() => {
@@ -1286,6 +1402,7 @@ export function App() {
                         setEditingTaskIdForScreen(id);
                         setActiveView('tasks');
                       }}
+                      onPreviewTask={(id) => setSelectedFocusTaskId(id)}
                       onOpenTasks={() => setActiveView('tasks')}
                       calendarSummary={calendarSummary}
                     />
@@ -1568,38 +1685,52 @@ export function App() {
         onOpenAddFolder={() => setIsManageFoldersOpen(true)}
       />
 
-      <ManageFoldersModal
-        isOpen={isManageFoldersOpen}
-        onClose={() => setIsManageFoldersOpen(false)}
-        folders={appData.folders}
-        links={appData.links}
-        onSaveFolders={handleSaveFolders}
-        onSaveFoldersAndLinks={handleSaveFoldersAndLinks}
-      />
+      {isManageFoldersOpen && (
+        <Suspense fallback={null}>
+          <ManageFoldersModal
+            isOpen={isManageFoldersOpen}
+            onClose={() => setIsManageFoldersOpen(false)}
+            folders={appData.folders}
+            links={appData.links}
+            onSaveFolders={handleSaveFolders}
+            onSaveFoldersAndLinks={handleSaveFoldersAndLinks}
+          />
+        </Suspense>
+      )}
 
-      <SettingsModal
-        isOpen={isSettingsModalOpen}
-        onClose={() => setIsSettingsModalOpen(false)}
-        appData={appData}
-        onUpdateAppData={setAppData}
-        onResetData={handleResetData}
-        onOpenBookmarkImport={() => setIsBookmarkImportOpen(true)}
-        onSyncCalendar={() => handleSyncCalendar(false)}
-        isSyncingCalendar={isSyncingCalendar}
-      />
+      {isSettingsModalOpen && (
+        <Suspense fallback={null}>
+          <SettingsModal
+            isOpen={isSettingsModalOpen}
+            onClose={() => setIsSettingsModalOpen(false)}
+            appData={appData}
+            onUpdateAppData={setAppData}
+            onResetData={handleResetData}
+            onOpenBookmarkImport={() => setIsBookmarkImportOpen(true)}
+            onSyncCalendar={() => handleSyncCalendar(false)}
+            isSyncingCalendar={isSyncingCalendar}
+          />
+        </Suspense>
+      )}
 
       {/* Fullscreen celebration when the entire task queue is cleared */}
       {isCelebrating && (
-        <ConfettiOverlay style={appData.settings.confettiStyle || 'cascade'} />
+        <Suspense fallback={null}>
+          <ConfettiOverlay style={appData.settings.confettiStyle || 'cascade'} />
+        </Suspense>
       )}
 
-      <BookmarkImportModal
-        isOpen={isBookmarkImportOpen}
-        onClose={() => setIsBookmarkImportOpen(false)}
-        folders={appData.folders}
-        existingLinks={appData.links}
-        onImportBookmarks={handleImportBookmarks}
-      />
+      {isBookmarkImportOpen && (
+        <Suspense fallback={null}>
+          <BookmarkImportModal
+            isOpen={isBookmarkImportOpen}
+            onClose={() => setIsBookmarkImportOpen(false)}
+            folders={appData.folders}
+            existingLinks={appData.links}
+            onImportBookmarks={handleImportBookmarks}
+          />
+        </Suspense>
+      )}
 
       {/* Dedicated Confirmation Modal for Bookmark/Link Deletion */}
       <ConfirmDeleteModal
@@ -1671,3 +1802,4 @@ export function App() {
   );
 }
 export default App;
+

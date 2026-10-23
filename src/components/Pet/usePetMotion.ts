@@ -25,9 +25,49 @@ export interface PetMotionState {
   };
 }
 
+export const MASCOT_BOUNDS = {
+  width: 84,
+  height: 70,
+  padding: 12,
+};
+
+export const MAX_ROAM_RADIUS_PX = 6;
+
 export function clampCoordinate(val: number, min: number, max: number): number {
   if (min >= max) return min;
   return Math.max(min, Math.min(max, val));
+}
+
+export function getScreenBounds(): { minX: number; maxX: number; minY: number; maxY: number } {
+  if (typeof window === 'undefined') {
+    return { minX: 12, maxX: 1200, minY: 12, maxY: 800 };
+  }
+  const maxX = Math.max(MASCOT_BOUNDS.padding, window.innerWidth - MASCOT_BOUNDS.width - MASCOT_BOUNDS.padding);
+  const maxY = Math.max(MASCOT_BOUNDS.padding, window.innerHeight - MASCOT_BOUNDS.height - MASCOT_BOUNDS.padding);
+  return {
+    minX: MASCOT_BOUNDS.padding,
+    maxX,
+    minY: MASCOT_BOUNDS.padding,
+    maxY,
+  };
+}
+
+export function calculateRoamTarget(
+  anchor: { x: number; y: number },
+  bounds: { minX: number; maxX: number; minY: number; maxY: number },
+  maxOffset: number = MAX_ROAM_RADIUS_PX
+): { x: number; y: number } {
+  // Roam strictly about maxOffset (6px) on all sides from anchor
+  const deltaX = (Math.random() * 2 - 1) * maxOffset;
+  const deltaY = (Math.random() * 2 - 1) * maxOffset;
+
+  const rawX = Math.round(anchor.x + deltaX);
+  const rawY = Math.round(anchor.y + deltaY);
+
+  return {
+    x: clampCoordinate(rawX, bounds.minX, bounds.maxX),
+    y: clampCoordinate(rawY, bounds.minY, bounds.maxY),
+  };
 }
 
 export function calculatePlacement(y: number): 'top' | 'bottom' {
@@ -43,11 +83,10 @@ function loadSavedPosition(): { x: number; y: number } | null {
     if (!raw) return null;
     const parsed = JSON.parse(raw);
     if (typeof parsed?.x === 'number' && typeof parsed?.y === 'number') {
-      const maxX = Math.max(16, window.innerWidth - 72);
-      const maxY = Math.max(16, window.innerHeight - 72);
+      const bounds = getScreenBounds();
       return {
-        x: clampCoordinate(parsed.x, 16, maxX),
-        y: clampCoordinate(parsed.y, 16, maxY),
+        x: clampCoordinate(parsed.x, bounds.minX, bounds.maxX),
+        y: clampCoordinate(parsed.y, bounds.minY, bounds.maxY),
       };
     }
   } catch {
@@ -65,21 +104,21 @@ function savePosition(pos: { x: number; y: number }): void {
   }
 }
 
-function getDefaultPosition(dockPosition?: { x: number; y: number }): { x: number; y: number } {
+export function getDefaultPosition(dockPosition?: { x: number; y: number }): { x: number; y: number } {
+  const bounds = getScreenBounds();
   if (dockPosition) {
-    const maxX = typeof window !== 'undefined' ? Math.max(16, window.innerWidth - 72) : 500;
-    const maxY = typeof window !== 'undefined' ? Math.max(16, window.innerHeight - 72) : 500;
     return {
-      x: clampCoordinate(dockPosition.x, 16, maxX),
-      y: clampCoordinate(dockPosition.y, 16, maxY),
+      x: clampCoordinate(dockPosition.x, bounds.minX, bounds.maxX),
+      y: clampCoordinate(dockPosition.y, bounds.minY, bounds.maxY),
     };
   }
   if (typeof window !== 'undefined') {
-    const maxX = Math.max(16, window.innerWidth - 72);
-    const maxY = Math.max(16, window.innerHeight - 72);
+    // Predecided section of site: bottom-right corner perch (clear of scrollbars and content)
+    const targetX = window.innerWidth - 96;
+    const targetY = window.innerHeight - 96;
     return {
-      x: clampCoordinate(window.innerWidth - 72, 16, maxX),
-      y: clampCoordinate(window.innerHeight - 80, 16, maxY),
+      x: clampCoordinate(targetX, bounds.minX, bounds.maxX),
+      y: clampCoordinate(targetY, bounds.minY, bounds.maxY),
     };
   }
   return { x: 0, y: 0 };
@@ -107,7 +146,8 @@ export function usePetMotion({
   const posRef = useRef(pos);
   posRef.current = pos;
 
-  const savedPosRef = useRef<{ x: number; y: number }>(pos);
+  // The anchor represents the predecided section/perch point around which 6px roaming occurs
+  const anchorRef = useRef<{ x: number; y: number }>(pos);
 
   const onPetClickRef = useRef(onPetClick);
   onPetClickRef.current = onPetClick;
@@ -120,22 +160,21 @@ export function usePetMotion({
   const flightTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const restTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Re-clamp position on window resize
+  // Re-clamp position and home anchor on window resize so mascot NEVER exits screen
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const onResize = () => {
-      const maxX = Math.max(16, window.innerWidth - 72);
-      const maxY = Math.max(16, window.innerHeight - 72);
+      const bounds = getScreenBounds();
       setPos((prev) => {
-        const clampedX = clampCoordinate(prev.x, 16, maxX);
-        const clampedY = clampCoordinate(prev.y, 16, maxY);
+        const clampedX = clampCoordinate(prev.x, bounds.minX, bounds.maxX);
+        const clampedY = clampCoordinate(prev.y, bounds.minY, bounds.maxY);
         if (clampedX === prev.x && clampedY === prev.y) return prev;
         return { x: clampedX, y: clampedY };
       });
-      if (savedPosRef.current) {
-        savedPosRef.current = {
-          x: clampCoordinate(savedPosRef.current.x, 16, maxX),
-          y: clampCoordinate(savedPosRef.current.y, 16, maxY),
+      if (anchorRef.current) {
+        anchorRef.current = {
+          x: clampCoordinate(anchorRef.current.x, bounds.minX, bounds.maxX),
+          y: clampCoordinate(anchorRef.current.y, bounds.minY, bounds.maxY),
         };
       }
     };
@@ -170,32 +209,27 @@ export function usePetMotion({
       restTimerRef.current = null;
       if (typeof window === 'undefined') return;
 
-      const dur = Math.floor(4500 + Math.random() * 2000); // 4500-6500 ms
-      const maxX = Math.max(16, window.innerWidth - 72);
-      const maxY = Math.max(16, window.innerHeight - 72);
-
-      const nextX = clampCoordinate(window.innerWidth - (32 + Math.random() * 56), 16, maxX);
-      const nextY = clampCoordinate(window.innerHeight * (0.15 + Math.random() * 0.65), 16, maxY);
+      const dur = Math.floor(2200 + Math.random() * 1000); // 2200-3200 ms gentle micro-drift
+      const bounds = getScreenBounds();
+      // Strictly roam about 6px on all sides from the predecided anchor
+      const nextPos = calculateRoamTarget(anchorRef.current, bounds, MAX_ROAM_RADIUS_PX);
 
       setDurationMs(reducedMotion ? 0 : dur);
       setIsFlying(true);
       setFacing((prevFacing) => {
-        if (nextX < posRef.current.x) return -1;
-        if (nextX > posRef.current.x) return 1;
+        if (nextPos.x < posRef.current.x - 1) return -1;
+        if (nextPos.x > posRef.current.x + 1) return 1;
         return prevFacing;
       });
-      posRef.current = { x: nextX, y: nextY };
-      setPos({ x: nextX, y: nextY });
+      posRef.current = nextPos;
+      setPos(nextPos);
 
       flightTimerRef.current = setTimeout(() => {
         flightTimerRef.current = null;
         setIsFlying(false);
-        const landingPos = { x: nextX, y: nextY };
-        savedPosRef.current = landingPos;
-        savePosition(landingPos);
 
-        // Schedule next gentle exploratory flight after 16–28s rest
-        const nextRest = 16000 + Math.random() * 12000;
+        // Schedule next gentle micro-drift after 12–22s rest at perch
+        const nextRest = 12000 + Math.random() * 10000;
         scheduleFlightRef.current(nextRest);
       }, dur);
     }, delayMs);
@@ -261,10 +295,9 @@ export function usePetMotion({
       }
     }
 
-    const maxX = typeof window !== 'undefined' ? Math.max(16, window.innerWidth - 72) : 500;
-    const maxY = typeof window !== 'undefined' ? Math.max(16, window.innerHeight - 72) : 500;
-    const targetX = clampCoordinate(posStartRef.current.x + dx, 16, maxX);
-    const targetY = clampCoordinate(posStartRef.current.y + dy, 16, maxY);
+    const bounds = getScreenBounds();
+    const targetX = clampCoordinate(posStartRef.current.x + dx, bounds.minX, bounds.maxX);
+    const targetY = clampCoordinate(posStartRef.current.y + dy, bounds.minY, bounds.maxY);
 
     if (targetX < posRef.current.x) {
       setFacing(-1);
@@ -295,7 +328,7 @@ export function usePetMotion({
     if (wasDragging) {
       setIsDragging(false);
       const finalPos = posRef.current;
-      savedPosRef.current = finalPos;
+      anchorRef.current = finalPos;
       savePosition(finalPos);
     } else {
       onPetClickRef.current?.();
@@ -321,7 +354,7 @@ export function usePetMotion({
     if (wasDragging) {
       setIsDragging(false);
       const finalPos = posRef.current;
-      savedPosRef.current = finalPos;
+      anchorRef.current = finalPos;
       savePosition(finalPos);
     }
   }, []);

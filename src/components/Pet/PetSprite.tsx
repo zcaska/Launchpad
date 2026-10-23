@@ -552,36 +552,84 @@ function PetSpriteComponent({
             </g>
           )}
 
-          {/* Working Laptop */}
+          {/* Working Laptop (Faithful to Reference Sheet §4: positioned in front of mascot, screen facing mascot, back of lid with Launchpad emblem facing viewer) */}
           {showLaptop && (
             <g data-prop="laptop">
-              {/* Laptop open screen */}
-              <rect x={49} y={53} width={22} height={15} rx={1.5} fill="#1E293B" />
+              <defs>
+                <linearGradient id="pet-laptop-glow" x1="1" y1="0.5" x2="0" y2="0.5">
+                  <stop offset="0%" stopColor="#60A5FA" stopOpacity="0.65" />
+                  <stop offset="60%" stopColor="#38BDF8" stopOpacity="0.25" />
+                  <stop offset="100%" stopColor="#93C5FD" stopOpacity="0" />
+                </linearGradient>
+                <linearGradient id="pet-lid-gradient" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stopColor="#2E3C4F" />
+                  <stop offset="100%" stopColor="#1E293B" />
+                </linearGradient>
+              </defs>
 
-              {/* Laptop glowing screen display */}
-              <rect
-                x={50.5}
-                y={54.5}
-                width={19}
-                height={12}
-                rx={1}
-                fill="#60A5FA"
+              {/* Soft luminous screen glow radiating from open screen toward mascot's face & chest */}
+              <ellipse
+                cx={64}
+                cy={63}
+                rx={12}
+                ry={9}
+                fill="url(#pet-laptop-glow)"
                 className={reducedMotion ? undefined : 'pet-screen-glow'}
               />
 
-              {/* Screen code/content lines */}
-              <g opacity={0.85}>
-                <rect x={52.5} y={56.5} width={7} height={1} rx={0.5} fill="#FFFFFF" opacity={0.9} />
-                <rect x={52.5} y={58.5} width={13} height={1} rx={0.5} fill="#FFFFFF" opacity={0.7} />
-                <rect x={54.5} y={60.5} width={10} height={1} rx={0.5} fill="#FFFFFF" opacity={0.7} />
-                <rect x={52.5} y={62.5} width={6} height={1} rx={0.5} fill="#93C5FD" opacity={0.8} />
+              {/* Laptop base / keyboard tray (resting in perspective between mascot's fin and screen) */}
+              <polygon
+                points="57,73 83,71 90,79 62,81"
+                fill="#334155"
+                stroke="#1E293B"
+                strokeWidth={0.6}
+              />
+              {/* Keyboard keys area on base */}
+              <polygon
+                points="63,74 81,72.5 85,76 65,77.5"
+                fill="#1E293B"
+                opacity={0.75}
+              />
+              {/* Spacebar / trackpad detail */}
+              <line
+                x1={68}
+                y1={78.5}
+                x2={76}
+                y2={78}
+                stroke="#64748B"
+                strokeWidth={0.8}
+                strokeLinecap="round"
+                opacity={0.85}
+              />
+
+              {/* Laptop open screen lid (back of lid facing viewer, angled in 3/4 perspective toward mascot) */}
+              <polygon
+                points="68,53 92,51 90,71 66,73"
+                fill="url(#pet-lid-gradient)"
+                stroke="#475569"
+                strokeWidth={0.7}
+              />
+
+              {/* Lid top edge highlight */}
+              <line
+                x1={68}
+                y1={53}
+                x2={92}
+                y2={51}
+                stroke="#64748B"
+                strokeWidth={0.9}
+                strokeLinecap="round"
+                opacity={0.85}
+              />
+
+              {/* Launchpad emblem on back of laptop lid */}
+              <g transform="translate(79, 61.5) scale(0.75)" opacity={0.85}>
+                <circle cx={0} cy={0} r={2.5} fill="#94A3B8" />
+                <path d="M 0 -2 L 1.2 1.5 L -1.2 1.5 Z" fill="#F8FAFC" />
               </g>
 
-              {/* Laptop base */}
-              <rect x={46} y={68} width={28} height={4} rx={1.5} fill="#334155" />
-
-              {/* Keyboard detail */}
-              <rect x={48} y={69} width={24} height={2} rx={0.5} fill="#64748B" />
+              {/* Laptop hinge line */}
+              <rect x={66.5} y={71.5} width={23.5} height={1.4} rx={0.6} fill="#0F172A" />
             </g>
           )}
         </svg>

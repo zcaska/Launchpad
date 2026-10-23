@@ -1,4 +1,13 @@
-import { clampCoordinate, calculatePlacement, usePetMotion } from './usePetMotion';
+import {
+  clampCoordinate,
+  calculatePlacement,
+  usePetMotion,
+  MAX_ROAM_RADIUS_PX,
+  MASCOT_BOUNDS,
+  getScreenBounds,
+  calculateRoamTarget,
+  getDefaultPosition,
+} from './usePetMotion';
 
 let failures = 0;
 function assert(condition: boolean, msg: string) {
@@ -32,15 +41,34 @@ assert(calculatePlacement(-50) === 'bottom', 'Inverts bubble below at negative y
 assert(typeof clampCoordinate === 'function', 'clampCoordinate is exported as function');
 assert(typeof calculatePlacement === 'function', 'calculatePlacement is exported as function');
 assert(typeof usePetMotion === 'function', 'usePetMotion is exported as function');
+assert(typeof getScreenBounds === 'function', 'getScreenBounds is exported as function');
+assert(typeof calculateRoamTarget === 'function', 'calculateRoamTarget is exported as function');
+assert(typeof getDefaultPosition === 'function', 'getDefaultPosition is exported as function');
 
-// 4. Autonomous roaming waypoint generation within right corridor
-const maxX = 1200 - 72;
-const maxY = 800 - 72;
+// 4. Mascot screen containment & roaming limits
+assert(MAX_ROAM_RADIUS_PX === 6, 'Max roam radius is exactly 6px on all sides');
+assert(MASCOT_BOUNDS.width === 84 && MASCOT_BOUNDS.height === 70, 'Mascot bounds dimensions are 84x70');
+
+const bounds = { minX: 12, maxX: 1104, minY: 12, maxY: 718 };
+const anchor = { x: 1000, y: 650 };
+
+for (let i = 0; i < 20; i++) {
+  const target = calculateRoamTarget(anchor, bounds, MAX_ROAM_RADIUS_PX);
+  const diffX = Math.abs(target.x - anchor.x);
+  const diffY = Math.abs(target.y - anchor.y);
+
+  assert(diffX <= 6, `Target X roam delta is <= 6px (got: ${diffX}px)`);
+  assert(diffY <= 6, `Target Y roam delta is <= 6px (got: ${diffY}px)`);
+  assert(target.x >= bounds.minX && target.x <= bounds.maxX, 'Target X stays strictly within screen bounds');
+  assert(target.y >= bounds.minY && target.y <= bounds.maxY, 'Target Y stays strictly within screen bounds');
+}
+
+// 5. Boundary safety near extreme screen edges
+const edgeAnchor = { x: 1104, y: 718 };
 for (let i = 0; i < 10; i++) {
-  const targetX = clampCoordinate(1200 - (32 + Math.random() * 56), 16, maxX);
-  const targetY = clampCoordinate(800 * (0.15 + Math.random() * 0.65), 16, maxY);
-  assert(targetX >= 1200 - 90 && targetX <= maxX, 'Target X stays in right margin');
-  assert(targetY >= 800 * 0.15 && targetY <= 800 * 0.80, 'Target Y stays in vertical band');
+  const target = calculateRoamTarget(edgeAnchor, bounds, MAX_ROAM_RADIUS_PX);
+  assert(target.x <= bounds.maxX, 'Edge target X never overflows screen bounds');
+  assert(target.y <= bounds.maxY, 'Edge target Y never overflows screen bounds');
 }
 
 if (failures > 0) process.exit(1);

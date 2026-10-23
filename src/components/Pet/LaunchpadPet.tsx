@@ -67,9 +67,18 @@ function LaunchpadPetComponent({
   // Click tracking: single click pets, double click toggles paused movement
   const clickCountRef = useRef(0);
   const clickTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastClickTimeRef = useRef(0);
 
   const handlePetClick = useCallback(() => {
+    const now = Date.now();
+    if (now - lastClickTimeRef.current < 80) return; // Prevent duplicate pointerup + click triggers
+    lastClickTimeRef.current = now;
+
     onPet();
+    const quoteCat: QuoteCategory = STATE_QUOTE_CATEGORY_MAP[state] || 'welcomeBack';
+    setQuote(getPetQuote(quoteCat));
+    setQuoteVisible(true);
+
     clickCountRef.current += 1;
     if (clickCountRef.current === 1) {
       clickTimerRef.current = setTimeout(() => {
@@ -80,7 +89,7 @@ function LaunchpadPetComponent({
       clickCountRef.current = 0;
       onTogglePaused();
     }
-  }, [onPet, onTogglePaused]);
+  }, [onPet, onTogglePaused, state]);
 
   useEffect(() => () => {
     if (clickTimerRef.current) clearTimeout(clickTimerRef.current);
@@ -115,6 +124,13 @@ function LaunchpadPetComponent({
     }
   }, [state]);
 
+  // Dynamic fin-side thought bubble placement:
+  // When pet is on right side of screen -> thought box appears on its left fin side.
+  // When pet is on left side of screen -> thought box appears on its right fin side.
+  const isRightSideOfScreen =
+    typeof window !== 'undefined' ? motion.pos.x >= window.innerWidth / 2 : true;
+  const finSidePlacement: 'left' | 'right' = isRightSideOfScreen ? 'left' : 'right';
+
   return (
     <div
       className="fixed top-0 left-0 z-40 pointer-events-none select-none"
@@ -132,11 +148,12 @@ function LaunchpadPetComponent({
           quote={quote}
           visible={quoteVisible}
           onDismiss={onDismissQuote}
-          placement={motion.placement}
+          placement={finSidePlacement}
         />
         <button
           type="button"
           {...motion.handlers}
+          onClick={handlePetClick}
           onPointerEnter={onPet}
           className={`lp-pet pointer-events-auto block transition-opacity touch-none focus-visible:outline-2 focus-visible:outline-serene-primary dark:focus-visible:outline-serene-primary-dark ${
             motion.isDragging ? 'cursor-grabbing opacity-90' : 'cursor-grab opacity-95 hover:opacity-100'

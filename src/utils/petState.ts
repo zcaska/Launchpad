@@ -20,11 +20,13 @@ export type PetState =
 // `feed-*` = meaningful app events, `env-*` = controller ticks / timer expiry.
 export type PetCue =
   | 'feed-task-done'
+  | 'feed-major-task-done'
   | 'feed-task-added'
   | 'feed-task-overload'
   | 'feed-focus-start'
   | 'feed-focus-end'
   | 'feed-user-wake'
+  | 'feed-return-short'
   | 'feed-streak-milestone'
   | 'env-greet'
   | 'env-subdue'
@@ -54,14 +56,15 @@ export interface PetDecision {
   transientMs?: number;
 }
 
-// Durations live here so controller and docs agree on the numbers.
+// Durations calibrated directly to Mascot Motion & Animation Sheet specifications.
 export const PET_TRANSIENT_MS: Record<string, number> = {
-  happy: 3600,
+  happy: 850,                   // Routine task completion (spec §5.5: 0.6–1.0s)
   curious: 2600,
   thinking: 3200,
-  'welcome-back': 3000,
+  'welcome-back': 1800,         // Long return greeting / reunion (spec §5.6: 1.6–2.4s)
+  'return-short': 1000,         // Short absence greeting (spec §5.6: 0.8–1.2s)
   overwhelmed: 3200,
-  'celebration-streak': 4500,
+  'celebration-streak': 1800,   // Major task / milestone / focus finish (spec §5.5: 1.4–2.2s)
   'coffee-break': 5000,
 };
 
@@ -113,6 +116,11 @@ export function nextPet(current: PetState, cue: PetCue, ctx: PetContext): PetDec
       if (current === 'sleeping') return { state: 'sleeping' }; // never wake to dance
       return { state: 'happy', transientMs: PET_TRANSIENT_MS.happy };
 
+    case 'feed-major-task-done':
+      if (ctx.focusActive) return { state: 'focused' };       // quiet ack only
+      if (current === 'sleeping') return { state: 'sleeping' }; // never wake to celebrate
+      return { state: 'celebration-streak', transientMs: PET_TRANSIENT_MS['celebration-streak'] };
+
     case 'feed-task-added': {
       if (ctx.focusActive) return { state: 'focused' };
       // Too much on the plate outranks curiosity: a concerned look is the more
@@ -134,6 +142,11 @@ export function nextPet(current: PetState, cue: PetCue, ctx: PetContext): PetDec
     }
 
     // ---- Returning user ----
+    case 'feed-return-short':
+      if (ctx.focusActive || current === 'sleeping') return { state: current };
+      if (current === 'sad') return { state: 'idle' }; // perk up from slump
+      return { state: 'welcome-back', transientMs: PET_TRANSIENT_MS['return-short'] };
+
     case 'feed-user-wake':
       if (ctx.focusActive) return { state: 'focused' };
       if (current === 'sleeping') return { state: 'welcome-back', transientMs: PET_TRANSIENT_MS['welcome-back'] };
