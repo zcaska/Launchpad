@@ -1,0 +1,14 @@
+<svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="fin-l-iso" x1="85%" y1="20%" x2="15%" y2="80%">
+      <stop offset="0%" stop-color="#FFAE85" />
+      <stop offset="45%" stop-color="#FF9A6B" />
+      <stop offset="100%" stop-color="#E6754C" />
+    </linearGradient>
+  </defs>
+  <!-- Pivot point at (30, 20) in this bounding frame -->
+  <g transform="translate(4, 5)">
+    <path d="M 26 14 C 16 11, 7 16, 6 25 C 5 32, 13 35, 26 24 Z" fill="url(#fin-l-iso)" />
+    <path d="M 24 16 C 18 14, 11 18, 10 24 C 14 22, 19 20, 25 19 Z" fill="#FFD6B3" opacity="0.55" />
+  </g>
+</svg>

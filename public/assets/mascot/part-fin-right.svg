@@ -1,0 +1,13 @@
+<svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="fin-r-iso" x1="15%" y1="20%" x2="85%" y2="80%">
+      <stop offset="0%" stop-color="#FFAE85" />
+      <stop offset="45%" stop-color="#FF9A6B" />
+      <stop offset="100%" stop-color="#E6754C" />
+    </linearGradient>
+  </defs>
+  <g transform="translate(6, 5)">
+    <path d="M 4 14 C 14 11, 23 16, 24 25 C 25 32, 17 35, 4 24 Z" fill="url(#fin-r-iso)" />
+    <path d="M 6 16 C 12 14, 19 18, 20 24 C 16 22, 11 20, 5 19 Z" fill="#FFD6B3" opacity="0.55" />
+  </g>
+</svg>

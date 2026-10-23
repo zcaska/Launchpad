@@ -1,0 +1,105 @@
+{
+  "name": "Launchpad Mascot Asset Manifest",
+  "version": "1.0.0",
+  "description": "Official 2D/2.5D visual design assets for the Launchpad floating-pebble mascot companion.",
+  "specification": {
+    "character": "Tiny, friendly alien companion with an original floating-pebble silhouette.",
+    "body": "Warm coral-orange, clean surface, soft matte finish, diffused lighting, gentle shadows, restrained highlights.",
+    "fins": "Two rounded side fins in lighter coral-orange (#FF9A6B), controllable pose.",
+    "face": "Adaptive minimal eyes (#1A1A1A) with glossy highlights (#FFFFFF); tiny expressive mouth.",
+    "limbs": "None (no arms, hands, legs, or feet).",
+    "purity": "No accessories, clothing, belly marks, glowing belly cores, decorative symbols, or text."
+  },
+  "palette": {
+    "baseOrange": "#FF7A3C",
+    "finOrange": "#FF9A6B",
+    "highlight": "#FFD6B3",
+    "shadow": "#E05A20",
+    "shadowDeep": "#C44412",
+    "eyeDark": "#1A1A1A",
+    "eyeHighlight": "#FFFFFF",
+    "ambientGlow": "rgba(255, 122, 60, 0.28)"
+  },
+  "viewBox": "0 0 120 100",
+  "aspectRatio": "6:5",
+  "pivots": {
+    "bodyCenter": {
+      "x": 60,
+      "y": 52
+    },
+    "leftFin": {
+      "x": 26,
+      "y": 54
+    },
+    "rightFin": {
+      "x": 94,
+      "y": 54
+    },
+    "leftEye": {
+      "x": 47,
+      "y": 49
+    },
+    "rightEye": {
+      "x": 73,
+      "y": 49
+    },
+    "mouth": {
+      "x": 60,
+      "y": 56.5
+    }
+  },
+  "sizingGuidance": {
+    "micro": {
+      "size": 24,
+      "usage": "Badges and compact status dots"
+    },
+    "compact": {
+      "size": 32,
+      "usage": "Folder navigation / compact list items"
+    },
+    "standard": {
+      "size": 48,
+      "usage": "Dashboard squircle tiles and task header"
+    },
+    "widget": {
+      "size": 64,
+      "usage": "Standard floating desktop companion"
+    },
+    "expanded": {
+      "size": 80,
+      "usage": "Active focus hero companion and interactive cards"
+    },
+    "hero": {
+      "size": 120,
+      "usage": "Modals, celebratory takeover, and settings preview"
+    }
+  },
+  "files": {
+    "canonicalNeutral": "/assets/mascot/mascot-canonical-neutral.svg",
+    "parts": {
+      "body": "/assets/mascot/part-body.svg",
+      "leftFin": "/assets/mascot/part-fin-left.svg",
+      "rightFin": "/assets/mascot/part-fin-right.svg",
+      "eyesNeutral": "/assets/mascot/part-eyes-neutral.svg",
+      "mouthSmile": "/assets/mascot/part-mouth-smile.svg"
+    },
+    "expressions": {
+      "calm": "/assets/mascot/expression-calm.svg",
+      "curious": "/assets/mascot/expression-curious.svg",
+      "welcoming": "/assets/mascot/expression-welcoming.svg",
+      "happy": "/assets/mascot/expression-happy.svg",
+      "surprised": "/assets/mascot/expression-surprised.svg",
+      "disappointed": "/assets/mascot/expression-disappointed.svg",
+      "sleepy": "/assets/mascot/expression-sleepy.svg",
+      "excited": "/assets/mascot/expression-excited.svg",
+      "focused": "/assets/mascot/expression-focused.svg",
+      "determined": "/assets/mascot/expression-determined.svg"
+    },
+    "poses": {
+      "focus": "/assets/mascot/pose-focus.svg",
+      "lowEnergy": "/assets/mascot/pose-low-energy.svg",
+      "taskCompletion": "/assets/mascot/pose-task-completion.svg",
+      "returnAfterAway": "/assets/mascot/pose-return-after-away.svg"
+    }
+  }
+}

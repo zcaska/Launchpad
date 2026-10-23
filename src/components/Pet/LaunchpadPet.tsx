@@ -7,12 +7,13 @@ import { getPetQuote } from './petQuotes';
 import type { QuoteCategory } from './petQuotes';
 import type { PetState, PetTier } from '../../utils/petState';
 
-// Launchpad Pet — coordinator container.
+// Launchpad Mascot Pet — coordinator container.
 // Coordinates motion, thought bubbles, quotes, dragging, and pause states;
-// all pixel graphics live decoupled in PetSprite.tsx.
+// visual graphics powered by the canonical floating-pebble mascot (Mascot.tsx & PetSprite.tsx).
 //
-// Visual spec (features/Ema - Launchpad Agent/Agent-Character sheet.png):
-//   body #FF8A5B, shadows #E0673F, highlights #FFD3C2, eyes/outline #111111.
+// Visual spec (Launchpad Mascot Design Reference):
+//   floating-pebble silhouette, body #FF7A3C, fins #FF9A6B,
+//   diffuse highlight #FFD6B3, shadow #E05A20, adaptive eyes #1A1A1A, shine #FFFFFF.
 
 export interface LaunchpadPetProps {
   controller: PetController;
