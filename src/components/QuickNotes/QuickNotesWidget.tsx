@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
-import { 
-  CheckSquare, 
-  Square, 
-  Plus, 
-  Trash2, 
-  FileText, 
-  X, 
-  ClipboardList,
+import {
+  CheckSquare,
+  Square,
+  Plus,
+  Trash as Trash2,
+  FileText,
+  X,
+  ClipboardText as ClipboardList,
   Clock
-} from 'lucide-react';
+} from '@phosphor-icons/react';
 import { QuickNote } from '../../types';
 import { calculateTaskLoad, formatMinutesToHours } from '../../utils/timeBudget';
 

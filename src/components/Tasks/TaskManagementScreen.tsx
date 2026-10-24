@@ -4,20 +4,20 @@ import {
   CheckSquare,
   Square,
   Plus,
-  Trash2,
-  Edit3,
-  Calendar,
+  Trash as Trash2,
+  PencilSimple as Edit3,
+  CalendarBlank as Calendar,
   Clock,
-  ExternalLink,
-  Search,
-  CheckCircle2,
+  ArrowSquareOut as ExternalLink,
+  MagnifyingGlass as Search,
+  CheckCircle as CheckCircle2,
   Link as LinkIcon,
-  ListTodo,
+  ListChecks as ListTodo,
   X,
   ArrowLeft,
   FileText,
-  AlertTriangle
-} from 'lucide-react';
+  Warning as AlertTriangle
+} from '@phosphor-icons/react';
 import { QuickNote, TaskPriority, TaskUrl, Subtask, CalendarEventItem } from '../../types';
 import { calculateTaskLoad, formatMinutesToHours } from '../../utils/timeBudget';
 import { modalBackdropVariants, modalContentVariants, staggerItemVariants, staggerContainerVariants } from '../../utils/motion';

@@ -1,12 +1,12 @@
 import React, { useState, useMemo } from 'react';
-import { 
-  Clock, 
-  Target, 
-  Sparkles, 
-  Trophy, 
-  Calendar, 
+import {
+  Clock,
+  Target,
+  Sparkle as Sparkles,
+  Trophy,
+  CalendarBlank as Calendar,
   ShieldCheck
-} from 'lucide-react';
+} from '@phosphor-icons/react';
 import { DailyGrowthRecord } from '../../types';
 
 export interface YearlyGrowthViewProps {

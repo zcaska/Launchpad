@@ -1,5 +1,13 @@
 import React, { useState, useMemo } from 'react';
-import { Flame, Trophy, Calendar, Clock, Target, Sparkles, CheckCircle2 } from 'lucide-react';
+import {
+  Flame,
+  Trophy,
+  CalendarBlank as Calendar,
+  Clock,
+  Target,
+  Sparkle as Sparkles,
+  CheckCircle as CheckCircle2
+} from '@phosphor-icons/react';
 import { DailyGrowthRecord } from '../../types';
 import { formatDateKey } from '../../utils/gamification';
 

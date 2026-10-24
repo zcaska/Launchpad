@@ -1,6 +1,10 @@
 import React, { useMemo } from 'react';
 import { motion } from 'motion/react';
-import { PartyPopper, Sparkles, Flag } from 'lucide-react';
+import {
+  Confetti as PartyPopper,
+  Sparkle as Sparkles,
+  Flag
+} from '@phosphor-icons/react';
 import { ConfettiStyle } from '../../types';
 
 /**

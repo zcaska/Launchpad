@@ -1,20 +1,20 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { 
-  Sparkles, 
-  Check, 
-  RotateCw, 
-  ExternalLink, 
-  Clock, 
-  Zap, 
-  Globe, 
-  Lightbulb, 
-  BookOpen, 
-  Mail, 
-  Coffee, 
+import {
+  Sparkle as Sparkles,
+  Check,
+  ArrowClockwise as RotateCw,
+  ArrowSquareOut as ExternalLink,
+  Clock,
+  Lightning as Zap,
+  Globe,
+  Lightbulb,
+  BookOpen,
+  EnvelopeSimple as Mail,
+  Coffee,
   Compass,
   X
-} from 'lucide-react';
+} from '@phosphor-icons/react';
 import { RecommendationCandidate } from '../../types';
 import { extractDomain, getFaviconUrl } from '../../utils/favicon';
 import { fadeScaleVariants } from '../../utils/motion';

@@ -1,6 +1,10 @@
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Check, Copy } from 'lucide-react';
+import {
+  X,
+  Check,
+  Copy
+} from '@phosphor-icons/react';
 import { Mascot } from './Mascot';
 import {
   MASCOT_PALETTE,

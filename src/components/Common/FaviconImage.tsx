@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Globe } from 'lucide-react';
+import {
+  Globe
+} from '@phosphor-icons/react';
 import { getFaviconUrl, getApexFaviconUrl } from '../../utils/favicon';
 
 interface FaviconImageProps {

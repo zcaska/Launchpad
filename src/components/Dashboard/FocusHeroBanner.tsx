@@ -1,18 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { 
-  Circle, 
-  Sparkles, 
+import {
+  Circle,
+  Sparkle as Sparkles,
   Target,
-  ExternalLink,
-  ChevronLeft,
-  ChevronRight,
-  ListTodo,
+  ArrowSquareOut as ExternalLink,
+  CaretLeft as ChevronLeft,
+  CaretRight as ChevronRight,
+  ListChecks as ListTodo,
   Plus,
-  RotateCw,
-  Calendar,
-  CheckCircle2
-} from 'lucide-react';
+  ArrowClockwise as RotateCw,
+  CalendarBlank as Calendar,
+  CheckCircle as CheckCircle2
+} from '@phosphor-icons/react';
 import { DailyFocus, QuickNote, CalendarScheduleSummary } from '../../types';
 import { CALM_QUOTES } from '../../data/seedData';
 import { TimeRadarWidget } from './TimeRadarWidget';

@@ -1,17 +1,17 @@
 import React from 'react';
-import { 
-  Search, 
-  Sun, 
-  Moon, 
-  Laptop, 
-  Settings, 
+import {
+  MagnifyingGlass as Search,
+  Sun,
+  Moon,
+  Laptop,
+  GearSix as Settings,
   FileText,
   Command,
-  Rocket,
+  RocketLaunch as Rocket,
   CheckSquare,
-  Menu,
+  List as Menu,
   Lightbulb
-} from 'lucide-react';
+} from '@phosphor-icons/react';
 import { ThemeMode } from '../../types';
 
 interface HeaderProps {

@@ -33,13 +33,28 @@ console.log('--- Testing recommender.ts ---');
 // 1. Candidate pool generation
 {
   const pool = generateCandidatePool();
-  assert(pool.length >= 10, `Candidate pool has at least 10 items (got ${pool.length})`);
+  assert(pool.length >= 40, `Candidate pool has at least 40 items (got ${pool.length})`);
 
   const hasHackerNews = pool.some((c) => c.url?.includes('news.ycombinator.com'));
   assert(hasHackerNews, 'Candidate pool includes Hacker News');
 
+  const hasLobsters = pool.some((c) => c.url?.includes('lobste.rs'));
+  assert(hasLobsters, 'Candidate pool includes Lobste.rs');
+
   const hasLongform = pool.some((c) => c.url?.includes('longform.org'));
   assert(hasLongform, 'Candidate pool includes Longform.org');
+
+  const hasAudioFocus = pool.some((c) => c.category === 'Focus' && (c.tags.includes('Audio') || c.url?.includes('mynoise.net')));
+  assert(hasAudioFocus, 'Candidate pool includes audio focus tools (myNoise / flow soundscapes)');
+
+  const hasFrogSprint = pool.some((c) => c.title.toLowerCase().includes('frog'));
+  assert(hasFrogSprint, 'Candidate pool includes "Eat the Frog" micro-sprint');
+
+  const hasTwoMinuteSweep = pool.some((c) => c.title.toLowerCase().includes('2-minute'));
+  assert(hasTwoMinuteSweep, 'Candidate pool includes 2-minute rule sprint');
+
+  const hasSighHabit = pool.some((c) => c.title.toLowerCase().includes('physiological sigh'));
+  assert(hasSighHabit, 'Candidate pool includes physiological sigh reset');
 
   const hasBookHabit = pool.some((c) => c.title.toLowerCase().includes('book') && c.kind === 'habit');
   assert(hasBookHabit, 'Candidate pool includes offline physical book habit');

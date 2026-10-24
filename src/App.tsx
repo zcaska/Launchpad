@@ -1,9 +1,10 @@
 import { useState, useEffect, useMemo, useCallback, useRef, lazy, Suspense } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { 
+import {
   X as CloseIcon,
-  Lightbulb
-} from 'lucide-react';
+  Lightbulb,
+  IconContext
+} from '@phosphor-icons/react';
 import { 
   AppData, 
   ThemeMode,
@@ -555,7 +556,8 @@ export function App() {
   );
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden bg-serene-bg-light dark:bg-serene-bg-dark text-serene-text-primary dark:text-serene-text-darkPrimary">
+    <IconContext.Provider value={{ size: 20, weight: 'regular', mirrored: false }}>
+      <div className="h-screen flex flex-col overflow-hidden bg-serene-bg-light dark:bg-serene-bg-dark text-serene-text-primary dark:text-serene-text-darkPrimary">
       {/* Streamlined Header */}
       <Header
         searchQuery={searchQuery}
@@ -873,6 +875,7 @@ export function App() {
         </Suspense>
       )}
     </div>
+    </IconContext.Provider>
   );
 }
 

@@ -1,28 +1,28 @@
 import React, { useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { 
-  X, 
-  Download, 
-  Upload, 
-  RotateCcw, 
-  ShieldCheck, 
-  Copy, 
-  Check, 
-  Sliders, 
+import {
+  X,
+  DownloadSimple as Download,
+  UploadSimple as Upload,
+  ArrowCounterClockwise as RotateCcw,
+  ShieldCheck,
+  Copy,
+  Check,
+  Sliders,
   Command,
   Clock,
-  Zap,
+  Lightning as Zap,
   Key,
-  BarChart2,
-  Calendar,
-  ExternalLink,
-  ChevronDown,
-  ChevronUp,
-  RefreshCw,
-  LogOut,
-  CheckCircle2,
-  AlertCircle
-} from 'lucide-react';
+  ChartBar as BarChart2,
+  CalendarBlank as Calendar,
+  ArrowSquareOut as ExternalLink,
+  CaretDown as ChevronDown,
+  CaretUp as ChevronUp,
+  ArrowsClockwise as RefreshCw,
+  SignOut as LogOut,
+  CheckCircle as CheckCircle2,
+  WarningCircle as AlertCircle
+} from '@phosphor-icons/react';
 import { AppData, GoogleCalendarConfig } from '../../types';
 import { exportDataAsJson, importDataFromJson, getStorageMetrics } from '../../utils/storage';
 import { DEFAULT_INITIAL_PREFERENCES } from '../../data/seedData';

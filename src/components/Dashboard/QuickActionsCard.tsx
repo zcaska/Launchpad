@@ -1,5 +1,12 @@
 import React from 'react';
-import { Zap, Plus, FileText, Calendar, Target, Quote } from 'lucide-react';
+import {
+  Lightning as Zap,
+  Plus,
+  FileText,
+  CalendarBlank as Calendar,
+  Target,
+  Quotes as Quote
+} from '@phosphor-icons/react';
 
 export interface QuickActionsCardProps {
   onOpenAddTask: () => void;

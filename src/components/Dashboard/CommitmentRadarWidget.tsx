@@ -3,15 +3,15 @@ import {
   Plus,
   Info,
   ArrowRight,
-  Leaf,
+  Plant as Leaf,
   Compass,
   List,
   Clock,
-  ExternalLink,
-  Link2,
+  ArrowSquareOut as ExternalLink,
+  LinkSimple as Link2,
   Check,
-  X,
-} from 'lucide-react';
+  X
+} from '@phosphor-icons/react';
 import { QuickNote, CalendarScheduleSummary } from '../../types';
 import { TaskPreviewPopUp } from '../Tasks/TaskPreviewPopUp';
 import {

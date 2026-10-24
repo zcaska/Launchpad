@@ -1,5 +1,9 @@
 import React, { useState, useMemo } from 'react';
-import { BarChart3, Leaf, Sprout } from 'lucide-react';
+import {
+  ChartBar as BarChart3,
+  Plant as Leaf,
+  PottedPlant as Sprout
+} from '@phosphor-icons/react';
 import { QuickNote, DailyGrowthRecord, GamificationState } from '../../types';
 
 export interface MomentumCardProps {

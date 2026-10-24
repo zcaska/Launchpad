@@ -1,7 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { Trash2, X, AlertTriangle } from 'lucide-react';
+import {
+  Trash as Trash2,
+  X,
+  Warning as AlertTriangle
+} from '@phosphor-icons/react';
 import { modalBackdropVariants, modalContentVariants } from '../../utils/motion';
 
 export interface ConfirmDeleteModalProps {

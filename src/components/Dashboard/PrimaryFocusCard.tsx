@@ -1,27 +1,27 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import {
   Target,
-  Calendar,
+  CalendarBlank as Calendar,
   Clock,
   Play,
   Pause,
   Square,
-  MoreHorizontal,
-  MoreVertical,
+  DotsThree as MoreHorizontal,
+  DotsThreeVertical as MoreVertical,
   FileText,
-  ChevronDown,
-  ChevronUp,
+  CaretDown as ChevronDown,
+  CaretUp as ChevronUp,
   Check,
-  ListTodo,
-  ExternalLink,
+  ListChecks as ListTodo,
+  ArrowSquareOut as ExternalLink,
   Timer,
-  Sparkles,
-  Edit3,
+  Sparkle as Sparkles,
+  PencilSimple as Edit3,
   Copy,
-  CalendarDays,
+  CalendarDots as CalendarDays,
   Info,
-  ChevronRight,
-} from 'lucide-react';
+  CaretRight as ChevronRight
+} from '@phosphor-icons/react';
 import { QuickNote, RecommendationCandidate } from '../../types';
 import { FocusTimerState, elapsedSeconds, formatElapsed } from '../../utils/focusTimer';
 import {

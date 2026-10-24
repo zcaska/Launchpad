@@ -1,14 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { 
-  Plus, 
-  X, 
-  Clock, 
-  AlertCircle, 
-  Calendar,
+import {
+  Plus,
+  X,
+  Clock,
+  WarningCircle as AlertCircle,
+  CalendarBlank as Calendar,
   ArrowRight
-} from 'lucide-react';
+} from '@phosphor-icons/react';
 import { modalBackdropVariants, modalContentVariants } from '../../utils/motion';
 
 export interface QuickAddTaskModalProps {

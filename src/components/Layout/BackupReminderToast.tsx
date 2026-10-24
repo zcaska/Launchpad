@@ -1,5 +1,9 @@
 import React from 'react';
-import { ShieldAlert, Download, X } from 'lucide-react';
+import {
+  ShieldWarning as ShieldAlert,
+  DownloadSimple as Download,
+  X
+} from '@phosphor-icons/react';
 
 export interface BackupReminderToastProps {
   onQuickBackup: () => void;

@@ -1,12 +1,12 @@
 import React from 'react';
-import { 
-  Calendar, 
-  ExternalLink, 
-  Sparkles, 
-  RefreshCw, 
-  CheckCircle2,
-  AlertTriangle 
-} from 'lucide-react';
+import {
+  CalendarBlank as Calendar,
+  ArrowSquareOut as ExternalLink,
+  Sparkle as Sparkles,
+  ArrowsClockwise as RefreshCw,
+  CheckCircle as CheckCircle2,
+  Warning as AlertTriangle
+} from '@phosphor-icons/react';
 import { CalendarEventItem } from '../../types';
 
 interface CalendarScheduleTimelineProps {

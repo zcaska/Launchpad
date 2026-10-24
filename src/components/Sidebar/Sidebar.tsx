@@ -1,24 +1,24 @@
 import React, { useMemo } from 'react';
 import { motion } from 'motion/react';
-import { 
-  ChevronLeft,
-  ChevronRight,
+import {
+  CaretLeft as ChevronLeft,
+  CaretRight as ChevronRight,
   CheckSquare,
   X,
   Compass,
   Trophy,
   FileText,
   Lightbulb,
-  Sparkles,
-  RotateCw,
-  ExternalLink,
+  Sparkle as Sparkles,
+  ArrowClockwise as RotateCw,
+  ArrowSquareOut as ExternalLink,
   Check,
   Clock,
   BookOpen,
-  Mail,
+  EnvelopeSimple as Mail,
   Coffee,
   Plus
-} from 'lucide-react';
+} from '@phosphor-icons/react';
 import { Folder, LinkItem, GamificationState, RecommendationCandidate } from '../../types';
 import { getHeroById } from '../../data/heroRoster';
 

@@ -2,11 +2,11 @@ import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   X,
-  ExternalLink,
+  ArrowSquareOut as ExternalLink,
   Clock,
   Check,
-  Target,
-} from 'lucide-react';
+  Target
+} from '@phosphor-icons/react';
 import { QuickNote, TaskUrl, Subtask } from '../../types';
 import { formatTaskCountdown } from '../../utils/taskUrgency';
 import { modalBackdropVariants, modalContentVariants } from '../../utils/motion';

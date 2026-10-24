@@ -1,5 +1,7 @@
 import React from 'react';
-import { ExternalLink } from 'lucide-react';
+import {
+  ArrowSquareOut as ExternalLink
+} from '@phosphor-icons/react';
 import { isSafeUrl, decodeHtmlEntities, deriveUrlTitle } from '../../utils/calendarFormatting';
 
 interface SafeDescriptionProps {

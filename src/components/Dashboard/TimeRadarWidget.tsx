@@ -1,16 +1,16 @@
 import React from 'react';
-import { 
-  Clock, 
-  Hourglass, 
-  CheckCircle2, 
-  AlertTriangle, 
+import {
+  Clock,
+  Hourglass,
+  CheckCircle as CheckCircle2,
+  Warning as AlertTriangle,
   ArrowRight,
-  ShieldAlert,
+  ShieldWarning as ShieldAlert,
   Target,
-  Calendar,
-  RefreshCw,
-  CalendarClock
-} from 'lucide-react';
+  CalendarBlank as Calendar,
+  ArrowsClockwise as RefreshCw,
+  CalendarCheck as CalendarClock
+} from '@phosphor-icons/react';
 import { DayTimeRemaining, TaskLoadSummary, BufferSummary } from '../../utils/timeBudget';
 import { CalendarScheduleSummary } from '../../types';
 import { calculateTrueFocusSurplus } from '../../utils/calendarSchedule';
