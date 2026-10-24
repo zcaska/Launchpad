@@ -296,60 +296,6 @@ export const DEFAULT_SEED_DATA: AppData = {
   },
   growthHistory: {},
   calendarEvents: [],
-  scratchpadText: `💡 Quick Scratchpad:
-- Review week 4 lecture slides before 4 PM
-- Submit PR for LaunchPad core components
-- Read the distributed systems whitepaper`,
-  quickNotes: [
-    {
-      id: 'note-1',
-      text: 'Prepare questions for tomorrow’s office hours / team sync',
-      isDone: false,
-      createdAt: Date.now() - 3600000 * 2,
-      durationMinutes: 30,
-      priority: 'high',
-      deadline: '11:00',
-      attachedUrls: [
-        {
-          id: 'url-1',
-          title: 'Team Sync Agenda Doc',
-          url: 'https://docs.google.com/document/d/agenda-office-hours',
-        },
-      ],
-      subtasks: [
-        { id: 'sub-1', text: 'Review feedback on PR #12', isDone: true },
-        { id: 'sub-2', text: 'List architectural questions on cache invalidation', isDone: false },
-      ],
-    },
-    {
-      id: 'note-2',
-      text: 'Draft summary notes for Chapter 4',
-      isDone: false,
-      createdAt: Date.now() - 3600000 * 5,
-      durationMinutes: 45,
-      priority: 'medium',
-      deadline: '17:00',
-      attachedUrls: [
-        {
-          id: 'url-2',
-          title: 'Chapter 4 Textbook Online Reading',
-          url: 'https://ocw.mit.edu/courses/distributed-systems/ch4',
-        },
-      ],
-      subtasks: [
-        { id: 'sub-3', text: 'Extract key theorems & definitions', isDone: false },
-        { id: 'sub-4', text: 'Create 3 flashcards for review', isDone: false },
-      ],
-    },
-    {
-      id: 'note-3',
-      text: 'Review weekly milestones and agenda',
-      isDone: true,
-      createdAt: Date.now() - 3600000 * 24,
-      durationMinutes: 15,
-      priority: 'low',
-      attachedUrls: [],
-      subtasks: [],
-    }
-  ],
+  scratchpadText: '',
+  quickNotes: [],
 };
