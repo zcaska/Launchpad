@@ -764,8 +764,8 @@ export const CommitmentRadarWidget: React.FC<CommitmentRadarWidgetProps> = React
                     className="cursor-pointer group"
                     onClick={() => {
                       setActiveTaskId(node.task.id);
-                      setPreviewTaskId(node.task.id);
                       onPreviewTask?.(node.task.id);
+                      onSelectTask?.(node.task.id);
                     }}
                     onMouseEnter={() => handleTaskMouseEnter(node.task.id)}
                     onMouseLeave={handleTaskMouseLeave}
@@ -776,8 +776,8 @@ export const CommitmentRadarWidget: React.FC<CommitmentRadarWidgetProps> = React
                       if (e.key === 'Enter' || e.key === ' ') {
                         e.preventDefault();
                         setActiveTaskId(node.task.id);
-                        setPreviewTaskId(node.task.id);
                         onPreviewTask?.(node.task.id);
+                        onSelectTask?.(node.task.id);
                       }
                     }}
                   >
@@ -1021,16 +1021,15 @@ export const CommitmentRadarWidget: React.FC<CommitmentRadarWidgetProps> = React
                   </div>
                 )}
 
-                {/* Footer Action: Click to Open / Preview */}
+                {/* Footer Action: Click to Open in Tasks */}
                 <button
                   type="button"
                   onClick={() => {
-                    setPreviewTaskId(activeNode.task.id);
-                    onPreviewTask?.(activeNode.task.id);
+                    onSelectTask?.(activeNode.task.id);
                   }}
-                  className="w-full mt-1 py-1.5 px-2.5 rounded-lg text-[11px] font-semibold bg-serene-primary hover:bg-serene-primary-hover text-white shadow-sm transition-colors flex items-center justify-center gap-1.5"
+                  className="w-full mt-1 py-1.5 px-2.5 rounded-lg text-[11px] font-semibold bg-serene-primary hover:bg-serene-primary-hover text-white shadow-sm transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
                 >
-                  <span>View Full Task Details</span>
+                  <span>Open in Tasks</span>
                   <ArrowRight className="w-3 h-3" />
                 </button>
               </div>
@@ -1059,7 +1058,10 @@ export const CommitmentRadarWidget: React.FC<CommitmentRadarWidgetProps> = React
               return (
                 <div
                   key={node.task.id}
-                  onClick={() => onPreviewTask?.(node.task.id)}
+                  onClick={() => {
+                    onPreviewTask?.(node.task.id);
+                    onSelectTask?.(node.task.id);
+                  }}
                   className="p-2.5 rounded-xl bg-serene-surfaceAlt-light/60 dark:bg-serene-surfaceAlt-dark/40 border border-serene-border-light/70 dark:border-serene-border-dark/70 hover:border-serene-primary/50 dark:hover:border-serene-primary-dark/50 transition-all flex items-center justify-between gap-3 cursor-pointer group"
                 >
                   <div className="flex items-center gap-2.5 min-w-0">
