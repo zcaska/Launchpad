@@ -61,9 +61,24 @@ export interface QuickNote {
   priority?: TaskPriority;
   attachedUrls?: TaskUrl[];
   subtasks?: Subtask[];
-  source?: 'local' | 'google_calendar';
+  source?: 'local' | 'google_calendar' | 'ticktick';
   eventId?: string; // Google Calendar event ID if synced
   timeSpentSeconds?: number; // Actual focused seconds logged by the focus timer
+  ticktickTaskId?: string;
+  ticktickProjectId?: string;
+  ticktickLastModified?: number;
+  syncStatus?: 'synced' | 'pending' | 'error';
+}
+
+export interface TickTickSettings {
+  enabled: boolean;
+  accessToken: string;
+  selectedProjectId: string;
+  selectedProjectName?: string;
+  autoSyncIntervalMinutes: number;
+  lastSyncedAt?: number;
+  proxyUrl?: string;
+  lastError?: string;
 }
 
 export interface DailyFocus {
@@ -171,6 +186,14 @@ export interface DailyGrowthRecord {
   dailyGoalCompleted: boolean;
 }
 
+export interface SubLevelStage {
+  stage: number; // 1, 2, 3...
+  roman: string; // 'I', 'II', 'III', 'IV'
+  title: string;
+  minStreakDays: number;
+  minLifetimeXp: number;
+}
+
 export interface HeroLevelDef {
   id: string;
   level: number;
@@ -180,9 +203,11 @@ export interface HeroLevelDef {
   minStreakDays: number;
   minLifetimeXp: number;
   avatarIcon: string;
+  badgeImage: string;
   gradient: string;
   realLifeMeaning: string;
   quote: string;
+  subLevels?: SubLevelStage[];
 }
 
 export interface GamificationState {
