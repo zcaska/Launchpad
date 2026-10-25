@@ -9,11 +9,19 @@ import {
   Lightning as Zap,
   Globe,
   Lightbulb,
-  BookOpen,
   EnvelopeSimple as Mail,
   Coffee,
   Compass,
-  X
+  X,
+  Bank,
+  ChartLineUp,
+  Article,
+  GraduationCap,
+  Scales,
+  BookOpenText,
+  Brain,
+  Headphones,
+  Code
 } from '@phosphor-icons/react';
 import { RecommendationCandidate } from '../../types';
 import { extractDomain, getFaviconUrl } from '../../utils/favicon';
@@ -63,11 +71,41 @@ export const SmartSuggestionCard: React.FC<SmartSuggestionCardProps> = ({
   const faviconUrl = candidate.url ? getFaviconUrl(candidate.url, 32) : null;
 
   const getHabitIcon = (cand: RecommendationCandidate) => {
-    const text = (cand.title + ' ' + (cand.tags || []).join(' ')).toLowerCase();
-    if (text.includes('book') || text.includes('reading')) return <BookOpen className="w-5 h-5 text-amber-600 dark:text-amber-400" />;
+    const text = (cand.title + ' ' + (cand.category || '') + ' ' + (cand.tags || []).join(' ')).toLowerCase();
+    if (cand.category === 'Finance' || text.includes('finance') || text.includes('investing') || text.includes('markets')) {
+      return <Bank className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />;
+    }
+    if (cand.category === 'Economics' || text.includes('economics') || text.includes('trade')) {
+      return <ChartLineUp className="w-5 h-5 text-teal-600 dark:text-teal-400" />;
+    }
+    if (cand.category === 'Journalism' || text.includes('journalism') || text.includes('investigative') || text.includes('news')) {
+      return <Article className="w-5 h-5 text-blue-600 dark:text-blue-400" />;
+    }
+    if (cand.category === 'Academia' || text.includes('courseware') || text.includes('lecture') || text.includes('university')) {
+      return <GraduationCap className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />;
+    }
+    if (cand.category === 'Philosophy' || text.includes('philosophy') || text.includes('ethics') || text.includes('rationality')) {
+      return <Scales className="w-5 h-5 text-purple-600 dark:text-purple-400" />;
+    }
+    if (cand.category === 'Literature' || text.includes('book') || text.includes('reading') || text.includes('literature') || text.includes('poetry')) {
+      return <BookOpenText className="w-5 h-5 text-amber-600 dark:text-amber-400" />;
+    }
+    if (cand.category === 'Psychology' || text.includes('psychology') || text.includes('neuroscience') || text.includes('brain') || text.includes('behavior')) {
+      return <Brain className="w-5 h-5 text-rose-600 dark:text-rose-400" />;
+    }
+    if (cand.category === 'Focus' && (text.includes('audio') || text.includes('sound') || text.includes('lofi') || text.includes('noise'))) {
+      return <Headphones className="w-5 h-5 text-amber-500" />;
+    }
+    if (cand.category === 'Technology' || cand.category === 'Engineering' || text.includes('code') || text.includes('tech')) {
+      return <Code className="w-5 h-5 text-slate-600 dark:text-slate-400" />;
+    }
     if (text.includes('mail') || text.includes('inbox')) return <Mail className="w-5 h-5 text-sky-600 dark:text-sky-400" />;
-    if (text.includes('posture') || text.includes('hydrate') || text.includes('breath') || text.includes('coffee')) return <Coffee className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />;
-    if (text.includes('walk') || text.includes('outside')) return <Compass className="w-5 h-5 text-teal-600 dark:text-teal-400" />;
+    if (text.includes('posture') || text.includes('hydrate') || text.includes('breath') || text.includes('coffee') || text.includes('water')) {
+      return <Coffee className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />;
+    }
+    if (text.includes('walk') || text.includes('outside') || text.includes('optic flow')) {
+      return <Compass className="w-5 h-5 text-teal-600 dark:text-teal-400" />;
+    }
     return <Sparkles className="w-5 h-5 text-amber-500" />;
   };
 

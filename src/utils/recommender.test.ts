@@ -33,7 +33,7 @@ console.log('--- Testing recommender.ts ---');
 // 1. Candidate pool generation
 {
   const pool = generateCandidatePool();
-  assert(pool.length >= 40, `Candidate pool has at least 40 items (got ${pool.length})`);
+  assert(pool.length >= 130, `Candidate pool has at least 130 items (got ${pool.length})`);
 
   const hasHackerNews = pool.some((c) => c.url?.includes('news.ycombinator.com'));
   assert(hasHackerNews, 'Candidate pool includes Hacker News');
@@ -41,8 +41,29 @@ console.log('--- Testing recommender.ts ---');
   const hasLobsters = pool.some((c) => c.url?.includes('lobste.rs'));
   assert(hasLobsters, 'Candidate pool includes Lobste.rs');
 
-  const hasLongform = pool.some((c) => c.url?.includes('longform.org'));
-  assert(hasLongform, 'Candidate pool includes Longform.org');
+  const hasFinance = pool.some((c) => (c.category === 'Finance' || c.tags.includes('Finance')) && (c.url?.includes('bloomberg.com') || c.title.includes('Levine') || c.title.includes('Damodaran')));
+  assert(hasFinance, 'Candidate pool includes top finance journals/memos (Matt Levine, Damodaran, FT)');
+
+  const hasEconomics = pool.some((c) => (c.category === 'Economics' || c.tags.includes('Economics')) && (c.url?.includes('marginalrevolution.com') || c.url?.includes('voxeu.org') || c.url?.includes('nber.org')));
+  assert(hasEconomics, 'Candidate pool includes economics research & analysis (Marginal Revolution, VoxEU, NBER)');
+
+  const hasInvestigativeNews = pool.some((c) => (c.category === 'Journalism' || c.tags.includes('Journalism')) && (c.url?.includes('propublica.org') || c.url?.includes('reuters.com') || c.url?.includes('restofworld.org')));
+  assert(hasInvestigativeNews, 'Candidate pool includes investigative journalism (ProPublica, Reuters, Rest of World)');
+
+  const hasUniversityCourses = pool.some((c) => (c.category === 'Academia' || c.tags.includes('Courseware')) && (c.url?.includes('ocw.mit.edu') || c.url?.includes('oyc.yale.edu') || c.url?.includes('edx.org')));
+  assert(hasUniversityCourses, 'Candidate pool includes university open courseware (MIT OCW, Yale, edX)');
+
+  const hasPhilosophy = pool.some((c) => (c.category === 'Philosophy' || c.tags.includes('Philosophy')) && (c.url?.includes('plato.stanford.edu') || c.url?.includes('philosophybites.com') || c.url?.includes('dailynous.com')));
+  assert(hasPhilosophy, 'Candidate pool includes philosophy & ethics (Stanford Encyclopedia, Philosophy Bites)');
+
+  const hasLiterature = pool.some((c) => (c.category === 'Literature' || c.tags.includes('Literature')) && (c.url?.includes('theparisreview.org') || c.url?.includes('lithub.com') || c.url?.includes('fivebooks.com')));
+  assert(hasLiterature, 'Candidate pool includes literature & book groups (Paris Review, LitHub, Five Books)');
+
+  const hasPsychology = pool.some((c) => (c.category === 'Psychology' || c.tags.includes('Psychology')) && (c.url?.includes('psyche.co') || c.url?.includes('greatergood.berkeley.edu') || c.url?.includes('behavioralscientist.org')));
+  assert(hasPsychology, 'Candidate pool includes psychology & human behavior (Psyche, Greater Good, Behavioral Scientist)');
+
+  const hasResearchReports = pool.some((c) => (c.category === 'Research' || c.tags.includes('Reports')) && (c.url?.includes('pewresearch.org') || c.url?.includes('ourworldindata.org') || c.url?.includes('brookings.edu') || c.url?.includes('rand.org')));
+  assert(hasResearchReports, 'Candidate pool includes macro research & reports (Pew, Our World in Data, Brookings, RAND)');
 
   const hasAudioFocus = pool.some((c) => c.category === 'Focus' && (c.tags.includes('Audio') || c.url?.includes('mynoise.net')));
   assert(hasAudioFocus, 'Candidate pool includes audio focus tools (myNoise / flow soundscapes)');

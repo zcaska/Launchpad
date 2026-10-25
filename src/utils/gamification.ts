@@ -1,10 +1,14 @@
-import { GamificationState, DailyGrowthRecord, QuickNote, TaskPriority } from '../types';
 import { HERO_ROSTER, getHeroById } from '../data/heroRoster';
+import {
+  GamificationState,
+  DailyGrowthRecord,
+  QuickNote,
+  TaskPriority,
+  HeroLevelDef,
+  SubLevelStage,
+} from '../types';
 
-/**
- * Maps task priority to its XP bonus multiplier.
- */
-const PRIORITY_MULTIPLIERS: Record<TaskPriority, number> = {
+export const PRIORITY_MULTIPLIERS: Record<TaskPriority, number> = {
   urgent: 3.0,
   high: 2.0,
   medium: 1.5,
@@ -12,18 +16,8 @@ const PRIORITY_MULTIPLIERS: Record<TaskPriority, number> = {
 };
 
 /**
- * Formats a Date object into 'YYYY-MM-DD' calendar date key.
- */
-export function formatDateKey(date: Date): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
-
-/**
- * Returns the streak multiplier based on unbroken daily streak count:
- * - 1-2 days: 1.0x
+ * Calculates current streak multiplier:
+ * - 0-2 days: 1.00x
  * - 3-6 days: 1.15x
  * - 7-13 days: 1.30x
  * - 14-29 days: 1.50x
@@ -76,6 +70,72 @@ export function evaluateUnlockedHeroes(lifetimeXp: number, currentStreak: number
   }
 
   return unlocked;
+}
+
+/**
+ * Determines current sub-level stage for a hero based on user progress.
+ */
+export function getCurrentSubLevel(
+  hero: HeroLevelDef,
+  currentStreak: number,
+  lifetimeXp: number
+): { currentStage: SubLevelStage; nextStage: SubLevelStage | null; progressPercent: number } {
+  const stages = hero.subLevels || [
+    { stage: 1, roman: 'I', title: 'Novice', minStreakDays: hero.minStreakDays, minLifetimeXp: hero.minLifetimeXp },
+  ];
+
+  let currentStageIndex = 0;
+  for (let i = 0; i < stages.length; i++) {
+    const s = stages[i];
+    if (currentStreak >= s.minStreakDays || lifetimeXp >= s.minLifetimeXp) {
+      currentStageIndex = i;
+    }
+  }
+
+  const currentStage = stages[currentStageIndex];
+  const nextStage = currentStageIndex < stages.length - 1 ? stages[currentStageIndex + 1] : null;
+
+  let progressPercent = 100;
+  if (nextStage) {
+    const prevXp = currentStage.minLifetimeXp;
+    const targetXp = nextStage.minLifetimeXp;
+    const xpSpan = Math.max(1, targetXp - prevXp);
+    const xpAchieved = Math.max(0, Math.min(xpSpan, lifetimeXp - prevXp));
+    const xpPct = (xpAchieved / xpSpan) * 100;
+
+    const prevStreak = currentStage.minStreakDays;
+    const targetStreak = nextStage.minStreakDays;
+    const streakSpan = Math.max(1, targetStreak - prevStreak);
+    const streakAchieved = Math.max(0, Math.min(streakSpan, currentStreak - prevStreak));
+    const streakPct = (streakAchieved / streakSpan) * 100;
+
+    progressPercent = Math.min(100, Math.max(Math.round(xpPct), Math.round(streakPct)));
+  }
+
+  return { currentStage, nextStage, progressPercent };
+}
+
+/**
+ * Evaluates visibility state for a hero card in the UI:
+ * - 'achieved': Level is already passed
+ * - 'current': Level is user's active/highest unlocked level
+ * - 'next': The immediate next level user needs to unlock (shows requirements, hides artwork)
+ * - 'future_mystery': Levels beyond next (completely shrouded mystery tier)
+ */
+export function getHeroVisibilityState(
+  heroLevel: number,
+  highestUnlockedLevel: number
+): 'achieved' | 'current' | 'next' | 'future_mystery' {
+  if (heroLevel < highestUnlockedLevel) {
+    return 'achieved';
+  }
+  if (heroLevel === highestUnlockedLevel) {
+    return 'current';
+  }
+  if (heroLevel === highestUnlockedLevel + 1) {
+    return 'next';
+  }
+  return 'future_mystery';
 }
 
 /**
@@ -189,13 +249,12 @@ export function recordTaskCompletion(
 }
 
 /**
- * Records daily focus completion, adding 250 flat XP bonus, advancing streak,
- * and setting dailyGoalCompleted: true in growth history.
+ * Records daily focus completion, awarding flat 250 XP bonus.
  */
 export function recordDailyFocusCompletion(
   gamification: GamificationState,
   history: Record<string, DailyGrowthRecord>,
-  focusMinutes: number = 45,
+  focusMinutes?: number,
   now: Date = new Date()
 ): {
   gamification: GamificationState;
@@ -263,4 +322,11 @@ export function recordDailyFocusCompletion(
     history: updatedHistory,
     earnedXp,
   };
+}
+
+export function formatDateKey(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
 }

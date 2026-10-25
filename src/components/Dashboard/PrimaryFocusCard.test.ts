@@ -139,7 +139,7 @@ const pendingTaskA: QuickNote = {
   text: 'Task A (Low urgency)',
   isDone: false,
   createdAt: Date.now(),
-  deadline: '2026-10-25 18:00', // Later
+  deadline: '2099-12-31 18:00', // Far future (low urgency)
 };
 
 const pendingTaskB: QuickNote = {
@@ -147,7 +147,7 @@ const pendingTaskB: QuickNote = {
   text: 'Task B (High urgency)',
   isDone: false,
   createdAt: Date.now(),
-  deadline: '2026-10-13 18:00', // Today / Overdue
+  deadline: '2020-01-01 18:00', // Past (overdue - highest urgency)
 };
 
 const testQueue = [pendingTaskA, pendingTaskB];

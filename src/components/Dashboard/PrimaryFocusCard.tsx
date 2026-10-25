@@ -20,6 +20,7 @@ import {
   Copy,
   CalendarDots as CalendarDays,
   Info,
+  CaretLeft as ChevronLeft,
   CaretRight as ChevronRight
 } from '@phosphor-icons/react';
 import { QuickNote, RecommendationCandidate } from '../../types';
@@ -246,6 +247,151 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
     return sorted[0];
   }, [tasks, selectedTaskId]);
 
+  // Filter and sort today's tasks for switching in Primary Focus:
+  // Prioritize calendar events and tasks due today / overdue.
+  // Fall back to non-future pending tasks so users with un-dated tasks can also switch.
+  const todayTasks = useMemo(() => {
+    const pendingTasks = tasks.filter((t) => !t.isDone);
+    if (pendingTasks.length === 0) return [];
+
+    const strictlyToday = pendingTasks.filter((t) => {
+      if (t.source === 'google_calendar') return true;
+      const urg = calculateTaskUrgency(t.deadline);
+      return urg.isDueToday || urg.isOverdue;
+    });
+
+    const candidateList = strictlyToday.length > 0
+      ? strictlyToday
+      : pendingTasks.filter((t) => {
+          const urg = calculateTaskUrgency(t.deadline);
+          if (urg.tier === 'upcoming' && !urg.isDueToday) return false;
+          if (urg.tier === 'later' || urg.tier === 'long_term') return false;
+          return true;
+        });
+
+    const finalPool = candidateList.length > 0 ? candidateList : pendingTasks;
+
+    return [...finalPool].sort((a, b) => {
+      const urgA = calculateTaskUrgency(a.deadline).urgencyWeight;
+      const urgB = calculateTaskUrgency(b.deadline).urgencyWeight;
+      return urgB - urgA;
+    });
+  }, [tasks]);
+
+  const effectiveTodayTasks = useMemo(() => {
+    if (!selectedTaskId) return todayTasks;
+    const isIncluded = todayTasks.some((t) => t.id === selectedTaskId);
+    if (isIncluded) return todayTasks;
+    const explicitTask = tasks.find((t) => t.id === selectedTaskId && !t.isDone);
+    if (explicitTask) {
+      return [explicitTask, ...todayTasks];
+    }
+    return todayTasks;
+  }, [todayTasks, selectedTaskId, tasks]);
+
+  const currentTaskIndex = useMemo(() => {
+    if (!activeTask || effectiveTodayTasks.length === 0) return -1;
+    const idx = effectiveTodayTasks.findIndex((t) => t.id === activeTask.id);
+    return idx >= 0 ? idx : 0;
+  }, [activeTask, effectiveTodayTasks]);
+
+  const handlePrevTask = () => {
+    if (effectiveTodayTasks.length <= 1) return;
+    const newIndex = currentTaskIndex <= 0 ? effectiveTodayTasks.length - 1 : currentTaskIndex - 1;
+    const nextTask = effectiveTodayTasks[newIndex];
+    if (nextTask) {
+      onSelectTask?.(nextTask.id);
+      onPreviewTask?.(nextTask.id);
+    }
+  };
+
+  const handleNextTask = () => {
+    if (effectiveTodayTasks.length <= 1) return;
+    const newIndex = currentTaskIndex >= effectiveTodayTasks.length - 1 ? 0 : currentTaskIndex + 1;
+    const nextTask = effectiveTodayTasks[newIndex];
+    if (nextTask) {
+      onSelectTask?.(nextTask.id);
+      onPreviewTask?.(nextTask.id);
+    }
+  };
+
+  const handleSelectTaskIndex = (idx: number) => {
+    if (idx < 0 || idx >= effectiveTodayTasks.length) return;
+    const nextTask = effectiveTodayTasks[idx];
+    if (nextTask) {
+      onSelectTask?.(nextTask.id);
+      onPreviewTask?.(nextTask.id);
+    }
+  };
+
+  // Keyboard navigation between today's tasks (Left/Right arrows when not focused on form fields)
+  useEffect(() => {
+    if (effectiveTodayTasks.length <= 1) return;
+    function handleKeyDown(e: KeyboardEvent) {
+      const tag = (e.target as HTMLElement)?.tagName?.toLowerCase();
+      if (tag === 'input' || tag === 'textarea' || (e.target as HTMLElement)?.isContentEditable) {
+        return;
+      }
+      if (e.key === 'ArrowLeft') {
+        handlePrevTask();
+      } else if (e.key === 'ArrowRight') {
+        handleNextTask();
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [effectiveTodayTasks, currentTaskIndex]);
+
+  // Pure visual task switcher: Chevrons + dynamic capsule dots (No explanatory text)
+  const renderVisualTaskSwitcher = () => {
+    if (effectiveTodayTasks.length <= 1) return null;
+
+    return (
+      <div
+        className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full bg-stone-100/90 dark:bg-stone-800/90 border border-stone-200/80 dark:border-stone-700/80 shadow-2xs select-none"
+        role="group"
+        aria-label="Today's focus task switcher"
+      >
+        <button
+          type="button"
+          onClick={handlePrevTask}
+          className="w-5 h-5 rounded-full flex items-center justify-center text-stone-500 hover:text-stone-800 dark:text-stone-400 dark:hover:text-stone-100 hover:bg-white dark:hover:bg-stone-700 transition-all cursor-pointer focus:outline-none"
+          aria-label="Previous task"
+        >
+          <ChevronLeft className="w-3.5 h-3.5" />
+        </button>
+
+        <div className="flex items-center gap-1 px-0.5">
+          {effectiveTodayTasks.map((t, idx) => {
+            const isActive = idx === currentTaskIndex;
+            return (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => handleSelectTaskIndex(idx)}
+                className={`transition-all duration-200 cursor-pointer focus:outline-none rounded-full ${
+                  isActive
+                    ? 'w-4 h-1.5 bg-teal-600 dark:bg-teal-400 shadow-2xs'
+                    : 'w-1.5 h-1.5 bg-stone-300 dark:bg-stone-600 hover:bg-stone-400 dark:hover:bg-stone-500 hover:scale-125'
+                }`}
+                aria-label={`Task ${idx + 1}`}
+              />
+            );
+          })}
+        </div>
+
+        <button
+          type="button"
+          onClick={handleNextTask}
+          className="w-5 h-5 rounded-full flex items-center justify-center text-stone-500 hover:text-stone-800 dark:text-stone-400 dark:hover:text-stone-100 hover:bg-white dark:hover:bg-stone-700 transition-all cursor-pointer focus:outline-none"
+          aria-label="Next task"
+        >
+          <ChevronRight className="w-3.5 h-3.5" />
+        </button>
+      </div>
+    );
+  };
+
   // Urgency calculation for active task
   const urgency = useMemo(() => {
     return calculateTaskUrgency(activeTask?.deadline);
@@ -403,6 +549,7 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
               PRIMARY FOCUS
             </h2>
           </div>
+          {renderVisualTaskSwitcher()}
         </div>
 
         {/* 2. ACTIVE TASK HIGHLIGHT CARD (ROUNDED PINK/ROSE-TINTED CONTAINER) */}
@@ -866,6 +1013,7 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
             </h2>
             <Info className="w-3.5 h-3.5 text-stone-400 shrink-0" />
           </div>
+          {renderVisualTaskSwitcher()}
         </div>
 
         {/* 2. ACTIVE TASK HIGHLIGHT CARD (ROUNDED PINK/ROSE-TINTED CONTAINER) */}
