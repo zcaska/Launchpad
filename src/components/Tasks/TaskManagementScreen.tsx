@@ -25,6 +25,7 @@ import { CalendarScheduleTimeline } from '../Calendar/CalendarScheduleTimeline';
 import { SafeDescription } from '../Common/SafeDescription';
 import { extractCalendarDescriptionLinksAndCleanText } from '../../utils/calendarFormatting';
 import { toggleTaskInList, toggleSubtaskInList } from '../../utils/taskUrgency';
+import type { TickTickSyncManagerReturn } from '../../services/ticktickSyncManager';
 
 export interface TaskManagementScreenProps {
   notes: QuickNote[];
@@ -42,6 +43,7 @@ export interface TaskManagementScreenProps {
   initialTaskId?: string | null;
   onToggleTask?: (taskId: string) => void;
   onToggleSubtask?: (taskId: string, subtaskId: string) => void;
+  tickTickSync?: TickTickSyncManagerReturn;
 }
 
 type FilterTab = 'All' | 'Calendar Events' | 'Urgent' | 'High Priority' | 'Medium' | 'Low' | 'Due Soon' | 'Completed';

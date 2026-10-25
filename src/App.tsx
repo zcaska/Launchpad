@@ -73,6 +73,7 @@ import {
   pageTransitionVariants, 
   drawerVariants 
 } from './utils/motion';
+import { useTickTickSyncManager } from './services/ticktickSyncManager';
 
 export function App() {
   const [appData, setAppData] = useState<AppData>(() => loadAppData());
@@ -96,6 +97,20 @@ export function App() {
   const [isBackupDismissed, setIsBackupDismissed] = useState(false);
   const [selectedFocusTaskId, setSelectedFocusTaskId] = useState<string | null>(null);
   const [editingTaskIdForScreen, setEditingTaskIdForScreen] = useState<string | null>(null);
+
+  // --- TickTick Two-Way Sync Hook --------------------------------------
+  const tickTickSync = useTickTickSyncManager(
+    appData.quickNotes,
+    (updatedNotesOrUpdater) => {
+      setAppData((prev) => {
+        const updated =
+          typeof updatedNotesOrUpdater === 'function'
+            ? updatedNotesOrUpdater(prev.quickNotes)
+            : updatedNotesOrUpdater;
+        return { ...prev, quickNotes: updated };
+      });
+    }
+  );
 
   // Live clock tick for time radar calculations
   useEffect(() => {
@@ -207,8 +222,11 @@ export function App() {
       setFocusTimer(null);
     }
 
+    let updatedToggledNote: QuickNote | undefined;
+
     setAppData((prev) => {
       const { updatedTasks, toggledTask, isNowDone } = toggleTaskInList(prev.quickNotes, taskId);
+      updatedToggledNote = toggledTask;
       if (isNowDone && toggledTask) {
         if (updatedTasks.length > 0 && updatedTasks.every((t) => t.isDone)) {
           setIsCelebrating(true);
@@ -230,10 +248,14 @@ export function App() {
       return { ...prev, quickNotes: updatedTasks };
     });
 
+    if (updatedToggledNote) {
+      tickTickSync.pushTaskToggle(updatedToggledNote);
+    }
+
     if (selectedFocusTaskId === taskId && becomingDone) {
       setSelectedFocusTaskId(null);
     }
-  }, [appData.quickNotes, focusTimer, selectedFocusTaskId]);
+  }, [appData.quickNotes, focusTimer, selectedFocusTaskId, tickTickSync]);
 
   const handleToggleSubtask = useCallback((taskId: string, subtaskId: string) => {
     setAppData((prev) => {
@@ -512,11 +534,18 @@ export function App() {
       saveAppData(updated);
       return updated;
     });
-  }, []);
+    tickTickSync.pushTaskCreate(newNote);
+  }, [tickTickSync]);
 
-  const handleUpdateNotes = (newNotes: QuickNote[]) => {
+  const handleUpdateNotes = useCallback((newNotes: QuickNote[]) => {
+    const deletedNotes = appData.quickNotes.filter(
+      (oldNote) => oldNote.ticktickTaskId && !newNotes.some((n) => n.id === oldNote.id)
+    );
+    for (const del of deletedNotes) {
+      tickTickSync.pushTaskDelete(del);
+    }
     setAppData((prev) => ({ ...prev, quickNotes: newNotes }));
-  };
+  }, [appData.quickNotes, tickTickSync]);
 
   const handleUpdateScratchpad = (text: string) => {
     setAppData((prev) => ({ ...prev, scratchpadText: text }));
@@ -680,6 +709,7 @@ export function App() {
                   initialTaskId={editingTaskIdForScreen}
                   onToggleTask={handleToggleTaskWithTimer}
                   onToggleSubtask={handleToggleSubtask}
+                  tickTickSync={tickTickSync}
                 />
               </Suspense>
             </motion.main>
@@ -864,6 +894,7 @@ export function App() {
             onResetData={handleResetData}
             onSyncCalendar={() => handleSyncCalendar(false)}
             isSyncingCalendar={isSyncingCalendar}
+            tickTickSync={tickTickSync}
           />
         </Suspense>
       )}

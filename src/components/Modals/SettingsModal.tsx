@@ -40,6 +40,7 @@ import {
   GoogleAuthError
 } from '../../services/googleCalendarService';
 import { isCalendarTask } from '../../utils/calendarSchedule';
+import type { TickTickSyncManagerReturn } from '../../services/ticktickSyncManager';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -49,6 +50,7 @@ interface SettingsModalProps {
   onResetData: () => void;
   onSyncCalendar?: () => Promise<void>;
   isSyncingCalendar?: boolean;
+  tickTickSync?: TickTickSyncManagerReturn;
 }
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({
