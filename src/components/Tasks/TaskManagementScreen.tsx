@@ -16,7 +16,8 @@ import {
   X,
   ArrowLeft,
   FileText,
-  Warning as AlertTriangle
+  Warning as AlertTriangle,
+  ArrowsClockwise
 } from '@phosphor-icons/react';
 import { QuickNote, TaskPriority, TaskUrl, Subtask, CalendarEventItem } from '../../types';
 import { calculateTaskLoad, formatMinutesToHours } from '../../utils/timeBudget';
@@ -64,6 +65,7 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
   initialTaskId,
   onToggleTask,
   onToggleSubtask,
+  tickTickSync,
 }) => {
   // Filters & State
   const [activeTab, setActiveTab] = useState<FilterTab>('All');
@@ -393,6 +395,9 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
         subtasks: formSubtasks.length > 0 ? formSubtasks : undefined,
       };
       onUpdateNotes([newTask, ...notes]);
+      if (tickTickSync?.settings.enabled) {
+        tickTickSync.pushTaskCreate(newTask);
+      }
     }
 
     setIsFormOpen(false);
@@ -634,8 +639,8 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
             </div>
           </div>
 
-          {/* Actions: 2-column grid on mobile, flex row on desktop */}
-          <div className="grid grid-cols-2 gap-2 w-full lg:w-auto lg:flex lg:items-center lg:gap-2.5 shrink-0">
+          {/* Actions: responsive grid/flex on mobile, flex row on desktop */}
+          <div className="grid grid-cols-2 sm:flex sm:items-center gap-2 w-full lg:w-auto lg:gap-2.5 shrink-0">
             {/* Scratchpad Toggle Button */}
             <button
               onClick={() => setIsScratchpadOpen(!isScratchpadOpen)}
@@ -649,6 +654,28 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
               <FileText className="w-3.5 h-3.5 shrink-0" />
               <span>Scratchpad</span>
             </button>
+
+            {/* Sync TickTick Button */}
+            {tickTickSync?.settings.enabled && (
+              <button
+                type="button"
+                onClick={() => tickTickSync.syncNow()}
+                disabled={tickTickSync.isSyncing}
+                title={
+                  tickTickSync.settings.lastSyncedAt
+                    ? `Last synced: ${new Date(tickTickSync.settings.lastSyncedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+                    : 'Sync tasks with TickTick'
+                }
+                className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark text-serene-text-secondary dark:text-serene-text-darkSecondary border border-serene-border-light dark:border-serene-border-dark hover:text-serene-text-primary hover:bg-black/5 dark:hover:bg-white/5 transition-all disabled:opacity-50"
+              >
+                <ArrowsClockwise
+                  className={`w-3.5 h-3.5 shrink-0 text-serene-primary dark:text-serene-primary-dark ${
+                    tickTickSync.isSyncing ? 'animate-spin' : ''
+                  }`}
+                />
+                <span>{tickTickSync.isSyncing ? 'Syncing...' : 'Sync TickTick'}</span>
+              </button>
+            )}
 
             {/* Primary 'Add New Task' Button */}
             <button
@@ -793,6 +820,15 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
                                 <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-sky-100 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800/50">
                                   <Calendar className="w-2.5 h-2.5" />
                                   <span>Google Calendar</span>
+                                </span>
+                              )}
+                              {task.source === 'ticktick' && (
+                                <span
+                                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800/50"
+                                  title={task.ticktickTaskId ? `Synced with TickTick (ID: ${task.ticktickTaskId})` : 'Synced with TickTick'}
+                                >
+                                  <CheckCircle2 className="w-2.5 h-2.5 text-blue-600 dark:text-blue-400" />
+                                  <span>TickTick</span>
                                 </span>
                               )}
                             </div>

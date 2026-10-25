@@ -41,6 +41,7 @@ import {
 } from '../../services/googleCalendarService';
 import { isCalendarTask } from '../../utils/calendarSchedule';
 import type { TickTickSyncManagerReturn } from '../../services/ticktickSyncManager';
+import { TickTickSettingsCard } from './TickTickSettingsCard';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -61,6 +62,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   onResetData,
   onSyncCalendar,
   isSyncingCalendar = false,
+  tickTickSync,
 }) => {
   const [copiedUrl, setCopiedUrl] = useState(false);
   const [isMascotShowcaseOpen, setIsMascotShowcaseOpen] = useState(false);
@@ -725,6 +727,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               </div>
             </div>
           </div>
+
+          {/* TickTick Two-Way Sync Integration */}
+          {tickTickSync && (
+            <TickTickSettingsCard syncManager={tickTickSync} />
+          )}
 
           {/* Data Backup & Restore */}
           <div className="space-y-3">
