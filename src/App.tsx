@@ -107,7 +107,9 @@ export function App() {
           typeof updatedNotesOrUpdater === 'function'
             ? updatedNotesOrUpdater(prev.quickNotes)
             : updatedNotesOrUpdater;
-        return { ...prev, quickNotes: updated };
+        const newAppData = { ...prev, quickNotes: updated };
+        saveAppData(newAppData);
+        return newAppData;
       });
     }
   );

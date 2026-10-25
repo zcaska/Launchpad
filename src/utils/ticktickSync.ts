@@ -144,8 +144,23 @@ export function reconcileTasks(
       return note;
     }
 
+    // Only reconcile if task belongs to current target project
+    if (note.ticktickProjectId && note.ticktickProjectId !== targetProjectId) {
+      return note;
+    }
+
     const remote = remoteMap.get(note.ticktickTaskId);
     if (!remote) {
+      // In TickTick's Open API (GET /open/v1/project/{id}/data), completed tasks are omitted.
+      // If a task in this project was previously active and synced, its absence from
+      // active remote tasks means it has been marked completed in TickTick.
+      if (!note.isDone && (!note.ticktickProjectId || note.ticktickProjectId === targetProjectId) && note.syncStatus !== 'pending') {
+        return {
+          ...note,
+          isDone: true,
+          syncStatus: 'synced' as const,
+        };
+      }
       // Remote task not found in current batch; preserve existing note
       return note;
     }

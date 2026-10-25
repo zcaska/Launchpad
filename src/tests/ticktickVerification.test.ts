@@ -512,6 +512,23 @@ async function runVerification() {
       // 4.5 Ensure missing remote task doesn't delete existing note
       const emptyReconcile = reconcileTasks(startingNotes, [], 'proj_work');
       assertEqual(emptyReconcile.length, 3, 'Empty remote response preserves all 3 existing local notes');
+
+      // 4.6 Verify task completed in TickTick (excluded from active task list) becomes isDone: true
+      const activeTaskInLaunchPad: QuickNote = {
+        id: 'note_checked_in_ticktick',
+        text: 'Task checked on phone in TickTick',
+        isDone: false,
+        createdAt: 2500,
+        source: 'ticktick',
+        ticktickTaskId: 'task_checked_remote',
+        ticktickProjectId: 'proj_work',
+        syncStatus: 'synced',
+      };
+      // TickTick omits completed tasks from GET /project/{id}/data
+      const activeTasksFromTickTick: TickTickTask[] = [];
+      const afterTickTickCompleted = reconcileTasks([activeTaskInLaunchPad], activeTasksFromTickTick, 'proj_work');
+      assertEqual(afterTickTickCompleted[0].isDone, true, 'Task checked in TickTick updates to isDone true in LaunchPad');
+      assertEqual(afterTickTickCompleted[0].syncStatus, 'synced', 'Task syncStatus is synced');
     }
 
     // =========================================================================

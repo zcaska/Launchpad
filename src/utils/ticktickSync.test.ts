@@ -195,6 +195,40 @@ console.log('--- Testing ticktickSync.ts ---');
   // Verify missing remote task is preserved
   const missingRemoteReconciled = reconcileTasks([localNote, existingSyncedNote], [], 'proj_1');
   assertEqual(missingRemoteReconciled.length, 2, 'reconcileTasks: notes preserved when remote is empty');
+
+  // Test: Task marked complete in TickTick (omitted from active remote tasks)
+  const activeSyncedNote: QuickNote = {
+    id: 'tt_remote_active',
+    text: 'Task to be completed in TickTick',
+    isDone: false,
+    createdAt: 3000,
+    source: 'ticktick',
+    ticktickTaskId: 'remote_active_1',
+    ticktickProjectId: 'proj_1',
+    syncStatus: 'synced',
+  };
+
+  const remoteBatchWithoutCompleted: TickTickTask[] = [
+    {
+      id: 'other_active_task',
+      projectId: 'proj_1',
+      title: 'Still active task',
+      priority: 0,
+      status: 0,
+    }
+  ];
+
+  const reconciledAfterRemoteCompletion = reconcileTasks(
+    [localNote, activeSyncedNote],
+    remoteBatchWithoutCompleted,
+    'proj_1'
+  );
+
+  const completedInLaunchPad = reconciledAfterRemoteCompletion.find(
+    n => n.ticktickTaskId === 'remote_active_1'
+  );
+  assert(Boolean(completedInLaunchPad), 'reconcileTasks: task preserved');
+  assertEqual(completedInLaunchPad?.isDone, true, 'reconcileTasks: task marked complete when absent from active remote tasks');
 }
 
 if (failures > 0) {
