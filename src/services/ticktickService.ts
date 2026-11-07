@@ -1,15 +1,20 @@
 import type { TickTickProject, TickTickTask } from '../types/ticktick';
 
 export const DEFAULT_TICKTICK_PROXY = '/api/ticktick';
+export const PRODUCTION_TICKTICK_PROXY = 'https://launchpad-ticktick-proxy.vercel.app/api/ticktick';
+
+export function getDefaultTickTickProxy(): string {
+  if (typeof window !== 'undefined' && window.location.hostname.endsWith('github.io')) {
+    return PRODUCTION_TICKTICK_PROXY;
+  }
+  return DEFAULT_TICKTICK_PROXY;
+}
 
 /**
  * Normalizes proxy URL and endpoint path into a cleanly joined URL.
  */
 function buildUrl(proxyUrl: string | undefined, endpoint: string): string {
-  if (!proxyUrl && typeof window !== 'undefined' && window.location.hostname.endsWith('github.io')) {
-    throw new Error('TickTick sync on GitHub Pages requires a proxy URL in Settings. The development proxy is unavailable on the deployed site.');
-  }
-  const base = (proxyUrl || DEFAULT_TICKTICK_PROXY).replace(/\/+$/, '');
+  const base = (proxyUrl || getDefaultTickTickProxy()).replace(/\/+$/, '');
   const path = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
   return `${base}${path}`;
 }

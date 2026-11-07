@@ -14,7 +14,7 @@ import {
   CheckSquare
 } from '@phosphor-icons/react';
 import type { TickTickSyncManagerReturn } from '../../services/ticktickSyncManager';
-import { validateToken, getProjects, DEFAULT_TICKTICK_PROXY } from '../../services/ticktickService';
+import { validateToken, getProjects, getDefaultTickTickProxy } from '../../services/ticktickService';
 import type { TickTickProject } from '../../types/ticktick';
 
 export interface TickTickSettingsCardProps {
@@ -381,17 +381,17 @@ export const TickTickSettingsCard: React.FC<TickTickSettingsCardProps> = ({ sync
         {showAdvanced && (
           <div className="p-3 border-t border-serene-border-light dark:border-serene-border-dark text-[11px] space-y-2 bg-serene-surfaceAlt-light/20 dark:bg-serene-surfaceAlt-dark/20">
             <label className="block text-xs font-medium text-serene-text-secondary dark:text-serene-text-darkSecondary">
-              Proxy URL (default: {DEFAULT_TICKTICK_PROXY})
+              Proxy URL (default: {getDefaultTickTickProxy()})
             </label>
             <input
               type="text"
               value={settings.proxyUrl ?? ''}
               onChange={(e) => updateSettings({ ...settings, proxyUrl: e.target.value.trim() || undefined })}
-              placeholder={DEFAULT_TICKTICK_PROXY}
+              placeholder={getDefaultTickTickProxy()}
               className="w-full px-3 py-1.5 text-xs bg-white dark:bg-serene-surface-dark rounded-lg border border-serene-border-light dark:border-serene-border-dark font-mono text-serene-text-primary dark:text-serene-text-darkPrimary placeholder:text-serene-text-muted focus:outline-none focus:ring-1 focus:ring-serene-primary"
             />
             <p className="text-[10px] text-serene-text-muted">
-              The default proxy works during local development only. GitHub Pages requires a separate HTTPS proxy URL with access restricted to your site. TickTick access tokens are sent to that proxy.
+              LaunchPad automatically uses its hosted proxy on GitHub Pages and the local proxy during development. TickTick access tokens are sent to the configured proxy.
             </p>
           </div>
         )}
