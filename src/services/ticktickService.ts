@@ -19,43 +19,17 @@ function buildUrl(proxyUrl: string | undefined, endpoint: string): string {
   return `${base}${path}`;
 }
 
-/**
- * Validates a TickTick OAuth access token by querying user profile.
- */
+/** Validate access to the same project endpoint used by synchronization. */
 export async function validateToken(
   token: string,
   proxyUrl?: string
-): Promise<{ success: boolean; username?: string; error?: string }> {
-  if (!token || !token.trim()) {
-    return { success: false, error: 'Access token cannot be empty' };
-  }
-
+): Promise<{ success: boolean; error?: string }> {
+  if (!token.trim()) return { success: false, error: 'Access token cannot be empty' };
   try {
-    const url = buildUrl(proxyUrl, '/open/v1/user/profile');
-    const res = await fetch(url, {
-      headers: {
-        Authorization: `Bearer ${token.trim()}`,
-      },
-    });
-
-    if (!res.ok) {
-      const errText = await res.text().catch(() => '');
-      return {
-        success: false,
-        error: `Failed to validate token: HTTP ${res.status} ${errText}`.trim(),
-      };
-    }
-
-    const data = await res.json();
-    return {
-      success: true,
-      username: data?.username || data?.email || 'User',
-    };
-  } catch (err: any) {
-    return {
-      success: false,
-      error: err?.message || 'Network error while validating token',
-    };
+    await getProjects(token, proxyUrl);
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : 'Could not reach TickTick or the configured proxy.' };
   }
 }
 
@@ -78,7 +52,11 @@ export async function getProjects(
     throw new Error(`Failed to fetch projects: HTTP ${res.status} ${errText}`);
   }
 
-  return await res.json();
+  const data: unknown = await res.json();
+  if (!Array.isArray(data)) {
+    throw new Error('Unexpected response from TickTick proxy: expected a project list. Check the proxy URL.');
+  }
+  return data as TickTickProject[];
 }
 
 /**

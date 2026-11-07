@@ -92,7 +92,7 @@ export const TickTickSettingsCard: React.FC<TickTickSettingsCardProps> = ({ sync
       if (res.success) {
         setValidationResult({
           success: true,
-          message: `Connected successfully to TickTick as ${res.username || 'User'}!`,
+          message: 'Connected successfully to TickTick!',
         });
         await fetchProjectsList(settings.accessToken, settings.proxyUrl);
       } else {
@@ -238,8 +238,8 @@ export const TickTickSettingsCard: React.FC<TickTickSettingsCardProps> = ({ sync
                 </a>{' '}
                 and navigate to <strong>Manage Apps</strong>.
               </li>
-              <li>Create a new application or generate a personal OAuth Access Token with task read/write permissions.</li>
-              <li>Copy your token and paste it into the Access Token field below.</li>
+              <li>Create an application, then complete TickTick’s OAuth authorization code flow with tasks:read and tasks:write permissions to obtain an access token.</li>
+              <li>Paste the OAuth access token below (not the client ID, client secret, or authorization code). See the developer documentation for the authorization and token exchange steps.</li>
             </ol>
           </div>
         )}

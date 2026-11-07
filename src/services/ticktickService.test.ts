@@ -54,21 +54,6 @@ async function runTests() {
       lastFetchUrl = String(url);
       lastFetchOptions = options;
 
-      if (lastFetchUrl.includes('/open/v1/user/profile') || lastFetchUrl.includes('/user/profile')) {
-        if (options?.headers?.Authorization === 'Bearer valid_token') {
-          return {
-            ok: true,
-            status: 200,
-            json: async () => ({ username: 'ticktick_user', email: 'user@example.com' }),
-          } as Response;
-        }
-        return {
-          ok: false,
-          status: 401,
-          text: async () => 'Unauthorized',
-        } as Response;
-      }
-
       if (lastFetchUrl.includes('/project/proj_1/data')) {
         if (options?.headers?.Authorization === 'Bearer valid_token') {
           const sampleTasks: TickTickTask[] = [
@@ -158,13 +143,29 @@ async function runTests() {
     {
       const res = await validateToken('valid_token');
       assertEqual(res.success, true, 'validateToken succeeds with valid token');
-      assertEqual(res.username, 'ticktick_user', 'validateToken returns username');
+      assert(lastFetchUrl.endsWith('/open/v1/project'), 'validateToken checks the project endpoint');
+      assertEqual(lastFetchOptions.headers.Authorization, 'Bearer valid_token', 'validateToken sends bearer token');
     }
 
     // Test 5: validateToken failure (401)
     {
       const res = await validateToken('invalid_token');
       assertEqual(res.success, false, 'validateToken fails with invalid token');
+    }
+
+    // A valid account can have no projects; an unrelated proxy response must not pass.
+    {
+      const mockFetch = globalThis.fetch;
+      globalThis.fetch = (async () => ({ ok: true, json: async () => [] } as Response)) as typeof fetch;
+      assertEqual((await validateToken('valid_token')).success, true, 'empty project list is valid');
+      globalThis.fetch = (async () => ({ ok: true, json: async () => ({}) } as Response)) as typeof fetch;
+      assertEqual((await validateToken('valid_token')).success, false, 'non-list proxy response is rejected');
+      globalThis.fetch = (async () => ({ ok: false, status: 401, text: async () => 'Unauthorized' } as Response)) as typeof fetch;
+      const unauthorized = await validateToken('invalid_token');
+      assert(unauthorized.error?.includes('401') === true, 'authentication failure retains HTTP status');
+      globalThis.fetch = (async () => { throw new Error('Network unavailable'); }) as typeof fetch;
+      assertEqual((await validateToken('valid_token')).success, false, 'network failure is reported');
+      globalThis.fetch = mockFetch;
     }
 
     // Test 6: getProjects

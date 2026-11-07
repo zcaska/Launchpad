@@ -95,15 +95,6 @@ async function runVerification() {
       } as Response;
     }
 
-    // Profile endpoint
-    if (url.includes('/open/v1/user/profile') || url.includes('/user/profile')) {
-      return {
-        ok: true,
-        status: 200,
-        json: async () => ({ username: 'launchpad_tester', email: 'tester@launchpad.dev' }),
-      } as Response;
-    }
-
     // Projects list endpoint
     if (url.endsWith('/open/v1/project') && method === 'GET') {
       return {
@@ -217,7 +208,7 @@ async function runVerification() {
       // 1.3 Valid token
       const validRes = await validateToken('valid_oauth_token_123');
       assertEqual(validRes.success, true, 'Validation succeeds on valid token');
-      assertEqual(validRes.username, 'launchpad_tester', 'Extracts correct username');
+      assert(lastRequest.url.endsWith('/open/v1/project'), 'Validates using the projects endpoint');
 
       // 1.4 Project discovery
       const projects = await getProjects('valid_oauth_token_123');
