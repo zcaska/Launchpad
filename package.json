@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
+    "test": "tsx src/utils/storage.test.ts && tsx src/utils/ticktickSync.test.ts && tsx src/services/ticktickSyncManager.test.ts && tsx src/services/ticktickService.test.ts && tsx src/utils/calendarSchedule.test.ts",
     "preview": "vite preview",
     "predeploy": "npm run build",
     "deploy": "gh-pages -d dist"
@@ -28,6 +29,7 @@
     "gh-pages": "^6.3.0",
     "postcss": "^8.5.3",
     "tailwindcss": "^3.4.17",
+    "tsx": "^4.23.15",
     "typescript": "^5.8.2",
     "vite": "^6.2.1"
   }

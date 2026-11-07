@@ -145,7 +145,7 @@ console.log('--- Testing ticktickSync.ts ---');
     source: 'ticktick',
     ticktickTaskId: 'remote_1',
     ticktickProjectId: 'proj_1',
-    syncStatus: 'pending',
+    syncStatus: 'synced',
   };
 
   const remoteTasks: TickTickTask[] = [
@@ -196,7 +196,7 @@ console.log('--- Testing ticktickSync.ts ---');
   const missingRemoteReconciled = reconcileTasks([localNote, existingSyncedNote], [], 'proj_1');
   assertEqual(missingRemoteReconciled.length, 2, 'reconcileTasks: notes preserved when remote is empty');
 
-  // Test: Task marked complete in TickTick (omitted from active remote tasks)
+  // An absent task may be completed, moved, or deleted; absence is ambiguous.
   const activeSyncedNote: QuickNote = {
     id: 'tt_remote_active',
     text: 'Task to be completed in TickTick',
@@ -228,7 +228,11 @@ console.log('--- Testing ticktickSync.ts ---');
     n => n.ticktickTaskId === 'remote_active_1'
   );
   assert(Boolean(completedInLaunchPad), 'reconcileTasks: task preserved');
-  assertEqual(completedInLaunchPad?.isDone, true, 'reconcileTasks: task marked complete when absent from active remote tasks');
+  assertEqual(completedInLaunchPad?.isDone, false, 'reconcileTasks: missing remote task retains local completion status');
+
+  const pendingNote = { ...existingSyncedNote, syncStatus: 'pending' as const };
+  const pendingResult = reconcileTasks([pendingNote], remoteTasks, 'proj_1');
+  assertEqual(pendingResult[0].text, 'Old title', 'reconcileTasks: remote pull does not overwrite pending local edit');
 }
 
 if (failures > 0) {

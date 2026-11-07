@@ -391,7 +391,7 @@ export const TickTickSettingsCard: React.FC<TickTickSettingsCardProps> = ({ sync
               className="w-full px-3 py-1.5 text-xs bg-white dark:bg-serene-surface-dark rounded-lg border border-serene-border-light dark:border-serene-border-dark font-mono text-serene-text-primary dark:text-serene-text-darkPrimary placeholder:text-serene-text-muted focus:outline-none focus:ring-1 focus:ring-serene-primary"
             />
             <p className="text-[10px] text-serene-text-muted">
-              TickTick Open API requires proxying in browser environments to avoid CORS restrictions.
+              The default proxy works during local development only. GitHub Pages requires a separate HTTPS proxy URL with access restricted to your site. TickTick access tokens are sent to that proxy.
             </p>
           </div>
         )}

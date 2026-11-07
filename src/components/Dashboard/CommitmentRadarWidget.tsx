@@ -117,8 +117,9 @@ export function formatTaskCountdown(task: QuickNote, refDate: Date = new Date())
     const hours = Math.floor(overdueMins / 60);
     const mins = overdueMins % 60;
     if (hours < 24) return mins > 0 ? `${hours}h ${mins}m overdue` : `${hours}h overdue`;
-    const days = Math.round(hours / 24);
-    return `${days}d overdue`;
+    const days = Math.floor(hours / 24);
+    const remHours = hours % 24;
+    return remHours > 0 ? `${days}d ${remHours}h overdue` : `${days}d overdue`;
   }
 
   const totalMins = Math.max(1, Math.round(diffMs / 60000));
@@ -130,8 +131,12 @@ export function formatTaskCountdown(task: QuickNote, refDate: Date = new Date())
     return mins > 0 ? `${hours}h ${mins}m left` : `${hours}h left`;
   }
 
-  const days = Math.round(hours / 24);
+  const days = Math.floor(hours / 24);
+  const remHours = hours % 24;
   if (days < 7) {
+    if (remHours > 0) {
+      return `${days} ${days === 1 ? 'day' : 'days'} ${remHours}h left`;
+    }
     return `${days} ${days === 1 ? 'day' : 'days'} left`;
   }
 
@@ -284,7 +289,7 @@ export const CommitmentRadarWidget: React.FC<CommitmentRadarWidgetProps> = React
     if (tierCounts.total === 0) {
       return {
         title: 'Clear horizon',
-        subtitle: 'All commitments completed. Enjoy your open focus time.',
+        subtitle: 'All commitments cleared. Pure vibes and open focus time.',
         isOptimal: true,
       };
     }
@@ -292,7 +297,7 @@ export const CommitmentRadarWidget: React.FC<CommitmentRadarWidgetProps> = React
     if (tierCounts.overdue > 0) {
       return {
         title: 'Needs attention',
-        subtitle: `${tierCounts.overdue} overdue ${tierCounts.overdue === 1 ? 'task' : 'tasks'} requiring immediate review.`,
+        subtitle: `${tierCounts.overdue} overdue ${tierCounts.overdue === 1 ? 'task needs' : 'tasks need'} attention — let’s knock it out!`,
         isOptimal: false,
       };
     }
@@ -300,7 +305,7 @@ export const CommitmentRadarWidget: React.FC<CommitmentRadarWidgetProps> = React
     if (tierCounts.critical > 3) {
       return {
         title: 'High workload',
-        subtitle: `${tierCounts.critical} tasks due today. Prioritize your prime objective.`,
+        subtitle: `${tierCounts.critical} tasks due today. Lock in on your top priority first.`,
         isOptimal: false,
       };
     }
@@ -313,10 +318,10 @@ export const CommitmentRadarWidget: React.FC<CommitmentRadarWidgetProps> = React
       };
     }
 
-    // Default matching Image 1: "On track" & "You can finish your current commitments."
+    // Default matching Image 1: "On track"
     return {
       title: 'On track',
-      subtitle: 'You can finish your current commitments.',
+      subtitle: "You're cooking — everything on your plate is totally doable today.",
       isOptimal: true,
     };
   }, [tierCounts, calendarSummary]);

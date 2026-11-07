@@ -10,12 +10,18 @@ export function getTimeOfDayBucket(date: Date = new Date()): TimeOfDayBucket {
 
 export function formatMinutesToHours(totalMinutes: number): string {
   if (totalMinutes <= 0) return '0m';
-  const hours = Math.floor(totalMinutes / 60);
+  const totalHours = Math.floor(totalMinutes / 60);
   const mins = Math.round(totalMinutes % 60);
 
-  if (hours === 0) return `${mins}m`;
-  if (mins === 0) return `${hours}h`;
-  return `${hours}h ${mins}m`;
+  if (totalHours >= 24) {
+    const days = Math.floor(totalHours / 24);
+    const remHours = totalHours % 24;
+    return remHours > 0 ? `${days}d ${remHours}h` : `${days}d`;
+  }
+
+  if (totalHours === 0) return `${mins}m`;
+  if (mins === 0) return `${totalHours}h`;
+  return `${totalHours}h ${mins}m`;
 }
 
 export interface DayTimeRemaining {

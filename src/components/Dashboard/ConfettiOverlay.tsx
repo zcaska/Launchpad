@@ -112,10 +112,10 @@ export const ConfettiOverlay: React.FC<ConfettiOverlayProps> = ({ style = 'casca
           {STYLE_ICON[style]}
         </div>
         <h2 className="text-2xl font-black text-serene-text-primary dark:text-serene-text-darkPrimary">
-          🎉 All tasks done for the day!
+          🎉 Massive W! All tasks cleared!
         </h2>
         <p className="text-sm text-serene-text-muted dark:text-serene-text-darkMuted">
-          Your runway is clear — time for something rewarding.
+          You understood the assignment. Go touch grass or take a well-deserved break, no cap.
         </p>
       </motion.div>
     </div>

@@ -97,10 +97,15 @@ export const WeeklyFocusChart: React.FC<WeeklyFocusChartProps> = ({
 
   const formatDuration = (mins: number) => {
     if (mins <= 0) return '0m';
-    const h = Math.floor(mins / 60);
+    const totalHours = Math.floor(mins / 60);
+    if (totalHours >= 24) {
+      const days = Math.floor(totalHours / 24);
+      const remHours = totalHours % 24;
+      return remHours > 0 ? `${days}d ${remHours}h` : `${days}d`;
+    }
     const m = mins % 60;
-    if (h > 0 && m > 0) return `${h}h ${m}m`;
-    if (h > 0) return `${h}h`;
+    if (totalHours > 0 && m > 0) return `${totalHours}h ${m}m`;
+    if (totalHours > 0) return `${totalHours}h`;
     return `${m}m`;
   };
 

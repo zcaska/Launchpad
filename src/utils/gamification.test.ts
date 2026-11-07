@@ -5,7 +5,10 @@ import {
   recordTaskCompletion,
   recordDailyFocusCompletion,
   formatDateKey,
+  getCurrentSubLevel,
+  getHeroVisibilityState,
 } from './gamification';
+import { HERO_ROSTER } from '../data/heroRoster';
 import { GamificationState, DailyGrowthRecord, QuickNote } from '../types';
 
 let failures = 0;
@@ -83,26 +86,26 @@ console.log('\n--- 3. Evaluate Unlocked Heroes ---');
   const zeroZero = evaluateUnlockedHeroes(0, 0);
   assert(zeroZero.includes('lvl-1-awakening'), 'Always includes lvl-1-awakening even at 0 XP, 0 streak');
 
-  // Level 2 (500 XP or 3 streak days)
-  const byXpLvl2 = evaluateUnlockedHeroes(500, 1);
-  assert(byXpLvl2.includes('lvl-2-iron-will'), 'Lvl 2 unlocked via 500 XP');
-  const byStreakLvl2 = evaluateUnlockedHeroes(100, 3);
-  assert(byStreakLvl2.includes('lvl-2-iron-will'), 'Lvl 2 unlocked via 3-day streak');
+  // Level 2 (800 XP or 5 streak days)
+  const byXpLvl2 = evaluateUnlockedHeroes(800, 1);
+  assert(byXpLvl2.includes('lvl-2-iron-will'), 'Lvl 2 unlocked via 800 XP');
+  const byStreakLvl2 = evaluateUnlockedHeroes(100, 5);
+  assert(byStreakLvl2.includes('lvl-2-iron-will'), 'Lvl 2 unlocked via 5-day streak');
 
-  // Level 5 Sung Jin-woo (Shadow Monarch): 8,000 XP or 30 days
-  const jinWooStreak = evaluateUnlockedHeroes(0, 30);
-  assert(jinWooStreak.includes('lvl-5-shadow-monarch'), 'Sung Jin-woo unlocked at 30-day streak');
+  // Level 5 Shadow Monarch: 16,000 XP or 60 days
+  const jinWooStreak = evaluateUnlockedHeroes(0, 60);
+  assert(jinWooStreak.includes('lvl-5-shadow-monarch'), 'Shadow Monarch unlocked at 60-day streak');
 
-  const jinWooXp = evaluateUnlockedHeroes(8000, 1);
-  assert(jinWooXp.includes('lvl-5-shadow-monarch'), 'Sung Jin-woo unlocked at 8,000 XP');
+  const jinWooXp = evaluateUnlockedHeroes(16000, 1);
+  assert(jinWooXp.includes('lvl-5-shadow-monarch'), 'Shadow Monarch unlocked at 16,000 XP');
 
-  const notYetJinWoo = evaluateUnlockedHeroes(7999, 29);
-  assert(!notYetJinWoo.includes('lvl-5-shadow-monarch'), 'Sung Jin-woo locked below 8,000 XP and 30 days');
-  assert(notYetJinWoo.includes('lvl-4-dark-knight'), 'Lvl 4 unlocked at 29 days');
+  const notYetJinWoo = evaluateUnlockedHeroes(15999, 59);
+  assert(!notYetJinWoo.includes('lvl-5-shadow-monarch'), 'Shadow Monarch locked below 16,000 XP and 60 days');
+  assert(notYetJinWoo.includes('lvl-4-dark-knight'), 'Lvl 4 unlocked at 30+ days');
 
-  // All 7 unlocked at max thresholds
-  const allHeroes = evaluateUnlockedHeroes(35000, 100);
-  assertEqual(allHeroes.length, 7, 'All 7 heroes unlocked at 35,000 XP and 100-day streak');
+  // All 7 unlocked at max thresholds (Level 7 Conqueror: 75,000 XP or 200 days)
+  const allHeroes = evaluateUnlockedHeroes(75000, 200);
+  assertEqual(allHeroes.length, 7, 'All 7 heroes unlocked at 75,000 XP and 200-day streak');
 }
 
 // ==========================================
@@ -196,9 +199,9 @@ console.log('\n--- 4. Record Task Completion ---');
     'Active hero stays Sung Jin-woo'
   );
 
-  // 4e. Level upgrade unlocks next hero and updates activeHeroId
+  // 4e. Level upgrade unlocks next hero and updates activeHeroId (Level 2: 800 XP)
   const nearLvl2State: GamificationState = {
-    currentXp: 480,
+    currentXp: 750,
     currentStreak: 1,
     longestStreak: 1,
     lastActiveDate: '2026-10-10',
@@ -206,8 +209,8 @@ console.log('\n--- 4. Record Task Completion ---');
     activeHeroId: 'lvl-1-awakening',
     lastBackupTimestamp: 1700000000000,
   };
-  const resLvlUp = recordTaskCompletion(nearLvl2State, {}, task, now); // +60 XP -> 540 XP
-  assertEqual(resLvlUp.gamification.currentXp, 540, 'XP crosses 500 threshold');
+  const resLvlUp = recordTaskCompletion(nearLvl2State, {}, task, now); // +60 XP -> 810 XP
+  assertEqual(resLvlUp.gamification.currentXp, 810, 'XP crosses 800 threshold');
   assert(resLvlUp.gamification.unlockedHeroIds.includes('lvl-2-iron-will'), 'Lvl 2 newly unlocked');
   assertEqual(resLvlUp.gamification.activeHeroId, 'lvl-2-iron-will', 'activeHeroId updated to lvl-2-iron-will');
 }
@@ -236,6 +239,39 @@ console.log('\n--- 5. Record Daily Focus Completion ---');
   assertEqual(resFocus.history['2026-10-11'].dailyGoalCompleted, true, 'dailyGoalCompleted marked true in history');
   assertEqual(resFocus.history['2026-10-11'].focusMinutes, 50, 'focusMinutes updated to 50 in history');
   assertEqual(resFocus.history['2026-10-11'].xpEarned, 250, 'xpEarned is 250 in history');
+}
+
+// ==========================================
+// 6. Test getCurrentSubLevel
+// ==========================================
+console.log('\n--- 6. Sub-Level Progress Calculation ---');
+{
+  const heroLvl1 = HERO_ROSTER[0]; // The Awakening (Stage 1: 0 XP / 1d, Stage 2: 200 XP / 2d, Stage 3: 450 XP / 3d)
+  const initialSub = getCurrentSubLevel(heroLvl1, 1, 0);
+  assertEqual(initialSub.currentStage.stage, 1, 'Day 1 with 0 XP is Stage 1');
+  assertEqual(initialSub.currentStage.roman, 'I', 'Stage 1 roman numeral is I');
+  assertEqual(initialSub.nextStage?.stage, 2, 'Next stage is Stage 2');
+
+  const stage2ByXp = getCurrentSubLevel(heroLvl1, 1, 200);
+  assertEqual(stage2ByXp.currentStage.stage, 2, '200 XP achieves Stage 2');
+
+  const stage3ByStreak = getCurrentSubLevel(heroLvl1, 3, 50);
+  assertEqual(stage3ByStreak.currentStage.stage, 3, '3-day streak achieves Stage 3');
+  assertEqual(stage3ByStreak.nextStage, null, 'Stage 3 has no next stage (max for tier)');
+  assertEqual(stage3ByStreak.progressPercent, 100, 'Max stage has 100% progress');
+}
+
+// ==========================================
+// 7. Test getHeroVisibilityState (Progressive Mystery Gating)
+// ==========================================
+console.log('\n--- 7. Progressive Mystery Gating ---');
+{
+  // User is at Level 2 (highest unlocked level = 2)
+  assertEqual(getHeroVisibilityState(1, 2), 'achieved', 'Level 1 is achieved (artwork visible)');
+  assertEqual(getHeroVisibilityState(2, 2), 'current', 'Level 2 is current (artwork visible)');
+  assertEqual(getHeroVisibilityState(3, 2), 'next', 'Level 3 is next (shrouded mystery teaser)');
+  assertEqual(getHeroVisibilityState(4, 2), 'future_mystery', 'Level 4 is future mystery');
+  assertEqual(getHeroVisibilityState(7, 2), 'future_mystery', 'Level 7 The Conqueror is future mystery');
 }
 
 if (failures === 0) {

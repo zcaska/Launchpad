@@ -870,12 +870,13 @@ export function formatTaskCountdown(task: QuickNote, refDate: Date = new Date())
     const hours = Math.floor(overdueMins / 60);
     const mins = overdueMins % 60;
     if (hours < 24) {
-      const timeStr = hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
+      const timeStr = mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
       return `Overdue by ${timeStr}`;
     }
     const days = Math.floor(hours / 24);
     const remHours = hours % 24;
-    return `Overdue by ${days}d ${remHours}h`;
+    const timeStr = remHours > 0 ? `${days}d ${remHours}h` : `${days}d`;
+    return `Overdue by ${timeStr}`;
   }
 
   const totalMinutes = Math.max(1, Math.round(diffMs / 60000));
@@ -883,13 +884,14 @@ export function formatTaskCountdown(task: QuickNote, refDate: Date = new Date())
   const mins = totalMinutes % 60;
 
   if (hours < 24) {
-    const timeStr = hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
+    const timeStr = hours > 0 ? (mins > 0 ? `${hours}h ${mins}m` : `${hours}h`) : `${mins}m`;
     return `${timeStr} left`;
   }
 
   const days = Math.floor(hours / 24);
   const remHours = hours % 24;
-  return `${days}d ${remHours}h left`;
+  const timeStr = remHours > 0 ? `${days}d ${remHours}h` : `${days}d`;
+  return `${timeStr} left`;
 }
 
 /**

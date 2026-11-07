@@ -260,7 +260,13 @@ export const YearlyGrowthView: React.FC<YearlyGrowthViewProps> = ({
               >
                 {/* Value on top (desktop only) */}
                 <span className="text-[10px] font-medium text-serene-text-muted dark:text-serene-text-darkMuted mb-2 h-4 flex items-center">
-                  {m.focusHours > 0 ? `${m.focusHours}h` : ''}
+                  {m.focusHours > 0
+                    ? m.focusHours >= 24
+                      ? Math.round(m.focusHours % 24) > 0
+                        ? `${Math.floor(m.focusHours / 24)}d ${Math.round(m.focusHours % 24)}h`
+                        : `${Math.floor(m.focusHours / 24)}d`
+                      : `${m.focusHours}h`
+                    : ''}
                 </span>
 
                 {/* Vertical Bar Slot Track */}

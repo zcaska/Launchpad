@@ -17,6 +17,11 @@ export const CALM_QUOTES = [
   { text: "The only way to do great work is to love what you do.", author: "Steve Jobs" },
   { text: "Well done is better than well said.", author: "Benjamin Franklin" },
   { text: "Start where you are. Use what you have. Do what you can.", author: "Arthur Ashe" },
+  { text: "Lock in now so your future self has infinite aura.", author: "Focus Mantra" },
+  { text: "Consistency hits different. Do the hard thing first.", author: "Daily Grind" },
+  { text: "Don't let procrastination live rent-free in your head. Let's cook.", author: "Attentive Mind" },
+  { text: "Small daily Ws compound into legendary streaks.", author: "Growth Mindset" },
+  { text: "You're the main character of your day. Understood the assignment.", author: "Daily Intent" },
 ];
 
 import { CURATED_FOCUS_SUGGESTIONS } from './curatedCatalog';

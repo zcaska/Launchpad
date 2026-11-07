@@ -1158,21 +1158,20 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
                     <button
                       type="button"
                       onClick={() => setFormPriority('urgent')}
-                      className={`py-1.5 px-2 rounded-xl text-xs font-semibold border transition-all flex items-center justify-center gap-1 ${
+                      className={`py-1.5 px-2 rounded-xl text-xs font-semibold border transition-all ${
                         formPriority === 'urgent'
-                          ? 'bg-red-600 text-white border-red-600 shadow-2xs font-bold'
-                          : 'bg-red-50/70 dark:bg-red-950/30 text-red-700 dark:text-red-300 border-red-200 dark:border-red-900/50 hover:bg-red-100 dark:hover:bg-red-900/40'
+                          ? 'bg-red-100 dark:bg-red-950/60 text-red-700 dark:text-red-300 border-red-400 dark:border-red-700 shadow-2xs'
+                          : 'bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark text-serene-text-muted border-serene-border-light dark:border-serene-border-dark hover:text-serene-text-primary'
                       }`}
                     >
-                      <AlertTriangle className="w-3 h-3 shrink-0" />
-                      <span>Urgent</span>
+                      Urgent
                     </button>
                     <button
                       type="button"
                       onClick={() => setFormPriority('high')}
                       className={`py-1.5 px-2 rounded-xl text-xs font-semibold border transition-all ${
                         formPriority === 'high'
-                          ? 'bg-rose-100 dark:bg-rose-950/70 text-rose-700 dark:text-rose-300 border-rose-300 dark:border-rose-800 shadow-2xs'
+                          ? 'bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border-rose-400 dark:border-rose-700 shadow-2xs'
                           : 'bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark text-serene-text-muted border-serene-border-light dark:border-serene-border-dark hover:text-serene-text-primary'
                       }`}
                     >
@@ -1183,7 +1182,7 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
                       onClick={() => setFormPriority('medium')}
                       className={`py-1.5 px-2 rounded-xl text-xs font-semibold border transition-all ${
                         formPriority === 'medium'
-                          ? 'bg-amber-100 dark:bg-amber-950/70 text-amber-800 dark:text-amber-300 border-amber-300 dark:border-amber-800 shadow-2xs'
+                          ? 'bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border-amber-400 dark:border-amber-700 shadow-2xs'
                           : 'bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark text-serene-text-muted border-serene-border-light dark:border-serene-border-dark hover:text-serene-text-primary'
                       }`}
                     >
@@ -1194,7 +1193,7 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
                       onClick={() => setFormPriority('low')}
                       className={`py-1.5 px-2 rounded-xl text-xs font-semibold border transition-all ${
                         formPriority === 'low'
-                          ? 'bg-sky-100 dark:bg-sky-950/70 text-sky-800 dark:text-sky-300 border-sky-300 dark:border-sky-800 shadow-2xs'
+                          ? 'bg-sky-100 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300 border-sky-400 dark:border-sky-700 shadow-2xs'
                           : 'bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark text-serene-text-muted border-serene-border-light dark:border-serene-border-dark hover:text-serene-text-primary'
                       }`}
                     >
@@ -1270,7 +1269,7 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
                             : 'bg-serene-surfaceAlt-light/60 dark:bg-serene-surfaceAlt-dark/60 text-serene-text-muted hover:text-serene-text-primary border-serene-border-light dark:border-serene-border-dark'
                         }`}
                       >
-                        {mins < 60 ? `${mins}m` : mins === 60 ? '1h' : `${mins / 60}h`}
+                        {formatMinutesToHours(mins)}
                       </button>
                     ))}
                   </div>

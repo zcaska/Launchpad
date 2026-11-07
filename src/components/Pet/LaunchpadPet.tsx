@@ -1,4 +1,4 @@
-import { memo, useCallback, useEffect, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { PetController } from './usePetController';
 import { PetSprite } from './PetSprite';
 import { ThoughtBubble } from './ThoughtBubble';
@@ -83,8 +83,8 @@ function LaunchpadPetComponent({
     onTogglePaused();
     setQuote(
       paused
-        ? "Yay, I'm ready to explore!"
-        : "Taking a quick rest! (double-click to wake me)"
+        ? "Yay, unpaused! Let's get to work ✨"
+        : "Taking a quick breather! (double-click to wake me)"
     );
     setQuoteVisible(true);
   }, [onTogglePaused, paused]);
@@ -107,6 +107,36 @@ function LaunchpadPetComponent({
   const isRightSideOfScreen =
     typeof window !== 'undefined' ? motion.pos.x >= window.innerWidth / 2 : true;
   const finSidePlacement: 'left' | 'right' = isRightSideOfScreen ? 'left' : 'right';
+
+  const petStatusMessage = useMemo(() => {
+    if (paused) return 'Ema: taking a pause (double-click to resume)';
+    switch (state) {
+      case 'happy':
+        return 'Ema: Massive W! Task crushed 🎉';
+      case 'focused':
+        return 'Ema: Shhh... we are locked in 🧠⚡';
+      case 'celebration-streak':
+        return 'Ema: Legendary streak! Pure aura 👑';
+      case 'thinking':
+        return 'Ema: Cooking up the next move... 🤔';
+      case 'overwhelmed':
+        return 'Ema: Whoa, task overload! Let’s take them one by one 📋';
+      case 'coffee-break':
+        return 'Ema: Coffee break hit different ☕';
+      case 'sleeping':
+        return 'Ema: Recharging batteries... catch you later 😴';
+      case 'sad':
+        return 'Ema: It’s a little quiet... time to lock back in?';
+      case 'curious':
+        return 'Ema: Ooh, new task just dropped 👀';
+      case 'welcome-back':
+        return 'Ema: You’re back! Let’s get cooking ✨';
+      case 'roaming':
+        return 'Ema: Just pacing around, vibe check passed 🐾';
+      default:
+        return 'Ema: Vibe check passed ✨ (click to pet, drag to move, double-click to pause)';
+    }
+  }, [paused, state]);
 
   return (
     <div
@@ -143,11 +173,7 @@ function LaunchpadPetComponent({
               : undefined),
           }}
           aria-label={`Launchpad pet, ${state}. ${paused ? 'Movement paused' : 'Moving'}. Click to pet, drag to move, double-click to ${paused ? 'resume' : 'pause'} movement`}
-          title={
-            paused
-              ? 'Pet: movement paused (double-click to resume)'
-              : 'Pet: click to pet, drag to move, double-click to pause'
-          }
+          title={petStatusMessage}
           aria-pressed={paused}
         >
           <PetSprite

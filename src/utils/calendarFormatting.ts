@@ -83,18 +83,24 @@ export function formatEventDuration(durationMinutes: number): string {
   }
 
   const roundedMinutes = Math.round(durationMinutes);
-  const hours = Math.floor(roundedMinutes / 60);
+  const totalHours = Math.floor(roundedMinutes / 60);
   const remainingMinutes = roundedMinutes % 60;
 
-  if (hours === 0) {
+  if (totalHours >= 24) {
+    const days = Math.floor(totalHours / 24);
+    const remHours = totalHours % 24;
+    return remHours > 0 ? `${days}d ${remHours}h` : `${days}d`;
+  }
+
+  if (totalHours === 0) {
     return `${remainingMinutes}m`;
   }
 
   if (remainingMinutes === 0) {
-    return `${hours}h`;
+    return `${totalHours}h`;
   }
 
-  return `${hours}h ${remainingMinutes}m`;
+  return `${totalHours}h ${remainingMinutes}m`;
 }
 
 /**

@@ -11,7 +11,7 @@ import {
   ArrowsClockwise as RefreshCw,
   CalendarCheck as CalendarClock
 } from '@phosphor-icons/react';
-import { DayTimeRemaining, TaskLoadSummary, BufferSummary } from '../../utils/timeBudget';
+import { DayTimeRemaining, TaskLoadSummary, BufferSummary, formatMinutesToHours } from '../../utils/timeBudget';
 import { CalendarScheduleSummary } from '../../types';
 import { calculateTrueFocusSurplus } from '../../utils/calendarSchedule';
 
@@ -53,7 +53,7 @@ export const TimeRadarWidget: React.FC<TimeRadarWidgetProps> = React.memo(({
   const displayStatus = busyMinutes > 0 ? trueFocus.status : buffer.status;
   const displaySurplusMinutes = busyMinutes > 0 ? trueFocus.surplusMinutes : buffer.bufferMinutes;
   const formattedSurplus = busyMinutes > 0
-    ? `${Math.floor(Math.abs(displaySurplusMinutes) / 60)}h ${Math.abs(displaySurplusMinutes) % 60}m`
+    ? formatMinutesToHours(Math.abs(displaySurplusMinutes))
     : buffer.formatted;
 
   return (
@@ -206,7 +206,7 @@ export const TimeRadarWidget: React.FC<TimeRadarWidgetProps> = React.memo(({
               <div
                 style={{ width: `${Math.min(100, Math.round((busyMinutes / Math.max(60, timeRemaining.isPastCutoff ? 0 : timeRemaining.totalMinutes || 120)) * 100))}%` }}
                 className="h-full bg-indigo-500 transition-all duration-500"
-                title={`Meetings: ${Math.floor(busyMinutes / 60)}h ${busyMinutes % 60}m`}
+                title={`Meetings: ${formatMinutesToHours(busyMinutes)}`}
               />
             )}
             {displayStatus === 'surplus' && (
@@ -329,7 +329,7 @@ export const TimeRadarWidget: React.FC<TimeRadarWidgetProps> = React.memo(({
               busyMinutes > 0 ? 'font-mono font-extrabold' : 'font-sans'
             }`}>
               {busyMinutes > 0
-                ? `${Math.floor(calendarSummary!.totalBusyMinutesToday / 60)}h ${calendarSummary!.totalBusyMinutesToday % 60}m`
+                ? formatMinutesToHours(calendarSummary!.totalBusyMinutesToday)
                 : 'Clear Runway'}
             </span>
             <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${
@@ -361,11 +361,11 @@ export const TimeRadarWidget: React.FC<TimeRadarWidgetProps> = React.memo(({
             </span>
             <span className="text-xs font-semibold text-serene-text-primary dark:text-serene-text-darkPrimary truncate block">
               {busyMinutes > 0
-                ? `${busyMinutes}m booked · ${displayStatus === 'surplus' ? 'Runway clear' : displayStatus === 'tight' ? 'Tight window' : 'Capacity deficit'}`
+                ? `${busyMinutes}m booked · ${displayStatus === 'surplus' ? 'Good to cook' : displayStatus === 'tight' ? 'Tight window' : 'Capacity deficit'}`
                 : displayStatus === 'surplus'
-                ? 'Ample focus runway'
+                ? 'Plenty of time to cook'
                 : displayStatus === 'tight'
-                ? 'Tight schedule window'
+                ? 'Tight window · Focus up'
                 : 'Workload exceeds cutoff'}
             </span>
           </div>

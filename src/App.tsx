@@ -99,20 +99,15 @@ export function App() {
   const [editingTaskIdForScreen, setEditingTaskIdForScreen] = useState<string | null>(null);
 
   // --- TickTick Two-Way Sync Hook --------------------------------------
-  const tickTickSync = useTickTickSyncManager(
-    appData.quickNotes,
-    (updatedNotesOrUpdater) => {
-      setAppData((prev) => {
-        const updated =
-          typeof updatedNotesOrUpdater === 'function'
-            ? updatedNotesOrUpdater(prev.quickNotes)
-            : updatedNotesOrUpdater;
-        const newAppData = { ...prev, quickNotes: updated };
-        saveAppData(newAppData);
-        return newAppData;
-      });
-    }
-  );
+  const setSyncedNotes = useCallback<Parameters<typeof useTickTickSyncManager>[1]>((updatedNotesOrUpdater) => {
+    setAppData((prev) => ({
+      ...prev,
+      quickNotes: typeof updatedNotesOrUpdater === 'function'
+        ? updatedNotesOrUpdater(prev.quickNotes)
+        : updatedNotesOrUpdater,
+    }));
+  }, []);
+  const tickTickSync = useTickTickSyncManager(appData.quickNotes, setSyncedNotes);
 
   // Live clock tick for time radar calculations
   useEffect(() => {
@@ -224,11 +219,8 @@ export function App() {
       setFocusTimer(null);
     }
 
-    let updatedToggledNote: QuickNote | undefined;
-
     setAppData((prev) => {
       const { updatedTasks, toggledTask, isNowDone } = toggleTaskInList(prev.quickNotes, taskId);
-      updatedToggledNote = toggledTask;
       if (isNowDone && toggledTask) {
         if (updatedTasks.length > 0 && updatedTasks.every((t) => t.isDone)) {
           setIsCelebrating(true);
@@ -250,8 +242,8 @@ export function App() {
       return { ...prev, quickNotes: updatedTasks };
     });
 
-    if (updatedToggledNote) {
-      tickTickSync.pushTaskToggle(updatedToggledNote);
+    if (targetTask) {
+      tickTickSync.pushTaskToggle({ ...targetTask, isDone: becomingDone });
     }
 
     if (selectedFocusTaskId === taskId && becomingDone) {
@@ -362,7 +354,6 @@ export function App() {
             googleCalendar: updatedConfig,
           },
         };
-        saveAppData(updated);
         return updated;
       });
     } catch (err: any) {
@@ -533,7 +524,6 @@ export function App() {
         ...prev,
         quickNotes: updatedNotes,
       };
-      saveAppData(updated);
       return updated;
     });
     tickTickSync.pushTaskCreate(newNote);
@@ -600,8 +590,6 @@ export function App() {
         }}
         onOpenSparkIdea={() => setIsSparkIdeaModalOpen(true)}
         onOpenSettingsModal={() => setIsSettingsModalOpen(true)}
-        onToggleQuickNotes={() => setIsQuickNotesOpen(!isQuickNotesOpen)}
-        isQuickNotesOpen={isQuickNotesOpen}
         theme={appData.settings.theme}
         onThemeChange={handleThemeChange}
         activeView={activeView}

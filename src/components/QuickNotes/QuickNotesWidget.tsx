@@ -38,7 +38,7 @@ export const QuickNotesWidget: React.FC<QuickNotesWidgetProps> = ({
   onClose,
   onToggleTask,
 }) => {
-  const [activeTab, setActiveTab] = useState<'checklist' | 'scratchpad'>('checklist');
+  const [activeTab, setActiveTab] = useState<'checklist' | 'scratchpad'>('scratchpad');
   const [newTodoText, setNewTodoText] = useState('');
   const [selectedDuration, setSelectedDuration] = useState<number>(30);
 
@@ -87,18 +87,28 @@ export const QuickNotesWidget: React.FC<QuickNotesWidgetProps> = ({
       <div className="p-4 border-b border-serene-border-light dark:border-serene-border-dark flex items-center justify-between bg-serene-surfaceAlt-light/50 dark:bg-serene-surfaceAlt-dark/50">
         <div className="flex items-center gap-2">
           <div className="p-1.5 rounded-lg bg-serene-primary-soft dark:bg-serene-primary/20 text-serene-primary dark:text-serene-primary-dark">
-            <ClipboardList className="w-4 h-4" />
+            {activeTab === 'checklist' ? (
+              <ClipboardList className="w-4 h-4" />
+            ) : (
+              <FileText className="w-4 h-4" />
+            )}
           </div>
           <div>
             <h3 className="text-xs font-bold text-serene-text-primary dark:text-serene-text-darkPrimary">
-              Action Tasks & Scratchpad
+              {activeTab === 'checklist' ? 'Action Tasks' : 'Scratchpad'}
             </h3>
             <div className="flex items-center gap-1.5 text-[10px] text-serene-text-muted">
-              <span>{loadSummary.pendingCount} pending</span>
-              <span>•</span>
-              <span className="font-mono font-semibold text-amber-600 dark:text-amber-400">
-                {loadSummary.formattedPending} total
-              </span>
+              {activeTab === 'checklist' ? (
+                <>
+                  <span>{loadSummary.pendingCount} pending</span>
+                  <span>•</span>
+                  <span className="font-mono font-semibold text-amber-600 dark:text-amber-400">
+                    {loadSummary.formattedPending} total
+                  </span>
+                </>
+              ) : (
+                <span>{scratchpadText.length} characters</span>
+              )}
             </div>
           </div>
         </div>
@@ -126,7 +136,7 @@ export const QuickNotesWidget: React.FC<QuickNotesWidgetProps> = ({
           }`}
         >
           <CheckSquare className="w-3.5 h-3.5" />
-          <span>Tasks ({notes.length - completedCount})</span>
+          <span>Action Tasks ({notes.length - completedCount})</span>
         </button>
 
         <button
@@ -138,7 +148,7 @@ export const QuickNotesWidget: React.FC<QuickNotesWidgetProps> = ({
           }`}
         >
           <FileText className="w-3.5 h-3.5" />
-          <span>Freeform Notes</span>
+          <span>Scratchpad</span>
         </button>
       </div>
 

@@ -29,6 +29,7 @@ import {
 } from '@phosphor-icons/react';
 import { Folder, LinkItem, GamificationState, RecommendationCandidate } from '../../types';
 import { getHeroById } from '../../data/heroRoster';
+import { getCurrentSubLevel } from '../../utils/gamification';
 
 export interface SidebarProps {
   isCollapsed: boolean;
@@ -93,7 +94,20 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
     return getHeroById(gamification.activeHeroId);
   }, [gamification?.activeHeroId]);
 
-  const heroLevelBadge = activeHero ? `Lvl ${activeHero.level}` : 'Lvl 1';
+  const subLevelInfo = useMemo(() => {
+    if (!activeHero) return null;
+    return getCurrentSubLevel(
+      activeHero,
+      gamification?.currentStreak || 0,
+      gamification?.currentXp || 0
+    );
+  }, [activeHero, gamification?.currentStreak, gamification?.currentXp]);
+
+  const heroLevelBadge = activeHero
+    ? subLevelInfo?.currentStage
+      ? `Lvl ${activeHero.level}.${subLevelInfo.currentStage.stage}`
+      : `Lvl ${activeHero.level}`
+    : 'Lvl 1.1';
 
   const handleMobileNavClick = (view: 'dashboard' | 'tasks' | 'growth') => {
     if (onSelectView) {

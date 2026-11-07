@@ -6,6 +6,9 @@ export const DEFAULT_TICKTICK_PROXY = '/api/ticktick';
  * Normalizes proxy URL and endpoint path into a cleanly joined URL.
  */
 function buildUrl(proxyUrl: string | undefined, endpoint: string): string {
+  if (!proxyUrl && typeof window !== 'undefined' && window.location.hostname.endsWith('github.io')) {
+    throw new Error('TickTick sync on GitHub Pages requires a proxy URL in Settings. The development proxy is unavailable on the deployed site.');
+  }
   const base = (proxyUrl || DEFAULT_TICKTICK_PROXY).replace(/\/+$/, '');
   const path = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
   return `${base}${path}`;

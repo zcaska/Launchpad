@@ -146,8 +146,12 @@ export function sanitizeAppData(parsed: any, saveRollingBackup: boolean = true):
         durationMinutes: typeof n.durationMinutes === 'number' && n.durationMinutes > 0 ? n.durationMinutes : 30,
         priority: ['urgent', 'high', 'medium', 'low'].includes(n.priority) ? n.priority : 'medium',
         deadline: typeof n.deadline === 'string' && n.deadline ? n.deadline : undefined,
-        source: n.source === 'google_calendar' ? ('google_calendar' as const) : undefined,
+        source: n.source === 'google_calendar' || n.source === 'ticktick' || n.source === 'local' ? n.source : undefined,
         eventId: typeof n.eventId === 'string' ? n.eventId : undefined,
+        ticktickTaskId: typeof n.ticktickTaskId === 'string' ? n.ticktickTaskId : undefined,
+        ticktickProjectId: typeof n.ticktickProjectId === 'string' ? n.ticktickProjectId : undefined,
+        ticktickLastModified: typeof n.ticktickLastModified === 'number' && Number.isFinite(n.ticktickLastModified) ? n.ticktickLastModified : undefined,
+        syncStatus: ['synced', 'pending', 'error'].includes(n.syncStatus) ? n.syncStatus : undefined,
         timeSpentSeconds: typeof n.timeSpentSeconds === 'number' ? n.timeSpentSeconds : undefined,
         attachedUrls: Array.isArray(n.attachedUrls)
           ? n.attachedUrls.filter((u: any) => u && typeof u.url === 'string')
@@ -155,7 +159,7 @@ export function sanitizeAppData(parsed: any, saveRollingBackup: boolean = true):
         subtasks: Array.isArray(n.subtasks)
           ? n.subtasks.map((s: any, sIdx: number) => ({
               id: typeof s.id === 'string' && s.id ? s.id : `subtask-${sIdx}`,
-              title: typeof s.title === 'string' ? s.title : 'Procedure step',
+              text: typeof s.text === 'string' ? s.text : typeof s.title === 'string' ? s.title : 'Procedure step',
               isDone: Boolean(s.isDone),
             }))
           : [],

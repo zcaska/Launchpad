@@ -211,6 +211,25 @@ const mockStorage = new MockLocalStorage();
   assertEqual(metrics.linkCount, DEFAULT_SEED_DATA.links?.length ?? 0, 'getStorageMetrics counts links');
 }
 
+// 6. TickTick links and subtask text must survive a browser reload.
+{
+  mockStorage.clear();
+  const linkedTask = {
+    id: 'tt-1', text: 'Review draft', isDone: false, createdAt: 1000,
+    source: 'ticktick' as const, ticktickTaskId: 'remote-1',
+    ticktickProjectId: 'project-1', ticktickLastModified: 2000,
+    syncStatus: 'synced' as const,
+    subtasks: [{ id: 'sub-1', text: 'Read introduction', isDone: false }],
+  };
+  saveAppData({ ...DEFAULT_SEED_DATA, quickNotes: [linkedTask] });
+  const restored = loadAppData().quickNotes[0];
+  assertEqual(restored.source, 'ticktick', 'reload retains TickTick source');
+  assertEqual(restored.ticktickTaskId, 'remote-1', 'reload retains remote task ID');
+  assertEqual(restored.ticktickProjectId, 'project-1', 'reload retains remote project ID');
+  assertEqual(restored.syncStatus, 'synced', 'reload retains sync status');
+  assertEqual(restored.subtasks?.[0].text, 'Read introduction', 'reload retains subtask text');
+}
+
 console.log('------------------------------------');
 if (failures === 0) {
   console.log('🎉 ALL STORAGE TESTS PASSED SUCCESSFULLY!');

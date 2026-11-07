@@ -62,55 +62,66 @@ export interface TickTickSyncManagerReturn {
 }
 
 export function useTickTickSyncManager(
-  notes: QuickNote[],
+  _notes: QuickNote[],
   setNotes: SetQuickNotes
 ): TickTickSyncManagerReturn {
   const [settings, setSettings] = useState<TickTickSettings>(loadTickTickSettings);
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
   const [syncError, setSyncError] = useState<string | null>(null);
 
-  const notesRef = useRef(notes);
-  notesRef.current = notes;
   const settingsRef = useRef(settings);
   settingsRef.current = settings;
+  const syncInFlightRef = useRef(false);
+  const pendingPushesRef = useRef(0);
+  const localChangeVersionRef = useRef(0);
 
   const updateSettings = useCallback((newSettings: TickTickSettings) => {
     setSettings(newSettings);
-    saveTickTickSettings(newSettings);
   }, []);
+
+  useEffect(() => {
+    saveTickTickSettings(settings);
+  }, [settings]);
 
   // Manual & scheduled pull sync
   const syncNow = useCallback(async () => {
     const s = settingsRef.current;
-    if (!s.enabled || !s.accessToken || !s.selectedProjectId) {
+    if (!s.enabled || !s.accessToken || !s.selectedProjectId || syncInFlightRef.current || pendingPushesRef.current > 0) {
       return;
     }
 
+    syncInFlightRef.current = true;
+    const versionAtStart = localChangeVersionRef.current;
     setIsSyncing(true);
     setSyncError(null);
 
     try {
       const remoteTasks = await getProjectTasks(s.accessToken, s.selectedProjectId, s.proxyUrl);
-      const reconciled = reconcileTasks(notesRef.current, remoteTasks, s.selectedProjectId);
-      setNotes(reconciled);
+      // A local update may have happened while the request was in flight.
+      const canApply = pendingPushesRef.current === 0 && localChangeVersionRef.current === versionAtStart && settingsRef.current.selectedProjectId === s.selectedProjectId;
+      if (canApply) {
+        setNotes((current) => reconcileTasks(current, remoteTasks, s.selectedProjectId));
+      }
 
       const now = Date.now();
-      updateSettings({
-        ...s,
-        lastSyncedAt: now,
-        lastError: undefined,
+      if (canApply) setSettings((current) => {
+        if (current.selectedProjectId !== s.selectedProjectId || current.accessToken !== s.accessToken) return current;
+        const next = { ...current, lastSyncedAt: now, lastError: undefined };
+        return next;
       });
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Sync failed';
       setSyncError(msg);
-      updateSettings({
-        ...s,
-        lastError: msg,
+      setSettings((current) => {
+        if (current.selectedProjectId !== s.selectedProjectId || current.accessToken !== s.accessToken) return current;
+        const next = { ...current, lastError: msg };
+        return next;
       });
     } finally {
+      syncInFlightRef.current = false;
       setIsSyncing(false);
     }
-  }, [setNotes, updateSettings]);
+  }, [setNotes]);
 
   // Hook background auto-sync interval & window focus
   useEffect(() => {
@@ -154,6 +165,9 @@ export function useTickTickSyncManager(
       const s = settingsRef.current;
       if (!s.enabled || !s.accessToken || !s.selectedProjectId) return;
 
+      pendingPushesRef.current++;
+      localChangeVersionRef.current++;
+      setNotes((prev) => prev.map((n) => n.id === note.id ? { ...n, syncStatus: 'pending' as const } : n));
       try {
         const payload = mapQuickNoteToTickTick(note, s.selectedProjectId);
         const created = await createTask(s.accessToken, payload, s.proxyUrl);
@@ -169,12 +183,15 @@ export function useTickTickSyncManager(
               : n
           )
         );
-      } catch {
+      } catch (err) {
+        setSyncError(err instanceof Error ? err.message : 'Failed to create TickTick task');
         setNotes((prev) =>
           prev.map((n) =>
             n.id === note.id ? { ...n, syncStatus: 'error' as const } : n
           )
         );
+      } finally {
+        pendingPushesRef.current--;
       }
     },
     [setNotes]
@@ -186,6 +203,9 @@ export function useTickTickSyncManager(
       const s = settingsRef.current;
       if (!s.enabled || !s.accessToken || !note.ticktickTaskId) return;
 
+      pendingPushesRef.current++;
+      localChangeVersionRef.current++;
+      setNotes((prev) => prev.map((n) => n.id === note.id ? { ...n, syncStatus: 'pending' as const } : n));
       try {
         const projId = note.ticktickProjectId || s.selectedProjectId;
         if (note.isDone) {
@@ -194,11 +214,15 @@ export function useTickTickSyncManager(
           const payload = mapQuickNoteToTickTick(note, projId);
           await updateTask(s.accessToken, { ...payload, id: note.ticktickTaskId }, s.proxyUrl);
         }
-      } catch {
-        // Retain local state
+        setNotes((prev) => prev.map((n) => n.id === note.id ? { ...n, syncStatus: 'synced' as const } : n));
+      } catch (err) {
+        setSyncError(err instanceof Error ? err.message : 'Failed to update TickTick task');
+        setNotes((prev) => prev.map((n) => n.id === note.id ? { ...n, syncStatus: 'error' as const } : n));
+      } finally {
+        pendingPushesRef.current--;
       }
     },
-    []
+    [setNotes]
   );
 
   // Optimistic Push: on task delete
@@ -207,14 +231,21 @@ export function useTickTickSyncManager(
       const s = settingsRef.current;
       if (!s.enabled || !s.accessToken || !note.ticktickTaskId) return;
 
+      pendingPushesRef.current++;
+      localChangeVersionRef.current++;
       try {
         const projId = note.ticktickProjectId || s.selectedProjectId;
         await deleteTask(s.accessToken, projId, note.ticktickTaskId, s.proxyUrl);
-      } catch {
-        // Ignored
+      } catch (err) {
+        setSyncError(err instanceof Error ? err.message : 'Failed to delete TickTick task');
+        setNotes((prev) => prev.some((n) => n.id === note.id)
+          ? prev
+          : [{ ...note, syncStatus: 'error' }, ...prev]);
+      } finally {
+        pendingPushesRef.current--;
       }
     },
-    []
+    [setNotes]
   );
 
   return {

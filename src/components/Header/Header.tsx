@@ -5,7 +5,6 @@ import {
   Moon,
   Laptop,
   GearSix as Settings,
-  FileText,
   Command,
   RocketLaunch as Rocket,
   CheckSquare,
@@ -19,8 +18,6 @@ interface HeaderProps {
   onSearchChange: (query: string) => void;
   onOpenSparkIdea?: () => void;
   onOpenSettingsModal: () => void;
-  onToggleQuickNotes: () => void;
-  isQuickNotesOpen: boolean;
   theme: ThemeMode;
   onThemeChange: (theme: ThemeMode) => void;
   activeView?: 'dashboard' | 'tasks' | 'growth';
@@ -34,8 +31,6 @@ export const Header: React.FC<HeaderProps> = ({
   onSearchChange,
   onOpenSparkIdea,
   onOpenSettingsModal,
-  onToggleQuickNotes,
-  isQuickNotesOpen,
   theme,
   onThemeChange,
   activeView = 'dashboard',
@@ -149,19 +144,6 @@ export const Header: React.FC<HeaderProps> = ({
                 )}
               </button>
             )}
-
-            {/* Quick Notes Toggle */}
-            <button
-              onClick={onToggleQuickNotes}
-              title="Toggle Quick Scratchpad"
-              className={`p-1.5 sm:p-2 rounded-lg border transition-all ${
-                isQuickNotesOpen
-                  ? 'bg-serene-primary-soft dark:bg-serene-primary/30 border-serene-primary/40 text-serene-primary dark:text-serene-primary-dark'
-                  : 'bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark border-serene-border-light dark:border-serene-border-dark text-serene-text-secondary hover:text-serene-text-primary dark:text-serene-text-darkSecondary dark:hover:text-serene-text-darkPrimary'
-              }`}
-            >
-              <FileText className="w-4 h-4" />
-            </button>
 
             {/* Theme Toggle */}
             <button

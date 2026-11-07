@@ -121,10 +121,10 @@ export function mapTickTickToQuickNote(task: TickTickTask): QuickNote {
 
 /**
  * Reconciles LaunchPad notes with remote TickTick tasks.
- * - Local-only notes (note.source !== 'ticktick') are preserved untouched.
+ * - Notes without a TickTick ID are preserved untouched.
  * - For notes matching a remote task's ticktickTaskId: update text, description, isDone, priority, deadline, syncStatus.
  * - For remote tasks not present in existing notes: append as new QuickNotes.
- * - If an existing synced note is no longer present in remote tasks, preserve it without dropping.
+ * - If an existing synced note is no longer present in remote tasks, preserve it without guessing its status.
  */
 export function reconcileTasks(
   existingNotes: QuickNote[],
@@ -140,7 +140,7 @@ export function reconcileTasks(
 
   const updatedNotes = existingNotes.map(note => {
     // Preserve local-only notes
-    if (note.source !== 'ticktick' || !note.ticktickTaskId) {
+    if (!note.ticktickTaskId) {
       return note;
     }
 
@@ -151,21 +151,14 @@ export function reconcileTasks(
 
     const remote = remoteMap.get(note.ticktickTaskId);
     if (!remote) {
-      // In TickTick's Open API (GET /open/v1/project/{id}/data), completed tasks are omitted.
-      // If a task in this project was previously active and synced, its absence from
-      // active remote tasks means it has been marked completed in TickTick.
-      if (!note.isDone && (!note.ticktickProjectId || note.ticktickProjectId === targetProjectId) && note.syncStatus !== 'pending') {
-        return {
-          ...note,
-          isDone: true,
-          syncStatus: 'synced' as const,
-        };
-      }
-      // Remote task not found in current batch; preserve existing note
+      // Active-task listings can omit completed, moved, or deleted tasks.
       return note;
     }
 
     seenRemoteIds.add(remote.id);
+
+    // Retain a local change until its push succeeds or the user resolves an error.
+    if (note.syncStatus === 'pending' || note.syncStatus === 'error') return note;
 
     return {
       ...note,

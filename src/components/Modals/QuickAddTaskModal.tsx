@@ -10,6 +10,7 @@ import {
   ArrowRight
 } from '@phosphor-icons/react';
 import { modalBackdropVariants, modalContentVariants } from '../../utils/motion';
+import { formatMinutesToHours } from '../../utils/timeBudget';
 
 export interface QuickAddTaskModalProps {
   isOpen: boolean;
@@ -191,7 +192,7 @@ export const QuickAddTaskModal: React.FC<QuickAddTaskModalProps> = ({
                     <span>Estimated Duration</span>
                   </label>
                   <span className="text-xs font-mono font-bold text-serene-primary dark:text-serene-primary-dark">
-                    {duration >= 60 ? `${duration / 60}h` : `${duration}m`}
+                    {formatMinutesToHours(duration)}
                   </span>
                 </div>
                 <div className="grid grid-cols-6 gap-1.5">

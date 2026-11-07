@@ -116,7 +116,19 @@ function deriveDeadlineMetrics(urgency: TaskUrgencyInfo): {
     const totalMinutes = Math.max(1, Math.round(Math.abs(diffMs) / 60000));
     const hours = Math.floor(totalMinutes / 60);
     const mins = totalMinutes % 60;
-    const timeStr = hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
+
+    if (hours >= 24) {
+      const days = Math.floor(hours / 24);
+      const remHours = hours % 24;
+      const timeStr = remHours > 0 ? `${days}d ${remHours}h` : `${days}d`;
+      return {
+        headerBadge: `Overdue by ${timeStr}`,
+        countdownText: `${timeStr} overdue`,
+        progressPercent: 100,
+      };
+    }
+
+    const timeStr = hours > 0 ? (mins > 0 ? `${hours}h ${mins}m` : `${hours}h`) : `${mins}m`;
     return {
       headerBadge: `Overdue by ${timeStr}`,
       countdownText: `${timeStr} overdue`,
@@ -129,7 +141,7 @@ function deriveDeadlineMetrics(urgency: TaskUrgencyInfo): {
   const mins = totalMinutes % 60;
 
   if (hours < 24) {
-    const timeStr = hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
+    const timeStr = hours > 0 ? (mins > 0 ? `${hours}h ${mins}m` : `${hours}h`) : `${mins}m`;
     return {
       headerBadge: `Due in ${timeStr}`,
       countdownText: `${timeStr} left`,
@@ -139,9 +151,10 @@ function deriveDeadlineMetrics(urgency: TaskUrgencyInfo): {
 
   const days = Math.floor(hours / 24);
   const remHours = hours % 24;
+  const timeStr = remHours > 0 ? `${days}d ${remHours}h` : `${days}d`;
   return {
-    headerBadge: `Due in ${days}d ${remHours}h`,
-    countdownText: `${days}d ${remHours}h left`,
+    headerBadge: `Due in ${timeStr}`,
+    countdownText: `${timeStr} left`,
     progressPercent: days < 3 ? 45 : days < 14 ? 25 : 10,
   };
 }
@@ -491,7 +504,7 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
           </div>
           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300">
             <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-            Clear Runway
+            Clear Runway ✨
           </span>
         </div>
 
@@ -510,10 +523,10 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
               <Target className="w-6 h-6" />
             </div>
             <h3 className="text-sm font-bold text-serene-text-primary dark:text-serene-text-darkPrimary">
-              No active focus task selected
+              No active task selected — nothing on your plate!
             </h3>
             <p className="text-xs text-serene-text-muted dark:text-serene-text-darkMuted mt-1 max-w-sm mx-auto">
-              Add a new action item or select a task from your queue to activate your prime objective.
+              Add a new task or pick one from your queue to start cooking.
             </p>
           </div>
         )}
@@ -707,7 +720,7 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
                   <ListTodo className="w-3.5 h-3.5" />
                   <span>
                     {procedureSort === 'procedure'
-                      ? 'By Procedure'
+                      ? 'Step by step'
                       : procedureSort === 'pending_first'
                       ? 'Pending First'
                       : 'Completed First'}
@@ -728,7 +741,7 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
                         procedureSort === 'procedure' ? 'font-bold text-serene-primary dark:text-serene-primary-dark' : 'text-serene-text-primary dark:text-serene-text-darkPrimary'
                       }`}
                     >
-                      <span>By Procedure</span>
+                      <span>Step by step</span>
                       {procedureSort === 'procedure' && <Check className="w-3.5 h-3.5" />}
                     </button>
                     <button
@@ -882,7 +895,7 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
             ) : (
               <div className="flex items-center gap-1.5 text-xs text-serene-text-muted dark:text-serene-text-darkMuted">
                 <Sparkles className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                <span className="truncate">Active focus target · launch the timer to log deep work</span>
+                <span className="truncate">Ready to cook · hit Lock In to start your focus session</span>
               </div>
             )}
           </div>
@@ -904,7 +917,7 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
                   ? focusTimer?.running
                     ? `Pause · ${formatElapsed(liveElapsed)}`
                     : `Resume · ${formatElapsed(liveElapsed)}`
-                  : 'Start now'}
+                  : 'Lock in ⚡'}
               </span>
             </button>
 
@@ -1193,7 +1206,7 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
                     <ListTodo className="w-3.5 h-3.5" />
                     <span>
                       {procedureSort === 'procedure'
-                        ? 'By Procedure'
+                        ? 'Step by step'
                         : procedureSort === 'pending_first'
                         ? 'Pending First'
                         : 'Completed First'}
@@ -1213,7 +1226,7 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
                           procedureSort === 'procedure' ? 'font-bold text-serene-primary dark:text-serene-primary-dark' : 'text-serene-text-primary dark:text-serene-text-darkPrimary'
                         }`}
                       >
-                        <span>By Procedure</span>
+                        <span>Step by step</span>
                         {procedureSort === 'procedure' && <Check className="w-3.5 h-3.5" />}
                       </button>
                       <button
@@ -1377,7 +1390,7 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
                   ? focusTimer?.running
                     ? `Pause · ${formatElapsed(liveElapsed)}`
                     : `Resume · ${formatElapsed(liveElapsed)}`
-                  : 'Start now'}
+                  : 'Lock in ⚡'}
               </span>
             </button>
 

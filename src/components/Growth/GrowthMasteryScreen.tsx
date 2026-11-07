@@ -4,11 +4,7 @@ import {
   Trophy,
   Flame,
   Sparkle as Sparkles,
-  Cpu,
-  Shield,
   Crown,
-  Lightning as Zap,
-  Sun,
   Medal as Award,
   Lock,
   LockOpen as Unlock,
@@ -20,14 +16,28 @@ import {
   Pulse as Activity,
   TrendUp as TrendingUp,
   Brain,
+  EyeSlash,
+  Question,
+  Clock,
   WarningCircle as AlertCircle,
-  Clock
 } from '@phosphor-icons/react';
 import { GamificationState, DailyGrowthRecord, HeroLevelDef } from '../../types';
 import { HERO_ROSTER, getHeroById } from '../../data/heroRoster';
+import { getCurrentSubLevel, getHeroVisibilityState } from '../../utils/gamification';
 import { WeeklyFocusChart } from './WeeklyFocusChart';
 import { MonthlyHeatmap } from './MonthlyHeatmap';
 import { YearlyGrowthView } from './YearlyGrowthView';
+
+/**
+ * Resolves local badge image paths reliably with Vite base path and URL encoding.
+ */
+const getBadgeSrc = (badgePath?: string): string => {
+  if (!badgePath) return '';
+  const base = ((import.meta as any).env?.BASE_URL as string) || '/';
+  const cleanBase = base.endsWith('/') ? base : `${base}/`;
+  const cleanPath = badgePath.startsWith('/') ? badgePath.slice(1) : badgePath;
+  return `${cleanBase}${encodeURI(cleanPath)}`;
+};
 
 export interface GrowthMasteryScreenProps {
   gamification: GamificationState;
@@ -39,47 +49,6 @@ export interface GrowthMasteryScreenProps {
 }
 
 type HorizonTab = 'weekly' | 'monthly' | 'yearly';
-
-/**
- * Maps avatar icon identifiers to corresponding Lucide icons.
- */
-const HeroAvatarIcon: React.FC<{ iconName: string; className?: string }> = ({
-  iconName,
-  className = 'w-6 h-6',
-}) => {
-  switch (iconName) {
-    case 'Sparkles':
-      return <Sparkles className={className} />;
-    case 'Flame':
-      return <Flame className={className} />;
-    case 'Cpu':
-      return <Cpu className={className} />;
-    case 'Shield':
-      return <Shield className={className} />;
-    case 'Crown':
-      return <Crown className={className} />;
-    case 'Zap':
-      return <Zap className={className} />;
-    case 'Sun':
-      return <Sun className={className} />;
-    default:
-      return <Award className={className} />;
-  }
-};
-
-/**
- * Exact gradient classes corresponding to hero roster definitions
- * ensuring zero Tailwind purge issues.
- */
-const HERO_GRADIENTS: Record<string, string> = {
-  'lvl-1-awakening': 'from-amber-500 to-orange-600',
-  'lvl-2-iron-will': 'from-orange-500 to-red-600',
-  'lvl-3-flow-architect': 'from-cyan-500 to-blue-600',
-  'lvl-4-dark-knight': 'from-slate-600 to-zinc-900',
-  'lvl-5-shadow-monarch': 'from-purple-600 to-indigo-950',
-  'lvl-6-limit-breaker': 'from-yellow-400 to-amber-600',
-  'lvl-7-stoic-sovereign': 'from-emerald-500 to-teal-800',
-};
 
 export const GrowthMasteryScreen: React.FC<GrowthMasteryScreenProps> = ({
   gamification,
@@ -103,6 +72,18 @@ export const GrowthMasteryScreen: React.FC<GrowthMasteryScreenProps> = ({
     () => getHeroById(gamification.activeHeroId || 'lvl-1-awakening'),
     [gamification.activeHeroId]
   );
+
+  const highestUnlockedLevel = useMemo(() => {
+    return Math.max(1, ...unlockedIds.map((id) => getHeroById(id)?.level || 1));
+  }, [unlockedIds]);
+
+  const activeSubLevel = useMemo(() => {
+    return getCurrentSubLevel(
+      activeHero,
+      gamification.currentStreak || 0,
+      gamification.currentXp || 0
+    );
+  }, [activeHero, gamification.currentStreak, gamification.currentXp]);
 
   // Next locked hero to progress towards
   const nextLockedHero = useMemo(
@@ -293,14 +274,18 @@ export const GrowthMasteryScreen: React.FC<GrowthMasteryScreenProps> = ({
           <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
             {/* Left: Avatar + Title + Category + Quote */}
             <div className="flex items-start sm:items-center gap-5">
-              <div
-                className={`relative w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-gradient-to-br ${
-                  HERO_GRADIENTS[activeHero.id] || activeHero.gradient
-                } text-white flex items-center justify-center shadow-lg ring-4 ring-serene-primary/20 dark:ring-serene-primary-dark/20 shrink-0`}
-              >
-                <HeroAvatarIcon iconName={activeHero.avatarIcon} className="w-10 h-10 sm:w-12 sm:h-12" />
-                <span className="absolute -bottom-2 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-black/75 text-white backdrop-blur-sm border border-white/20">
-                  Lvl {activeHero.level}
+              <div className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-2xl overflow-hidden shadow-xl ring-4 ring-serene-primary/30 shrink-0 bg-slate-950 group">
+                <img
+                  src={getBadgeSrc(activeHero.badgeImage)}
+                  alt={activeHero.name}
+                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                  onError={(e) => {
+                    (e.currentTarget as HTMLElement).style.display = 'none';
+                  }}
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent pointer-events-none" />
+                <span className="absolute bottom-1.5 left-1/2 -translate-x-1/2 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-black/85 text-amber-400 backdrop-blur-sm border border-amber-500/40 shadow-sm whitespace-nowrap">
+                  Lvl {activeHero.level}.{activeSubLevel.currentStage.stage}
                 </span>
               </div>
 
@@ -315,6 +300,9 @@ export const GrowthMasteryScreen: React.FC<GrowthMasteryScreenProps> = ({
                     }`}
                   >
                     {getCategoryBadge(activeHero.category).label}
+                  </span>
+                  <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30">
+                    Stage {activeSubLevel.currentStage.roman}: {activeSubLevel.currentStage.title}
                   </span>
                   <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark text-serene-text-secondary dark:text-serene-text-darkSecondary border border-serene-border-light dark:border-serene-border-dark">
                     Active Avatar
@@ -343,69 +331,106 @@ export const GrowthMasteryScreen: React.FC<GrowthMasteryScreenProps> = ({
               </div>
             </div>
 
-            {/* Right: Next Locked Hero Progress Bar */}
-            <div className="w-full lg:w-80 shrink-0 bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark/60 rounded-2xl p-4 border border-serene-border-light dark:border-serene-border-dark space-y-3">
-              {nextHeroMetrics ? (
-                <>
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-semibold text-serene-text-primary dark:text-serene-text-darkPrimary flex items-center gap-1.5">
-                      <Lock className="w-3.5 h-3.5 text-serene-text-muted" />
-                      Next: Level {nextHeroMetrics.nextLockedHero.level}
+            {/* Right: Sub-Level Micro-Progress & Horizon Stepper */}
+            <div className="w-full lg:w-96 shrink-0 bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark/60 rounded-2xl p-4 sm:p-5 border border-serene-border-light dark:border-serene-border-dark space-y-3.5 shadow-subtle">
+              {/* Header: Sub-Level Mastery Status */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-serene-text-primary dark:text-serene-text-darkPrimary">
+                  <Sparkles className="w-4 h-4 text-amber-500" />
+                  <span>Discipline Sub-Stage: {activeSubLevel.currentStage.roman}</span>
+                </div>
+                <span className="text-xs font-bold text-serene-primary dark:text-serene-primary-dark">
+                  {activeSubLevel.nextStage ? `${activeSubLevel.progressPercent}%` : 'Tier Mastered'}
+                </span>
+              </div>
+
+              {/* Stepper Stages Chips */}
+              {activeHero.subLevels && (
+                <div className="grid grid-cols-3 gap-1.5">
+                  {activeHero.subLevels.map((st) => {
+                    const isCurrent = st.stage === activeSubLevel.currentStage.stage;
+                    const isAchieved =
+                      (gamification.currentStreak || 0) >= st.minStreakDays ||
+                      (gamification.currentXp || 0) >= st.minLifetimeXp;
+                    return (
+                      <div
+                        key={st.stage}
+                        className={`flex flex-col items-center py-1.5 px-1 rounded-xl text-center border transition-all ${
+                          isCurrent
+                            ? 'bg-serene-primary/15 border-serene-primary text-serene-primary dark:text-serene-primary-dark font-bold ring-1 ring-serene-primary/30'
+                            : isAchieved
+                            ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400 font-semibold'
+                            : 'bg-white dark:bg-slate-900/60 border-serene-border-light dark:border-serene-border-dark text-serene-text-muted opacity-75'
+                        }`}
+                      >
+                        <div className="flex items-center gap-1 text-[10px] uppercase font-bold tracking-wider">
+                          {isAchieved && !isCurrent ? (
+                            <CheckCircle2 className="w-3 h-3 text-emerald-500 shrink-0" />
+                          ) : null}
+                          <span>Stage {st.roman}</span>
+                        </div>
+                        <span className="text-[9px] truncate max-w-full leading-tight font-medium">
+                          {st.title}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Micro-Progress Bar to Next Sub-Stage */}
+              {activeSubLevel.nextStage ? (
+                <div className="space-y-2 pt-1 border-t border-serene-border-light/60 dark:border-serene-border-dark/60">
+                  <div className="flex justify-between items-center text-[11px]">
+                    <span className="text-serene-text-secondary dark:text-serene-text-darkSecondary font-medium">
+                      Next Step:{' '}
+                      <strong className="text-serene-text-primary dark:text-serene-text-darkPrimary">
+                        Stage {activeSubLevel.nextStage.roman} ({activeSubLevel.nextStage.title})
+                      </strong>
                     </span>
-                    <span className="font-bold text-serene-primary dark:text-serene-primary-dark">
-                      {nextHeroMetrics.overallPct}%
+                    <span className="text-serene-primary dark:text-serene-primary-dark font-semibold">
+                      {activeSubLevel.progressPercent}%
                     </span>
                   </div>
-
-                  <p className="text-xs text-serene-text-secondary dark:text-serene-text-darkSecondary font-medium truncate">
-                    {nextHeroMetrics.nextLockedHero.name} ({nextHeroMetrics.nextLockedHero.title})
-                  </p>
-
-                  {/* Progress Bar Track */}
-                  <div className="w-full h-2.5 rounded-full bg-serene-border-light dark:bg-serene-border-dark overflow-hidden">
+                  <div className="w-full h-2 rounded-full bg-serene-border-light dark:bg-serene-border-dark overflow-hidden">
                     <div
-                      className="h-full rounded-full bg-gradient-to-r from-serene-primary to-serene-accent-emerald transition-all duration-500 ease-out"
-                      style={{ width: `${nextHeroMetrics.overallPct}%` }}
+                      className="h-full rounded-full bg-gradient-to-r from-amber-500 via-orange-500 to-serene-primary transition-all duration-500 ease-out"
+                      style={{ width: `${activeSubLevel.progressPercent}%` }}
                     />
                   </div>
-
-                  {/* Unlock Requirement Details */}
-                  <div className="space-y-1 text-[11px] text-serene-text-secondary dark:text-serene-text-darkSecondary">
-                    <div className="flex justify-between items-center">
-                      <span>Streak Needed:</span>
-                      <span className="font-medium text-serene-text-primary dark:text-serene-text-darkPrimary">
-                        {gamification.currentStreak} / {nextHeroMetrics.nextLockedHero.minStreakDays} days
-                        {nextHeroMetrics.streakRemaining > 0 && (
-                          <span className="text-serene-text-muted ml-1">
-                            ({nextHeroMetrics.streakRemaining}d to go)
-                          </span>
-                        )}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span>XP Needed:</span>
-                      <span className="font-medium text-serene-text-primary dark:text-serene-text-darkPrimary">
-                        {(gamification.currentXp || 0).toLocaleString()} /{' '}
-                        {nextHeroMetrics.nextLockedHero.minLifetimeXp.toLocaleString()} XP
-                        {nextHeroMetrics.xpRemaining > 0 && (
-                          <span className="text-serene-text-muted ml-1">
-                            ({nextHeroMetrics.xpRemaining.toLocaleString()} XP left)
-                          </span>
-                        )}
-                      </span>
-                    </div>
+                  <div className="flex justify-between items-center text-[10px] text-serene-text-muted">
+                    <span>
+                      Streak: {gamification.currentStreak} / {activeSubLevel.nextStage.minStreakDays}d
+                    </span>
+                    <span>
+                      XP: {(gamification.currentXp || 0).toLocaleString()} /{' '}
+                      {activeSubLevel.nextStage.minLifetimeXp.toLocaleString()}
+                    </span>
                   </div>
-                </>
+                </div>
               ) : (
-                <div className="text-center py-2 space-y-1.5">
-                  <div className="flex items-center justify-center gap-1.5 text-serene-accent-amber font-semibold text-xs">
-                    <Crown className="w-4 h-4 text-amber-500" />
-                    <span>Stoic Sovereign Mastery</span>
+                <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-center text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+                  Tier {activeHero.level} Mastery Completed!
+                </div>
+              )}
+
+              {/* Next Major Frontier Mystery Teaser */}
+              {nextLockedHero ? (
+                <div className="pt-2 border-t border-serene-border-light/60 dark:border-serene-border-dark/60 flex items-center justify-between text-[11px] text-serene-text-secondary dark:text-serene-text-darkSecondary">
+                  <div className="flex items-center gap-1.5">
+                    <Lock className="w-3.5 h-3.5 text-amber-500" />
+                    <span>
+                      Next Frontier: <strong>Level {nextLockedHero.level} (Mystery Tier)</strong>
+                    </span>
                   </div>
-                  <p className="text-xs text-serene-text-secondary dark:text-serene-text-darkSecondary">
-                    All 7 Hero Ranks Mastered. Lifelong sovereignty of mind achieved.
-                  </p>
-                  <div className="w-full h-2.5 rounded-full bg-gradient-to-r from-amber-400 to-emerald-500 mt-2" />
+                  <span className="text-[10px] font-semibold text-amber-600 dark:text-amber-400">
+                    {nextHeroMetrics?.overallPct || 0}%
+                  </span>
+                </div>
+              ) : (
+                <div className="pt-2 border-t border-serene-border-light/60 dark:border-serene-border-dark/60 flex items-center justify-center gap-1.5 text-xs text-amber-500 font-semibold">
+                  <Crown className="w-4 h-4" />
+                  <span>All 7 Ranks Mastered</span>
                 </div>
               )}
             </div>
@@ -514,101 +539,130 @@ export const GrowthMasteryScreen: React.FC<GrowthMasteryScreenProps> = ({
             {HERO_ROSTER.map((hero) => {
               const isUnlocked = unlockedIds.includes(hero.id);
               const isActive = gamification.activeHeroId === hero.id;
+              const visibility = getHeroVisibilityState(hero.level, highestUnlockedLevel);
               const categoryBadge = getCategoryBadge(hero.category);
 
-              return (
-                <div
-                  key={hero.id}
-                  className={`flex flex-col justify-between rounded-2xl border p-5 transition-all duration-200 ${
-                    isActive
-                      ? 'bg-white dark:bg-serene-surface-dark border-serene-primary dark:border-serene-primary-dark ring-2 ring-serene-primary/30 shadow-card'
-                      : isUnlocked
-                      ? 'bg-white dark:bg-serene-surface-dark border-serene-border-light dark:border-serene-border-dark hover:border-serene-primary/30 shadow-card hover:shadow-card-hover'
-                      : 'bg-slate-50/75 dark:bg-slate-900/40 border-slate-200/80 dark:border-slate-800/80 opacity-70 hover:opacity-85'
-                  }`}
-                >
-                  <div className="space-y-4">
-                    {/* Header: Avatar, Level, Category & Lock Status */}
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex items-center gap-3">
-                        <div
-                          className={`w-12 h-12 rounded-xl bg-gradient-to-br ${
-                            HERO_GRADIENTS[hero.id] || hero.gradient
-                          } text-white flex items-center justify-center shadow-md ${
-                            !isUnlocked ? 'filter grayscale-[40%]' : ''
-                          }`}
-                        >
-                          <HeroAvatarIcon iconName={hero.avatarIcon} className="w-6 h-6" />
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-[11px] font-bold text-serene-primary dark:text-serene-primary-dark uppercase tracking-wider">
-                              Level {hero.level}
-                            </span>
-                            <span
-                              className={`text-[10px] font-semibold px-2 py-0.2 rounded-full border ${categoryBadge.classes}`}
-                            >
-                              {categoryBadge.label}
+              // -----------------------------------------------------------
+              // Case 1: Achieved / Unlocked Hero Tier
+              // -----------------------------------------------------------
+              if (isUnlocked) {
+                return (
+                  <div
+                    key={hero.id}
+                    className={`flex flex-col justify-between rounded-2xl border p-5 transition-all duration-200 group ${
+                      isActive
+                        ? 'bg-white dark:bg-serene-surface-dark border-serene-primary dark:border-serene-primary-dark ring-2 ring-serene-primary/30 shadow-card'
+                        : 'bg-white dark:bg-serene-surface-dark border-serene-border-light dark:border-serene-border-dark hover:border-serene-primary/30 shadow-card hover:shadow-card-hover'
+                    }`}
+                  >
+                    <div className="space-y-4">
+                      {/* Header: Badge Image, Level, Category & Checkmark */}
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                          <div className="relative w-14 h-14 rounded-xl overflow-hidden shadow-md shrink-0 border border-serene-border-light dark:border-serene-border-dark group-hover:scale-105 transition-transform duration-200 bg-slate-950">
+                            <img
+                              src={getBadgeSrc(hero.badgeImage)}
+                              alt={hero.name}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                (e.currentTarget as HTMLElement).style.display = 'none';
+                              }}
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent pointer-events-none" />
+                            <span className="absolute bottom-1 left-1/2 -translate-x-1/2 px-1.5 py-0.2 rounded-full text-[9px] font-bold bg-black/80 text-amber-300 border border-amber-400/30 whitespace-nowrap">
+                              Lvl {hero.level}
                             </span>
                           </div>
-                          <h3 className="text-base font-bold text-serene-text-primary dark:text-serene-text-darkPrimary leading-tight">
-                            {hero.name}
-                          </h3>
-                        </div>
-                      </div>
 
-                      {/* Status Icon */}
-                      {isUnlocked ? (
+                          <div>
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-[11px] font-bold text-serene-primary dark:text-serene-primary-dark uppercase tracking-wider">
+                                Level {hero.level}
+                              </span>
+                              <span
+                                className={`text-[10px] font-semibold px-2 py-0.2 rounded-full border ${categoryBadge.classes}`}
+                              >
+                                {categoryBadge.label}
+                              </span>
+                            </div>
+                            <h3 className="text-base font-bold text-serene-text-primary dark:text-serene-text-darkPrimary leading-tight">
+                              {hero.name}
+                            </h3>
+                          </div>
+                        </div>
+
+                        {/* Status Icon */}
                         <div
                           className="w-7 h-7 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0"
                           title="Unlocked"
                         >
                           <CheckCircle2 className="w-4 h-4" />
                         </div>
-                      ) : (
-                        <div
-                          className="w-7 h-7 rounded-lg bg-slate-200/80 dark:bg-slate-800 text-slate-500 dark:text-slate-400 flex items-center justify-center shrink-0"
-                          title="Locked"
-                        >
-                          <Lock className="w-4 h-4" />
+                      </div>
+
+                      {/* Title */}
+                      <div className="text-xs font-semibold text-serene-primary dark:text-serene-primary-dark">
+                        {hero.title}
+                      </div>
+
+                      {/* Sub-Levels Mastery Stepper */}
+                      {hero.subLevels && (
+                        <div className="space-y-1.5 pt-1">
+                          <div className="text-[10px] font-bold text-serene-text-secondary dark:text-serene-text-darkSecondary uppercase tracking-wider flex items-center justify-between">
+                            <span>Mastery Sub-Levels</span>
+                            <span className="text-[9px] font-medium text-serene-text-muted">
+                              {hero.subLevels.length} Stages
+                            </span>
+                          </div>
+                          <div className="grid grid-cols-3 gap-1">
+                            {hero.subLevels.map((st) => {
+                              const isStageDone =
+                                (gamification.currentStreak || 0) >= st.minStreakDays ||
+                                (gamification.currentXp || 0) >= st.minLifetimeXp;
+                              return (
+                                <div
+                                  key={st.stage}
+                                  className={`px-1.5 py-1 rounded-lg text-center text-[10px] border truncate transition-all ${
+                                    isStageDone
+                                      ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400 font-semibold'
+                                      : 'bg-serene-surfaceAlt-light/60 dark:bg-serene-surfaceAlt-dark/40 border-serene-border-light dark:border-serene-border-dark text-serene-text-muted'
+                                  }`}
+                                  title={`Stage ${st.roman}: ${st.title} (${st.minStreakDays}d streak or ${st.minLifetimeXp.toLocaleString()} XP)`}
+                                >
+                                  {st.roman}. {st.title}
+                                </div>
+                              );
+                            })}
+                          </div>
                         </div>
                       )}
+
+                      {/* Emotional Quote */}
+                      <p className="text-xs italic text-serene-text-secondary dark:text-serene-text-darkSecondary border-l-2 border-serene-border-light dark:border-serene-border-dark pl-2.5">
+                        "{hero.quote}"
+                      </p>
+
+                      {/* Real-Life Meaning */}
+                      <div className="rounded-xl bg-serene-surfaceAlt-light/60 dark:bg-serene-surfaceAlt-dark/40 p-2.5 border border-serene-border-light/60 dark:border-serene-border-dark/60 text-[11px] text-serene-text-secondary dark:text-serene-text-darkSecondary">
+                        <span className="font-semibold text-serene-text-primary dark:text-serene-text-darkPrimary block mb-0.5">
+                          Psychological Meaning:
+                        </span>
+                        {hero.realLifeMeaning}
+                      </div>
                     </div>
 
-                    {/* Title */}
-                    <div className="text-xs font-semibold text-serene-primary dark:text-serene-primary-dark">
-                      {hero.title}
-                    </div>
+                    {/* Footer: Unlock Criteria & Equip Action */}
+                    <div className="pt-4 mt-4 border-t border-serene-border-light dark:border-serene-border-dark space-y-2.5">
+                      <div className="text-[11px] text-serene-text-muted flex items-center justify-between">
+                        <span>Unlocked via:</span>
+                        <span className="font-medium text-serene-text-secondary dark:text-serene-text-darkSecondary">
+                          {hero.minStreakDays === 1 && hero.minLifetimeXp === 0
+                            ? 'Starting Rank'
+                            : `${hero.minStreakDays}d streak or ${hero.minLifetimeXp.toLocaleString()} XP`}
+                        </span>
+                      </div>
 
-                    {/* Emotional Quote */}
-                    <p className="text-xs italic text-serene-text-secondary dark:text-serene-text-darkSecondary border-l-2 border-serene-border-light dark:border-serene-border-dark pl-2.5">
-                      "{hero.quote}"
-                    </p>
-
-                    {/* Real-Life Meaning */}
-                    <div className="rounded-xl bg-serene-surfaceAlt-light/60 dark:bg-serene-surfaceAlt-dark/40 p-2.5 border border-serene-border-light/60 dark:border-serene-border-dark/60 text-[11px] text-serene-text-secondary dark:text-serene-text-darkSecondary">
-                      <span className="font-semibold text-serene-text-primary dark:text-serene-text-darkPrimary block mb-0.5">
-                        Psychological Meaning:
-                      </span>
-                      {hero.realLifeMeaning}
-                    </div>
-                  </div>
-
-                  {/* Footer: Unlock Criteria & Equip Action */}
-                  <div className="pt-4 mt-4 border-t border-serene-border-light dark:border-serene-border-dark space-y-2.5">
-                    {/* Criteria readout */}
-                    <div className="text-[11px] text-serene-text-muted flex items-center justify-between">
-                      <span>Requirement:</span>
-                      <span className="font-medium text-serene-text-secondary dark:text-serene-text-darkSecondary">
-                        {hero.minStreakDays === 1 && hero.minLifetimeXp === 0
-                          ? 'Starting Rank (0 XP)'
-                          : `${hero.minStreakDays}d streak or ${hero.minLifetimeXp.toLocaleString()} XP`}
-                      </span>
-                    </div>
-
-                    {/* Button */}
-                    {isUnlocked ? (
-                      isActive ? (
+                      {isActive ? (
                         <div className="w-full py-2 px-3 rounded-xl bg-serene-primary/10 dark:bg-serene-primary-dark/15 text-serene-primary dark:text-serene-primary-dark text-center text-xs font-bold border border-serene-primary/20 flex items-center justify-center gap-1.5">
                           <CheckCircle2 className="w-3.5 h-3.5" />
                           <span>Active Avatar</span>
@@ -621,13 +675,218 @@ export const GrowthMasteryScreen: React.FC<GrowthMasteryScreenProps> = ({
                           <Unlock className="w-3.5 h-3.5" />
                           <span>Equip as Avatar</span>
                         </button>
-                      )
-                    ) : (
-                      <div className="w-full py-2 px-3 rounded-xl bg-slate-100 dark:bg-slate-800/60 text-slate-400 dark:text-slate-500 text-center text-xs font-medium border border-slate-200 dark:border-slate-800 flex items-center justify-center gap-1.5 cursor-not-allowed">
-                        <Lock className="w-3.5 h-3.5" />
-                        <span>Requires Level Qualification</span>
+                      )}
+                    </div>
+                  </div>
+                );
+              }
+
+              // -----------------------------------------------------------
+              // Case 2: Immediate Next Locked Frontier (Veiled Mystery)
+              // -----------------------------------------------------------
+              if (visibility === 'next') {
+                const streakPct = Math.min(
+                  100,
+                  Math.round(((gamification.currentStreak || 0) / hero.minStreakDays) * 100)
+                );
+                const xpPct = Math.min(
+                  100,
+                  Math.round(((gamification.currentXp || 0) / hero.minLifetimeXp) * 100)
+                );
+                const overallPct = Math.max(streakPct, xpPct);
+
+                return (
+                  <div
+                    key={hero.id}
+                    className="flex flex-col justify-between rounded-2xl border p-5 transition-all duration-200 bg-gradient-to-b from-slate-900/90 to-slate-950 border-amber-500/30 shadow-card group"
+                  >
+                    <div className="space-y-4">
+                      {/* Header: Shrouded Badge, Level, Category & Lock */}
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                          <div className="relative w-14 h-14 rounded-xl bg-gradient-to-br from-slate-900 to-amber-950/80 border border-amber-500/40 flex items-center justify-center text-amber-500 shadow-inner shrink-0 overflow-hidden">
+                            <div className="absolute inset-0 bg-amber-500/5 animate-pulse" />
+                            <Lock className="w-6 h-6 relative z-10" />
+                            <span className="absolute bottom-1 left-1/2 -translate-x-1/2 px-1.5 py-0.2 rounded-full text-[9px] font-bold bg-amber-950/90 text-amber-300 border border-amber-500/30 whitespace-nowrap">
+                              Lvl {hero.level}
+                            </span>
+                          </div>
+
+                          <div>
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-[11px] font-bold text-amber-500 uppercase tracking-wider">
+                                Level {hero.level}
+                              </span>
+                              <span className="text-[10px] font-semibold px-2 py-0.2 rounded-full border bg-amber-500/10 text-amber-400 border-amber-500/30">
+                                Next Frontier
+                              </span>
+                            </div>
+                            <h3 className="text-base font-bold text-slate-100 leading-tight flex items-center gap-1.5">
+                              <span>Mystery Sovereign</span>
+                              <EyeSlash className="w-3.5 h-3.5 text-amber-500/70" />
+                            </h3>
+                          </div>
+                        </div>
+
+                        <div
+                          className="w-7 h-7 rounded-lg bg-amber-500/10 text-amber-500 flex items-center justify-center shrink-0"
+                          title="Locked Next Tier"
+                        >
+                          <Lock className="w-4 h-4" />
+                        </div>
                       </div>
-                    )}
+
+                      {/* Title */}
+                      <div className="text-xs font-semibold text-amber-400/90 flex items-center gap-1">
+                        <span>Locked Discipline Threshold</span>
+                      </div>
+
+                      {/* Shrouded Sub-Levels Teaser */}
+                      {hero.subLevels && (
+                        <div className="space-y-1.5 pt-1">
+                          <div className="text-[10px] font-bold text-amber-400/80 uppercase tracking-wider flex items-center justify-between">
+                            <span>Uncharted Sub-Stages</span>
+                            <span className="text-[9px] font-medium text-amber-500/60">
+                              {hero.subLevels.length} Stages Hidden
+                            </span>
+                          </div>
+                          <div className="grid grid-cols-3 gap-1">
+                            {hero.subLevels.map((_, idx) => (
+                              <div
+                                key={idx}
+                                className="px-1.5 py-1 rounded-lg text-center text-[10px] border border-dashed border-amber-500/30 bg-amber-500/5 text-amber-400/70 font-medium"
+                              >
+                                Stage {idx + 1}: ???
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Mystery Lore Quote */}
+                      <p className="text-xs italic text-slate-400 border-l-2 border-amber-500/40 pl-2.5">
+                        "The mantle reveals itself only when your discipline breaches the barrier. Sacrifice is the only key."
+                      </p>
+
+                      {/* Sacrifice & Discipline Demand */}
+                      <div className="rounded-xl bg-amber-500/10 p-3 border border-amber-500/20 text-[11px] text-slate-300 space-y-1.5">
+                        <div className="flex items-center gap-1.5 font-semibold text-amber-400">
+                          <Flame className="w-3.5 h-3.5" />
+                          <span>Discipline & Sacrifice Required:</span>
+                        </div>
+                        <p className="text-slate-300">
+                          Requires an unbroken streak of{' '}
+                          <strong className="text-amber-300">{hero.minStreakDays} days</strong> or{' '}
+                          <strong className="text-amber-300">
+                            {hero.minLifetimeXp.toLocaleString()} XP
+                          </strong>
+                          .
+                        </p>
+                        <div className="pt-1 flex justify-between text-[10px] text-slate-400">
+                          <span>Streak: {gamification.currentStreak}/{hero.minStreakDays}d ({streakPct}%)</span>
+                          <span>XP: {(gamification.currentXp || 0).toLocaleString()}/{hero.minLifetimeXp.toLocaleString()} ({xpPct}%)</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Footer: Progress & Locked Action */}
+                    <div className="pt-4 mt-4 border-t border-slate-800 space-y-2.5">
+                      <div className="space-y-1">
+                        <div className="flex justify-between text-[10px] text-slate-400">
+                          <span>Unlock Progress</span>
+                          <span className="font-bold text-amber-400">{overallPct}%</span>
+                        </div>
+                        <div className="w-full h-1.5 rounded-full bg-slate-800 overflow-hidden">
+                          <div
+                            className="h-full rounded-full bg-gradient-to-r from-amber-600 to-amber-400 transition-all duration-500"
+                            style={{ width: `${overallPct}%` }}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="w-full py-2 px-3 rounded-xl bg-amber-500/10 text-amber-400 text-center text-xs font-semibold border border-amber-500/30 flex items-center justify-center gap-1.5 cursor-not-allowed">
+                        <Lock className="w-3.5 h-3.5" />
+                        <span>Locked — Requires Discipline</span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              }
+
+              // -----------------------------------------------------------
+              // Case 3: Classified / Future Mystery Tiers
+              // -----------------------------------------------------------
+              return (
+                <div
+                  key={hero.id}
+                  className="flex flex-col justify-between rounded-2xl border p-5 transition-all duration-200 bg-slate-50/50 dark:bg-slate-950/60 border-slate-200/60 dark:border-slate-800/60 opacity-60 hover:opacity-75"
+                >
+                  <div className="space-y-4">
+                    {/* Header: Mystery Question Icon, Level & Locked Tag */}
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        <div className="relative w-14 h-14 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-center text-slate-400 dark:text-slate-600 shrink-0">
+                          <Question className="w-7 h-7" />
+                          <span className="absolute bottom-1 left-1/2 -translate-x-1/2 px-1.5 py-0.2 rounded-full text-[9px] font-bold bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-300 dark:border-slate-700 whitespace-nowrap">
+                            Lvl {hero.level}
+                          </span>
+                        </div>
+
+                        <div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                              Level {hero.level}
+                            </span>
+                            <span className="text-[10px] font-semibold px-2 py-0.2 rounded-full border bg-slate-100 dark:bg-slate-800 text-slate-500 border-slate-200 dark:border-slate-700">
+                              Classified
+                            </span>
+                          </div>
+                          <h3 className="text-base font-bold text-slate-400 dark:text-slate-500 leading-tight">
+                            Uncharted Sovereign
+                          </h3>
+                        </div>
+                      </div>
+
+                      <div
+                        className="w-7 h-7 rounded-lg bg-slate-200/60 dark:bg-slate-800/60 text-slate-400 dark:text-slate-600 flex items-center justify-center shrink-0"
+                        title="Locked Mystery"
+                      >
+                        <Lock className="w-4 h-4" />
+                      </div>
+                    </div>
+
+                    {/* Title */}
+                    <div className="text-xs font-semibold text-slate-400 dark:text-slate-500">
+                      Undisclosed Mastery Tier
+                    </div>
+
+                    {/* Mystery Quote */}
+                    <p className="text-xs italic text-slate-400 dark:text-slate-500 border-l-2 border-slate-200 dark:border-slate-800 pl-2.5">
+                      "Future levels remain veiled in shadow. Conquer preceding milestones to pierce the veil."
+                    </p>
+
+                    {/* Meaning */}
+                    <div className="rounded-xl bg-slate-100/60 dark:bg-slate-900/40 p-3 border border-slate-200/60 dark:border-slate-800/60 text-[11px] text-slate-400 dark:text-slate-500">
+                      <span className="font-semibold text-slate-600 dark:text-slate-400 block mb-0.5">
+                        Long-Term Mastery Threshold:
+                      </span>
+                      Demands profound discipline ({hero.minStreakDays}d streak or {hero.minLifetimeXp.toLocaleString()} XP). Focus on your immediate micro-steps.
+                    </div>
+                  </div>
+
+                  {/* Footer: Locked Action */}
+                  <div className="pt-4 mt-4 border-t border-slate-200 dark:border-slate-800 space-y-2.5">
+                    <div className="text-[11px] text-slate-400 dark:text-slate-500 flex items-center justify-between">
+                      <span>Requirement:</span>
+                      <span className="font-medium text-slate-500 dark:text-slate-400">
+                        {hero.minStreakDays}d streak or {hero.minLifetimeXp.toLocaleString()} XP
+                      </span>
+                    </div>
+
+                    <div className="w-full py-2 px-3 rounded-xl bg-slate-100 dark:bg-slate-900 text-slate-400 dark:text-slate-600 text-center text-xs font-medium border border-slate-200 dark:border-slate-800 flex items-center justify-center gap-1.5 cursor-not-allowed">
+                      <Lock className="w-3.5 h-3.5" />
+                      <span>Locked Mystery</span>
+                    </div>
                   </div>
                 </div>
               );
