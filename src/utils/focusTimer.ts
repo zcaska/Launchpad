@@ -13,9 +13,10 @@ export interface FocusTimerState {
 
 export const FOCUS_TIMER_STORAGE_KEY = 'launchpad_focus_timer_v1';
 
-export function loadFocusTimer(): FocusTimerState | null {
+export function loadFocusTimer(scope?: string): FocusTimerState | null {
+  const key = scope ? `${FOCUS_TIMER_STORAGE_KEY}:${scope}` : FOCUS_TIMER_STORAGE_KEY;
   try {
-    const raw = typeof localStorage !== 'undefined' ? localStorage.getItem(FOCUS_TIMER_STORAGE_KEY) : null;
+    const raw = typeof localStorage !== 'undefined' ? localStorage.getItem(key) : null;
     if (!raw) return null;
     const parsed = JSON.parse(raw);
     if (!parsed || typeof parsed.taskId !== 'string' || typeof parsed.startedAt !== 'number') return null;
@@ -30,14 +31,15 @@ export function loadFocusTimer(): FocusTimerState | null {
   }
 }
 
-export function saveFocusTimer(state: FocusTimerState | null): void {
+export function saveFocusTimer(state: FocusTimerState | null, scope?: string): void {
+  const key = scope ? `${FOCUS_TIMER_STORAGE_KEY}:${scope}` : FOCUS_TIMER_STORAGE_KEY;
   try {
     if (typeof localStorage === 'undefined') return;
     if (!state) {
-      localStorage.removeItem(FOCUS_TIMER_STORAGE_KEY);
+      localStorage.removeItem(key);
       return;
     }
-    localStorage.setItem(FOCUS_TIMER_STORAGE_KEY, JSON.stringify(state));
+    localStorage.setItem(key, JSON.stringify(state));
   } catch {
     // Storage full or unavailable: timer keeps running in memory only.
   }

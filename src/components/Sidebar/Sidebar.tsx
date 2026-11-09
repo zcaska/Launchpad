@@ -172,6 +172,7 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
       )}
 
       <aside
+        inert={!isMobileOpen}
         className={`fixed inset-y-0 left-0 z-50 w-72 max-w-[85vw] bg-white dark:bg-serene-surface-dark shadow-2xl flex flex-col md:hidden transition-transform duration-300 ease-in-out border-r border-serene-border-light dark:border-serene-border-dark ${
           isMobileOpen ? 'translate-x-0' : '-translate-x-full pointer-events-none'
         }`}

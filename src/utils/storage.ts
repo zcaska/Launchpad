@@ -138,6 +138,8 @@ export function sanitizeAppData(parsed: any, saveRollingBackup: boolean = true):
   // Ensure all required properties exist (migration guard)
   const quickNotes: QuickNote[] = Array.isArray(parsed.quickNotes)
     ? parsed.quickNotes.map((n: any, idx: number) => ({
+        pendingReflection: n.pendingReflection === true,
+        rewardAlreadyGranted: n.rewardAlreadyGranted === true,
         id: typeof n.id === 'string' && n.id ? n.id : `task-migrated-${idx}-${Date.now()}`,
         text: typeof n.text === 'string' ? n.text : 'Untitled Task',
         description: typeof n.description === 'string' ? n.description : undefined,
@@ -217,6 +219,12 @@ export function sanitizeAppData(parsed: any, saveRollingBackup: boolean = true):
     settings,
     gamification,
     growthHistory,
+    reflections: Array.isArray(parsed.reflections) ? parsed.reflections.filter((entry: any) =>
+      entry && typeof entry.date === 'string'
+      && Array.isArray(entry.questions) && entry.questions.every((value: unknown) => typeof value === 'string')
+      && Array.isArray(entry.answers) && entry.answers.every((value: unknown) => typeof value === 'string')
+      && Array.isArray(entry.taskTitles) && entry.taskTitles.every((value: unknown) => typeof value === 'string')
+    ) : [],
   };
 
   // Keep a fresh rolling backup of valid data
@@ -379,7 +387,7 @@ export function exportDataAsJson(data: AppData): void {
 /**
  * Deeply validates, repairs, and imports backup JSON data.
  */
-export function importDataFromJson(jsonStr: string): AppData {
+export function importDataFromJson(jsonStr: string, saveRollingBackup = true): AppData {
   if (typeof jsonStr !== 'string' || !jsonStr.trim()) {
     throw new Error('Backup file is empty.');
   }
@@ -408,6 +416,6 @@ export function importDataFromJson(jsonStr: string): AppData {
   }
 
   // Use sanitizeAppData to apply full validation, ID repair, and migration rules
-  const sanitized = sanitizeAppData(parsed, true);
+  const sanitized = sanitizeAppData(parsed, saveRollingBackup);
   return sanitized;
 }

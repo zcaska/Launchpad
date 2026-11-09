@@ -42,6 +42,7 @@ export interface TaskManagementScreenProps {
   isTokenExpired?: boolean;
   syncError?: string;
   initialTaskId?: string | null;
+  onInitialTaskOpened?: () => void;
   onToggleTask?: (taskId: string) => void;
   onToggleSubtask?: (taskId: string, subtaskId: string) => void;
   tickTickSync?: TickTickSyncManagerReturn;
@@ -63,6 +64,7 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
   isTokenExpired = false,
   syncError,
   initialTaskId,
+  onInitialTaskOpened,
   onToggleTask,
   onToggleSubtask,
   tickTickSync,
@@ -299,11 +301,12 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
       if (taskToEdit) {
         openedInitialTaskIdRef.current = initialTaskId;
         handleOpenEditForm(taskToEdit);
+        onInitialTaskOpened?.();
       }
     } else if (!initialTaskId) {
       openedInitialTaskIdRef.current = null;
     }
-  }, [initialTaskId, notes]);
+  }, [initialTaskId, notes, onInitialTaskOpened]);
 
   // Add Attached URL
   const handleAddUrl = () => {

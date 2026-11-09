@@ -42,6 +42,9 @@ import {
 import { isCalendarTask } from '../../utils/calendarSchedule';
 import type { TickTickSyncManagerReturn } from '../../services/ticktickSyncManager';
 import { TickTickSettingsCard } from './TickTickSettingsCard';
+import { CloudWorkspaceSettings } from './CloudWorkspaceSettings';
+import type { CloudWorkspace } from '../../services/cloudWorkspace';
+import type { useCloudSync } from '../../services/useCloudSync';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -52,6 +55,9 @@ interface SettingsModalProps {
   onSyncCalendar?: () => Promise<void>;
   isSyncingCalendar?: boolean;
   tickTickSync?: TickTickSyncManagerReturn;
+  workspace?: CloudWorkspace | null;
+  onSwitchWorkspace?: (workspace: CloudWorkspace | null) => void;
+  cloudSync?: ReturnType<typeof useCloudSync>;
 }
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({
@@ -63,6 +69,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   onSyncCalendar,
   isSyncingCalendar = false,
   tickTickSync,
+  workspace = null,
+  onSwitchWorkspace,
+  cloudSync,
 }) => {
   const [copiedUrl, setCopiedUrl] = useState(false);
   const [isMascotShowcaseOpen, setIsMascotShowcaseOpen] = useState(false);
@@ -88,7 +97,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     reader.onload = (event) => {
       try {
         const text = event.target?.result as string;
-        const imported = importDataFromJson(text);
+        const imported = importDataFromJson(text, !workspace);
         onUpdateAppData(imported);
         alert('Data successfully imported and restored!');
       } catch (err: any) {
@@ -310,6 +319,26 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
         {/* Content */}
         <div className="p-5 space-y-6 overflow-y-auto flex-1 text-xs">
+          {Boolean(appData.reflections?.length) && (
+            <section className="rounded-xl border border-serene-border-light dark:border-serene-border-dark p-4 space-y-3 text-serene-text-primary dark:text-serene-text-darkPrimary">
+              <h3 className="font-bold text-sm">Reflection journal</h3>
+              {[...(appData.reflections || [])].reverse().map((entry, index) => (
+                <details key={`${entry.date}-${index}`} className="rounded-lg border border-serene-border-light dark:border-serene-border-dark p-3">
+                  <summary className="cursor-pointer font-semibold">{new Date(entry.date).toLocaleString()} · {entry.taskTitles.join(', ')}</summary>
+                  {entry.questions.map((question, i) => (
+                    <div key={i} className="mt-3 space-y-1">
+                      <p className="font-semibold">{question}</p>
+                      <p className="whitespace-pre-wrap leading-relaxed text-serene-text-secondary dark:text-serene-text-darkSecondary">{entry.answers[i]}</p>
+                    </div>
+                  ))}
+                </details>
+              ))}
+            </section>
+          )}
+          {onSwitchWorkspace && cloudSync && (
+            <CloudWorkspaceSettings workspace={workspace} onSwitch={onSwitchWorkspace} sync={cloudSync} />
+          )}
+
           {/* Time Snatch Redirect Integration Banner */}
           <div className="p-4 bg-serene-primary-soft/60 dark:bg-serene-primary/10 border border-serene-primary/20 rounded-xl space-y-2.5">
             <div className="flex items-center gap-2 text-serene-primary dark:text-serene-primary-dark font-bold text-xs">
@@ -409,6 +438,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             </div>
           </div>
 
+          {workspace && <p className="text-sm">Google Calendar, TickTick, and OpenRouter are available in the local workspace.</p>}
+          {!workspace && <>
           {/* Optional OpenRouter API Web Discovery */}
           <div className="p-4 rounded-xl border border-serene-border-light dark:border-serene-border-dark space-y-3 bg-white dark:bg-serene-surface-dark">
             <div className="flex items-center justify-between">
@@ -727,6 +758,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               </div>
             </div>
           </div>
+
+          </>}
 
           {/* TickTick Two-Way Sync Integration */}
           {tickTickSync && (

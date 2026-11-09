@@ -40,7 +40,8 @@ export interface PrimaryFocusCardProps {
   selectedTaskId?: string | null;
   onSelectTask?: (id: string) => void;
   onPreviewTask?: (id: string) => void;
-  onToggleTask?: (taskId: string) => void;
+  completedTask?: QuickNote | null;
+  onCompleteTask?: (task: QuickNote) => void;
   onToggleSubtask?: (taskId: string, subtaskId: string) => void;
   onOpenTaskEdit?: (task: QuickNote) => void;
   onOpenCalendarSettings?: () => void;
@@ -184,7 +185,8 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
   selectedTaskId,
   onSelectTask,
   onPreviewTask,
-  onToggleTask,
+  completedTask,
+  onCompleteTask,
   onToggleSubtask,
   onOpenTaskEdit,
   onOpenCalendarSettings,
@@ -238,69 +240,29 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Determine active task:
-  // 1. Explicitly selectedTaskId if exists and is not done
-  // 2. Highest urgency pending task
-  // 3. Fallback to null (Clean "Clear Runway" empty state if no pending tasks remain)
-  const activeTask = useMemo(() => {
-    if (selectedTaskId) {
-      const matched = tasks.find((t) => t.id === selectedTaskId);
-      if (matched && !matched.isDone) return matched;
-    }
-    const pendingTasks = tasks.filter((t) => !t.isDone);
-    if (pendingTasks.length === 0) {
-      return null;
-    }
-    // Sort pending tasks by urgency score descending
-    const sorted = [...pendingTasks].sort((a, b) => {
-      const urgA = calculateTaskUrgency(a.deadline).urgencyWeight;
-      const urgB = calculateTaskUrgency(b.deadline).urgencyWeight;
-      return urgB - urgA;
-    });
-    return sorted[0];
-  }, [tasks, selectedTaskId]);
-
-  // Filter and sort today's tasks for switching in Primary Focus:
-  // Prioritize calendar events and tasks due today / overdue.
-  // Fall back to non-future pending tasks so users with un-dated tasks can also switch.
-  const todayTasks = useMemo(() => {
-    const pendingTasks = tasks.filter((t) => !t.isDone);
-    if (pendingTasks.length === 0) return [];
-
-    const strictlyToday = pendingTasks.filter((t) => {
-      if (t.source === 'google_calendar') return true;
-      const urg = calculateTaskUrgency(t.deadline);
-      return urg.isDueToday || urg.isOverdue;
-    });
-
-    const candidateList = strictlyToday.length > 0
-      ? strictlyToday
-      : pendingTasks.filter((t) => {
-          const urg = calculateTaskUrgency(t.deadline);
-          if (urg.tier === 'upcoming' && !urg.isDueToday) return false;
-          if (urg.tier === 'later' || urg.tier === 'long_term') return false;
-          return true;
-        });
-
-    const finalPool = candidateList.length > 0 ? candidateList : pendingTasks;
-
-    return [...finalPool].sort((a, b) => {
-      const urgA = calculateTaskUrgency(a.deadline).urgencyWeight;
-      const urgB = calculateTaskUrgency(b.deadline).urgencyWeight;
-      return urgB - urgA;
-    });
+  const { pendingTasks, todayTasks } = useMemo(() => {
+    const now = new Date();
+    const ranked = tasks
+      .filter((task) => !task.isDone)
+      .map((task) => ({ task, urgency: calculateTaskUrgency(task.deadline, now) }))
+      .sort((a, b) => b.urgency.urgencyWeight - a.urgency.urgencyWeight);
+    const due = ranked.filter(({ task, urgency }) =>
+      task.source === 'google_calendar' || urgency.isDueToday || urgency.isOverdue
+    );
+    const current = ranked.filter(({ urgency }) =>
+      urgency.tier !== 'upcoming' && urgency.tier !== 'later' && urgency.tier !== 'long_term'
+    );
+    return {
+      pendingTasks: ranked.map(({ task }) => task),
+      todayTasks: (due.length ? due : current.length ? current : ranked).map(({ task }) => task),
+    };
   }, [tasks]);
 
+  const activeTask = completedTask ?? pendingTasks.find((task) => task.id === selectedTaskId) ?? pendingTasks[0];
   const effectiveTodayTasks = useMemo(() => {
-    if (!selectedTaskId) return todayTasks;
-    const isIncluded = todayTasks.some((t) => t.id === selectedTaskId);
-    if (isIncluded) return todayTasks;
-    const explicitTask = tasks.find((t) => t.id === selectedTaskId && !t.isDone);
-    if (explicitTask) {
-      return [explicitTask, ...todayTasks];
-    }
-    return todayTasks;
-  }, [todayTasks, selectedTaskId, tasks]);
+    if (!activeTask || completedTask || todayTasks.some((task) => task.id === activeTask.id)) return todayTasks;
+    return [activeTask, ...todayTasks];
+  }, [todayTasks, activeTask, completedTask]);
 
   const currentTaskIndex = useMemo(() => {
     if (!activeTask || effectiveTodayTasks.length === 0) return -1;
@@ -309,7 +271,7 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
   }, [activeTask, effectiveTodayTasks]);
 
   const handlePrevTask = () => {
-    if (effectiveTodayTasks.length <= 1) return;
+    if (completedTask || effectiveTodayTasks.length <= 1) return;
     const newIndex = currentTaskIndex <= 0 ? effectiveTodayTasks.length - 1 : currentTaskIndex - 1;
     const nextTask = effectiveTodayTasks[newIndex];
     if (nextTask) {
@@ -319,7 +281,7 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
   };
 
   const handleNextTask = () => {
-    if (effectiveTodayTasks.length <= 1) return;
+    if (completedTask || effectiveTodayTasks.length <= 1) return;
     const newIndex = currentTaskIndex >= effectiveTodayTasks.length - 1 ? 0 : currentTaskIndex + 1;
     const nextTask = effectiveTodayTasks[newIndex];
     if (nextTask) {
@@ -339,9 +301,10 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
 
   // Keyboard navigation between today's tasks (Left/Right arrows when not focused on form fields)
   useEffect(() => {
-    if (effectiveTodayTasks.length <= 1) return;
+    if (completedTask || effectiveTodayTasks.length <= 1) return;
     function handleKeyDown(e: KeyboardEvent) {
       const tag = (e.target as HTMLElement)?.tagName?.toLowerCase();
+      if (e.defaultPrevented || document.querySelector('dialog[open]')) return;
       if (tag === 'input' || tag === 'textarea' || (e.target as HTMLElement)?.isContentEditable) {
         return;
       }
@@ -353,11 +316,11 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
     }
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [effectiveTodayTasks, currentTaskIndex]);
+  }, [effectiveTodayTasks, currentTaskIndex, completedTask, onSelectTask, onPreviewTask]);
 
   // Pure visual task switcher: Chevrons + dynamic capsule dots (No explanatory text)
   const renderVisualTaskSwitcher = () => {
-    if (effectiveTodayTasks.length <= 1) return null;
+    if (completedTask || effectiveTodayTasks.length <= 1) return null;
 
     return (
       <div
@@ -449,10 +412,10 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
   const isTimerOnThisTask = Boolean(focusTimer && activeTask && focusTimer.taskId === activeTask.id);
   const [, setTimerTick] = useState(0);
   useEffect(() => {
-    if (!focusTimer?.running) return;
+    if (!focusTimer?.running || !isTimerOnThisTask) return;
     const id = setInterval(() => setTimerTick((n) => n + 1), 1000);
     return () => clearInterval(id);
-  }, [focusTimer?.running, focusTimer?.taskId]);
+  }, [focusTimer?.running, isTimerOnThisTask]);
   const liveElapsed = focusTimer && activeTask && focusTimer.taskId === activeTask.id
     ? elapsedSeconds(focusTimer)
     : 0;
@@ -550,6 +513,8 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
       {/* 1. DESKTOP VIEW (Visible on md and up: hidden md:flex)   */}
       {/* ======================================================== */}
       <div
+        inert={Boolean(completedTask)}
+        data-focus-completing={completedTask ? true : undefined}
         className={`hidden md:flex flex-col w-full bg-white dark:bg-serene-surface-dark border border-serene-border-light dark:border-serene-border-dark rounded-2xl p-5 shadow-subtle hover:shadow-card transition-all justify-between ${className}`}
       >
         {/* 1. TOP HEADER: PRIMARY FOCUS (Removed duplicate due date badge per user request) */}
@@ -573,20 +538,20 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
               {/* Task Icon in elevated rounded container with direct completion toggle */}
               <button
                 type="button"
-                onClick={() => onToggleTask?.(activeTask.id)}
+                onClick={() => onCompleteTask?.(activeTask)}
                 className="group/iconToggle w-14 h-14 rounded-2xl bg-white dark:bg-stone-900/80 border border-rose-200/80 dark:border-rose-900/50 flex items-center justify-center shrink-0 shadow-2xs hover:border-teal-600 dark:hover:border-teal-500 hover:bg-teal-50/60 dark:hover:bg-teal-950/40 transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-teal-500/30"
                 title={activeTask.isDone ? 'Mark as incomplete' : 'Mark task complete'}
                 aria-label={activeTask.isDone ? 'Mark as incomplete' : 'Mark task complete'}
               >
                 <div className="relative flex items-center justify-center">
-                  <span className="transition-all duration-150 group-hover/iconToggle:opacity-0 group-hover/iconToggle:scale-75">
+                  <span className={completedTask ? "opacity-0" : "transition-all duration-150 group-hover/iconToggle:opacity-0 group-hover/iconToggle:scale-75"}>
                     {isCalendarTask ? (
                       <Calendar className="w-7 h-7 text-rose-500" />
                     ) : (
                       <Target className="w-7 h-7 text-rose-500" />
                     )}
                   </span>
-                  <span className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/iconToggle:opacity-100 transition-all duration-150 scale-75 group-hover/iconToggle:scale-100">
+                  <span className={`absolute inset-0 flex items-center justify-center ${completedTask ? "opacity-100" : "opacity-0 group-hover/iconToggle:opacity-100 scale-75 group-hover/iconToggle:scale-100"} transition-all duration-150`}>
                     <Check className="w-7 h-7 text-teal-700 dark:text-teal-400 stroke-[3]" />
                   </span>
                 </div>
@@ -613,7 +578,7 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
                     setPreviewTaskId(activeTask.id);
                   }}
                 >
-                  {activeTask.text}
+                  {completedTask ? <s>{activeTask.text}</s> : activeTask.text}
                 </h3>
 
                 {/* Multiline Description with safe sanitization */}
@@ -923,7 +888,7 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
 
             <button
               type="button"
-              onClick={() => onToggleTask?.(activeTask.id)}
+              onClick={() => onCompleteTask?.(activeTask)}
               className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-xl border border-teal-200 dark:border-teal-800/60 bg-teal-50 dark:bg-teal-950/40 hover:bg-teal-100 dark:hover:bg-teal-900/60 text-teal-800 dark:text-teal-200 text-xs sm:text-sm font-semibold transition-all cursor-pointer shrink-0 shadow-2xs hover:shadow-xs active:scale-[0.99]"
               title="Mark task as complete"
             >
@@ -970,7 +935,7 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
                   <button
                     type="button"
                     onClick={() => {
-                      onToggleTask?.(activeTask.id);
+                      onCompleteTask?.(activeTask);
                       setIsOverflowMenuOpen(false);
                     }}
                     className="w-full text-left px-3 py-2 flex items-center gap-2 hover:bg-stone-100 dark:hover:bg-stone-800 text-serene-text-primary dark:text-serene-text-darkPrimary transition-colors"
@@ -1013,6 +978,8 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
       {/* Strictly matches mobile inspo design                     */}
       {/* ======================================================== */}
       <div
+        inert={Boolean(completedTask)}
+        data-focus-completing={completedTask ? true : undefined}
         className={`flex md:hidden flex-col w-full bg-white dark:bg-serene-surface-dark border border-serene-border-light dark:border-serene-border-dark rounded-2xl p-3.5 shadow-subtle hover:shadow-card transition-all justify-between ${className}`}
       >
         {/* 1. TOP HEADER: PRIMARY FOCUS (Mobile - with Info icon, no duplicate due date) */}
@@ -1036,20 +1003,20 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
             <div className="flex items-start gap-2.5 min-w-0 flex-1">
               <button
                 type="button"
-                onClick={() => onToggleTask?.(activeTask.id)}
+                onClick={() => onCompleteTask?.(activeTask)}
                 className="group/iconToggle w-11 h-11 rounded-2xl bg-white dark:bg-stone-900/80 border border-rose-200/80 dark:border-rose-900/50 flex items-center justify-center shrink-0 shadow-2xs hover:border-teal-600 dark:hover:border-teal-500 hover:bg-teal-50/60 dark:hover:bg-teal-950/40 transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-teal-500/30"
                 title={activeTask.isDone ? 'Mark as incomplete' : 'Mark task complete'}
                 aria-label={activeTask.isDone ? 'Mark as incomplete' : 'Mark task complete'}
               >
                 <div className="relative flex items-center justify-center">
-                  <span className="transition-all duration-150 group-hover/iconToggle:opacity-0 group-hover/iconToggle:scale-75">
+                  <span className={completedTask ? "opacity-0" : "transition-all duration-150 group-hover/iconToggle:opacity-0 group-hover/iconToggle:scale-75"}>
                     {isCalendarTask ? (
                       <Calendar className="w-5.5 h-5.5 text-rose-500" />
                     ) : (
                       <Target className="w-5.5 h-5.5 text-rose-500" />
                     )}
                   </span>
-                  <span className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/iconToggle:opacity-100 transition-all duration-150 scale-75 group-hover/iconToggle:scale-100">
+                  <span className={`absolute inset-0 flex items-center justify-center ${completedTask ? "opacity-100" : "opacity-0 group-hover/iconToggle:opacity-100 scale-75 group-hover/iconToggle:scale-100"} transition-all duration-150`}>
                     <Check className="w-5.5 h-5.5 text-teal-700 dark:text-teal-400 stroke-[3]" />
                   </span>
                 </div>
@@ -1076,7 +1043,7 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
                     setPreviewTaskId(activeTask.id);
                   }}
                 >
-                  {activeTask.text}
+                  {completedTask ? <s>{activeTask.text}</s> : activeTask.text}
                 </h3>
 
                 {/* Multiline Description with safe sanitization */}
@@ -1396,7 +1363,7 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
 
             <button
               type="button"
-              onClick={() => onToggleTask?.(activeTask.id)}
+              onClick={() => onCompleteTask?.(activeTask)}
               className="inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl border border-teal-500/50 bg-teal-50/60 dark:bg-teal-950/30 hover:bg-teal-100 dark:hover:bg-teal-900/50 text-teal-800 dark:text-teal-300 text-xs font-semibold transition-all cursor-pointer shrink-0 shadow-2xs"
               title="Mark task as complete"
             >
@@ -1443,7 +1410,7 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
                   <button
                     type="button"
                     onClick={() => {
-                      onToggleTask?.(activeTask.id);
+                      onCompleteTask?.(activeTask);
                       setIsOverflowMenuOpen(false);
                     }}
                     className="w-full text-left px-3 py-2 flex items-center gap-2 hover:bg-stone-100 dark:hover:bg-stone-800 text-serene-text-primary dark:text-serene-text-darkPrimary transition-colors"

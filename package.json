@@ -6,13 +6,14 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "test": "tsx src/utils/storage.test.ts && tsx src/utils/ticktickSync.test.ts && tsx src/services/ticktickSyncManager.test.ts && tsx src/services/ticktickService.test.ts && tsx src/utils/calendarSchedule.test.ts",
+    "test": "tsx src/utils/storage.test.ts && tsx src/utils/ticktickSync.test.ts && tsx src/services/ticktickSyncManager.test.ts && tsx src/services/ticktickService.test.ts && tsx src/utils/calendarSchedule.test.ts && tsx src/services/cloudWorkspace.test.ts",
     "preview": "vite preview",
     "predeploy": "npm run build",
     "deploy": "gh-pages -d dist"
   },
   "dependencies": {
     "@phosphor-icons/react": "^2.1.10",
+    "@supabase/supabase-js": "2.119.0",
     "clsx": "^2.1.1",
     "motion": "^14.1.0",
     "react": "^19.0.0",

@@ -105,7 +105,7 @@ const propsTest: PrimaryFocusCardProps = {
   tasks: [mockTask],
   selectedTaskId: mockTask.id,
   onSelectTask: (_id: string) => {},
-  onToggleTask: (_taskId: string) => {},
+  onCompleteTask: (_task: QuickNote) => {},
   onToggleSubtask: (_taskId: string, _subtaskId: string) => {},
   onOpenTaskEdit: (_task: QuickNote) => {},
   onOpenCalendarSettings: () => {},

@@ -51,6 +51,8 @@ export interface Subtask {
 }
 
 export interface QuickNote {
+  pendingReflection?: boolean;
+  rewardAlreadyGranted?: boolean;
   id: string;
   text: string;
   description?: string;
@@ -220,7 +222,16 @@ export interface GamificationState {
   lastBackupTimestamp: number;
 }
 
+export interface ReflectionEntry {
+  date: string;
+  questions: string[];
+  answers: string[];
+  taskTitles: string[];
+  calendarEventIds?: string[];
+}
+
 export interface AppData {
+  reflections?: ReflectionEntry[];
   version: number;
   folders?: Folder[];
   links?: LinkItem[];

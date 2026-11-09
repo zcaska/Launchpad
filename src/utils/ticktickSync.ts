@@ -158,7 +158,7 @@ export function reconcileTasks(
     seenRemoteIds.add(remote.id);
 
     // Retain a local change until its push succeeds or the user resolves an error.
-    if (note.syncStatus === 'pending' || note.syncStatus === 'error') return note;
+    if (note.pendingReflection || note.syncStatus === 'pending' || note.syncStatus === 'error') return note;
 
     return {
       ...note,

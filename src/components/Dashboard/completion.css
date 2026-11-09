@@ -1,0 +1,55 @@
+[data-focus-completing] {
+  animation: focus-task-exit 420ms ease-in both;
+}
+
+@keyframes focus-task-exit {
+  0%, 36% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(-5px); }
+}
+
+.task-clear-particle {
+  position: absolute;
+  top: 0;
+  left: var(--position);
+  width: var(--size);
+  height: calc(var(--size) * 0.65);
+  background: var(--color);
+  border-radius: 2px;
+  animation: task-clear-cascade var(--duration) var(--delay) both;
+}
+
+[data-confetti="sparkle"] .task-clear-particle {
+  height: var(--size);
+  border-radius: 50%;
+}
+
+[data-confetti="burst"] .task-clear-particle {
+  top: 50%;
+  left: 50%;
+  animation-name: task-clear-burst;
+}
+
+@keyframes task-clear-cascade {
+  0% { opacity: 0; transform: translateY(-2vh); }
+  10% { opacity: 1; }
+  80% { opacity: 1; }
+  100% { opacity: 0; transform: translate(4vw, 102vh) rotate(var(--spin)); }
+}
+
+@keyframes task-clear-burst {
+  0% { opacity: 1; transform: translate(0, 0); }
+  26% { transform: translate(var(--drift), -36vh) rotate(90deg); }
+  75% { opacity: 1; }
+  100% { opacity: 0; transform: translate(var(--drift), 54vh) rotate(var(--spin)); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-focus-completing] { animation: none; }
+
+  [data-confetti] .task-clear-particle {
+    top: var(--resting-height);
+    left: var(--position);
+    opacity: 0.75;
+    animation: none;
+  }
+}

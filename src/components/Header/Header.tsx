@@ -128,6 +128,7 @@ export const Header: React.FC<HeaderProps> = ({
               <button
                 onClick={() => onSelectView(activeView === 'tasks' ? 'dashboard' : 'tasks')}
                 title={activeView === 'tasks' ? "Back to Dashboard" : "Open Tasks Screen"}
+                aria-label={activeView === 'tasks' ? 'Back to Dashboard' : 'Open Tasks Screen'}
                 className={`p-1.5 sm:p-2 rounded-lg border transition-all flex items-center gap-1 ${
                   activeView === 'tasks'
                     ? 'bg-serene-primary text-white border-serene-primary shadow-xs'

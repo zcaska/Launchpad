@@ -12,12 +12,16 @@ import {
   PetSettings,
   QuickNote,
 } from './types';
-import { loadAppData, saveAppData, saveAppDataDebounced, exportDataAsJson, importDataFromJson } from './utils/storage';
+import { loadAppData, saveAppData, saveAppDataDebounced, flushAppDataSave, exportDataAsJson, importDataFromJson } from './utils/storage';
+import { ACTIVE_CLOUD_KEY, cloudData, openCloudWorkspace, readCloudProjects, type CloudWorkspace } from './services/cloudWorkspace';
+import { useCloudSync } from './services/useCloudSync';
 import { recordTaskCompletion } from './utils/gamification';
 import { DEFAULT_SEED_DATA } from './data/seedData';
 import { Header } from './components/Header/Header';
 import { BackupReminderToast } from './components/Layout/BackupReminderToast';
 import { Sidebar } from './components/Sidebar/Sidebar';
+import { TaskClearReflection } from './components/Dashboard/TaskClearReflection';
+import { ConfettiOverlay } from './components/Dashboard/ConfettiOverlay';
 import { PrimaryFocusCard } from './components/Dashboard/PrimaryFocusCard';
 import { SmartSuggestionCard } from './components/Dashboard/SmartSuggestionCard';
 import LaunchpadPet from './components/Pet/LaunchpadPet';
@@ -44,9 +48,6 @@ const TaskManagementScreen = lazy(() =>
 );
 const SettingsModal = lazy(() =>
   import('./components/Modals/SettingsModal').then((m) => ({ default: m.SettingsModal }))
-);
-const ConfettiOverlay = lazy(() =>
-  import('./components/Dashboard/ConfettiOverlay').then((m) => ({ default: m.ConfettiOverlay }))
 );
 
 import { calculateCalendarScheduleSummary, syncCalendarEventsToQuickNotes } from './utils/calendarSchedule';
@@ -75,8 +76,13 @@ import {
 } from './utils/motion';
 import { useTickTickSyncManager } from './services/ticktickSyncManager';
 
-export function App() {
-  const [appData, setAppData] = useState<AppData>(() => loadAppData());
+export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
+  workspace?: CloudWorkspace | null;
+  onSwitchWorkspace?: (workspace: CloudWorkspace | null) => void;
+  cloudNotice?: string;
+} = {}) {
+  const [appData, setAppData] = useState<AppData>(() => workspace?.initial.data ?? loadAppData());
+  const workspaceScope = workspace ? `${workspace.project.url}:${workspace.userId}` : undefined;
   const [activeView, setActiveView] = useState<'dashboard' | 'tasks' | 'growth'>('dashboard');
   const [searchQuery, setSearchQuery] = useState('');
   const [isSyncingCalendar, setIsSyncingCalendar] = useState(false);
@@ -107,7 +113,7 @@ export function App() {
         : updatedNotesOrUpdater,
     }));
   }, []);
-  const tickTickSync = useTickTickSyncManager(appData.quickNotes, setSyncedNotes);
+  const tickTickSync = useTickTickSyncManager(appData.quickNotes, setSyncedNotes, Boolean(workspace));
 
   // Live clock tick for time radar calculations
   useEffect(() => {
@@ -117,8 +123,8 @@ export function App() {
 
   // Sync state changes to localStorage debounced
   useEffect(() => {
-    saveAppDataDebounced(appData);
-  }, [appData]);
+    if (!workspace) saveAppDataDebounced(appData);
+  }, [appData, workspace]);
 
   // Apply dark/light theme classes to <html>
   useEffect(() => {
@@ -146,12 +152,12 @@ export function App() {
   }, [appData.settings.theme]);
 
   // --- Focus Timer State -----------------------------------------------
-  const [focusTimer, setFocusTimer] = useState<FocusTimerState | null>(() => loadFocusTimer());
+  const [focusTimer, setFocusTimer] = useState<FocusTimerState | null>(() => loadFocusTimer(workspaceScope));
 
   // Save timer whenever state changes
   useEffect(() => {
-    saveFocusTimer(focusTimer);
-  }, [focusTimer]);
+    saveFocusTimer(focusTimer, workspaceScope);
+  }, [focusTimer, workspaceScope]);
 
   const handleTimerStart = useCallback((taskId: string) => {
     setFocusTimer({
@@ -220,29 +226,12 @@ export function App() {
     }
 
     setAppData((prev) => {
-      const { updatedTasks, toggledTask, isNowDone } = toggleTaskInList(prev.quickNotes, taskId);
-      if (isNowDone && toggledTask) {
-        if (updatedTasks.length > 0 && updatedTasks.every((t) => t.isDone)) {
-          setIsCelebrating(true);
-          setShowAllClearSuggestion(true);
-          setTimeout(() => setIsCelebrating(false), 4500);
-        }
-        const gamificationResult = recordTaskCompletion(
-          prev.gamification,
-          prev.growthHistory,
-          toggledTask
-        );
-        return {
-          ...prev,
-          quickNotes: updatedTasks,
-          gamification: gamificationResult.gamification,
-          growthHistory: gamificationResult.history,
-        };
-      }
-      return { ...prev, quickNotes: updatedTasks };
+      const { updatedTasks } = toggleTaskInList(prev.quickNotes, taskId);
+      return { ...prev, quickNotes: updatedTasks.map((task) => task.id === taskId
+        ? { ...task, pendingReflection: task.isDone } : task) };
     });
 
-    if (targetTask) {
+    if (targetTask && !becomingDone && !targetTask.pendingReflection) {
       tickTickSync.pushTaskToggle({ ...targetTask, isDone: becomingDone });
     }
 
@@ -252,25 +241,19 @@ export function App() {
   }, [appData.quickNotes, focusTimer, selectedFocusTaskId, tickTickSync]);
 
   const handleToggleSubtask = useCallback((taskId: string, subtaskId: string) => {
-    setAppData((prev) => {
-      const { updatedTasks, parentTask, parentBecameDone } = toggleSubtaskInList(prev.quickNotes, taskId, subtaskId);
-
-      if (parentBecameDone && parentTask) {
-        const gamificationResult = recordTaskCompletion(
-          prev.gamification,
-          prev.growthHistory,
-          parentTask
-        );
-        return {
-          ...prev,
-          quickNotes: updatedTasks,
-          gamification: gamificationResult.gamification,
-          growthHistory: gamificationResult.history,
-        };
+    if (focusTimer?.taskId === taskId) {
+      const task = appData.quickNotes.find((note) => note.id === taskId);
+      if (task && toggleSubtaskInList([task], taskId, subtaskId).parentBecameDone) {
+        handleTimerEnd();
       }
-      return { ...prev, quickNotes: updatedTasks };
+    }
+
+    setAppData((prev) => {
+      const { updatedTasks, parentBecameDone } = toggleSubtaskInList(prev.quickNotes, taskId, subtaskId);
+      return { ...prev, quickNotes: updatedTasks.map((task) => task.id === taskId
+        ? { ...task, pendingReflection: parentBecameDone ? true : task.isDone && task.pendingReflection } : task) };
     });
-  }, []);
+  }, [appData.quickNotes, focusTimer, handleTimerEnd]);
 
   // --- Launchpad Pet Controller ----------------------------------------
   const petEnabled = appData.settings.pet?.enabled ?? true;
@@ -295,7 +278,6 @@ export function App() {
   );
 
   const prevPendingCountRef = useRef(pendingTaskCount);
-  const prevPendingForCelebrationRef = useRef(pendingTaskCount);
   const pet = usePetController({
     enabled: petEnabled,
     paused: petPaused,
@@ -340,7 +322,8 @@ export function App() {
 
       const events = await fetchTodayGoogleEvents(token, config.calendarId || 'primary');
       setAppData((prev) => {
-        const syncedNotes = syncCalendarEventsToQuickNotes(prev.quickNotes, events);
+        const completedEventIds = new Set((prev.reflections || []).flatMap((entry) => entry.calendarEventIds || []));
+        const syncedNotes = syncCalendarEventsToQuickNotes(prev.quickNotes, events.filter((event) => !completedEventIds.has(event.id)));
         const updatedConfig: any = {
           ...prev.settings.googleCalendar,
           lastSyncedAt: Date.now(),
@@ -436,28 +419,96 @@ export function App() {
     setSuggestionOffset((prev) => prev + 1);
   }, [appData.learnedPreferences, timeOfDay]);
 
-  // All-tasks-cleared celebration
-  const [isCelebrating, setIsCelebrating] = useState(false);
-  const [showAllClearSuggestion, setShowAllClearSuggestion] = useState(
-    () => appData.quickNotes.every((t) => t.isDone)
-  );
+  const [completedFocusTask, setCompletedFocusTask] = useState<QuickNote | null>(null);
+  const [showReflection, setShowReflection] = useState(false);
+  const [showReflectionCelebration, setShowReflectionCelebration] = useState(false);
+  useEffect(() => {
+    if (!showReflectionCelebration) return;
+    const timeout = window.setTimeout(() => setShowReflectionCelebration(false), 3600);
+    return () => window.clearTimeout(timeout);
+  }, [showReflectionCelebration]);
+  const previousTasks = useRef(appData.quickNotes);
+  const allTasksDone = appData.quickNotes.length > 0 && pendingTaskCount === 0 && appData.quickNotes.some((task) => task.pendingReflection);
+  const applyCloudDownload = useCallback((next: AppData) => {
+    previousTasks.current = next.quickNotes;
+    setShowReflection(false);
+    setFocusTimer((timer) => timer && next.quickNotes.some((task) => task.id === timer.taskId && !task.isDone) ? timer : null);
+    setAppData(next);
+  }, []);
+  const cloudSync = useCloudSync(workspace, appData, applyCloudDownload);
+  const leavingRef = useRef({ appData, workspace, saveOnLeave: cloudSync.saveOnLeave, resume: cloudSync.resumeAfterLeave });
+  leavingRef.current = { appData, workspace, saveOnLeave: cloudSync.saveOnLeave, resume: cloudSync.resumeAfterLeave };
 
   useEffect(() => {
-    const prev = prevPendingForCelebrationRef.current;
-    prevPendingForCelebrationRef.current = pendingTaskCount;
-    if (prev > 0 && pendingTaskCount === 0 && appData.quickNotes.length > 0) {
-      setIsCelebrating(true);
-      setShowAllClearSuggestion(true);
-      const timer = setTimeout(() => setIsCelebrating(false), 4500);
-      return () => clearTimeout(timer);
+    let resetAfterLeave: AppData | null = null;
+    const onLeave = () => {
+      const { appData: current, workspace: activeWorkspace, saveOnLeave } = leavingRef.current;
+      if (!current.quickNotes.length || current.quickNotes.some((task) => !task.isDone)
+          || !current.quickNotes.some((task) => task.pendingReflection)) return;
+      resetAfterLeave = { ...current, quickNotes: current.quickNotes.map((task) =>
+        task.isDone ? { ...task, isDone: false, rewardAlreadyGranted: task.rewardAlreadyGranted || !task.pendingReflection, pendingReflection: false,
+          subtasks: task.subtasks?.map((subtask) => ({ ...subtask, isDone: false })) } : task) };
+      if (activeWorkspace) saveOnLeave(resetAfterLeave);
+      else {
+        flushAppDataSave();
+        saveAppData(resetAfterLeave);
+      }
+    };
+    const onReturn = (event: PageTransitionEvent) => {
+      if (event.persisted && resetAfterLeave) {
+        setShowReflection(false);
+        setAppData(resetAfterLeave);
+        if (leavingRef.current.workspace) leavingRef.current.resume();
+      }
+    };
+    window.addEventListener('pagehide', onLeave);
+    window.addEventListener('pageshow', onReturn);
+    return () => {
+      window.removeEventListener('pagehide', onLeave);
+      window.removeEventListener('pageshow', onReturn);
+    };
+  }, []);
+
+  useEffect(() => {
+    const before = previousTasks.current;
+    previousTasks.current = appData.quickNotes;
+    if (!allTasksDone) {
+      setShowReflection(false);
+      return;
     }
-    if (pendingTaskCount === 0 && appData.quickNotes.length > 0) {
-      setShowAllClearSuggestion(true);
+
+    if (before !== appData.quickNotes || appData.quickNotes.some((task) => task.pendingReflection)) {
+      setShowReflection(true);
     }
-  }, [pendingTaskCount, appData.quickNotes.length]);
+  }, [appData.quickNotes, allTasksDone]);
+
+  useEffect(() => {
+    if (!completedFocusTask) return;
+    const timeout = window.setTimeout(() => setCompletedFocusTask(null), 420);
+    return () => window.clearTimeout(timeout);
+  }, [completedFocusTask]);
+
+  const completeFocusTask = (task: QuickNote) => {
+    if (completedFocusTask) return;
+    setCompletedFocusTask({ ...task, isDone: true });
+    handleToggleTaskWithTimer(task.id);
+  };
+
+  const toggleFocusSubtask = (taskId: string, subtaskId: string) => {
+    if (completedFocusTask) return;
+    const task = appData.quickNotes.find((note) => note.id === taskId);
+    if (!task) return;
+    const { parentBecameDone, parentTask } = toggleSubtaskInList([task], taskId, subtaskId);
+    if (parentBecameDone && parentTask) {
+      setCompletedFocusTask(parentTask);
+      setSelectedFocusTaskId(null);
+    }
+    handleToggleSubtask(taskId, subtaskId);
+  };
 
   // Keyboard shortcuts
   useEffect(() => {
+    if (showReflection) return;
     const handleKeyDown = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement;
       const isInput = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable;
@@ -501,7 +552,7 @@ export function App() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isQuickAddTaskOpen, isSparkIdeaModalOpen, isSettingsModalOpen, isMobileSidebarOpen, isQuickNotesOpen, handleNextSuggestion]);
+  }, [showReflection, isQuickAddTaskOpen, isSparkIdeaModalOpen, isSettingsModalOpen, isMobileSidebarOpen, isQuickNotesOpen, handleNextSuggestion]);
 
   const handleAddQuickTask = useCallback((taskData: {
     text: string;
@@ -544,8 +595,8 @@ export function App() {
   };
 
   const handleResetData = () => {
-    setAppData(DEFAULT_SEED_DATA);
-    saveAppData(DEFAULT_SEED_DATA);
+    setAppData(workspace ? cloudData(DEFAULT_SEED_DATA) : DEFAULT_SEED_DATA);
+    if (!workspace) saveAppData(DEFAULT_SEED_DATA);
     setIsSettingsModalOpen(false);
   };
 
@@ -566,7 +617,7 @@ export function App() {
           lastBackupTimestamp: Date.now(),
         },
       };
-      saveAppData(updated);
+      if (!workspace) saveAppData(updated);
       return updated;
     });
     setIsBackupDismissed(true);
@@ -597,6 +648,13 @@ export function App() {
         pendingTasksCount={taskLoad.pendingCount}
         onToggleMobileSidebar={() => setIsMobileSidebarOpen((prev) => !prev)}
       />
+
+      {(workspace || cloudNotice) && (
+        <button type="button" onClick={() => setIsSettingsModalOpen(true)}
+          className="shrink-0 truncate border-b border-teal-700/20 bg-teal-500/10 px-4 py-1.5 text-left text-xs">
+          {workspace ? `${workspace.project.name} · ${cloudSync.cacheError ? 'Offline storage unavailable' : cloudSync.status}` : cloudNotice}
+        </button>
+      )}
 
       {/* 5-Day Automated Backup Reminder Banner */}
       {daysSinceBackup >= 5 && !isBackupDismissed && (
@@ -651,16 +709,16 @@ export function App() {
                   onSelectHero={(id) => {
                     setAppData((prev) => {
                       const updated = { ...prev, gamification: { ...prev.gamification, activeHeroId: id } };
-                      saveAppData(updated);
+                      if (!workspace) saveAppData(updated);
                       return updated;
                     });
                   }}
                   onExportBackup={handleQuickBackup}
                   onImportBackup={(jsonStr) => {
                     try {
-                      const imported = importDataFromJson(jsonStr);
-                      setAppData(imported);
-                      saveAppData(imported);
+                      const imported = importDataFromJson(jsonStr, !workspace);
+                      setAppData(workspace ? cloudData(imported) : imported);
+                      if (!workspace) saveAppData(imported);
                       alert("Progress and data imported successfully!");
                     } catch (err: any) {
                       alert("Import failed: " + (err.message || "Invalid backup file"));
@@ -697,6 +755,7 @@ export function App() {
                   isTokenExpired={calendarSummary.isTokenExpired}
                   syncError={calendarSyncError || calendarSummary.syncError}
                   initialTaskId={editingTaskIdForScreen}
+                  onInitialTaskOpened={() => setEditingTaskIdForScreen(null)}
                   onToggleTask={handleToggleTaskWithTimer}
                   onToggleSubtask={handleToggleSubtask}
                   tickTickSync={tickTickSync}
@@ -718,14 +777,13 @@ export function App() {
                   <PrimaryFocusCard
                     tasks={appData.quickNotes}
                     selectedTaskId={selectedFocusTaskId}
-                    onSelectTask={(id) => setSelectedFocusTaskId(id)}
-                    onPreviewTask={(id) => setSelectedFocusTaskId(id)}
-                    onToggleTask={handleToggleTaskWithTimer}
-                    onToggleSubtask={handleToggleSubtask}
-                    onOpenTaskEdit={() => {
-                      if (selectedFocusTaskId) {
-                        setEditingTaskIdForScreen(selectedFocusTaskId);
-                      }
+                    onSelectTask={setSelectedFocusTaskId}
+                    onPreviewTask={setSelectedFocusTaskId}
+                    completedTask={completedFocusTask}
+                    onCompleteTask={completeFocusTask}
+                    onToggleSubtask={toggleFocusSubtask}
+                    onOpenTaskEdit={(task) => {
+                      setEditingTaskIdForScreen(task.id);
                       setActiveView('tasks');
                     }}
                     onOpenCalendarSettings={() => setIsSettingsModalOpen(true)}
@@ -735,7 +793,7 @@ export function App() {
                     onTimerPause={handleTimerPause}
                     onTimerResume={handleTimerResume}
                     onTimerEnd={handleTimerEnd}
-                    showSuggestion={showAllClearSuggestion}
+                    showSuggestion={pendingTaskCount === 0}
                     suggestionCandidate={currentSuggestion}
                     onApproveSuggestion={handleApproveSuggestion}
                     onRejectSuggestion={handleRejectSuggestion}
@@ -880,24 +938,107 @@ export function App() {
             isOpen={isSettingsModalOpen}
             onClose={() => setIsSettingsModalOpen(false)}
             appData={appData}
-            onUpdateAppData={setAppData}
+            onUpdateAppData={(next) => setAppData(workspace ? cloudData(next) : next)}
             onResetData={handleResetData}
             onSyncCalendar={() => handleSyncCalendar(false)}
             isSyncingCalendar={isSyncingCalendar}
-            tickTickSync={tickTickSync}
+            tickTickSync={workspace ? undefined : tickTickSync}
+            workspace={workspace}
+            onSwitchWorkspace={onSwitchWorkspace}
+            cloudSync={cloudSync}
           />
         </Suspense>
       )}
 
-      {/* Fullscreen celebration */}
-      {isCelebrating && (
-        <Suspense fallback={null}>
-          <ConfettiOverlay style={appData.settings.confettiStyle || 'cascade'} />
-        </Suspense>
+      {showReflection && allTasksDone && !completedFocusTask && (
+        <TaskClearReflection
+          style={appData.settings.confettiStyle}
+          onClose={() => {
+            setShowReflection(false);
+            setAppData((prev) => ({ ...prev, quickNotes: prev.quickNotes.map((task) =>
+              task.isDone ? { ...task, isDone: false, rewardAlreadyGranted: task.rewardAlreadyGranted || !task.pendingReflection, pendingReflection: false,
+                subtasks: task.subtasks?.map((subtask) => ({ ...subtask, isDone: false })) } : task) }));
+          }}
+          onSubmit={(questions, answers) => {
+            if (questions.length !== 5 || answers.length !== 5
+              || answers.some((answer) => answer.trim().split(/\s+/u).filter(Boolean).length < 150)) return;
+            const completedTasks = appData.quickNotes.filter((task) => task.pendingReflection && task.isDone);
+            if (!completedTasks.length || appData.quickNotes.some((task) => !task.isDone)) return;
+            for (const task of completedTasks) void tickTickSync.pushTaskToggle(task);
+            setAppData((prev) => {
+              const completed = prev.quickNotes.filter((task) => task.pendingReflection && task.isDone);
+              if (!completed.length || prev.quickNotes.some((task) => !task.isDone)) return prev;
+              let gamification = prev.gamification;
+              let history = prev.growthHistory;
+              for (const task of completed) {
+                if (task.rewardAlreadyGranted) continue;
+                const result = recordTaskCompletion(gamification, history, task);
+                gamification = result.gamification;
+                history = result.history;
+              }
+              return { ...prev, gamification, growthHistory: history,
+                reflections: [...(prev.reflections || []), { date: new Date().toISOString(), questions, answers,
+                  taskTitles: completed.map((task) => task.text),
+                  calendarEventIds: prev.quickNotes.map((task) => task.eventId).filter((id): id is string => Boolean(id)) }],
+                quickNotes: [] };
+            });
+            setShowReflection(false);
+            setShowReflectionCelebration(true);
+          }}
+        />
       )}
+      {showReflectionCelebration && <ConfettiOverlay style={appData.settings.confettiStyle} />}
     </div>
     </IconContext.Provider>
   );
 }
 
-export default App;
+export default function WorkspaceApp() {
+  const [workspace, setWorkspace] = useState<CloudWorkspace | null>(null);
+  const [restoring, setRestoring] = useState(true);
+  const [cloudNotice, setCloudNotice] = useState<string>();
+  const switchWorkspace = useCallback((next: CloudWorkspace | null) => {
+    flushAppDataSave();
+    try {
+      if (next) localStorage.setItem(ACTIVE_CLOUD_KEY, next.project.url);
+      else localStorage.removeItem(ACTIVE_CLOUD_KEY);
+    } catch {
+      // The active workspace can still be used when device storage is unavailable.
+    }
+    setCloudNotice(undefined);
+    setWorkspace(next);
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function restore() {
+      try {
+        const saved = localStorage.getItem(ACTIVE_CLOUD_KEY);
+        const project = readCloudProjects().find((item) => item.url === saved);
+        if (!project) return;
+        const next = await openCloudWorkspace(project);
+        if (cancelled) return;
+        if (next) setWorkspace(next);
+        else setCloudNotice('Local workspace · Sign in again to reopen your cloud workspace');
+      } catch {
+        if (!cancelled) setCloudNotice('Local workspace · Could not reopen the saved cloud workspace');
+      } finally {
+        if (!cancelled) setRestoring(false);
+      }
+    }
+    void restore();
+    return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => {
+    if (!workspace) return;
+    const { data: { subscription } } = workspace.client.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_OUT' || (session && session.user.id !== workspace.userId)) switchWorkspace(null);
+    });
+    return () => subscription.unsubscribe();
+  }, [workspace, switchWorkspace]);
+
+  if (restoring) return <main className="p-6" role="status">Opening LaunchPAD…</main>;
+  const key = workspace ? `${workspace.project.url}:${workspace.userId}` : 'local';
+  return <App key={key} workspace={workspace} onSwitchWorkspace={switchWorkspace} cloudNotice={cloudNotice} />;
+}

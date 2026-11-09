@@ -63,9 +63,10 @@ export interface TickTickSyncManagerReturn {
 
 export function useTickTickSyncManager(
   _notes: QuickNote[],
-  setNotes: SetQuickNotes
+  setNotes: SetQuickNotes,
+  disabled = false
 ): TickTickSyncManagerReturn {
-  const [settings, setSettings] = useState<TickTickSettings>(loadTickTickSettings);
+  const [settings, setSettings] = useState<TickTickSettings>(() => disabled ? DEFAULT_TICKTICK_SETTINGS : loadTickTickSettings());
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
   const [syncError, setSyncError] = useState<string | null>(null);
 
@@ -80,8 +81,8 @@ export function useTickTickSyncManager(
   }, []);
 
   useEffect(() => {
-    saveTickTickSettings(settings);
-  }, [settings]);
+    if (!disabled) saveTickTickSettings(settings);
+  }, [settings, disabled]);
 
   // Manual & scheduled pull sync
   const syncNow = useCallback(async () => {
