@@ -4,7 +4,6 @@ import {
   X,
   DownloadSimple as Download,
   UploadSimple as Upload,
-  ArrowCounterClockwise as RotateCcw,
   ShieldCheck,
   Copy,
   Check,
@@ -21,7 +20,8 @@ import {
   ArrowsClockwise as RefreshCw,
   SignOut as LogOut,
   CheckCircle as CheckCircle2,
-  WarningCircle as AlertCircle
+  WarningCircle as AlertCircle,
+  Trash
 } from '@phosphor-icons/react';
 import { AppData, GoogleCalendarConfig } from '../../types';
 import { exportDataAsJson, importDataFromJson, getStorageMetrics } from '../../utils/storage';
@@ -51,7 +51,7 @@ interface SettingsModalProps {
   onClose: () => void;
   appData: AppData;
   onUpdateAppData: (data: AppData) => void;
-  onResetData: () => void;
+  onClearAllData: () => Promise<void> | void;
   onSyncCalendar?: () => Promise<void>;
   isSyncingCalendar?: boolean;
   tickTickSync?: TickTickSyncManagerReturn;
@@ -65,7 +65,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   onClose,
   appData,
   onUpdateAppData,
-  onResetData,
+  onClearAllData,
   onSyncCalendar,
   isSyncingCalendar = false,
   tickTickSync,
@@ -75,6 +75,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 }) => {
   const [copiedUrl, setCopiedUrl] = useState(false);
   const [isMascotShowcaseOpen, setIsMascotShowcaseOpen] = useState(false);
+  const [isClearingData, setIsClearingData] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const currentAppUrl = window.location.href;
@@ -107,10 +108,21 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     reader.readAsText(file);
   };
 
-  const handleResetConfirm = () => {
-    if (confirm('Are you sure you want to reset all data back to initial defaults? Any unsaved custom links will be replaced.')) {
-      onResetData();
+  const handleClearAllDataConfirm = async () => {
+    const confirmed = window.confirm(
+      'Are you sure you want to clear all data?\n\nThis will permanently delete all tasks, notes, bookmarks, reflections, and progress from both local storage and the cloud.\n\nYour account will NOT be deleted and you will NOT be signed out.'
+    );
+    if (!confirmed) return;
+
+    try {
+      setIsClearingData(true);
+      await onClearAllData();
+      alert('All data has been successfully cleared from local and cloud storage.');
       onClose();
+    } catch (err: any) {
+      alert('Failed to clear data: ' + (err?.message || 'Unknown error'));
+    } finally {
+      setIsClearingData(false);
     }
   };
 
@@ -1033,18 +1045,25 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             </div>
           </div>
 
-          {/* Danger Zone */}
-          <div className="p-3 rounded-xl border border-rose-200 dark:border-rose-900/40 bg-rose-50/50 dark:bg-rose-950/20 flex items-center justify-between">
+          {/* Danger Zone: Clear All Data */}
+          <div className="p-3.5 rounded-xl border border-rose-200 dark:border-rose-900/40 bg-rose-50/50 dark:bg-rose-950/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
-              <div className="font-semibold text-rose-800 dark:text-rose-300">Reset Default Seed Data</div>
-              <div className="text-[10px] text-rose-600 dark:text-rose-400">Restore fresh default settings & empty queue</div>
+              <div className="font-semibold text-rose-800 dark:text-rose-300 flex items-center gap-1.5 text-xs">
+                <Trash className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" />
+                <span>Clear All Data</span>
+              </div>
+              <div className="text-[10px] text-rose-600 dark:text-rose-400 mt-0.5">
+                Permanently delete all tasks, bookmarks, reflections, and history from local storage and cloud. Account stays signed in.
+              </div>
             </div>
             <button
-              onClick={handleResetConfirm}
-              className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg font-semibold flex items-center gap-1.5 transition-colors"
+              type="button"
+              onClick={handleClearAllDataConfirm}
+              disabled={isClearingData}
+              className="px-3.5 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg font-semibold flex items-center justify-center gap-1.5 transition-colors text-xs shrink-0 cursor-pointer disabled:opacity-50"
             >
-              <RotateCcw className="w-3.5 h-3.5" />
-              <span>Reset</span>
+              <Trash className="w-3.5 h-3.5" />
+              <span>{isClearingData ? 'Clearing...' : 'Clear All Data'}</span>
             </button>
           </div>
         </div>

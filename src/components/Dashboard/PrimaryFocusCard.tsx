@@ -3,9 +3,6 @@ import {
   Target,
   CalendarBlank as Calendar,
   Clock,
-  Play,
-  Pause,
-  Square,
   DotsThree as MoreHorizontal,
   DotsThreeVertical as MoreVertical,
   FileText,
@@ -14,7 +11,6 @@ import {
   Check,
   ListChecks as ListTodo,
   ArrowSquareOut as ExternalLink,
-  Timer,
   Sparkle as Sparkles,
   PencilSimple as Edit3,
   Copy,
@@ -24,7 +20,6 @@ import {
   CaretRight as ChevronRight
 } from '@phosphor-icons/react';
 import { QuickNote, RecommendationCandidate } from '../../types';
-import { FocusTimerState, elapsedSeconds, formatElapsed } from '../../utils/focusTimer';
 import {
   calculateTaskUrgency,
   computeSubtaskContainerState,
@@ -47,12 +42,6 @@ export interface PrimaryFocusCardProps {
   onOpenCalendarSettings?: () => void;
   clockFormat: '12h' | '24h';
   className?: string;
-  onStartTask?: (task: QuickNote) => void;
-  focusTimer?: FocusTimerState | null;
-  onTimerStart?: (taskId: string) => void;
-  onTimerPause?: () => void;
-  onTimerResume?: () => void;
-  onTimerEnd?: () => void;
   /** When true the empty state shows the recommender's smart suggestion (all-tasks-cleared). */
   showSuggestion?: boolean;
   suggestionCandidate?: RecommendationCandidate | null;
@@ -192,12 +181,6 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
   onOpenCalendarSettings,
   clockFormat = '12h',
   className = '',
-  onStartTask,
-  focusTimer = null,
-  onTimerStart,
-  onTimerResume,
-  onTimerPause,
-  onTimerEnd,
   showSuggestion = false,
   suggestionCandidate = null,
   onApproveSuggestion,
@@ -408,39 +391,6 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
   const isCalendarTask = activeTask?.source === 'google_calendar';
   const durationEstimate = formatEventDuration(activeTask?.durationMinutes || 120);
 
-  // Live timer readout for the active task (1s tick only while running).
-  const isTimerOnThisTask = Boolean(focusTimer && activeTask && focusTimer.taskId === activeTask.id);
-  const [, setTimerTick] = useState(0);
-  useEffect(() => {
-    if (!focusTimer?.running || !isTimerOnThisTask) return;
-    const id = setInterval(() => setTimerTick((n) => n + 1), 1000);
-    return () => clearInterval(id);
-  }, [focusTimer?.running, isTimerOnThisTask]);
-  const liveElapsed = focusTimer && activeTask && focusTimer.taskId === activeTask.id
-    ? elapsedSeconds(focusTimer)
-    : 0;
-  const bankedSeconds = activeTask?.timeSpentSeconds || 0;
-
-  // Handlers
-  const handleStartNow = () => {
-    if (!activeTask) return;
-    // Timer owns the button when wired; otherwise fall back to selection.
-    if (onTimerStart && onTimerPause && onTimerResume) {
-      if (isTimerOnThisTask) {
-        if (focusTimer?.running) onTimerPause();
-        else onTimerResume();
-      } else {
-        onTimerStart(activeTask.id);
-      }
-      return;
-    }
-    if (onStartTask) {
-      onStartTask(activeTask);
-    } else if (onSelectTask) {
-      onSelectTask(activeTask.id);
-    }
-  };
-
   const handleCopyTitle = () => {
     if (!activeTask) return;
     navigator.clipboard?.writeText(activeTask.text);
@@ -602,7 +552,7 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
 
                   {/* Duration pill */}
                   <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg text-xs font-medium bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 border border-purple-200/70 dark:border-purple-900/40">
-                    <Timer className="w-3.5 h-3.5 shrink-0" />
+                    <Clock className="w-3.5 h-3.5 shrink-0" />
                     <span>{durationEstimate} estimated</span>
                   </div>
 
@@ -844,69 +794,25 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
 
         {/* 4. FOOTER ACTIONS (Desktop) */}
         <div className="mt-5 pt-3 border-t border-serene-border-light/60 dark:border-serene-border-dark/60 flex items-center justify-between gap-3">
-          {/* Left: timer status readout or subtle guidance prompt */}
+          {/* Left: subtle guidance prompt */}
           <div className="flex items-center gap-2 min-w-0">
-            {isTimerOnThisTask || bankedSeconds > 0 ? (
-              <div className="flex items-center gap-1.5 text-xs text-serene-text-muted dark:text-serene-text-darkMuted" role="status" aria-live="polite">
-                <Timer className="w-3.5 h-3.5 shrink-0 text-teal-600 dark:text-teal-400" />
-                <span className="font-mono font-semibold text-serene-text-primary dark:text-serene-text-darkPrimary">
-                  {formatElapsed(liveElapsed)}
-                </span>
-                <span className="truncate">
-                  actual{bankedSeconds > 0 && !isTimerOnThisTask ? ` · ${formatElapsed(bankedSeconds)} logged` : bankedSeconds > 0 ? ` · ${formatElapsed(bankedSeconds)} logged before` : ''}
-                  {!focusTimer?.running && isTimerOnThisTask ? ' · paused' : ''}
-                </span>
-              </div>
-            ) : (
-              <div className="flex items-center gap-1.5 text-xs text-serene-text-muted dark:text-serene-text-darkMuted">
-                <Sparkles className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                <span className="truncate">Ready to cook · hit Lock In to start your focus session</span>
-              </div>
-            )}
+            <div className="flex items-center gap-1.5 text-xs text-serene-text-muted dark:text-serene-text-darkMuted">
+              <Sparkles className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+              <span className="truncate">Active focus task · make progress or mark as complete</span>
+            </div>
           </div>
 
           {/* Right: Primary action buttons */}
           <div className="flex items-center gap-2.5 shrink-0">
             <button
               type="button"
-              onClick={handleStartNow}
-              className="min-w-[140px] bg-[#0f4c4c] hover:bg-[#0a3535] active:scale-[0.99] dark:bg-teal-700 dark:hover:bg-teal-600 text-white font-semibold text-xs sm:text-sm py-2.5 px-4 rounded-xl shadow-xs flex items-center justify-center gap-2 transition-all cursor-pointer"
-            >
-              {isTimerOnThisTask && focusTimer?.running ? (
-                <Pause className="w-4 h-4 fill-current shrink-0" />
-              ) : (
-                <Play className="w-4 h-4 fill-current shrink-0" />
-              )}
-              <span>
-                {isTimerOnThisTask
-                  ? focusTimer?.running
-                    ? `Pause · ${formatElapsed(liveElapsed)}`
-                    : `Resume · ${formatElapsed(liveElapsed)}`
-                  : 'Lock in ⚡'}
-              </span>
-            </button>
-
-            <button
-              type="button"
               onClick={() => onCompleteTask?.(activeTask)}
-              className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-xl border border-teal-200 dark:border-teal-800/60 bg-teal-50 dark:bg-teal-950/40 hover:bg-teal-100 dark:hover:bg-teal-900/60 text-teal-800 dark:text-teal-200 text-xs sm:text-sm font-semibold transition-all cursor-pointer shrink-0 shadow-2xs hover:shadow-xs active:scale-[0.99]"
+              className="min-w-[140px] bg-[#0f4c4c] hover:bg-[#0a3535] active:scale-[0.99] dark:bg-teal-700 dark:hover:bg-teal-600 text-white font-semibold text-xs sm:text-sm py-2.5 px-4 rounded-xl shadow-xs flex items-center justify-center gap-2 transition-all cursor-pointer"
               title="Mark task as complete"
             >
-              <Check className="w-4 h-4 stroke-[2.5] text-teal-700 dark:text-teal-300" />
+              <Check className="w-4 h-4 stroke-[2.5]" />
               <span>Complete</span>
             </button>
-
-            {isTimerOnThisTask && onTimerEnd && (
-              <button
-                type="button"
-                onClick={onTimerEnd}
-                title="Stop timer and log actual time to this task"
-                className="inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl border border-rose-200 dark:border-rose-900/60 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-950/70 text-rose-700 dark:text-rose-300 text-xs sm:text-sm font-semibold transition-all cursor-pointer shrink-0"
-              >
-                <Square className="w-3.5 h-3.5 fill-current shrink-0" />
-                <span>End</span>
-              </button>
-            )}
 
             <div className="relative shrink-0" ref={desktopOverflowRef}>
               <button
@@ -1126,7 +1032,7 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
             >
               <div className="flex items-center gap-1.5 min-w-0">
                 <div className="p-1.5 rounded-lg bg-purple-100/80 dark:bg-purple-900/50 text-purple-600 dark:text-purple-400 shrink-0">
-                  <Timer className="w-3.5 h-3.5" />
+                  <Clock className="w-3.5 h-3.5" />
                 </div>
                 <div className="min-w-0">
                   <div className="text-xs font-bold text-purple-700 dark:text-purple-300 truncate">
@@ -1328,60 +1234,17 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
             </div>
           )}
 
-          {/* Row 4: Actual / Logged Timer Readout */}
-          <div className="flex items-center gap-1.5 text-xs text-serene-text-muted dark:text-serene-text-darkMuted pt-1">
-            <Timer className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400 shrink-0" />
-            <span className="font-mono font-semibold text-serene-text-primary dark:text-serene-text-darkPrimary">
-              {formatElapsed(liveElapsed)}
-            </span>
-            <span className="truncate">
-              actual · {formatElapsed(bankedSeconds)} logged
-              {!focusTimer?.running && isTimerOnThisTask ? ' · paused' : ''}
-            </span>
-          </div>
-
-          {/* Row 5: Action Buttons (Mobile) */}
-          <div className="flex items-center gap-2 pt-0.5">
-            <button
-              type="button"
-              onClick={handleStartNow}
-              className="flex-1 bg-teal-600 hover:bg-teal-700 active:scale-[0.99] dark:bg-teal-600 dark:hover:bg-teal-500 text-white font-semibold text-xs py-2.5 px-3 rounded-xl shadow-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer"
-            >
-              {isTimerOnThisTask && focusTimer?.running ? (
-                <Pause className="w-3.5 h-3.5 fill-current shrink-0" />
-              ) : (
-                <Play className="w-3.5 h-3.5 fill-current shrink-0" />
-              )}
-              <span>
-                {isTimerOnThisTask
-                  ? focusTimer?.running
-                    ? `Pause · ${formatElapsed(liveElapsed)}`
-                    : `Resume · ${formatElapsed(liveElapsed)}`
-                  : 'Lock in ⚡'}
-              </span>
-            </button>
-
+          {/* Row 4: Action Buttons (Mobile) */}
+          <div className="flex items-center gap-2 pt-1">
             <button
               type="button"
               onClick={() => onCompleteTask?.(activeTask)}
-              className="inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl border border-teal-500/50 bg-teal-50/60 dark:bg-teal-950/30 hover:bg-teal-100 dark:hover:bg-teal-900/50 text-teal-800 dark:text-teal-300 text-xs font-semibold transition-all cursor-pointer shrink-0 shadow-2xs"
+              className="flex-1 bg-[#0f4c4c] hover:bg-[#0a3535] active:scale-[0.99] dark:bg-teal-700 dark:hover:bg-teal-600 text-white font-semibold text-xs py-2.5 px-3 rounded-xl shadow-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer"
               title="Mark task as complete"
             >
-              <Check className="w-3.5 h-3.5 stroke-[2.5] text-teal-600 dark:text-teal-400" />
-              <span>Complete</span>
+              <Check className="w-3.5 h-3.5 stroke-[2.5]" />
+              <span>Complete task</span>
             </button>
-
-            {isTimerOnThisTask && onTimerEnd && (
-              <button
-                type="button"
-                onClick={onTimerEnd}
-                title="Stop timer and log actual time to this task"
-                className="inline-flex items-center justify-center gap-1 px-2.5 py-2.5 rounded-xl border border-rose-200 dark:border-rose-900/60 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-950/70 text-rose-700 dark:text-rose-300 text-xs font-semibold transition-all cursor-pointer shrink-0"
-              >
-                <Square className="w-3 h-3 fill-current shrink-0" />
-                <span>End</span>
-              </button>
-            )}
 
             <div className="relative shrink-0" ref={mobileOverflowRef}>
               <button

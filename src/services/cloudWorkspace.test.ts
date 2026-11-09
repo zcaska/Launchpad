@@ -3,7 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import { DEFAULT_SEED_DATA } from '../data/seedData';
 import {
   cloudData, DEFAULT_CLOUD_PROJECT, readCloudRecord, validateCloudProject, writeCloudRecord,
-  type CloudWorkspace,
+  clearCloudWorkspaceData, type CloudWorkspace,
 } from './cloudWorkspace';
 
 const project = DEFAULT_CLOUD_PROJECT;
@@ -45,7 +45,7 @@ const client = createClient(project.url, project.key, {
       } else {
         assert.equal(url.searchParams.get('user_id'), `eq.${userId}`);
         if (method === 'PATCH') {
-          if (!row || revision !== `eq.${row.revision}`) return Response.json([]);
+          if (!row || (revision && revision !== `eq.${row.revision}`)) return Response.json([]);
           row = data;
         }
       }
@@ -68,4 +68,15 @@ assert.equal(await readCloudRecord(client, userId, 'first'), null);
 assert.equal(await writeCloudRecord(workspace, first, 'second'), true);
 assert.equal(await writeCloudRecord(workspace, first, 'stale'), false);
 assert.equal((await readCloudRecord(client, userId, 'first'))?.revision, 'second');
-console.log('Cloud workspace validation, credential filtering, and stale-write protection passed.');
+
+// Test clearCloudWorkspaceData
+const clearedRecord = await clearCloudWorkspaceData(workspace, DEFAULT_SEED_DATA, 'second');
+assert.equal(clearedRecord.data.quickNotes.length, 0);
+assert.equal(clearedRecord.data.scratchpadText, '');
+assert.equal(clearedRecord.dirty, false);
+const cloudAfterClear = await readCloudRecord(client, userId);
+assert(cloudAfterClear);
+assert.equal(cloudAfterClear.data.quickNotes.length, 0);
+assert.equal(cloudAfterClear.data.scratchpadText, '');
+
+console.log('Cloud workspace validation, credential filtering, stale-write protection, and clear-data passed.');

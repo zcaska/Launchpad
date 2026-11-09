@@ -191,4 +191,7 @@ export const DEFAULT_SEED_DATA: AppData = {
   calendarEvents: [],
   scratchpadText: '',
   quickNotes: [],
+  reflections: [],
 };
+
+export const INITIAL_EMPTY_DATA = DEFAULT_SEED_DATA;

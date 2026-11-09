@@ -116,7 +116,11 @@ function readCache(project: CloudProject, userId: string): CloudRecord | null {
 }
 
 export function saveCloudCache(workspace: CloudWorkspace, record: CloudRecord) {
-  localStorage.setItem(cacheKey(workspace.project, workspace.userId), JSON.stringify(record));
+  try {
+    localStorage.setItem(cacheKey(workspace.project, workspace.userId), JSON.stringify(record));
+  } catch {
+    // Ignore in non-browser or quota-restricted environments
+  }
 }
 
 export async function readCloudRecord(client: SupabaseClient, userId: string, unchangedRevision?: string) {
@@ -151,4 +155,65 @@ export async function writeCloudRecord(workspace: CloudWorkspace, record: CloudR
   if (error?.code === '23505') return false;
   if (error) throw new Error(error.message);
   return data?.revision === nextRevision;
+}
+
+// Clears all data in the cloud workspace record while keeping user account & auth session active.
+export async function clearCloudWorkspaceData(
+  workspace: CloudWorkspace,
+  clearedData: AppData,
+  currentRevision?: string | null
+): Promise<CloudRecord> {
+  const nextRevision = crypto.randomUUID();
+  const nextData = cloudData(clearedData);
+  const row = { snapshot: nextData, revision: nextRevision };
+  const table = workspace.client.from(TABLE);
+
+  let updatedRevision: string | undefined;
+
+  // Try conditional update if current revision provided
+  if (currentRevision) {
+    const { data, error } = await table
+      .update(row)
+      .eq('user_id', workspace.userId)
+      .eq('revision', currentRevision)
+      .select('revision')
+      .abortSignal(AbortSignal.timeout(10000))
+      .maybeSingle();
+    if (!error && data?.revision) {
+      updatedRevision = data.revision;
+    }
+  }
+
+  // If conditional update was not performed or didn't match, force update by user_id
+  if (!updatedRevision) {
+    const { data, error } = await table
+      .update(row)
+      .eq('user_id', workspace.userId)
+      .select('revision')
+      .abortSignal(AbortSignal.timeout(10000))
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    if (data?.revision) {
+      updatedRevision = data.revision;
+    }
+  }
+
+  // If no record existed yet for this user in the table, insert it
+  if (!updatedRevision) {
+    const { data, error } = await table
+      .insert({ ...row, user_id: workspace.userId })
+      .select('revision')
+      .abortSignal(AbortSignal.timeout(10000))
+      .single();
+    if (error) throw new Error(error.message);
+    updatedRevision = data.revision;
+  }
+
+  const record: CloudRecord = {
+    data: nextData,
+    revision: updatedRevision ?? nextRevision,
+    dirty: false,
+  };
+  saveCloudCache(workspace, record);
+  return record;
 }

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { AppData } from '../types';
 import {
-  cloudData, readCloudRecord, saveCloudCache, writeCloudRecord,
+  cloudData, readCloudRecord, saveCloudCache, writeCloudRecord, clearCloudWorkspaceData,
   type CloudRecord, type CloudWorkspace,
 } from './cloudWorkspace';
 
@@ -171,5 +171,15 @@ export function useCloudSync(workspace: CloudWorkspace | null, data: AppData, on
     void sync();
   };
 
-  return { status, cacheError, conflict: Boolean(conflict), resolve, sync, saveOnLeave, resumeAfterLeave };
+  const clearCloud = useCallback(async (cleared: AppData) => {
+    if (!workspace) return;
+    const record = await clearCloudWorkspaceData(workspace, cleared, current.current?.revision);
+    current.current = record;
+    lastAppData.current = cleared;
+    conflictRef.current = null;
+    setConflict(null);
+    setStatus('Cloud workspace data cleared');
+  }, [workspace]);
+
+  return { status, cacheError, conflict: Boolean(conflict), resolve, sync, saveOnLeave, resumeAfterLeave, clearCloud };
 }

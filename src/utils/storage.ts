@@ -419,3 +419,58 @@ export function importDataFromJson(jsonStr: string, saveRollingBackup = true): A
   const sanitized = sanitizeAppData(parsed, saveRollingBackup);
   return sanitized;
 }
+
+/**
+ * Clears all user data from local storage while resetting to a clean empty baseline.
+ * Also cleans rolling backups, legacy keys, and timer storage to prevent resurrection of deleted items.
+ */
+export function clearAllLocalData(): AppData {
+  const cleared: AppData = {
+    ...DEFAULT_SEED_DATA,
+    version: 3,
+    folders: [],
+    links: [],
+    dailyFocus: {
+      date: new Date().toISOString().split('T')[0],
+      goal: '',
+      isCompleted: false,
+      durationMinutes: 0,
+    },
+    learnedPreferences: DEFAULT_INITIAL_PREFERENCES,
+    growthHistory: {},
+    calendarEvents: [],
+    scratchpadText: '',
+    quickNotes: [],
+    reflections: [],
+    gamification: {
+      currentXp: 0,
+      currentStreak: 1,
+      longestStreak: 1,
+      lastActiveDate: new Date().toISOString().split('T')[0],
+      unlockedHeroIds: ['lvl-1-awakening'],
+      activeHeroId: 'lvl-1-awakening',
+      lastBackupTimestamp: Date.now(),
+    },
+  };
+
+  if (typeof localStorage !== 'undefined') {
+    try {
+      saveAppData(cleared);
+      localStorage.setItem(STORAGE_BACKUP_KEY, JSON.stringify(cleared));
+      for (const legacyKey of LEGACY_STORAGE_KEYS) {
+        localStorage.removeItem(legacyKey);
+      }
+      localStorage.removeItem('launchpad_focus_timer_v1');
+      for (let i = localStorage.length - 1; i >= 0; i--) {
+        const key = localStorage.key(i);
+        if (key && (key.startsWith('launchpad_app_data_corrupt_') || key.startsWith('launchpad_focus_timer_'))) {
+          localStorage.removeItem(key);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to clear local data from storage:', err);
+    }
+  }
+
+  return cleared;
+}

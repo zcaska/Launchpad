@@ -12,11 +12,10 @@ import {
   PetSettings,
   QuickNote,
 } from './types';
-import { loadAppData, saveAppData, saveAppDataDebounced, flushAppDataSave, exportDataAsJson, importDataFromJson } from './utils/storage';
+import { loadAppData, saveAppData, saveAppDataDebounced, flushAppDataSave, exportDataAsJson, importDataFromJson, clearAllLocalData } from './utils/storage';
 import { ACTIVE_CLOUD_KEY, cloudData, openCloudWorkspace, readCloudProjects, type CloudWorkspace } from './services/cloudWorkspace';
 import { useCloudSync } from './services/useCloudSync';
 import { recordTaskCompletion } from './utils/gamification';
-import { DEFAULT_SEED_DATA } from './data/seedData';
 import { Header } from './components/Header/Header';
 import { BackupReminderToast } from './components/Layout/BackupReminderToast';
 import { Sidebar } from './components/Sidebar/Sidebar';
@@ -158,38 +157,6 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
   useEffect(() => {
     saveFocusTimer(focusTimer, workspaceScope);
   }, [focusTimer, workspaceScope]);
-
-  const handleTimerStart = useCallback((taskId: string) => {
-    setFocusTimer({
-      taskId,
-      startedAt: Date.now(),
-      running: true,
-      baseSeconds: 0,
-    });
-  }, []);
-
-  const handleTimerPause = useCallback(() => {
-    setFocusTimer((prev) => {
-      if (!prev || !prev.running) return prev;
-      return {
-        ...prev,
-        running: false,
-        startedAt: Date.now(),
-        baseSeconds: elapsedSeconds(prev),
-      };
-    });
-  }, []);
-
-  const handleTimerResume = useCallback(() => {
-    setFocusTimer((prev) => {
-      if (!prev || prev.running) return prev;
-      return {
-        ...prev,
-        running: true,
-        startedAt: Date.now(),
-      };
-    });
-  }, []);
 
   const handleTimerEnd = useCallback(() => {
     if (!focusTimer) return;
@@ -594,11 +561,37 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
     setAppData((prev) => ({ ...prev, scratchpadText: text }));
   };
 
-  const handleResetData = () => {
-    setAppData(workspace ? cloudData(DEFAULT_SEED_DATA) : DEFAULT_SEED_DATA);
-    if (!workspace) saveAppData(DEFAULT_SEED_DATA);
-    setIsSettingsModalOpen(false);
-  };
+  const handleClearAllData = useCallback(async () => {
+    const baseCleared = clearAllLocalData();
+    const preservedSettings = {
+      ...baseCleared.settings,
+      theme: appData.settings.theme,
+      clockFormat: appData.settings.clockFormat,
+      showQuotes: appData.settings.showQuotes,
+      openInNewTab: appData.settings.openInNewTab,
+      compactView: appData.settings.compactView,
+      daySchedule: appData.settings.daySchedule,
+      activeMode: appData.settings.activeMode,
+      confettiStyle: appData.settings.confettiStyle,
+      pet: appData.settings.pet,
+      googleCalendar: appData.settings.googleCalendar,
+      openRouter: appData.settings.openRouter,
+    };
+
+    const nextAppData: AppData = {
+      ...baseCleared,
+      settings: preservedSettings,
+    };
+
+    saveAppData(nextAppData);
+    setAppData(nextAppData);
+    setSelectedFocusTaskId(null);
+    setFocusTimer(null);
+
+    if (workspace && cloudSync) {
+      await cloudSync.clearCloud(nextAppData);
+    }
+  }, [appData.settings, cloudSync, workspace]);
 
   const handleThemeChange = (theme: ThemeMode) => {
     setAppData((prev) => ({
@@ -788,11 +781,6 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
                     }}
                     onOpenCalendarSettings={() => setIsSettingsModalOpen(true)}
                     clockFormat={appData.settings.clockFormat}
-                    focusTimer={focusTimer}
-                    onTimerStart={handleTimerStart}
-                    onTimerPause={handleTimerPause}
-                    onTimerResume={handleTimerResume}
-                    onTimerEnd={handleTimerEnd}
                     showSuggestion={pendingTaskCount === 0}
                     suggestionCandidate={currentSuggestion}
                     onApproveSuggestion={handleApproveSuggestion}
@@ -939,7 +927,7 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
             onClose={() => setIsSettingsModalOpen(false)}
             appData={appData}
             onUpdateAppData={(next) => setAppData(workspace ? cloudData(next) : next)}
-            onResetData={handleResetData}
+            onClearAllData={handleClearAllData}
             onSyncCalendar={() => handleSyncCalendar(false)}
             isSyncingCalendar={isSyncingCalendar}
             tickTickSync={workspace ? undefined : tickTickSync}
