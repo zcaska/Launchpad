@@ -563,7 +563,7 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
             </div>
 
             {/* Desktop Status metrics row */}
-            <div className="hidden lg:flex items-center gap-3 text-xs lg:ml-2 shrink-0">
+            <div className="hidden lg:flex items-center gap-3 text-sm lg:text-base lg:ml-2 shrink-0">
               <span className="flex items-center gap-1.5 font-medium text-serene-text-secondary dark:text-serene-text-darkSecondary">
                 <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
                 <strong className="text-serene-text-primary dark:text-serene-text-darkPrimary font-bold">
@@ -697,12 +697,20 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
             </div>
           ) : (
             <motion.div 
-              className="grid grid-cols-1 @5xl:grid-cols-2 gap-3 md:gap-4"
+              className="grid grid-cols-1 @4xl:grid-cols-2 gap-4 items-start"
               variants={staggerContainerVariants}
               initial="initial"
               animate="animate"
             >
-              {filteredTasks.map((task) => {
+              {(['Remaining', 'Completed'] as const).map((group) => (
+                <section key={group} aria-label={group + ' tasks'} className="min-w-0 space-y-3">
+                  <h2 className="text-base font-semibold">{group} <span className="text-sm font-normal text-serene-text-muted">({filteredTasks.filter(task => task.isDone === (group === 'Completed')).length})</span></h2>
+                  {filteredTasks.filter(task => task.isDone === (group === 'Completed')).length === 0 && <p className="text-sm text-serene-text-muted">No {group.toLowerCase()} tasks in this view.</p>}
+                  {filteredTasks.filter(task => task.isDone === (group === 'Completed')).sort((a, b) => {
+                    if (group === 'Completed') return 0;
+                    const priorityRank = { urgent: 0, high: 1, medium: 2, low: 3 };
+                    return priorityRank[a.priority ?? 'medium'] - priorityRank[b.priority ?? 'medium'];
+                  }).map((task) => {
                 const deadlineInfo = getDeadlineStatus(task.deadline);
                 const subtasks = task.subtasks || [];
                 const completedSubtasks = subtasks.filter((s) => s.isDone).length;
@@ -897,7 +905,9 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
                     </div>
                   </motion.div>
                 );
-              })}
+                  })}
+                </section>
+              ))}
             </motion.div>
           )}
         </main>

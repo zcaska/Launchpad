@@ -252,17 +252,17 @@ export const QuickAddTaskModal: React.FC<QuickAddTaskModalProps> = ({
                         onClick={() => setShowDeadlineInput(true)}
                         className="text-[11px] text-serene-primary dark:text-serene-primary-dark hover:underline cursor-pointer"
                       >
-                        + Add Time
+                        + Add deadline
                       </button>
                     )}
                   </div>
                   {showDeadlineInput ? (
                     <input
-                      type="text"
+                      type="datetime-local"
+                      aria-label="Deadline date and time"
                       value={deadline}
                       onChange={(e) => setDeadline(e.target.value)}
-                      placeholder="e.g. 17:00, Today, Tomorrow"
-                      className="w-full px-3 py-1.5 rounded-lg bg-serene-surfaceAlt-light/60 dark:bg-serene-surfaceAlt-dark/70 border border-serene-border-light dark:border-serene-border-dark text-xs text-serene-text-primary dark:text-serene-text-darkPrimary placeholder:text-serene-text-muted focus:outline-none focus:ring-1 focus:ring-serene-primary transition-all"
+                                            className="w-full px-3 py-1.5 rounded-lg bg-serene-surfaceAlt-light/60 dark:bg-serene-surfaceAlt-dark/70 border border-serene-border-light dark:border-serene-border-dark text-xs text-serene-text-primary dark:text-serene-text-darkPrimary placeholder:text-serene-text-muted focus:outline-none focus:ring-1 focus:ring-serene-primary transition-all"
                     />
                   ) : (
                     <div 

@@ -413,7 +413,7 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
           </div>
           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300">
             <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-            Clear Runway ✨
+            Clear Runway
           </span>
         </div>
 
