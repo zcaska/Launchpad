@@ -1,5 +1,5 @@
 import { formatMinutesToHours } from './timeBudget';
-import { formatEventDuration } from './calendarFormatting';
+import { formatEventDuration } from './textFormatting';
 import { formatTaskCountdown } from './taskUrgency';
 import { QuickNote } from '../types';
 

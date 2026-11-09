@@ -63,3 +63,16 @@
   }
 }
 
+
+
+@media (max-width: 767px) {
+  .mobile-settings-content :is(input:not([type="checkbox"], [type="radio"]), select, textarea) {
+    min-width: 0;
+    min-height: 44px;
+    font-size: 1rem;
+  }
+
+  .mobile-settings-content button {
+    min-height: 44px;
+  }
+}

@@ -4,7 +4,7 @@ import {
   formatTaskCountdown,
   TIER_PRESENTATION_MAP,
 } from './CommitmentRadarWidget';
-import { QuickNote, CalendarScheduleSummary } from '../../types';
+import { QuickNote } from '../../types';
 import {
   projectTasksToRadarCoordinates,
   RADAR_VIEWBOX,
@@ -153,24 +153,16 @@ assert(TIER_PRESENTATION_MAP.long_term.legendDotColor === '#10b981', 'Long term 
 
 // 7. Test Props Interface Conformance
 console.log('--- Props Interface Conformance ---');
-const mockCalendarSummary: CalendarScheduleSummary = {
-  events: [],
-  totalBusyMinutesToday: 90,
-  remainingBusyMinutesToday: 90,
-};
-
 const validProps: CommitmentRadarWidgetProps = {
   tasks: mockTasksImage1,
   onSelectTask: (_id: string) => {},
   onOpenTasks: () => {},
   className: 'custom-radar-class',
-  calendarSummary: mockCalendarSummary,
 };
 
 assert(validProps.tasks.length === 6, 'Accepts tasks array');
 assert(typeof validProps.onSelectTask === 'function', 'Accepts onSelectTask callback');
 assert(typeof validProps.onOpenTasks === 'function', 'Accepts onOpenTasks callback');
-assert(validProps.calendarSummary?.remainingBusyMinutesToday === 90, 'Accepts calendarSummary');
 
 // 8. Test Task Hover Detail Invariants (Full Title, Description, Links)
 console.log('--- Task Hover Detail Fields Verification ---');

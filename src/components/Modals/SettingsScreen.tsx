@@ -1,74 +1,45 @@
 import React, { useRef, useState } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
 import {
-  X,
   DownloadSimple as Download,
   UploadSimple as Upload,
   ShieldCheck,
   Copy,
   Check,
-  Sliders,
   Command,
   Clock,
   Lightning as Zap,
   Key,
   ChartBar as BarChart2,
-  CalendarBlank as Calendar,
-  ArrowSquareOut as ExternalLink,
-  CaretDown as ChevronDown,
-  CaretUp as ChevronUp,
-  ArrowsClockwise as RefreshCw,
-  SignOut as LogOut,
-  CheckCircle as CheckCircle2,
-  WarningCircle as AlertCircle,
   Trash
 } from '@phosphor-icons/react';
-import { AppData, GoogleCalendarConfig } from '../../types';
+import { AppData } from '../../types';
 import { exportDataAsJson, importDataFromJson, getStorageMetrics } from '../../utils/storage';
 import { DEFAULT_INITIAL_PREFERENCES } from '../../data/seedData';
-import { modalBackdropVariants, modalContentVariants } from '../../utils/motion';
 import { Mascot } from '../Pet/Mascot';
 import { MascotShowcaseModal } from '../Pet/MascotShowcaseModal';
-import { 
-  requestGoogleAccessToken, 
-  revokeGoogleAuthorization, 
-  isGoogleTokenExpired,
-  getInMemoryGoogleToken,
-  fetchGoogleCalendarAccountEmail,
-  fetchUserCalendarList,
-  UserCalendarSummary,
-  GoogleAuthError
-} from '../../services/googleCalendarService';
-import { isCalendarTask } from '../../utils/calendarSchedule';
-import type { TickTickSyncManagerReturn } from '../../services/ticktickSyncManager';
-import { TickTickSettingsCard } from './TickTickSettingsCard';
 import { CloudWorkspaceSettings } from './CloudWorkspaceSettings';
 import type { CloudWorkspace } from '../../services/cloudWorkspace';
 import type { useCloudSync } from '../../services/useCloudSync';
 
-interface SettingsModalProps {
-  isOpen: boolean;
+interface SettingsScreenProps {
+  onThemeChange: (theme: AppData['settings']['theme']) => void;
+  onOpenSparkIdea: () => void;
   onClose: () => void;
   appData: AppData;
   onUpdateAppData: (data: AppData) => void;
   onClearAllData: () => Promise<void> | void;
-  onSyncCalendar?: () => Promise<void>;
-  isSyncingCalendar?: boolean;
-  tickTickSync?: TickTickSyncManagerReturn;
   workspace?: CloudWorkspace | null;
   onSwitchWorkspace?: (workspace: CloudWorkspace | null) => void;
   cloudSync?: ReturnType<typeof useCloudSync>;
 }
 
-export const SettingsModal: React.FC<SettingsModalProps> = ({
-  isOpen,
+export const SettingsScreen: React.FC<SettingsScreenProps> = ({
+  onThemeChange,
+  onOpenSparkIdea,
   onClose,
   appData,
   onUpdateAppData,
   onClearAllData,
-  onSyncCalendar,
-  isSyncingCalendar = false,
-  tickTickSync,
   workspace = null,
   onSwitchWorkspace,
   cloudSync,
@@ -172,165 +143,32 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     });
   };
 
-  const [isConnectingGCal, setIsConnectingGCal] = useState(false);
-  const [gcalError, setGcalError] = useState<string | null>(null);
-  const [gcalSuccessMsg, setGcalSuccessMsg] = useState<string | null>(null);
-  const [isGuideOpen, setIsGuideOpen] = useState(false);
-  const [userCalendars, setUserCalendars] = useState<UserCalendarSummary[]>([]);
-  const [isLoadingCalendars, setIsLoadingCalendars] = useState(false);
-
-  const handleLoadUserCalendars = async () => {
-    const token = getInMemoryGoogleToken();
-    if (!token) {
-      setGcalError('Please re-authorize to load available calendars.');
-      return;
-    }
-    setIsLoadingCalendars(true);
-    try {
-      const list = await fetchUserCalendarList(token);
-      if (list.length > 0) {
-        setUserCalendars(list);
-      } else {
-        setGcalError('No calendars found for this account.');
-      }
-    } catch {
-      setGcalError('Could not fetch calendars. Please check your connection.');
-    } finally {
-      setIsLoadingCalendars(false);
-    }
-  };
-
-  const gcalConfig: GoogleCalendarConfig = appData.settings.googleCalendar || {
-    enabled: false,
-    clientId: '',
-    calendarId: 'primary',
-    syncIntervalMinutes: 5,
-  };
-
-  const updateGoogleCalendar = (key: keyof GoogleCalendarConfig, value: any) => {
-    onUpdateAppData({
-      ...appData,
-      settings: {
-        ...appData.settings,
-        googleCalendar: {
-          ...gcalConfig,
-          [key]: value,
-        },
-      },
-    });
-  };
-
-  const handleConnectCalendar = async (promptMode: string = '') => {
-    const clientId = gcalConfig.clientId?.trim();
-    if (!clientId) {
-      setGcalError('Please enter your Google OAuth Client ID before connecting.');
-      return;
-    }
-
-    try {
-      setIsConnectingGCal(true);
-      setGcalError(null);
-      setGcalSuccessMsg(null);
-      // When explicitly choosing to switch account, skip login_hint; otherwise pass existing email to bypass account picker
-      const loginHint = promptMode === 'select_account' ? undefined : gcalConfig.userEmail;
-      const token = await requestGoogleAccessToken(clientId, promptMode, loginHint);
-      const userEmail = (await fetchGoogleCalendarAccountEmail(token, gcalConfig.calendarId || 'primary')) || gcalConfig.userEmail;
-      onUpdateAppData({
-        ...appData,
-        settings: {
-          ...appData.settings,
-          googleCalendar: {
-            ...gcalConfig,
-            enabled: true,
-            clientId,
-            ...(userEmail ? { userEmail } : {}),
-          },
-        },
-      });
-      setGcalSuccessMsg(`Connected successfully! Calendar access granted${userEmail ? ` (${userEmail})` : ''}.`);
-      if (onSyncCalendar) {
-        await onSyncCalendar();
-      }
-    } catch (err: any) {
-      // Closing the popup is not an error worth shouting about.
-      const kind = err instanceof GoogleAuthError ? err.kind : 'unknown';
-      setGcalError(
-        kind === 'user_cancelled'
-          ? 'Authorization cancelled.'
-          : err.message || 'Failed to authorize with Google Calendar'
-      );
-    } finally {
-      setIsConnectingGCal(false);
-    }
-  };
-
-  const handleDisconnectCalendar = async () => {
-    if (confirm('Disconnect Google Calendar? This will revoke in-memory authorization and remove cached events.')) {
-      try {
-        await revokeGoogleAuthorization();
-      } catch {
-        // ignore revoke error
-      }
-      onUpdateAppData({
-        ...appData,
-        calendarEvents: [],
-        quickNotes: appData.quickNotes.filter((n) => !isCalendarTask(n)),
-        settings: {
-          ...appData.settings,
-          googleCalendar: {
-            ...gcalConfig,
-            enabled: false,
-            userEmail: undefined,
-          },
-        },
-      });
-      setGcalSuccessMsg('Disconnected. Calendar authorization revoked.');
-      setGcalError(null);
-    }
-  };
-
   return (
     <>
-      <AnimatePresence>
-        {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <motion.div 
-            className="fixed inset-0 bg-black/40 backdrop-blur-xs" 
-            variants={modalBackdropVariants}
-            initial="initial"
-            animate="animate"
-            exit="exit"
-            onClick={onClose} 
-          />
-          <motion.div 
-            role="dialog"
-            aria-modal="true"
-            variants={modalContentVariants}
-            initial="initial"
-            animate="animate"
-            exit="exit"
-            className="relative w-full max-w-2xl bg-white dark:bg-serene-surface-dark border border-serene-border-light dark:border-serene-border-dark rounded-2xl shadow-modal overflow-hidden z-10 flex flex-col max-h-[90vh]"
-          >
-        {/* Header */}
-        <div className="p-4 border-b border-serene-border-light dark:border-serene-border-dark flex items-center justify-between bg-serene-surfaceAlt-light/40 dark:bg-serene-surfaceAlt-dark/40">
-          <div className="flex items-center gap-2">
-            <div className="p-1.5 rounded-lg bg-serene-primary-soft dark:bg-serene-primary/20 text-serene-primary dark:text-serene-primary-dark">
-              <Sliders className="w-4 h-4" />
-            </div>
-            <h2 className="text-sm font-bold text-serene-text-primary dark:text-serene-text-darkPrimary">
-              LaunchPad Settings & AI Configuration
-            </h2>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-1 text-serene-text-muted hover:text-serene-text-primary dark:hover:text-serene-text-darkPrimary rounded-md hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
-          >
-            <X className="w-4 h-4" />
+      <div className="mx-auto w-full max-w-3xl px-2 py-4 sm:px-6">
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <h1 className="text-xl font-bold">Settings</h1>
+          <button type="button" onClick={onClose} className="min-h-11 rounded-lg px-3 text-sm font-semibold text-serene-primary dark:text-serene-primary-dark">
+            Back
           </button>
         </div>
-
         {/* Content */}
-        <div className="p-5 space-y-6 overflow-y-auto flex-1 text-xs">
+        <div className="mobile-settings-content space-y-6 text-sm">
+          <section aria-labelledby="appearance-heading" className="space-y-3 rounded-xl border border-serene-border-light p-3 sm:p-4 dark:border-serene-border-dark">
+            <h2 id="appearance-heading" className="font-bold">Appearance</h2>
+            <label className="flex flex-wrap items-center justify-between gap-3">
+              Theme
+              <select value={appData.settings.theme} onChange={(event) => onThemeChange(event.target.value as AppData['settings']['theme'])}
+                className="rounded-lg border border-serene-border-light bg-serene-surfaceAlt-light px-3 py-2 dark:border-serene-border-dark dark:bg-serene-surfaceAlt-dark">
+                <option value="system">System</option>
+                <option value="light">Light</option>
+                <option value="dark">Dark</option>
+              </select>
+            </label>
+            <button type="button" onClick={onOpenSparkIdea} className="font-semibold text-serene-primary dark:text-serene-primary-dark md:hidden">
+              Spark an idea
+            </button>
+          </section>
           {Boolean(appData.reflections?.length) && (
             <section className="rounded-xl border border-serene-border-light dark:border-serene-border-dark p-4 space-y-3 text-serene-text-primary dark:text-serene-text-darkPrimary">
               <h3 className="font-bold text-sm">Reflection journal</h3>
@@ -450,7 +288,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             </div>
           </div>
 
-          {workspace && <p className="text-sm">Google Calendar, TickTick, and OpenRouter are available in the local workspace.</p>}
+          {workspace && <p className="text-sm">OpenRouter is available in the local workspace.</p>}
           {!workspace && <>
           {/* Optional OpenRouter API Web Discovery */}
           <div className="p-4 rounded-xl border border-serene-border-light dark:border-serene-border-dark space-y-3 bg-white dark:bg-serene-surface-dark">
@@ -534,249 +372,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             )}
           </div>
 
-          {/* Google Calendar Integration (Read-Only) */}
-          <div className="p-4 bg-serene-surfaceAlt-light/50 dark:bg-serene-surfaceAlt-dark/50 rounded-xl border border-serene-border-light dark:border-serene-border-dark space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1.5 font-bold text-serene-text-primary dark:text-serene-text-darkPrimary">
-                <Calendar className="w-3.5 h-3.5 text-serene-primary dark:text-serene-primary-dark" />
-                <span>Google Calendar Integration</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                {gcalConfig.enabled && !isGoogleTokenExpired() ? (
-                  <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60">
-                    <CheckCircle2 className="w-3 h-3" />
-                    <span>Connected & Active</span>
-                  </span>
-                ) : gcalConfig.enabled && isGoogleTokenExpired() ? (
-                  <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60">
-                    <AlertCircle className="w-3 h-3" />
-                    <span>Token Expired (Re-authorize)</span>
-                  </span>
-                ) : (
-                  <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 border border-slate-200 dark:border-slate-700">
-                    Disconnected
-                  </span>
-                )}
-              </div>
-            </div>
-
-            <p className="text-[11px] text-serene-text-secondary dark:text-serene-text-darkSecondary leading-relaxed">
-              Sync today's schedule into Time Radar to dynamically deduct busy meetings from your focus hours. Strictly read-only, zero backend, $0 cost, and access tokens are stored in-memory only.
-            </p>
-
-            {/* Error or Success notification */}
-            {gcalError && (
-              <div className="p-2.5 rounded-lg bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/50 text-[11px] text-rose-700 dark:text-rose-300">
-                {gcalError}
-              </div>
-            )}
-            {gcalSuccessMsg && (
-              <div className="p-2.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900/50 text-[11px] text-emerald-700 dark:text-emerald-300">
-                {gcalSuccessMsg}
-              </div>
-            )}
-
-            {/* Setup Guide Collapsible */}
-            <div className="rounded-lg border border-serene-border-light dark:border-serene-border-dark overflow-hidden bg-white dark:bg-serene-surface-dark">
-              <button
-                type="button"
-                onClick={() => setIsGuideOpen(!isGuideOpen)}
-                className="w-full px-3 py-2 flex items-center justify-between text-[11px] font-semibold text-serene-text-primary dark:text-serene-text-darkPrimary hover:bg-serene-surfaceAlt-light/40 dark:hover:bg-serene-surfaceAlt-dark/40 transition-colors"
-              >
-                <span>How to get a free Google OAuth Client ID (3 mins)</span>
-                {isGuideOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-              </button>
-
-              {isGuideOpen && (
-                <div className="p-3 border-t border-serene-border-light dark:border-serene-border-dark text-[11px] space-y-2 text-serene-text-secondary dark:text-serene-text-darkSecondary leading-relaxed bg-serene-surfaceAlt-light/20 dark:bg-serene-surfaceAlt-dark/20">
-                  <ol className="list-decimal list-inside space-y-1 pl-1">
-                    <li>
-                      Go to the{' '}
-                      <a
-                        href="https://console.cloud.google.com/"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-serene-primary hover:underline font-semibold inline-flex items-center gap-0.5"
-                      >
-                        Google Cloud Console <ExternalLink className="w-2.5 h-2.5" />
-                      </a>{' '}
-                      and create or select a project.
-                    </li>
-                    <li>Navigate to <strong>APIs & Services</strong> &gt; <strong>Library</strong>, search for <strong>Google Calendar API</strong>, and click <strong>Enable</strong>.</li>
-                    <li>Go to <strong>APIs & Services</strong> &gt; <strong>Credentials</strong> &gt; <strong>Create Credentials</strong> &gt; <strong>OAuth client ID</strong>.</li>
-                    <li>Select <strong>Web application</strong> as the type.</li>
-                    <li>
-                      Under <strong>Authorized JavaScript origins</strong>, add:
-                      <div className="my-1 p-1.5 rounded bg-black/5 dark:bg-white/5 font-mono text-[10px] break-all select-all">
-                        {window.location.origin}
-                      </div>
-                      <span className="text-[10px] opacity-75">(also add <code className="font-mono">http://localhost:5173</code> if developing locally)</span>
-                    </li>
-                    <li>Copy your generated <strong>Client ID</strong> and paste it below.</li>
-                  </ol>
-                </div>
-              )}
-            </div>
-
-            {/* Input field */}
-            <div className="space-y-1.5">
-              <label className="block text-[11px] font-semibold text-serene-text-secondary dark:text-serene-text-darkSecondary">
-                OAuth 2.0 Web Client ID
-              </label>
-              <input
-                type="text"
-                value={gcalConfig.clientId || ''}
-                onChange={(e) => updateGoogleCalendar('clientId', e.target.value)}
-                placeholder="1234567890-abcdefg.apps.googleusercontent.com"
-                className="w-full px-3 py-1.5 text-xs bg-white dark:bg-serene-surface-dark rounded-lg border border-serene-border-light dark:border-serene-border-dark font-mono text-serene-text-primary dark:text-serene-text-darkPrimary"
-              />
-            </div>
-
-            {/* Connected Account Status */}
-            {gcalConfig.enabled && gcalConfig.userEmail && (
-              <div className="flex items-center justify-between p-2.5 rounded-lg bg-emerald-50/70 dark:bg-emerald-950/40 border border-emerald-200/60 dark:border-emerald-800/50 text-xs">
-                <div className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                  <span className="text-serene-text-secondary dark:text-serene-text-darkSecondary">
-                    Connected Account: <strong className="font-semibold text-emerald-800 dark:text-emerald-300 font-mono text-[11px]">{gcalConfig.userEmail}</strong>
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => handleConnectCalendar('select_account')}
-                  disabled={isConnectingGCal}
-                  className="text-[11px] font-medium text-emerald-700 dark:text-emerald-400 hover:underline hover:text-emerald-800 dark:hover:text-emerald-300 transition-colors disabled:opacity-50"
-                  title="Switch to another Google Account"
-                >
-                  Switch account
-                </button>
-              </div>
-            )}
-
-            {/* Calendar Selection & Polling Interval */}
-            {gcalConfig.enabled && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-2 border-t border-serene-border-light/60 dark:border-serene-border-dark/60">
-                <div>
-                  <label className="block text-[11px] font-semibold text-serene-text-secondary dark:text-serene-text-darkSecondary mb-1">
-                    Calendar to Sync
-                  </label>
-                  <div className="flex items-center gap-1.5">
-                    <input
-                      type="text"
-                      value={gcalConfig.calendarId || 'primary'}
-                      onChange={(e) => updateGoogleCalendar('calendarId', e.target.value.trim() || 'primary')}
-                      placeholder="primary"
-                      className="flex-1 px-2.5 py-1.5 text-xs rounded-lg border border-serene-border-light dark:border-serene-border-dark bg-white dark:bg-serene-surface-dark font-mono text-serene-text-primary dark:text-serene-text-darkPrimary"
-                    />
-                    {userCalendars.length === 0 && (
-                      <button
-                        type="button"
-                        onClick={handleLoadUserCalendars}
-                        disabled={isLoadingCalendars}
-                        className="px-2 py-1.5 text-[10px] font-semibold text-serene-primary dark:text-serene-primary-dark hover:underline shrink-0"
-                      >
-                        {isLoadingCalendars ? 'Loading...' : 'Browse'}
-                      </button>
-                    )}
-                  </div>
-                  {userCalendars.length > 0 && (
-                    <select
-                      value={gcalConfig.calendarId || 'primary'}
-                      onChange={(e) => updateGoogleCalendar('calendarId', e.target.value)}
-                      className="mt-1 w-full px-2 py-1 text-xs rounded-lg border border-serene-border-light dark:border-serene-border-dark bg-white dark:bg-serene-surface-dark text-serene-text-primary dark:text-serene-text-darkPrimary"
-                    >
-                      {userCalendars.map((cal) => (
-                        <option key={cal.id} value={cal.id}>
-                          {cal.summary} {cal.primary ? '(Primary)' : ''}
-                        </option>
-                      ))}
-                    </select>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-semibold text-serene-text-secondary dark:text-serene-text-darkSecondary mb-1">
-                    Auto-Sync Polling Interval
-                  </label>
-                  <select
-                    value={gcalConfig.syncIntervalMinutes || 5}
-                    onChange={(e) => updateGoogleCalendar('syncIntervalMinutes', Number(e.target.value))}
-                    className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-serene-border-light dark:border-serene-border-dark bg-white dark:bg-serene-surface-dark text-serene-text-primary dark:text-serene-text-darkPrimary"
-                  >
-                    <option value={2}>Every 2 minutes</option>
-                    <option value={5}>Every 5 minutes (default)</option>
-                    <option value={10}>Every 10 minutes</option>
-                    <option value={15}>Every 15 minutes</option>
-                    <option value={30}>Every 30 minutes</option>
-                  </select>
-                </div>
-              </div>
-            )}
-
-            {/* Actions */}
-            <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
-              <div className="text-[10px] text-serene-text-muted">
-                {gcalConfig.lastSyncedAt ? (
-                  <span>Last synced: {new Date(gcalConfig.lastSyncedAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</span>
-                ) : (
-                  <span>Auto-syncs while app is active</span>
-                )}
-              </div>
-
-              <div className="flex items-center gap-2">
-                {gcalConfig.enabled ? (
-                  <>
-                    {onSyncCalendar && (
-                      <button
-                        type="button"
-                        onClick={onSyncCalendar}
-                        disabled={isSyncingCalendar}
-                        className="px-3 py-1.5 bg-white dark:bg-serene-surface-dark border border-serene-border-light dark:border-serene-border-dark hover:border-serene-primary/50 text-serene-text-primary dark:text-serene-text-darkPrimary rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors disabled:opacity-50"
-                      >
-                        <RefreshCw className={`w-3.5 h-3.5 ${isSyncingCalendar ? 'animate-spin' : ''}`} />
-                        <span>{isSyncingCalendar ? 'Syncing...' : 'Sync Now'}</span>
-                      </button>
-                    )}
-                    {isGoogleTokenExpired() && (
-                      <button
-                        type="button"
-                        onClick={() => handleConnectCalendar('')}
-                        disabled={isConnectingGCal}
-                        className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors disabled:opacity-50"
-                      >
-                        <span>{isConnectingGCal ? 'Reconnecting...' : 'Re-authorize'}</span>
-                      </button>
-                    )}
-                    <button
-                      type="button"
-                      onClick={handleDisconnectCalendar}
-                      className="px-3 py-1.5 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors"
-                    >
-                      <LogOut className="w-3.5 h-3.5" />
-                      <span>Disconnect</span>
-                    </button>
-                  </>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => handleConnectCalendar('')}
-                    disabled={isConnectingGCal || !gcalConfig.clientId?.trim()}
-                    className="px-3.5 py-1.5 bg-serene-primary hover:bg-serene-primary-hover text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-2xs disabled:opacity-50"
-                  >
-                    <Calendar className="w-3.5 h-3.5" />
-                    <span>{isConnectingGCal ? 'Connecting to Google...' : 'Connect Google Calendar'}</span>
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-
           </>}
-
-          {/* TickTick Two-Way Sync Integration */}
-          {tickTickSync && (
-            <TickTickSettingsCard syncManager={tickTickSync} />
-          )}
 
           {/* Data Backup & Restore */}
           <div className="space-y-3">
@@ -1068,20 +664,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           </div>
         </div>
 
-        {/* Footer */}
-        <div className="p-4 border-t border-serene-border-light dark:border-serene-border-dark flex justify-end bg-serene-surfaceAlt-light/40 dark:bg-serene-surfaceAlt-dark/40">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-4 py-2 bg-serene-primary hover:bg-serene-primary-hover text-white text-xs font-semibold rounded-lg shadow-sm transition-colors"
-          >
-            Close Settings
-          </button>
-        </div>
-          </motion.div>
-        </div>
-      )}
-    </AnimatePresence>
+      </div>
     <MascotShowcaseModal
       isOpen={isMascotShowcaseOpen}
       onClose={() => setIsMascotShowcaseOpen(false)}

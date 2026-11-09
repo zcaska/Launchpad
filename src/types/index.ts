@@ -63,24 +63,13 @@ export interface QuickNote {
   priority?: TaskPriority;
   attachedUrls?: TaskUrl[];
   subtasks?: Subtask[];
-  source?: 'local' | 'google_calendar' | 'ticktick';
-  eventId?: string; // Google Calendar event ID if synced
-  timeSpentSeconds?: number; // Actual focused seconds logged by the focus timer
-  ticktickTaskId?: string;
-  ticktickProjectId?: string;
-  ticktickLastModified?: number;
-  syncStatus?: 'synced' | 'pending' | 'error';
-}
 
-export interface TickTickSettings {
-  enabled: boolean;
-  accessToken: string;
-  selectedProjectId: string;
-  selectedProjectName?: string;
-  autoSyncIntervalMinutes: number;
-  lastSyncedAt?: number;
-  proxyUrl?: string;
-  lastError?: string;
+
+  timeSpentSeconds?: number; // Actual focused seconds logged by the focus timer
+
+
+
+
 }
 
 export interface DailyFocus {
@@ -143,44 +132,6 @@ export interface RecommendationCandidate {
   score?: number;
 }
 
-export interface CalendarEventItem {
-  id: string;
-  summary: string;
-  description?: string;
-  startTime: string; // ISO 8601 string
-  endTime: string;   // ISO 8601 string
-  startMs: number;   // Epoch timestamp in ms
-  endMs: number;     // Epoch timestamp in ms
-  durationMinutes: number;
-  isAllDay: boolean;
-  transparency?: 'opaque' | 'transparent'; // opaque = Busy (default), transparent = Free
-  status: 'confirmed' | 'tentative' | 'cancelled';
-  htmlLink?: string;
-  location?: string;
-  colorId?: string;
-  extractedUrls?: TaskUrl[];
-}
-
-export interface GoogleCalendarConfig {
-  enabled: boolean;
-  clientId: string;
-  calendarId: string; // default: 'primary'
-  syncIntervalMinutes: number; // default: 5
-  lastSyncedAt?: number; // Epoch timestamp of last successful sync
-  userEmail?: string; // Connected Google account email for login_hint bypass
-}
-
-export interface CalendarScheduleSummary {
-  events: CalendarEventItem[];
-  totalBusyMinutesToday: number;
-  remainingBusyMinutesToday: number;
-  nextEvent?: CalendarEventItem;
-  minutesUntilNextEvent?: number;
-  currentEvent?: CalendarEventItem;
-  isTokenExpired?: boolean;
-  syncError?: string;
-}
-
 export interface DailyGrowthRecord {
   tasksCompleted: number;
   focusMinutes: number;
@@ -227,7 +178,7 @@ export interface ReflectionEntry {
   questions: string[];
   answers: string[];
   taskTitles: string[];
-  calendarEventIds?: string[];
+
 }
 
 export interface AppData {
@@ -239,7 +190,7 @@ export interface AppData {
   scratchpadText: string;
   dailyFocus: DailyFocus;
   learnedPreferences: LearnedPreferences;
-  calendarEvents?: CalendarEventItem[];
+
   gamification: GamificationState;
   growthHistory: Record<string, DailyGrowthRecord>;
   settings: {
@@ -251,7 +202,7 @@ export interface AppData {
     daySchedule: DaySchedule;
     openRouter: OpenRouterConfig;
     activeMode: 'auto' | 'work' | 'free';
-    googleCalendar?: GoogleCalendarConfig;
+
     confettiStyle?: ConfettiStyle;
     pet?: PetSettings;
   };

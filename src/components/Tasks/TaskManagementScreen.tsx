@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, { useCallback, useState, useMemo, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   CheckSquare,
@@ -15,73 +15,45 @@ import {
   ListChecks as ListTodo,
   X,
   ArrowLeft,
-  FileText,
   Warning as AlertTriangle,
-  ArrowsClockwise
 } from '@phosphor-icons/react';
-import { QuickNote, TaskPriority, TaskUrl, Subtask, CalendarEventItem } from '../../types';
+import { QuickNote, TaskPriority, TaskUrl, Subtask } from '../../types';
 import { calculateTaskLoad, formatMinutesToHours } from '../../utils/timeBudget';
 import { modalBackdropVariants, modalContentVariants, staggerItemVariants, staggerContainerVariants } from '../../utils/motion';
-import { CalendarScheduleTimeline } from '../Calendar/CalendarScheduleTimeline';
 import { SafeDescription } from '../Common/SafeDescription';
-import { extractCalendarDescriptionLinksAndCleanText } from '../../utils/calendarFormatting';
 import { toggleTaskInList, toggleSubtaskInList } from '../../utils/taskUrgency';
-import type { TickTickSyncManagerReturn } from '../../services/ticktickSyncManager';
 
 export interface TaskManagementScreenProps {
   notes: QuickNote[];
-  scratchpadText: string;
+  createTaskRequested: boolean;
+  onCreateTaskOpened: () => void;
+  searchQuery: string;
+  onSearchChange: (query: string) => void;
   onUpdateNotes: (notes: QuickNote[]) => void;
-  onUpdateScratchpad: (text: string) => void;
   onBackToDashboard?: () => void;
-  calendarEvents?: CalendarEventItem[];
-  onSyncCalendar?: () => void;
-  isSyncingCalendar?: boolean;
-  onOpenSettings?: () => void;
-  onReauthorize?: () => void;
-  isTokenExpired?: boolean;
-  syncError?: string;
   initialTaskId?: string | null;
   onInitialTaskOpened?: () => void;
   onToggleTask?: (taskId: string) => void;
   onToggleSubtask?: (taskId: string, subtaskId: string) => void;
-  tickTickSync?: TickTickSyncManagerReturn;
 }
 
-type FilterTab = 'All' | 'Calendar Events' | 'Urgent' | 'High Priority' | 'Medium' | 'Low' | 'Due Soon' | 'Completed';
+type FilterTab = 'All' | 'Urgent' | 'High Priority' | 'Medium' | 'Low' | 'Due Soon' | 'Completed';
 
 export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
   notes,
-  scratchpadText,
+  createTaskRequested,
+  onCreateTaskOpened,
+  searchQuery,
+  onSearchChange: setSearchQuery,
   onUpdateNotes,
-  onUpdateScratchpad,
   onBackToDashboard,
-  calendarEvents = [],
-  onSyncCalendar,
-  isSyncingCalendar = false,
-  onOpenSettings,
-  onReauthorize,
-  isTokenExpired = false,
-  syncError,
   initialTaskId,
   onInitialTaskOpened,
   onToggleTask,
   onToggleSubtask,
-  tickTickSync,
 }) => {
   // Filters & State
   const [activeTab, setActiveTab] = useState<FilterTab>('All');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [sidePanelTab, setSidePanelTab] = useState<'scratchpad' | 'schedule'>('schedule');
-  // In mobile/tablet view (< 1280px / xl breakpoint), keep scratchpad closed by default
-  // so it does not cover the screen when opening Tasks & Action Items
-  const [isScratchpadOpen, setIsScratchpadOpen] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return window.innerWidth >= 1280;
-    }
-    return false;
-  });
-
   // Modal / Form state for Add / Edit
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
@@ -255,7 +227,7 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
   };
 
   // Open Task Creation
-  const handleOpenCreateForm = () => {
+  const handleOpenCreateForm = useCallback(() => {
     setEditingTaskId(null);
     setFormTitle('');
     setFormDescription('');
@@ -269,18 +241,19 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
     setUrlError('');
     setSubtaskInput('');
     setIsFormOpen(true);
-  };
+  }, []);
+
+  useEffect(() => {
+    if (!createTaskRequested) return;
+    handleOpenCreateForm();
+    onCreateTaskOpened();
+  }, [createTaskRequested, handleOpenCreateForm, onCreateTaskOpened]);
 
   // Open Task Edit
   const handleOpenEditForm = (task: QuickNote) => {
     setEditingTaskId(task.id);
     setFormTitle(task.text);
-    const cleanFormDesc = task.description
-      ? (task.description.includes('<a') || task.description.includes('&lt;a')
-          ? extractCalendarDescriptionLinksAndCleanText(task.description).cleanDescription
-          : task.description)
-      : '';
-    setFormDescription(cleanFormDesc);
+    setFormDescription(task.description || '');
     setFormDuration(task.durationMinutes || 30);
     setFormPriority(task.priority || 'medium');
     setFormDeadline(task.deadline || '');
@@ -398,9 +371,6 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
         subtasks: formSubtasks.length > 0 ? formSubtasks : undefined,
       };
       onUpdateNotes([newTask, ...notes]);
-      if (tickTickSync?.settings.enabled) {
-        tickTickSync.pushTaskCreate(newTask);
-      }
     }
 
     setIsFormOpen(false);
@@ -454,18 +424,16 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
       switch (activeTab) {
         case 'All':
           return true;
-        case 'Calendar Events':
-          return task.source === 'google_calendar';
         case 'Urgent':
-          return !task.isDone && task.priority === 'urgent' && task.source !== 'google_calendar';
+          return !task.isDone && task.priority === 'urgent';
         case 'High Priority':
-          return !task.isDone && task.priority === 'high' && task.source !== 'google_calendar';
+          return !task.isDone && task.priority === 'high';
         case 'Medium':
-          return !task.isDone && task.priority === 'medium' && task.source !== 'google_calendar';
+          return !task.isDone && task.priority === 'medium';
         case 'Low':
-          return !task.isDone && task.priority === 'low' && task.source !== 'google_calendar';
+          return !task.isDone && task.priority === 'low';
         case 'Due Soon': {
-          if (task.isDone || !task.deadline || task.source === 'google_calendar') return false;
+          if (task.isDone || !task.deadline) return false;
           const status = getDeadlineStatus(task.deadline);
           return !!(status?.isDueSoon || status?.isOverdue || status?.isDueToday);
         }
@@ -481,7 +449,6 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
   const tabCounts = useMemo(() => {
     const counts: Record<FilterTab, number> = {
       'All': notes.length,
-      'Calendar Events': 0,
       'Urgent': 0,
       'High Priority': 0,
       'Medium': 0,
@@ -491,23 +458,18 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
     };
 
     notes.forEach((task) => {
-      if (task.source === 'google_calendar') {
-        counts['Calendar Events']++;
-      }
       if (task.isDone) {
         counts['Completed']++;
       } else {
-        if (task.source !== 'google_calendar') {
-          if (task.priority === 'urgent') counts['Urgent']++;
-          else if (task.priority === 'high') counts['High Priority']++;
-          else if (task.priority === 'medium') counts['Medium']++;
-          else if (task.priority === 'low') counts['Low']++;
+        if (task.priority === 'urgent') counts['Urgent']++;
+        else if (task.priority === 'high') counts['High Priority']++;
+        else if (task.priority === 'medium') counts['Medium']++;
+        else if (task.priority === 'low') counts['Low']++;
 
-          if (task.deadline) {
-            const status = getDeadlineStatus(task.deadline);
-            if (status?.isDueSoon || status?.isOverdue || status?.isDueToday) {
-              counts['Due Soon']++;
-            }
+        if (task.deadline) {
+          const status = getDeadlineStatus(task.deadline);
+          if (status?.isDueSoon || status?.isOverdue || status?.isDueToday) {
+            counts['Due Soon']++;
           }
         }
       }
@@ -523,10 +485,6 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
         return isActive
           ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 font-semibold shadow-xs'
           : 'bg-slate-100 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-200/80 dark:hover:bg-slate-700';
-      case 'Calendar Events':
-        return isActive
-          ? 'bg-sky-600 text-white font-semibold shadow-xs ring-2 ring-sky-400/30'
-          : 'bg-sky-50/90 dark:bg-sky-950/40 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-900/60 hover:bg-sky-100 dark:hover:bg-sky-900/60';
       case 'Urgent':
         return isActive
           ? 'bg-red-600 text-white font-bold shadow-xs ring-2 ring-red-400/40'
@@ -598,8 +556,8 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
                 <div className="p-1.5 rounded-lg bg-serene-primary-soft dark:bg-serene-primary/20 text-serene-primary dark:text-serene-primary-dark shrink-0">
                   <ListTodo className="w-5 h-5" />
                 </div>
-                <h1 className="text-base sm:text-lg lg:text-xl font-bold tracking-tight text-serene-text-primary dark:text-serene-text-darkPrimary truncate">
-                  Task Management & Planning
+                <h1 className="text-lg lg:text-xl font-bold tracking-tight text-serene-text-primary dark:text-serene-text-darkPrimary truncate">
+                  Tasks
                 </h1>
               </div>
             </div>
@@ -627,7 +585,7 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
           </div>
 
           {/* Mobile Status Metrics 3-Column Symmetrical Grid */}
-          <div className="grid grid-cols-3 gap-2 w-full lg:hidden">
+          <div className="hidden md:grid grid-cols-3 gap-2 w-full lg:hidden">
             <div className="flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-xl bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark border border-serene-border-light dark:border-serene-border-dark text-[11px] sm:text-xs text-serene-text-secondary dark:text-serene-text-darkSecondary">
               <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse shrink-0" />
               <span className="truncate"><strong>{loadSummary.pendingCount}</strong> pending</span>
@@ -642,60 +600,25 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
             </div>
           </div>
 
-          {/* Actions: responsive grid/flex on mobile, flex row on desktop */}
-          <div className="grid grid-cols-2 sm:flex sm:items-center gap-2 w-full lg:w-auto lg:gap-2.5 shrink-0">
-            {/* Scratchpad Toggle Button */}
-            <button
-              onClick={() => setIsScratchpadOpen(!isScratchpadOpen)}
-              className={`inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold border transition-all ${
-                isScratchpadOpen
-                  ? 'bg-serene-primary-soft dark:bg-serene-primary/20 text-serene-primary dark:text-serene-primary-dark border-serene-primary/30'
-                  : 'bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark text-serene-text-secondary dark:text-serene-text-darkSecondary border-serene-border-light dark:border-serene-border-dark hover:text-serene-text-primary'
-              }`}
-              title="Toggle side scratchpad"
-            >
-              <FileText className="w-3.5 h-3.5 shrink-0" />
-              <span>Scratchpad</span>
-            </button>
-
-            {/* Sync TickTick Button */}
-            {tickTickSync?.settings.enabled && (
-              <button
-                type="button"
-                onClick={() => tickTickSync.syncNow()}
-                disabled={tickTickSync.isSyncing}
-                title={
-                  tickTickSync.settings.lastSyncedAt
-                    ? `Last synced: ${new Date(tickTickSync.settings.lastSyncedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
-                    : 'Sync tasks with TickTick'
-                }
-                className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark text-serene-text-secondary dark:text-serene-text-darkSecondary border border-serene-border-light dark:border-serene-border-dark hover:text-serene-text-primary hover:bg-black/5 dark:hover:bg-white/5 transition-all disabled:opacity-50"
-              >
-                <ArrowsClockwise
-                  className={`w-3.5 h-3.5 shrink-0 text-serene-primary dark:text-serene-primary-dark ${
-                    tickTickSync.isSyncing ? 'animate-spin' : ''
-                  }`}
-                />
-                <span>{tickTickSync.isSyncing ? 'Syncing...' : 'Sync TickTick'}</span>
-              </button>
-            )}
-
-            {/* Primary 'Add New Task' Button */}
-            <button
-              onClick={handleOpenCreateForm}
-              className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 bg-serene-primary hover:bg-serene-primary-hover text-white text-xs font-semibold rounded-xl shadow-xs transition-transform active:scale-95"
-            >
-              <Plus className="w-4 h-4 shrink-0" />
-              <span>Add New Task</span>
-            </button>
-          </div>
         </div>
 
         {/* 2. SUB-BAR: Filter Tabs & Search Bar Toolbar */}
         <div className="w-full min-w-0 flex flex-col sm:flex-row sm:items-center justify-between gap-3 mt-3.5 pt-3 border-t border-serene-border-light/60 dark:border-serene-border-dark/60">
-          {/* Filter Tabs Navigation with nature-reflecting colors */}
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 text-xs no-scrollbar min-w-0 flex-1">
-          {(['All', 'Calendar Events', 'Urgent', 'High Priority', 'Medium', 'Low', 'Due Soon', 'Completed'] as FilterTab[]).map(
+          <label className="flex items-center gap-3 text-sm font-semibold md:hidden">
+            Filters
+            <select
+              value={activeTab}
+              onChange={(event) => setActiveTab(event.target.value as FilterTab)}
+              className="min-h-[44px] min-w-0 flex-1 rounded-lg border border-serene-border-light bg-serene-surfaceAlt-light px-3 text-base dark:border-serene-border-dark dark:bg-serene-surfaceAlt-dark"
+            >
+              {(['All', 'Urgent', 'High Priority', 'Medium', 'Low', 'Due Soon', 'Completed'] as FilterTab[]).map((tab) => (
+                <option key={tab} value={tab}>{tab} ({tabCounts[tab] ?? 0})</option>
+              ))}
+            </select>
+          </label>
+          {/* Desktop filter tabs */}
+          <div className="hidden md:flex items-center gap-1.5 overflow-x-auto pb-0.5 text-xs no-scrollbar min-w-0 flex-1">
+          {(['All', 'Urgent', 'High Priority', 'Medium', 'Low', 'Due Soon', 'Completed'] as FilterTab[]).map(
             (tab) => {
               const isActive = activeTab === tab;
               const count = tabCounts[tab] ?? 0;
@@ -705,7 +628,6 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
                   onClick={() => setActiveTab(tab)}
                   className={`px-3 py-1.5 rounded-xl font-medium shrink-0 transition-all flex items-center gap-1.5 ${getTabBadgeStyle(tab, isActive)}`}
                 >
-                  {tab === 'Calendar Events' && <Calendar className="w-3 h-3 shrink-0" />}
                   {tab === 'Urgent' && <AlertTriangle className="w-3 h-3 shrink-0" />}
                   <span>{tab}</span>
                   <span
@@ -724,7 +646,7 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
           </div>
 
           {/* Search Input relocated to filter bar toolbar */}
-          <div className="relative w-full sm:w-48 md:w-56 lg:w-64 shrink-0">
+          <div className="relative hidden w-full md:block md:w-56 lg:w-64 shrink-0">
             <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-serene-text-muted pointer-events-none" />
             <input
               type="text"
@@ -746,10 +668,10 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
         </div>
       </header>
 
-      {/* 2. BODY CONTENT: Tasks Grid/List + Collapsible Scratchpad Panel */}
+      {/* 2. BODY CONTENT: Task list and schedule */}
       <div className="flex-1 flex overflow-hidden relative">
         {/* Main Task Cards Flow */}
-        <main className="flex-1 p-4 sm:p-6 pb-20 sm:pb-6 overflow-y-auto space-y-4">
+        <main className="flex-1 min-w-0 px-2 py-3 sm:p-6 overflow-y-auto space-y-4">
           {filteredTasks.length === 0 ? (
             <div className="py-20 text-center rounded-2xl border border-dashed border-serene-border-light dark:border-serene-border-dark bg-white/40 dark:bg-serene-surface-dark/40 flex flex-col items-center justify-center p-6">
               <div className="w-12 h-12 rounded-2xl bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark flex items-center justify-center text-serene-text-muted mb-3">
@@ -775,7 +697,7 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
             </div>
           ) : (
             <motion.div 
-              className="grid grid-cols-1 xl:grid-cols-2 gap-4"
+              className="grid grid-cols-1 @5xl:grid-cols-2 gap-3 md:gap-4"
               variants={staggerContainerVariants}
               initial="initial"
               animate="animate"
@@ -790,15 +712,15 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
                     layout
                     key={task.id}
                     variants={staggerItemVariants}
-                    className={`group rounded-2xl border p-4 sm:p-5 transition-all duration-200 flex flex-col justify-between ${getTaskCardBackground(task)}`}
+                    className={`group rounded-xl md:rounded-2xl border p-2.5 sm:p-5 transition-all duration-200 flex flex-col justify-between ${getTaskCardBackground(task)}`}
                   >
                     <div>
                       {/* Top Row: Checkbox, Title & Actions */}
                       <div className="flex items-start justify-between gap-3">
-                        <div className="flex items-start gap-3 flex-1 min-w-0">
+                        <div className="flex items-start gap-1.5 md:gap-3 flex-1 min-w-0">
                           <button
                             onClick={() => handleToggleTaskComplete(task.id)}
-                            className="mt-0.5 text-serene-text-muted hover:text-serene-primary dark:hover:text-serene-primary-dark transition-colors shrink-0"
+                            className="-ml-2 -mt-2 grid h-11 w-11 place-items-center rounded-lg md:ml-0 md:mt-0.5 md:h-auto md:w-auto text-serene-text-muted hover:text-serene-primary dark:hover:text-serene-primary-dark transition-colors shrink-0"
                             title={task.isDone ? 'Mark as incomplete' : 'Mark as complete'}
                           >
                             {task.isDone ? (
@@ -811,7 +733,7 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-1.5 flex-wrap">
                               <h3
-                                className={`text-sm sm:text-base font-semibold text-serene-text-primary dark:text-serene-text-darkPrimary leading-snug break-words ${
+                                className={`text-[15px] md:text-base font-semibold text-serene-text-primary dark:text-serene-text-darkPrimary leading-snug break-words ${
                                   task.isDone
                                     ? 'line-through text-serene-text-muted dark:text-serene-text-darkMuted'
                                     : ''
@@ -819,54 +741,39 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
                               >
                                 {task.text}
                               </h3>
-                              {task.source === 'google_calendar' && (
-                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-sky-100 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800/50">
-                                  <Calendar className="w-2.5 h-2.5" />
-                                  <span>Google Calendar</span>
-                                </span>
-                              )}
-                              {task.source === 'ticktick' && (
-                                <span
-                                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800/50"
-                                  title={task.ticktickTaskId ? `Synced with TickTick (ID: ${task.ticktickTaskId})` : 'Synced with TickTick'}
-                                >
-                                  <CheckCircle2 className="w-2.5 h-2.5 text-blue-600 dark:text-blue-400" />
-                                  <span>TickTick</span>
-                                </span>
-                              )}
                             </div>
                             {task.description && (
                               <div className={`mt-1 leading-relaxed ${task.isDone ? 'line-through opacity-70' : ''}`}>
                                 <SafeDescription
                                   text={task.description}
-                                  className="text-xs text-serene-text-secondary dark:text-serene-text-darkSecondary"
+                                  className="text-sm md:text-xs text-serene-text-secondary dark:text-serene-text-darkSecondary"
                                 />
                               </div>
                             )}
                           </div>
                         </div>
 
+                      </div>
+
+                      {/* Badges Row: Priority, Time, Deadline */}
+                      <div className="flex flex-wrap items-center gap-2 mt-3 text-xs">
                         {/* Edit & Delete Actions */}
-                        <div className="flex items-center gap-1 shrink-0 opacity-80 group-hover:opacity-100 transition-opacity">
+                        <div className="order-last ml-auto flex items-center gap-1 shrink-0 opacity-80 group-hover:opacity-100 transition-opacity">
                           <button
                             onClick={() => handleOpenEditForm(task)}
-                            className="p-1.5 rounded-lg text-serene-text-muted hover:text-serene-primary dark:hover:text-serene-primary-dark hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+                            className="grid h-11 w-11 place-items-center rounded-lg md:h-8 md:w-8 text-serene-text-muted hover:text-serene-primary dark:hover:text-serene-primary-dark hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
                             title="Edit Task"
                           >
                             <Edit3 className="w-3.5 h-3.5" />
                           </button>
                           <button
                             onClick={() => handleDeleteTask(task.id)}
-                            className="p-1.5 rounded-lg text-serene-text-muted hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors"
+                            className="grid h-11 w-11 place-items-center rounded-lg md:h-8 md:w-8 text-serene-text-muted hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors"
                             title="Delete Task"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
                         </div>
-                      </div>
-
-                      {/* Badges Row: Priority, Time, Deadline */}
-                      <div className="flex flex-wrap items-center gap-2 mt-3 text-xs">
                         {/* Priority Badge */}
                         {task.priority === 'urgent' && (
                           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md font-bold text-[11px] bg-red-600 text-white shadow-2xs">
@@ -995,93 +902,12 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
           )}
         </main>
 
-        {/* Scratchpad Collapsible Side Panel */}
-        {/* Collapsible Side Scratchpad */}
-        {isScratchpadOpen && (
-          <>
-            <div
-              className="fixed inset-0 bg-black/40 backdrop-blur-xs z-30 xl:hidden animate-fade-in"
-              onClick={() => setIsScratchpadOpen(false)}
-              aria-hidden="true"
-            />
-            <aside className="fixed xl:static inset-y-0 right-0 z-40 xl:z-auto w-80 max-w-[85vw] xl:w-96 shrink-0 border-l border-serene-border-light dark:border-serene-border-dark bg-white/95 dark:bg-serene-surface-dark/95 xl:bg-white/70 xl:dark:bg-serene-surface-dark/70 backdrop-blur-md p-4 flex flex-col justify-between overflow-hidden shadow-2xl xl:shadow-none transition-all animate-fadeIn">
-              {/* Header with Tabs */}
-              <div className="flex items-center justify-between pb-2.5 border-b border-serene-border-light dark:border-serene-border-dark">
-                <div className="flex items-center gap-1 bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark p-0.5 rounded-lg border border-serene-border-light dark:border-serene-border-dark">
-                  <button
-                    onClick={() => setSidePanelTab('schedule')}
-                    className={`px-2.5 py-1 rounded-md text-[11px] font-semibold flex items-center gap-1.5 transition-all ${
-                      sidePanelTab === 'schedule'
-                        ? 'bg-white dark:bg-serene-surface-dark text-serene-primary dark:text-serene-primary-dark shadow-2xs'
-                        : 'text-serene-text-muted hover:text-serene-text-primary'
-                    }`}
-                  >
-                    <Calendar className="w-3 h-3" />
-                    <span>Schedule</span>
-                    {calendarEvents.length > 0 && (
-                      <span className="font-mono text-[10px] opacity-75">({calendarEvents.length})</span>
-                    )}
-                  </button>
-
-                  <button
-                    onClick={() => setSidePanelTab('scratchpad')}
-                    className={`px-2.5 py-1 rounded-md text-[11px] font-semibold flex items-center gap-1.5 transition-all ${
-                      sidePanelTab === 'scratchpad'
-                        ? 'bg-white dark:bg-serene-surface-dark text-serene-primary dark:text-serene-primary-dark shadow-2xs'
-                        : 'text-serene-text-muted hover:text-serene-text-primary'
-                    }`}
-                  >
-                    <FileText className="w-3 h-3" />
-                    <span>Scratchpad</span>
-                  </button>
-                </div>
-
-                <button
-                  onClick={() => setIsScratchpadOpen(false)}
-                  className="p-1 rounded-md text-serene-text-muted hover:text-serene-text-primary dark:hover:text-serene-text-darkPrimary"
-                  title="Hide side panel"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-
-              {/* Panel Content */}
-              {sidePanelTab === 'schedule' ? (
-                <div className="flex-1 py-3 flex flex-col min-h-0 overflow-y-auto">
-                  <CalendarScheduleTimeline
-                    events={calendarEvents}
-                    onSync={onSyncCalendar}
-                    isSyncing={isSyncingCalendar}
-                    onOpenSettings={onOpenSettings}
-                    onReauthorize={onReauthorize}
-                    isTokenExpired={isTokenExpired}
-                    syncError={syncError}
-                    className="border-0 shadow-none p-0 bg-transparent"
-                  />
-                </div>
-              ) : (
-                <div className="flex-1 py-3 flex flex-col min-h-0">
-                  <textarea
-                    value={scratchpadText}
-                    onChange={(e) => onUpdateScratchpad(e.target.value)}
-                    placeholder="Jot down quick thoughts, ideas, links, or meeting notes here alongside your tasks..."
-                    className="w-full flex-1 p-3 bg-serene-surfaceAlt-light/60 dark:bg-serene-surfaceAlt-dark/60 border border-serene-border-light dark:border-serene-border-dark rounded-xl text-xs text-serene-text-primary dark:text-serene-text-darkPrimary placeholder:text-serene-text-muted resize-none focus:outline-none focus:ring-2 focus:ring-serene-primary/30 focus:border-serene-primary font-sans leading-relaxed"
-                  />
-                  <div className="pt-2 text-[11px] text-serene-text-muted flex items-center justify-between border-t border-serene-border-light/60 dark:border-serene-border-dark/60">
-                    <span>Auto-saved to storage</span>
-                    <span>{scratchpadText.length} characters</span>
-                  </div>
-                </div>
-              )}
-            </aside>
-          </>
-        )}
       </div>
 
       {/* 3. MODAL: TASK CREATION & EDITING */}
       <AnimatePresence>
         {isFormOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-50 flex items-center justify-center sm:p-4">
             <motion.div 
               className="fixed inset-0 bg-black/40 backdrop-blur-xs"
               variants={modalBackdropVariants}
@@ -1097,7 +923,7 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
               initial="initial"
               animate="animate"
               exit="exit"
-              className="relative z-10 bg-white dark:bg-serene-surface-dark border border-serene-border-light dark:border-serene-border-dark rounded-2xl shadow-modal w-full max-w-xl max-h-[90vh] flex flex-col overflow-hidden"
+              className="relative z-10 bg-white dark:bg-serene-surface-dark border border-serene-border-light dark:border-serene-border-dark sm:rounded-2xl shadow-modal w-full sm:max-w-xl h-full sm:h-auto sm:max-h-[90dvh] flex flex-col overflow-hidden"
             >
             
             {/* Modal Header */}

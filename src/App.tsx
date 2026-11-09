@@ -1,9 +1,13 @@
 import { useState, useEffect, useMemo, useCallback, useRef, lazy, Suspense } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence, MotionConfig } from 'motion/react';
 import {
   X as CloseIcon,
   Lightbulb,
-  IconContext
+  IconContext,
+  House,
+  CheckSquare,
+  Trophy,
+  GearSix
 } from '@phosphor-icons/react';
 import { 
   AppData, 
@@ -12,7 +16,7 @@ import {
   PetSettings,
   QuickNote,
 } from './types';
-import { loadAppData, saveAppData, saveAppDataDebounced, flushAppDataSave, exportDataAsJson, importDataFromJson, clearAllLocalData } from './utils/storage';
+import { loadAppData, saveAppData, saveAppDataDebounced, flushAppDataSave, exportDataAsJson, importDataFromJson, clearAllLocalData, removeRetiredIntegrationCredentials } from './utils/storage';
 import { ACTIVE_CLOUD_KEY, cloudData, openCloudWorkspace, readCloudProjects, type CloudWorkspace } from './services/cloudWorkspace';
 import { useCloudSync } from './services/useCloudSync';
 import { recordTaskCompletion } from './utils/gamification';
@@ -45,18 +49,10 @@ const GrowthMasteryScreen = lazy(() =>
 const TaskManagementScreen = lazy(() =>
   import('./components/Tasks/TaskManagementScreen').then((m) => ({ default: m.TaskManagementScreen }))
 );
-const SettingsModal = lazy(() =>
-  import('./components/Modals/SettingsModal').then((m) => ({ default: m.SettingsModal }))
+const SettingsScreen = lazy(() =>
+  import('./components/Modals/SettingsScreen').then((m) => ({ default: m.SettingsScreen }))
 );
 
-import { calculateCalendarScheduleSummary, syncCalendarEventsToQuickNotes } from './utils/calendarSchedule';
-import { 
-  fetchTodayGoogleEvents, 
-  getInMemoryGoogleToken, 
-  isGoogleTokenExpired,
-  requestGoogleAccessToken,
-  GoogleAuthError
-} from './services/googleCalendarService';
 import { 
   calculateTaskLoad, 
   getTimeOfDayBucket,
@@ -73,7 +69,6 @@ import {
   pageTransitionVariants, 
   drawerVariants 
 } from './utils/motion';
-import { useTickTickSyncManager } from './services/ticktickSyncManager';
 
 export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
   workspace?: CloudWorkspace | null;
@@ -82,20 +77,21 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
 } = {}) {
   const [appData, setAppData] = useState<AppData>(() => workspace?.initial.data ?? loadAppData());
   const workspaceScope = workspace ? `${workspace.project.url}:${workspace.userId}` : undefined;
-  const [activeView, setActiveView] = useState<'dashboard' | 'tasks' | 'growth'>('dashboard');
+  const [activeView, setActiveView] = useState<'dashboard' | 'tasks' | 'growth' | 'settings'>('dashboard');
   const [searchQuery, setSearchQuery] = useState('');
-  const [isSyncingCalendar, setIsSyncingCalendar] = useState(false);
-  const isSyncingCalendarRef = useRef(false);
-  const [calendarSyncError, setCalendarSyncError] = useState<string | null>(null);
-  const gcalConfigRef = useRef(appData.settings.googleCalendar);
-  useEffect(() => {
-    gcalConfigRef.current = appData.settings.googleCalendar;
-  }, [appData.settings.googleCalendar]);
-
-  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+  const previousView = useRef<'dashboard' | 'tasks' | 'growth'>('dashboard');
+  const openSettings = () => {
+    if (activeView !== 'settings') previousView.current = activeView;
+    setActiveView('settings');
+  };
+  const closeSettings = () => setActiveView(previousView.current);
+  const [createTaskRequested, setCreateTaskRequested] = useState(false);
+  const openNewTask = () => {
+    if (activeView === 'tasks') setCreateTaskRequested(true);
+    else setIsQuickAddTaskOpen(true);
+  };
   const [isQuickAddTaskOpen, setIsQuickAddTaskOpen] = useState(false);
   const [isQuickNotesOpen, setIsQuickNotesOpen] = useState(false);
-  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   const [isSparkIdeaModalOpen, setIsSparkIdeaModalOpen] = useState(false);
   const [now, setNow] = useState<Date>(new Date());
@@ -103,16 +99,6 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
   const [selectedFocusTaskId, setSelectedFocusTaskId] = useState<string | null>(null);
   const [editingTaskIdForScreen, setEditingTaskIdForScreen] = useState<string | null>(null);
 
-  // --- TickTick Two-Way Sync Hook --------------------------------------
-  const setSyncedNotes = useCallback<Parameters<typeof useTickTickSyncManager>[1]>((updatedNotesOrUpdater) => {
-    setAppData((prev) => ({
-      ...prev,
-      quickNotes: typeof updatedNotesOrUpdater === 'function'
-        ? updatedNotesOrUpdater(prev.quickNotes)
-        : updatedNotesOrUpdater,
-    }));
-  }, []);
-  const tickTickSync = useTickTickSyncManager(appData.quickNotes, setSyncedNotes, Boolean(workspace));
 
   // Live clock tick for time radar calculations
   useEffect(() => {
@@ -199,13 +185,12 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
     });
 
     if (targetTask && !becomingDone && !targetTask.pendingReflection) {
-      tickTickSync.pushTaskToggle({ ...targetTask, isDone: becomingDone });
     }
 
     if (selectedFocusTaskId === taskId && becomingDone) {
       setSelectedFocusTaskId(null);
     }
-  }, [appData.quickNotes, focusTimer, selectedFocusTaskId, tickTickSync]);
+  }, [appData.quickNotes, focusTimer, selectedFocusTaskId]);
 
   const handleToggleSubtask = useCallback((taskId: string, subtaskId: string) => {
     if (focusTimer?.taskId === taskId) {
@@ -250,7 +235,7 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
     paused: petPaused,
     focusActive: Boolean(focusTimer?.running),
     pendingCount: pendingTaskCount,
-    uiActive: isSettingsModalOpen || isSparkIdeaModalOpen || isQuickNotesOpen || isQuickAddTaskOpen,
+    uiActive: activeView === 'settings' || isSparkIdeaModalOpen || isQuickNotesOpen || isQuickAddTaskOpen,
   });
 
   // Pet Event triggers
@@ -263,67 +248,6 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
       pet.cue('feed-task-added');
     }
   }, [pendingTaskCount, pet]);
-
-  // --- Google Calendar Sync --------------------------------------------
-  const handleSyncCalendar = useCallback(async (isSilent: boolean = false) => {
-    const config = gcalConfigRef.current;
-    if (!config?.enabled || !config.clientId) return;
-    if (isSyncingCalendarRef.current) return;
-
-    isSyncingCalendarRef.current = true;
-    if (!isSilent) setIsSyncingCalendar(true);
-    setCalendarSyncError(null);
-
-    try {
-      let token = getInMemoryGoogleToken();
-      if (!token || isGoogleTokenExpired()) {
-        try {
-          token = await requestGoogleAccessToken(config.clientId, isSilent ? '' : 'select_account', config.userEmail);
-        } catch (tokenErr) {
-          if (tokenErr instanceof GoogleAuthError && tokenErr.kind === 'user_cancelled') {
-            return;
-          }
-          throw tokenErr;
-        }
-      }
-
-      const events = await fetchTodayGoogleEvents(token, config.calendarId || 'primary');
-      setAppData((prev) => {
-        const completedEventIds = new Set((prev.reflections || []).flatMap((entry) => entry.calendarEventIds || []));
-        const syncedNotes = syncCalendarEventsToQuickNotes(prev.quickNotes, events.filter((event) => !completedEventIds.has(event.id)));
-        const updatedConfig: any = {
-          ...prev.settings.googleCalendar,
-          lastSyncedAt: Date.now(),
-        };
-        const updated = {
-          ...prev,
-          calendarEvents: events,
-          quickNotes: syncedNotes,
-          settings: {
-            ...prev.settings,
-            googleCalendar: updatedConfig,
-          },
-        };
-        return updated;
-      });
-    } catch (err: any) {
-      console.error('Calendar sync failed:', err);
-      if (!isSilent) {
-        setCalendarSyncError(err.message || 'Failed to sync Google Calendar.');
-      }
-    } finally {
-      isSyncingCalendarRef.current = false;
-      if (!isSilent) setIsSyncingCalendar(false);
-    }
-  }, []);
-
-  // Auto-sync calendar every 5 minutes
-  useEffect(() => {
-    if (!appData.settings.googleCalendar?.enabled) return;
-    const interval = (appData.settings.googleCalendar.syncIntervalMinutes || 5) * 60 * 1000;
-    const timer = setInterval(() => handleSyncCalendar(true), interval);
-    return () => clearInterval(timer);
-  }, [appData.settings.googleCalendar?.enabled, appData.settings.googleCalendar?.syncIntervalMinutes, handleSyncCalendar]);
 
   // Time & Workload computations
   const timeOfDay = useMemo(() => getTimeOfDayBucket(now), [now]);
@@ -340,11 +264,6 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
     () => calculateBuffer(timeRemaining.totalMinutes, taskLoad.pendingMinutes),
     [timeRemaining, taskLoad]
   );
-  const calendarSummary = useMemo(
-    () => calculateCalendarScheduleSummary(appData.calendarEvents || [], now),
-    [appData.calendarEvents, now]
-  );
-
   // Recommender Engine: Candidates & Scored Suggestions
   const candidatePool = useMemo(() => {
     return generateCandidatePool();
@@ -480,14 +399,6 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
       const target = e.target as HTMLElement;
       const isInput = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable;
 
-      // Ctrl+K -> Focus search
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
-        e.preventDefault();
-        const searchInput = document.querySelector('input[placeholder*="Search"]') as HTMLInputElement;
-        if (searchInput) searchInput.focus();
-        return;
-      }
-
       // N -> Quick Add Task (when not typing in an input)
       if (!isInput && !e.ctrlKey && !e.metaKey && !e.altKey && (e.key === 'n' || e.key === 'N')) {
         e.preventDefault();
@@ -499,9 +410,8 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
       if (e.key === 'Escape') {
         if (isQuickAddTaskOpen) setIsQuickAddTaskOpen(false);
         else if (isSparkIdeaModalOpen) setIsSparkIdeaModalOpen(false);
-        else if (isSettingsModalOpen) setIsSettingsModalOpen(false);
-        else if (isMobileSidebarOpen) setIsMobileSidebarOpen(false);
         else if (isQuickNotesOpen) setIsQuickNotesOpen(false);
+        else if (activeView === 'settings') closeSettings();
         return;
       }
 
@@ -519,7 +429,7 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [showReflection, isQuickAddTaskOpen, isSparkIdeaModalOpen, isSettingsModalOpen, isMobileSidebarOpen, isQuickNotesOpen, handleNextSuggestion]);
+  }, [showReflection, isQuickAddTaskOpen, isSparkIdeaModalOpen, activeView, isQuickNotesOpen, handleNextSuggestion]);
 
   const handleAddQuickTask = useCallback((taskData: {
     text: string;
@@ -544,18 +454,11 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
       };
       return updated;
     });
-    tickTickSync.pushTaskCreate(newNote);
-  }, [tickTickSync]);
+  }, []);
 
   const handleUpdateNotes = useCallback((newNotes: QuickNote[]) => {
-    const deletedNotes = appData.quickNotes.filter(
-      (oldNote) => oldNote.ticktickTaskId && !newNotes.some((n) => n.id === oldNote.id)
-    );
-    for (const del of deletedNotes) {
-      tickTickSync.pushTaskDelete(del);
-    }
     setAppData((prev) => ({ ...prev, quickNotes: newNotes }));
-  }, [appData.quickNotes, tickTickSync]);
+  }, []);
 
   const handleUpdateScratchpad = (text: string) => {
     setAppData((prev) => ({ ...prev, scratchpadText: text }));
@@ -574,7 +477,6 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
       activeMode: appData.settings.activeMode,
       confettiStyle: appData.settings.confettiStyle,
       pet: appData.settings.pet,
-      googleCalendar: appData.settings.googleCalendar,
       openRouter: appData.settings.openRouter,
     };
 
@@ -621,8 +523,9 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
   );
 
   return (
+    <MotionConfig reducedMotion="user">
     <IconContext.Provider value={{ size: 20, weight: 'regular', mirrored: false }}>
-      <div className="h-screen flex flex-col overflow-hidden bg-serene-bg-light dark:bg-serene-bg-dark text-serene-text-primary dark:text-serene-text-darkPrimary">
+      <div className="h-dvh flex flex-col overflow-hidden bg-serene-bg-light dark:bg-serene-bg-dark text-serene-text-primary dark:text-serene-text-darkPrimary">
       {/* Streamlined Header */}
       <Header
         searchQuery={searchQuery}
@@ -633,18 +536,16 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
           }
         }}
         onOpenSparkIdea={() => setIsSparkIdeaModalOpen(true)}
-        onOpenSettingsModal={() => setIsSettingsModalOpen(true)}
+        onOpenSettings={openSettings}
         theme={appData.settings.theme}
         onThemeChange={handleThemeChange}
-        activeView={activeView}
-        onSelectView={setActiveView}
-        pendingTasksCount={taskLoad.pendingCount}
-        onToggleMobileSidebar={() => setIsMobileSidebarOpen((prev) => !prev)}
+        onNewTask={openNewTask}
+        onOpenScratchpad={() => setIsQuickNotesOpen(true)}
       />
 
       {(workspace || cloudNotice) && (
-        <button type="button" onClick={() => setIsSettingsModalOpen(true)}
-          className="shrink-0 truncate border-b border-teal-700/20 bg-teal-500/10 px-4 py-1.5 text-left text-xs">
+        <button type="button" onClick={openSettings}
+          className="hidden md:block shrink-0 truncate border-b border-teal-700/20 bg-teal-500/10 px-4 py-1.5 text-left text-xs">
           {workspace ? `${workspace.project.name} · ${cloudSync.cacheError ? 'Offline storage unavailable' : cloudSync.status}` : cloudNotice}
         </button>
       )}
@@ -667,12 +568,7 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
           currentView={activeView}
           onSelectView={setActiveView}
           pendingTasksCount={taskLoad.pendingCount}
-          isMobileOpen={isMobileSidebarOpen}
-          onCloseMobile={() => setIsMobileSidebarOpen(false)}
           gamification={appData.gamification}
-          userEmail={appData.settings.googleCalendar?.userEmail}
-          onOpenScratchpad={() => setIsQuickNotesOpen(true)}
-          onOpenAddTask={() => setIsQuickAddTaskOpen(true)}
           suggestionCandidate={currentSuggestion}
           onApproveSuggestion={handleApproveSuggestion}
           onRejectSuggestion={handleRejectSuggestion}
@@ -681,12 +577,28 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
 
         {/* Launchpad Pet */}
         {petEnabled && (
-          <LaunchpadPet controller={pet} paused={petPaused} onTogglePaused={handleTogglePetPaused} tier={petTier} />
+          <div className="hidden md:contents"><LaunchpadPet controller={pet} paused={petPaused} onTogglePaused={handleTogglePetPaused} tier={petTier} /></div>
         )}
 
         {/* Content Area */}
         <AnimatePresence mode="wait" initial={false}>
-          {activeView === 'growth' ? (
+          {activeView === 'settings' ? (
+            <main key="settings-view" className="min-w-0 flex-1 overflow-y-auto">
+              <Suspense fallback={<p className="p-4" role="status">Loading settings…</p>}>
+                <SettingsScreen
+                  onClose={closeSettings}
+                  onThemeChange={handleThemeChange}
+                  onOpenSparkIdea={() => setIsSparkIdeaModalOpen(true)}
+                  appData={appData}
+                  onUpdateAppData={(next) => setAppData(workspace ? cloudData(next) : next)}
+                  onClearAllData={handleClearAllData}
+                  workspace={workspace}
+                  onSwitchWorkspace={onSwitchWorkspace}
+                  cloudSync={cloudSync}
+                />
+              </Suspense>
+            </main>
+          ) : activeView === 'growth' ? (
             <motion.main
               key="growth-view"
               variants={pageTransitionVariants}
@@ -732,26 +644,20 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
             >
               <Suspense fallback={<div className="p-8 text-center text-sm text-serene-text-muted">Loading Tasks...</div>}>
                 <TaskManagementScreen
+                  createTaskRequested={createTaskRequested}
+                  onCreateTaskOpened={() => setCreateTaskRequested(false)}
+                  searchQuery={searchQuery}
+                  onSearchChange={setSearchQuery}
                   notes={appData.quickNotes}
-                  scratchpadText={appData.scratchpadText}
                   onUpdateNotes={handleUpdateNotes}
-                  onUpdateScratchpad={handleUpdateScratchpad}
                   onBackToDashboard={() => {
                     setEditingTaskIdForScreen(null);
                     setActiveView('dashboard');
                   }}
-                  calendarEvents={appData.calendarEvents || []}
-                  onSyncCalendar={() => handleSyncCalendar(false)}
-                  isSyncingCalendar={isSyncingCalendar}
-                  onOpenSettings={() => setIsSettingsModalOpen(true)}
-                  onReauthorize={() => handleSyncCalendar(false)}
-                  isTokenExpired={calendarSummary.isTokenExpired}
-                  syncError={calendarSyncError || calendarSummary.syncError}
                   initialTaskId={editingTaskIdForScreen}
                   onInitialTaskOpened={() => setEditingTaskIdForScreen(null)}
                   onToggleTask={handleToggleTaskWithTimer}
                   onToggleSubtask={handleToggleSubtask}
-                  tickTickSync={tickTickSync}
                 />
               </Suspense>
             </motion.main>
@@ -762,11 +668,11 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
               initial="initial"
               animate="animate"
               exit="exit"
-              className="flex-1 h-full min-w-0 p-3 sm:p-5 lg:p-6 pb-20 sm:pb-5 lg:pb-6 overflow-y-auto space-y-5 @container"
+              className="flex-1 h-full min-w-0 px-2 py-3 sm:p-5 lg:p-6 overflow-y-auto space-y-5 @container"
             >
-              <div className="space-y-4 sm:space-y-5 animate-fadeIn">
-                {/* ROW 1: PRIMARY FOCUS (Full Width) */}
-                <div className="w-full flex flex-col">
+              <div className="grid grid-cols-1 items-start gap-4 sm:gap-5 @6xl:grid-cols-12 motion-safe:animate-fadeIn">
+                {/* Focus and available time share a row when the workspace is wide. */}
+                <div className="min-w-0 @6xl:col-span-7">
                   <PrimaryFocusCard
                     tasks={appData.quickNotes}
                     selectedTaskId={selectedFocusTaskId}
@@ -779,7 +685,6 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
                       setEditingTaskIdForScreen(task.id);
                       setActiveView('tasks');
                     }}
-                    onOpenCalendarSettings={() => setIsSettingsModalOpen(true)}
                     clockFormat={appData.settings.clockFormat}
                     showSuggestion={pendingTaskCount === 0}
                     suggestionCandidate={currentSuggestion}
@@ -791,34 +696,26 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
                   />
                 </div>
 
-                {/* ROW 2: TIME BUDGET & CAPACITY + COMMITMENT RADAR */}
-                <div className="grid grid-cols-1 @4xl:grid-cols-12 gap-4 sm:gap-5 items-stretch">
-                  <div className="@4xl:col-span-5 flex flex-col">
-                    <TimeRadarWidget
-                      timeRemaining={timeRemaining}
-                      taskLoad={taskLoad}
-                      buffer={buffer}
-                      endHour={appData.settings.daySchedule.endHour}
-                      onOpenTasks={() => setActiveView('tasks')}
-                      calendarSummary={calendarSummary}
-                      onSyncCalendar={() => handleSyncCalendar(false)}
-                      isSyncingCalendar={isSyncingCalendar}
-                      onOpenCalendarSettings={() => setIsSettingsModalOpen(true)}
-                    />
-                  </div>
-                  <div className="@4xl:col-span-7 flex flex-col">
-                    <CommitmentRadarWidget
-                      tasks={appData.quickNotes}
-                      onSelectTask={(id) => {
-                        setSelectedFocusTaskId(id);
-                        setEditingTaskIdForScreen(id);
-                        setActiveView('tasks');
-                      }}
-                      onPreviewTask={(id) => setSelectedFocusTaskId(id)}
-                      onOpenTasks={() => setActiveView('tasks')}
-                      calendarSummary={calendarSummary}
-                    />
-                  </div>
+                <div className="min-w-0 @6xl:col-span-5">
+                  <TimeRadarWidget
+                    timeRemaining={timeRemaining}
+                    taskLoad={taskLoad}
+                    buffer={buffer}
+                    endHour={appData.settings.daySchedule.endHour}
+                    onOpenTasks={() => setActiveView('tasks')}
+                  />
+                </div>
+                <div className="min-w-0 @6xl:col-span-12">
+                  <CommitmentRadarWidget
+                    tasks={appData.quickNotes}
+                    onSelectTask={(id) => {
+                      setSelectedFocusTaskId(id);
+                      setEditingTaskIdForScreen(id);
+                      setActiveView('tasks');
+                    }}
+                    onPreviewTask={(id) => setSelectedFocusTaskId(id)}
+                    onOpenTasks={() => setActiveView('tasks')}
+                  />
                 </div>
               </div>
             </motion.main>
@@ -856,6 +753,30 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
           )}
         </AnimatePresence>
       </div>
+
+      <nav aria-label="Main navigation" className="grid shrink-0 grid-cols-4 border-t border-serene-border-light bg-white px-2 pb-[env(safe-area-inset-bottom)] dark:border-serene-border-dark dark:bg-serene-surface-dark md:hidden">
+        {([
+          ['dashboard', 'Home', House],
+          ['tasks', 'Tasks', CheckSquare],
+          ['growth', 'Growth', Trophy],
+          ['settings', 'Settings', GearSix],
+        ] as const).map(([view, label, Icon]) => (
+          <button
+            key={view}
+            type="button"
+            aria-current={activeView === view ? 'page' : undefined}
+            onClick={() => {
+              setSearchQuery('');
+              if (view === 'settings') openSettings();
+              else setActiveView(view);
+            }}
+            className="my-1 flex min-h-[48px] flex-col items-center justify-center gap-0.5 rounded-xl text-xs font-semibold aria-[current=page]:bg-serene-primary/10 aria-[current=page]:text-serene-primary dark:aria-[current=page]:text-serene-primary-dark"
+          >
+            <Icon size={22} aria-hidden="true" />
+            {label}
+          </button>
+        ))}
+      </nav>
 
       {/* On-Demand Spark Focus Idea Modal */}
       <AnimatePresence>
@@ -915,28 +836,10 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
         onClose={() => setIsQuickAddTaskOpen(false)}
         onAddTask={handleAddQuickTask}
         onOpenFullTasksView={() => {
+          setCreateTaskRequested(true);
           setActiveView('tasks');
         }}
       />
-
-      {/* Settings Modal */}
-      {isSettingsModalOpen && (
-        <Suspense fallback={null}>
-          <SettingsModal
-            isOpen={isSettingsModalOpen}
-            onClose={() => setIsSettingsModalOpen(false)}
-            appData={appData}
-            onUpdateAppData={(next) => setAppData(workspace ? cloudData(next) : next)}
-            onClearAllData={handleClearAllData}
-            onSyncCalendar={() => handleSyncCalendar(false)}
-            isSyncingCalendar={isSyncingCalendar}
-            tickTickSync={workspace ? undefined : tickTickSync}
-            workspace={workspace}
-            onSwitchWorkspace={onSwitchWorkspace}
-            cloudSync={cloudSync}
-          />
-        </Suspense>
-      )}
 
       {showReflection && allTasksDone && !completedFocusTask && (
         <TaskClearReflection
@@ -952,7 +855,6 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
               || answers.some((answer) => answer.trim().split(/\s+/u).filter(Boolean).length < 150)) return;
             const completedTasks = appData.quickNotes.filter((task) => task.pendingReflection && task.isDone);
             if (!completedTasks.length || appData.quickNotes.some((task) => !task.isDone)) return;
-            for (const task of completedTasks) void tickTickSync.pushTaskToggle(task);
             setAppData((prev) => {
               const completed = prev.quickNotes.filter((task) => task.pendingReflection && task.isDone);
               if (!completed.length || prev.quickNotes.some((task) => !task.isDone)) return prev;
@@ -966,8 +868,7 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
               }
               return { ...prev, gamification, growthHistory: history,
                 reflections: [...(prev.reflections || []), { date: new Date().toISOString(), questions, answers,
-                  taskTitles: completed.map((task) => task.text),
-                  calendarEventIds: prev.quickNotes.map((task) => task.eventId).filter((id): id is string => Boolean(id)) }],
+                  taskTitles: completed.map((task) => task.text) }],
                 quickNotes: [] };
             });
             setShowReflection(false);
@@ -978,6 +879,7 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
       {showReflectionCelebration && <ConfettiOverlay style={appData.settings.confettiStyle} />}
     </div>
     </IconContext.Provider>
+    </MotionConfig>
   );
 }
 
@@ -999,6 +901,7 @@ export default function WorkspaceApp() {
 
   useEffect(() => {
     let cancelled = false;
+    removeRetiredIntegrationCredentials();
     async function restore() {
       try {
         const saved = localStorage.getItem(ACTIVE_CLOUD_KEY);

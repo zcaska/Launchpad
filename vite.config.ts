@@ -5,15 +5,6 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   base: './', // Ensures relative path loading for GitHub Pages and local file hosting
-  server: {
-    proxy: {
-      '/api/ticktick': {
-        target: 'https://api.ticktick.com',
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api\/ticktick/, ''),
-      },
-    },
-  },
   build: {
     rollupOptions: {
       output: {

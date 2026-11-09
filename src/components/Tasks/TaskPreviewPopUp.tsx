@@ -37,7 +37,7 @@ export const TaskPreviewPopUp: React.FC<TaskPreviewPopUpProps> = ({
   return (
     <AnimatePresence>
       <motion.div
-        className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6"
+        className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-6"
         variants={modalBackdropVariants}
         initial="initial"
         animate="animate"
@@ -52,7 +52,7 @@ export const TaskPreviewPopUp: React.FC<TaskPreviewPopUpProps> = ({
         initial="initial"
         animate="animate"
         exit="exit"
-        className="relative z-10 bg-white dark:bg-serene-surface-dark border border-serene-border-light dark:border-serene-border-dark rounded-2xl shadow-modal w-full sm:max-w-md max-h-[85vh] flex flex-col overflow-hidden"
+        className="relative z-10 bg-white dark:bg-serene-surface-dark border border-serene-border-light dark:border-serene-border-dark rounded-t-2xl sm:rounded-2xl shadow-modal w-full sm:max-w-md max-h-[90dvh] flex flex-col overflow-hidden"
       >
         <div className="p-4 sm:p-5 border-b border-serene-border-light dark:border-serene-border-dark flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -73,7 +73,7 @@ export const TaskPreviewPopUp: React.FC<TaskPreviewPopUpProps> = ({
           </button>
         </div>
 
-        <div className="p-4 sm:p-5 overflow-y-auto max-h-[60vh] flex flex-col gap-4">
+        <div className="p-4 sm:p-5 min-h-0 overflow-y-auto sm:max-h-[60dvh] flex flex-col gap-4">
           <div className="min-w-0">
             <h3 className="text-lg sm:text-xl font-bold text-serene-text-primary dark:text-serene-text-darkPrimary break-words leading-snug">
               {task.text}

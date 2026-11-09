@@ -11,7 +11,7 @@ Open **Settings, Backup & Help** and find **Supabase cloud workspaces**. Select 
 
 ## Sync behavior
 
-LaunchPAD syncs tasks, checklists, scratchpad, preferences, and growth progress. Google Calendar, TickTick, and OpenRouter integrations are available in the local workspace. Their credentials stay on the device. Running timers also stay on the device, and logged time syncs with the task.
+LaunchPAD syncs tasks, checklists, scratchpad, preferences, and growth progress. OpenRouter is available in the local workspace. Its credentials stay on the device. Running timers also stay on the device, and logged time syncs with the task.
 
 An opened workspace keeps an offline copy in this browser and retries on reconnection. Other devices’ changes are checked while the app is visible and when it regains focus. If both copies have unsynced edits, LaunchPAD pauses sync and asks which to keep. Export the device copy through **Data Backup & Storage Health** if you want to preserve both versions.
 

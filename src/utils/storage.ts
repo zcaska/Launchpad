@@ -52,8 +52,6 @@ export function pruneExpendableData(data: AppData): AppData {
 
   return {
     ...data,
-    // Ephemeral calendar events can be re-fetched on the next sync
-    calendarEvents: [],
     learnedPreferences: {
       ...data.learnedPreferences,
       recentRejections,
@@ -65,11 +63,21 @@ export function pruneExpendableData(data: AppData): AppData {
 /**
  * Loads AppData with automatic corruption recovery and legacy migration.
  */
+export function removeRetiredIntegrationCredentials(): void {
+  try {
+    localStorage.removeItem('launchpad_gcal_token_v1');
+    localStorage.removeItem('launchpad_ticktick_settings_v1');
+  } catch {
+    // Storage may be unavailable.
+  }
+}
+
 export function loadAppData(): AppData {
   if (typeof localStorage === 'undefined') {
     return DEFAULT_SEED_DATA;
   }
 
+  removeRetiredIntegrationCredentials();
   let raw: string | null = null;
   let isFromBackup = false;
 
@@ -148,12 +156,6 @@ export function sanitizeAppData(parsed: any, saveRollingBackup: boolean = true):
         durationMinutes: typeof n.durationMinutes === 'number' && n.durationMinutes > 0 ? n.durationMinutes : 30,
         priority: ['urgent', 'high', 'medium', 'low'].includes(n.priority) ? n.priority : 'medium',
         deadline: typeof n.deadline === 'string' && n.deadline ? n.deadline : undefined,
-        source: n.source === 'google_calendar' || n.source === 'ticktick' || n.source === 'local' ? n.source : undefined,
-        eventId: typeof n.eventId === 'string' ? n.eventId : undefined,
-        ticktickTaskId: typeof n.ticktickTaskId === 'string' ? n.ticktickTaskId : undefined,
-        ticktickProjectId: typeof n.ticktickProjectId === 'string' ? n.ticktickProjectId : undefined,
-        ticktickLastModified: typeof n.ticktickLastModified === 'number' && Number.isFinite(n.ticktickLastModified) ? n.ticktickLastModified : undefined,
-        syncStatus: ['synced', 'pending', 'error'].includes(n.syncStatus) ? n.syncStatus : undefined,
         timeSpentSeconds: typeof n.timeSpentSeconds === 'number' ? n.timeSpentSeconds : undefined,
         attachedUrls: Array.isArray(n.attachedUrls)
           ? n.attachedUrls.filter((u: any) => u && typeof u.url === 'string')
@@ -170,9 +172,10 @@ export function sanitizeAppData(parsed: any, saveRollingBackup: boolean = true):
 
   const learnedPreferences = parsed.learnedPreferences || DEFAULT_INITIAL_PREFERENCES;
 
+  const { googleCalendar: _retiredCalendar, ...savedSettings } = parsed.settings || {};
   const settings = {
     ...DEFAULT_SEED_DATA.settings,
-    ...(parsed.settings || {}),
+    ...savedSettings,
     daySchedule: {
       ...DEFAULT_SEED_DATA.settings.daySchedule,
       ...(parsed.settings?.daySchedule || {}),
@@ -180,10 +183,6 @@ export function sanitizeAppData(parsed: any, saveRollingBackup: boolean = true):
     openRouter: {
       ...DEFAULT_SEED_DATA.settings.openRouter,
       ...(parsed.settings?.openRouter || {}),
-    },
-    googleCalendar: {
-      ...DEFAULT_SEED_DATA.settings.googleCalendar,
-      ...(parsed.settings?.googleCalendar || {}),
     },
     activeMode: parsed.settings?.activeMode || 'auto',
   };
@@ -207,7 +206,6 @@ export function sanitizeAppData(parsed: any, saveRollingBackup: boolean = true):
     folders: [],
     links: [],
     quickNotes,
-    calendarEvents: Array.isArray(parsed.calendarEvents) ? parsed.calendarEvents : [],
     scratchpadText: typeof parsed.scratchpadText === 'string' ? parsed.scratchpadText : DEFAULT_SEED_DATA.scratchpadText,
     dailyFocus: {
       date: parsed.dailyFocus?.date || new Date().toISOString().split('T')[0],
@@ -224,7 +222,7 @@ export function sanitizeAppData(parsed: any, saveRollingBackup: boolean = true):
       && Array.isArray(entry.questions) && entry.questions.every((value: unknown) => typeof value === 'string')
       && Array.isArray(entry.answers) && entry.answers.every((value: unknown) => typeof value === 'string')
       && Array.isArray(entry.taskTitles) && entry.taskTitles.every((value: unknown) => typeof value === 'string')
-    ) : [],
+    ).map(({ date, questions, answers, taskTitles }: NonNullable<AppData["reflections"]>[number]) => ({ date, questions, answers, taskTitles })) : [],
   };
 
   // Keep a fresh rolling backup of valid data
@@ -438,7 +436,6 @@ export function clearAllLocalData(): AppData {
     },
     learnedPreferences: DEFAULT_INITIAL_PREFERENCES,
     growthHistory: {},
-    calendarEvents: [],
     scratchpadText: '',
     quickNotes: [],
     reflections: [],

@@ -114,7 +114,7 @@ export const QuickAddTaskModal: React.FC<QuickAddTaskModalProps> = ({
     <AnimatePresence>
       {isOpen && (
         <div 
-          className="fixed inset-0 z-[100] flex items-center justify-center p-4 pointer-events-auto"
+          className="fixed inset-0 z-[100] flex items-end justify-center sm:items-center sm:p-4 pointer-events-auto"
           onKeyDown={handleKeyDown}
         >
           {/* Backdrop */}
@@ -136,7 +136,7 @@ export const QuickAddTaskModal: React.FC<QuickAddTaskModalProps> = ({
             initial="initial"
             animate="animate"
             exit="exit"
-            className="relative w-full max-w-lg bg-white dark:bg-serene-surface-dark border border-serene-border-light dark:border-serene-border-dark rounded-2xl shadow-modal overflow-hidden z-[101] flex flex-col"
+            className="relative w-full sm:max-w-lg max-h-[95dvh] bg-white dark:bg-serene-surface-dark border border-serene-border-light dark:border-serene-border-dark rounded-t-2xl sm:rounded-2xl shadow-modal overflow-hidden z-[101] flex flex-col"
           >
             {/* Header */}
             <div className="flex items-center justify-between px-5 py-4 border-b border-serene-border-light/70 dark:border-serene-border-dark/70 bg-serene-surfaceAlt-light/40 dark:bg-serene-surfaceAlt-dark/40">
@@ -168,7 +168,7 @@ export const QuickAddTaskModal: React.FC<QuickAddTaskModalProps> = ({
             </div>
 
             {/* Form */}
-            <form onSubmit={handleSubmit} className="p-5 space-y-4">
+            <form onSubmit={handleSubmit} className="overflow-y-auto p-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:p-5 space-y-4">
               {/* Task Title Input */}
               <div>
                 <label className="block text-xs font-semibold text-serene-text-secondary dark:text-serene-text-darkSecondary mb-1.5">
@@ -195,13 +195,13 @@ export const QuickAddTaskModal: React.FC<QuickAddTaskModalProps> = ({
                     {formatMinutesToHours(duration)}
                   </span>
                 </div>
-                <div className="grid grid-cols-6 gap-1.5">
+                <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5">
                   {DURATION_PRESETS.map((preset) => (
                     <button
                       key={preset.minutes}
                       type="button"
                       onClick={() => setDuration(preset.minutes)}
-                      className={`py-1.5 px-1 rounded-lg text-xs font-medium font-mono border transition-all text-center cursor-pointer ${
+                      className={`min-h-[44px] sm:min-h-0 py-1.5 px-1 rounded-lg text-xs font-medium font-mono border transition-all text-center cursor-pointer ${
                         duration === preset.minutes
                           ? 'bg-serene-primary text-white border-serene-primary shadow-xs font-bold'
                           : 'bg-serene-surfaceAlt-light/50 dark:bg-serene-surfaceAlt-dark/50 text-serene-text-secondary dark:text-serene-text-darkSecondary border-serene-border-light dark:border-serene-border-dark hover:bg-serene-surfaceAlt-light dark:hover:bg-serene-surfaceAlt-dark'

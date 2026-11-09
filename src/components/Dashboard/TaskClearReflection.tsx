@@ -97,6 +97,7 @@ export function TaskClearReflection({ onClose, onSubmit }: {
           </label>
           <p className="mt-1.5 text-sm text-serene-text-secondary dark:text-serene-text-darkSecondary">Write at least 150 words for each question.</p>
           <textarea id="reflection-answer" value={answers[activeQuestion]}
+            onPaste={(event) => event.preventDefault()}
             onChange={(event) => setAnswers((current) => current.map((answer, index) => index === activeQuestion ? event.target.value : answer))}
             placeholder="Give yourself space to think and write..."
             className="mt-4 min-h-52 w-full resize-y rounded-xl border border-serene-border-light bg-serene-surfaceAlt-light/60 p-4 text-sm leading-7 text-serene-text-primary placeholder:text-stone-500 focus:border-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-600/20 dark:border-serene-border-dark dark:bg-serene-surfaceAlt-dark dark:text-serene-text-darkPrimary dark:placeholder:text-stone-400 dark:focus:border-teal-400" />

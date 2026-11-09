@@ -171,12 +171,6 @@ export const DEFAULT_SEED_DATA: AppData = {
       dailyLimit: 20,
       requestsToday: 0,
     },
-    googleCalendar: {
-      enabled: false,
-      clientId: '',
-      calendarId: 'primary',
-      syncIntervalMinutes: 5,
-    },
   },
   gamification: {
     currentXp: 0,
@@ -188,7 +182,6 @@ export const DEFAULT_SEED_DATA: AppData = {
     lastBackupTimestamp: Date.now(),
   },
   growthHistory: {},
-  calendarEvents: [],
   scratchpadText: '',
   quickNotes: [],
   reflections: [],

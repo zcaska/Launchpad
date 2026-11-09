@@ -2,7 +2,7 @@ import React from 'react';
 import {
   ArrowSquareOut as ExternalLink
 } from '@phosphor-icons/react';
-import { isSafeUrl, decodeHtmlEntities, deriveUrlTitle } from '../../utils/calendarFormatting';
+import { isSafeUrl, decodeHtmlEntities, deriveUrlTitle } from '../../utils/textFormatting';
 
 interface SafeDescriptionProps {
   text?: string;

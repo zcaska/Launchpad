@@ -18,14 +18,13 @@ const local = cloudData({
   settings: {
     ...DEFAULT_SEED_DATA.settings,
     openRouter: { ...DEFAULT_SEED_DATA.settings.openRouter, apiKey: 'fixture-secret' },
-    googleCalendar: DEFAULT_SEED_DATA.settings.googleCalendar,
   },
 });
 assert.equal(local.scratchpadText, 'Fixture note');
 assert.equal(local.reflections?.[0].answers[0], 'Answer');
 assert.equal(local.settings.openRouter.apiKey, undefined);
-assert.equal(local.settings.googleCalendar, undefined);
-assert.equal(local.calendarEvents, undefined);
+assert.equal("googleCalendar" in local.settings, false);
+assert.equal("calendarEvents" in local, false);
 
 let row: { revision: string; snapshot: typeof local } | undefined;
 const userId = '61000000-0000-4000-8000-000000000001';

@@ -207,8 +207,8 @@ export const GrowthMasteryScreen: React.FC<GrowthMasteryScreenProps> = ({
   };
 
   return (
-    <div className="w-full h-full overflow-y-auto bg-serene-bg-light dark:bg-serene-bg-dark text-serene-text-primary dark:text-serene-text-darkPrimary pb-20">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 space-y-8">
+    <div className="w-full h-full overflow-y-auto bg-serene-bg-light dark:bg-serene-bg-dark text-serene-text-primary dark:text-serene-text-darkPrimary pb-6 md:pb-12">
+      <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 pt-4 space-y-6 md:pt-6 md:space-y-8">
         {/* ========================================================= */}
         {/* 1. Header Bar                                             */}
         {/* ========================================================= */}
@@ -267,7 +267,7 @@ export const GrowthMasteryScreen: React.FC<GrowthMasteryScreenProps> = ({
         {/* ========================================================= */}
         {/* 2. Active Hero Showcase Banner                           */}
         {/* ========================================================= */}
-        <section aria-label="Active Hero Showcase" className="relative overflow-hidden rounded-3xl bg-white dark:bg-serene-surface-dark border border-serene-border-light dark:border-serene-border-dark shadow-card p-6 sm:p-8">
+        <section aria-label="Active Hero Showcase" className="relative overflow-hidden rounded-3xl bg-white dark:bg-serene-surface-dark border border-serene-border-light dark:border-serene-border-dark shadow-card p-4 md:p-6 lg:p-8">
           {/* Subtle decorative background glow */}
           <div className="absolute top-0 right-0 -mr-16 -mt-16 w-80 h-80 rounded-full bg-gradient-to-br from-serene-primary/10 to-transparent blur-3xl pointer-events-none" />
 
@@ -453,41 +453,41 @@ export const GrowthMasteryScreen: React.FC<GrowthMasteryScreenProps> = ({
             </div>
 
             {/* Modern Segmented Tab Control */}
-            <div className="flex w-full sm:inline-flex sm:w-auto flex-wrap sm:flex-nowrap p-1 rounded-2xl bg-white dark:bg-serene-surface-dark border border-serene-border-light dark:border-serene-border-dark shadow-subtle sm:shrink-0">
+            <div className="grid w-full grid-cols-3 sm:inline-flex sm:w-auto p-1 rounded-2xl bg-white dark:bg-serene-surface-dark border border-serene-border-light dark:border-serene-border-dark shadow-subtle sm:shrink-0">
               <button
                 onClick={() => setActiveTab('weekly')}
-                className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all duration-150 ${
+                className={`flex min-h-[44px] items-center justify-center gap-1.5 px-2 md:px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all duration-150 ${
                   activeTab === 'weekly'
                     ? 'bg-serene-primary text-white shadow-sm'
                     : 'text-serene-text-secondary dark:text-serene-text-darkSecondary hover:text-serene-text-primary dark:hover:text-serene-text-darkPrimary'
                 }`}
               >
-                <Calendar className="w-3.5 h-3.5" />
-                <span>Weekly Focus</span>
+                <Calendar className="hidden h-3.5 w-3.5 md:block" aria-hidden="true" />
+                <span>Weekly</span>
               </button>
 
               <button
                 onClick={() => setActiveTab('monthly')}
-                className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all duration-150 ${
+                className={`flex min-h-[44px] items-center justify-center gap-1.5 px-2 md:px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all duration-150 ${
                   activeTab === 'monthly'
                     ? 'bg-serene-primary text-white shadow-sm'
                     : 'text-serene-text-secondary dark:text-serene-text-darkSecondary hover:text-serene-text-primary dark:hover:text-serene-text-darkPrimary'
                 }`}
               >
-                <Flame className="w-3.5 h-3.5" />
-                <span>Monthly Consistency</span>
+                <Flame className="hidden h-3.5 w-3.5 md:block" aria-hidden="true" />
+                <span>Monthly</span>
               </button>
 
               <button
                 onClick={() => setActiveTab('yearly')}
-                className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all duration-150 ${
+                className={`flex min-h-[44px] items-center justify-center gap-1.5 px-2 md:px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all duration-150 ${
                   activeTab === 'yearly'
                     ? 'bg-serene-primary text-white shadow-sm'
                     : 'text-serene-text-secondary dark:text-serene-text-darkSecondary hover:text-serene-text-primary dark:hover:text-serene-text-darkPrimary'
                 }`}
               >
-                <TrendingUp className="w-3.5 h-3.5" />
-                <span>Yearly Trajectory</span>
+                <TrendingUp className="hidden h-3.5 w-3.5 md:block" aria-hidden="true" />
+                <span>Yearly</span>
               </button>
             </div>
           </div>
@@ -535,7 +535,7 @@ export const GrowthMasteryScreen: React.FC<GrowthMasteryScreenProps> = ({
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+          <div className="grid grid-cols-1 @2xl:grid-cols-2 @5xl:grid-cols-3 @7xl:grid-cols-4 gap-4">
             {HERO_ROSTER.map((hero) => {
               const isUnlocked = unlockedIds.includes(hero.id);
               const isActive = gamification.activeHeroId === hero.id;
@@ -897,7 +897,7 @@ export const GrowthMasteryScreen: React.FC<GrowthMasteryScreenProps> = ({
         {/* ========================================================= */}
         {/* 5. Data Safety & Backup Station                          */}
         {/* ========================================================= */}
-        <section aria-label="Data Safety Station" className="rounded-3xl bg-white dark:bg-serene-surface-dark border border-serene-border-light dark:border-serene-border-dark p-6 sm:p-8 shadow-card space-y-6">
+        <section aria-label="Data Safety Station" className="rounded-3xl bg-white dark:bg-serene-surface-dark border border-serene-border-light dark:border-serene-border-dark p-4 md:p-6 lg:p-8 shadow-card space-y-6">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="flex items-start gap-3.5">
               <div className="w-11 h-11 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center justify-center shrink-0">
@@ -924,7 +924,7 @@ export const GrowthMasteryScreen: React.FC<GrowthMasteryScreenProps> = ({
                     : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
                 }`}
               >
-                <Clock className="w-3.5 h-3.5" />
+                <Clock className="hidden h-3.5 w-3.5 md:block" aria-hidden="true" />
                 <span>Last Backup: {formatLastBackup(gamification.lastBackupTimestamp)}</span>
               </div>
             </div>

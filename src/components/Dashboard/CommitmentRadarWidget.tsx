@@ -12,7 +12,7 @@ import {
   Check,
   X
 } from '@phosphor-icons/react';
-import { QuickNote, CalendarScheduleSummary } from '../../types';
+import { QuickNote } from '../../types';
 import { TaskPreviewPopUp } from '../Tasks/TaskPreviewPopUp';
 import {
   projectTasksToRadarCoordinates,
@@ -30,7 +30,6 @@ export interface CommitmentRadarWidgetProps {
   onPreviewTask?: (id: string) => void;
   onOpenTasks?: () => void;
   className?: string;
-  calendarSummary?: CalendarScheduleSummary;
 }
 
 export type RadarViewMode = 'radar' | 'list';
@@ -158,7 +157,6 @@ export const CommitmentRadarWidget: React.FC<CommitmentRadarWidgetProps> = React
   onPreviewTask,
   onOpenTasks,
   className = '',
-  calendarSummary,
 }) => {
   const [viewMode, setViewMode] = useState<RadarViewMode>('radar');
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
@@ -310,21 +308,13 @@ export const CommitmentRadarWidget: React.FC<CommitmentRadarWidgetProps> = React
       };
     }
 
-    if (calendarSummary && calendarSummary.remainingBusyMinutesToday > 360) {
-      return {
-        title: 'Dense schedule',
-        subtitle: 'Heavy meeting load today. Protect your remaining focus blocks.',
-        isOptimal: true,
-      };
-    }
-
     // Default matching Image 1: "On track"
     return {
       title: 'On track',
       subtitle: "You're cooking — everything on your plate is totally doable today.",
       isOptimal: true,
     };
-  }, [tierCounts, calendarSummary]);
+  }, [tierCounts]);
 
   // Filtered nodes if a legend tier is selected for interactive focus
   const visibleNodes = useMemo(() => {

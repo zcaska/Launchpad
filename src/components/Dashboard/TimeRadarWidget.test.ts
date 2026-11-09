@@ -1,6 +1,5 @@
 import { TimeRadarWidget } from './TimeRadarWidget';
 import { DayTimeRemaining, TaskLoadSummary, BufferSummary } from '../../utils/timeBudget';
-import { CalendarScheduleSummary } from '../../types';
 
 let failures = 0;
 
@@ -40,8 +39,6 @@ const mockTaskLoad: TaskLoadSummary = {
   completedCount: 2,
   pendingMinutes: 120,
   completedMinutes: 60,
-  localPendingMinutes: 120,
-  calendarPendingMinutes: 0,
   formattedPending: '2h 0m',
   formattedCompleted: '1h 0m',
 };
@@ -54,52 +51,18 @@ const mockBuffer: BufferSummary = {
 };
 
 let tasksOpened = false;
-let calendarSynced = false;
-let calendarSettingsOpened = false;
-
-const mockCalendarSummary: CalendarScheduleSummary = {
-  totalBusyMinutesToday: 60,
-  remainingBusyMinutesToday: 45,
-  nextEvent: {
-    id: 'evt-1',
-    summary: 'Team Sync',
-    startTime: new Date().toISOString(),
-    endTime: new Date().toISOString(),
-    startMs: Date.now(),
-    endMs: Date.now() + 1800000,
-    durationMinutes: 30,
-    isAllDay: false,
-    status: 'confirmed',
-  },
-  minutesUntilNextEvent: 15,
-  events: [],
-  isTokenExpired: false,
-  syncError: undefined,
-};
-
 const testProps = {
   timeRemaining: mockTimeRemaining,
   taskLoad: mockTaskLoad,
   buffer: mockBuffer,
   endHour: 22,
   onOpenTasks: () => { tasksOpened = true; },
-  calendarSummary: mockCalendarSummary,
-  onSyncCalendar: () => { calendarSynced = true; },
-  isSyncingCalendar: false,
-  onOpenCalendarSettings: () => { calendarSettingsOpened = true; },
-  onReauthorize: () => {},
 };
 
 // 3. Test Callbacks
 console.log('--- Action Callbacks Verification ---');
 testProps.onOpenTasks();
 assert(tasksOpened, 'onOpenTasks callback executes successfully');
-
-testProps.onSyncCalendar();
-assert(calendarSynced, 'onSyncCalendar callback executes successfully');
-
-testProps.onOpenCalendarSettings();
-assert(calendarSettingsOpened, 'onOpenCalendarSettings callback executes successfully');
 
 // 4. Test Metric Calculations
 console.log('--- Time Remaining & Buffer Metrics Verification ---');

@@ -3,7 +3,6 @@ import {
   Lightning as Zap,
   Plus,
   FileText,
-  CalendarBlank as Calendar,
   Target,
   Quotes as Quote
 } from '@phosphor-icons/react';
@@ -11,7 +10,6 @@ import {
 export interface QuickActionsCardProps {
   onOpenAddTask: () => void;
   onToggleScratchpad: () => void;
-  onOpenCalendar: () => void;
   onOpenTasks?: () => void;
   className?: string;
 }
@@ -19,7 +17,6 @@ export interface QuickActionsCardProps {
 export const QuickActionsCard: React.FC<QuickActionsCardProps> = ({
   onOpenAddTask,
   onToggleScratchpad,
-  onOpenCalendar,
   onOpenTasks,
   className = '',
 }) => {
@@ -55,7 +52,6 @@ export const QuickActionsCard: React.FC<QuickActionsCardProps> = ({
           <span className="text-xs font-semibold text-stone-700 dark:text-stone-200 group-hover:text-stone-900 dark:group-hover:text-white transition-colors text-center">
             Add Task
           </span>
-        </button>
 
         {/* Capture Note */}
         <button
@@ -69,16 +65,6 @@ export const QuickActionsCard: React.FC<QuickActionsCardProps> = ({
           </span>
         </button>
 
-        {/* Open Calendar */}
-        <button
-          type="button"
-          onClick={onOpenCalendar}
-          className="flex flex-col items-center justify-center gap-1.5 p-2.5 sm:py-3.5 rounded-xl border border-serene-border-light/70 dark:border-serene-border-dark/70 bg-stone-50/60 dark:bg-serene-surfaceAlt-dark/50 hover:bg-white dark:hover:bg-serene-surfaceAlt-dark hover:border-serene-primary/40 dark:hover:border-serene-primary-dark/40 text-serene-text-primary dark:text-serene-text-darkPrimary transition-all duration-150 shadow-2xs hover:shadow-subtle group cursor-pointer active:scale-[0.98]"
-        >
-          <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-stone-600 dark:text-stone-300 group-hover:text-serene-primary dark:group-hover:text-serene-primary-dark stroke-[2] transition-colors" />
-          <span className="text-xs font-semibold text-stone-700 dark:text-stone-200 group-hover:text-stone-900 dark:group-hover:text-white transition-colors text-center">
-            Open Calendar
-          </span>
         </button>
 
         {/* Focus Mode */}

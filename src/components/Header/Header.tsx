@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   MagnifyingGlass as Search,
   Sun,
@@ -7,9 +7,10 @@ import {
   GearSix as Settings,
   Command,
   RocketLaunch as Rocket,
-  CheckSquare,
-  List as Menu,
-  Lightbulb
+  Plus,
+  NotePencil,
+  Lightbulb,
+  X
 } from '@phosphor-icons/react';
 import { ThemeMode } from '../../types';
 
@@ -17,27 +18,54 @@ interface HeaderProps {
   searchQuery: string;
   onSearchChange: (query: string) => void;
   onOpenSparkIdea?: () => void;
-  onOpenSettingsModal: () => void;
+  onNewTask: () => void;
+  onOpenScratchpad: () => void;
+  onOpenSettings: () => void;
   theme: ThemeMode;
   onThemeChange: (theme: ThemeMode) => void;
-  activeView?: 'dashboard' | 'tasks' | 'growth';
-  onSelectView?: (view: 'dashboard' | 'tasks' | 'growth') => void;
-  pendingTasksCount?: number;
-  onToggleMobileSidebar?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
   searchQuery,
   onSearchChange,
   onOpenSparkIdea,
-  onOpenSettingsModal,
+  onNewTask,
+  onOpenScratchpad,
+  onOpenSettings,
   theme,
   onThemeChange,
-  activeView = 'dashboard',
-  onSelectView,
-  pendingTasksCount = 0,
-  onToggleMobileSidebar,
 }) => {
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+  const desktopSearch = useRef<HTMLInputElement>(null);
+  const mobileSearch = useRef<HTMLInputElement>(null);
+  const searchTrigger = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (mobileSearchOpen) mobileSearch.current?.focus();
+  }, [mobileSearchOpen]);
+
+  useEffect(() => {
+    const focusSearch = (event: KeyboardEvent) => {
+      if (!(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== 'k') return;
+      event.preventDefault();
+      if (searchTrigger.current?.getClientRects().length) {
+        setMobileSearchOpen(true);
+        mobileSearch.current?.focus();
+      } else {
+        desktopSearch.current?.focus();
+      }
+    };
+
+    window.addEventListener('keydown', focusSearch);
+    return () => window.removeEventListener('keydown', focusSearch);
+  }, []);
+
+  const closeMobileSearch = () => {
+    onSearchChange('');
+    setMobileSearchOpen(false);
+    searchTrigger.current?.focus();
+  };
+
   const toggleTheme = () => {
     if (theme === 'light') onThemeChange('dark');
     else if (theme === 'dark') onThemeChange('system');
@@ -49,21 +77,9 @@ export const Header: React.FC<HeaderProps> = ({
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-2 sm:py-2.5">
         <div className="flex items-center justify-between gap-2 sm:gap-4">
           
-          {/* Logo & Brand + Mobile Sidebar Hamburger */}
+          {/* Logo and brand */}
           <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-            {onToggleMobileSidebar && (
-              <button
-                type="button"
-                onClick={onToggleMobileSidebar}
-                className="md:hidden p-1.5 sm:p-2 rounded-lg bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark text-serene-text-secondary hover:text-serene-text-primary dark:text-serene-text-darkSecondary dark:hover:text-serene-text-darkPrimary border border-serene-border-light dark:border-serene-border-dark transition-colors shrink-0"
-                title="Toggle Navigation Menu"
-                aria-label="Toggle Navigation Menu"
-              >
-                <Menu className="w-4 h-4" />
-              </button>
-            )}
-
-            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-serene-primary-soft dark:bg-serene-primary/20 text-serene-primary dark:text-serene-primary-dark border border-serene-primary/25 dark:border-serene-primary/30 flex items-center justify-center shadow-xs shrink-0 transition-transform hover:scale-105">
+            <div className="hidden min-[360px]:flex w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-serene-primary-soft dark:bg-serene-primary/20 text-serene-primary dark:text-serene-primary-dark border border-serene-primary/25 dark:border-serene-primary/30 items-center justify-center shadow-xs shrink-0 transition-transform hover:scale-105">
               <Rocket className="w-4 h-4 sm:w-5 sm:h-5 stroke-[2.2]" />
             </div>
             <div className="min-w-0">
@@ -82,14 +98,16 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
 
           {/* Desktop Search Filter Box */}
-          <div className="hidden sm:block flex-1 max-w-xs md:max-w-md lg:max-w-lg relative">
+          <div className="hidden md:block flex-1 max-w-xs md:max-w-md lg:max-w-lg relative">
             <div className="relative flex items-center">
               <Search className="w-4 h-4 absolute left-3 text-serene-text-muted pointer-events-none" />
               <input
+                ref={desktopSearch}
+                aria-label="Search tasks"
                 type="text"
                 value={searchQuery}
                 onChange={(e) => onSearchChange(e.target.value)}
-                placeholder="Search focus tasks & action items... (Ctrl+K)"
+                placeholder="Search tasks (Ctrl+K)"
                 className="w-full pl-9 pr-14 py-1.5 sm:py-2 bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark rounded-lg text-xs sm:text-sm text-serene-text-primary dark:text-serene-text-darkPrimary border border-serene-border-light dark:border-serene-border-dark placeholder:text-serene-text-muted focus:outline-none focus:ring-2 focus:ring-serene-primary/40 focus:border-serene-primary transition-all"
               />
               <div className="absolute right-2.5 flex items-center gap-1">
@@ -109,8 +127,35 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
           </div>
 
-          {/* Action Buttons */}
-          <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+          <div className="ml-auto flex shrink-0 items-center gap-1">
+            <button type="button" onClick={onNewTask} aria-label="New task" title="New task"
+              className="flex h-11 items-center justify-center gap-2 rounded-lg bg-serene-primary px-2.5 text-white sm:px-3">
+              <Plus size={20} aria-hidden="true" />
+              <span className="text-sm font-semibold">New task</span>
+            </button>
+            <button type="button" onClick={onOpenScratchpad} aria-label="Scratchpad" title="Scratchpad"
+              className="grid h-11 w-11 place-items-center rounded-lg hover:bg-serene-primary/10">
+              <NotePencil size={22} aria-hidden="true" />
+            </button>
+          </div>
+
+          <button
+            ref={searchTrigger}
+            type="button"
+            aria-label="Search tasks"
+            aria-expanded={mobileSearchOpen || Boolean(searchQuery)}
+            aria-controls="mobile-task-search"
+            onClick={() => {
+              setMobileSearchOpen(true);
+              mobileSearch.current?.focus();
+            }}
+            className="grid h-11 w-11 shrink-0 place-items-center rounded-lg md:hidden"
+          >
+            <Search size={22} />
+          </button>
+
+          {/* Desktop utilities */}
+          <div className="hidden items-center gap-2 shrink-0 md:flex">
             {/* Spark Focus Idea Button */}
             {onOpenSparkIdea && (
               <button
@@ -120,29 +165,6 @@ export const Header: React.FC<HeaderProps> = ({
               >
                 <Lightbulb className="w-4 h-4 shrink-0" />
                 <span className="hidden sm:inline">Spark Idea</span>
-              </button>
-            )}
-
-            {/* Tasks Screen View Toggle Button */}
-            {onSelectView && (
-              <button
-                onClick={() => onSelectView(activeView === 'tasks' ? 'dashboard' : 'tasks')}
-                title={activeView === 'tasks' ? "Back to Dashboard" : "Open Tasks Screen"}
-                aria-label={activeView === 'tasks' ? 'Back to Dashboard' : 'Open Tasks Screen'}
-                className={`p-1.5 sm:p-2 rounded-lg border transition-all flex items-center gap-1 ${
-                  activeView === 'tasks'
-                    ? 'bg-serene-primary text-white border-serene-primary shadow-xs'
-                    : 'bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark border-serene-border-light dark:border-serene-border-dark text-serene-text-secondary hover:text-serene-text-primary dark:text-serene-text-darkSecondary dark:hover:text-serene-text-darkPrimary'
-                }`}
-              >
-                <CheckSquare className="w-4 h-4" />
-                {pendingTasksCount > 0 && (
-                  <span className={`text-[10px] px-1 py-0.2 rounded-full font-mono font-bold ${
-                    activeView === 'tasks' ? 'bg-white/20 text-white' : 'bg-rose-500/10 text-rose-600 dark:text-rose-400'
-                  }`}>
-                    {pendingTasksCount}
-                  </span>
-                )}
               </button>
             )}
 
@@ -159,7 +181,7 @@ export const Header: React.FC<HeaderProps> = ({
 
             {/* Settings Modal Trigger */}
             <button
-              onClick={onOpenSettingsModal}
+              onClick={onOpenSettings}
               title="Settings, Backup & Help"
               className="p-1.5 sm:p-2 bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark border border-serene-border-light dark:border-serene-border-dark text-serene-text-secondary hover:text-serene-text-primary dark:text-serene-text-darkSecondary dark:hover:text-serene-text-darkPrimary rounded-lg transition-colors"
             >
@@ -168,25 +190,28 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
 
-        {/* Mobile Search Row (visible on <sm screens) */}
-        <div className="sm:hidden pt-2">
-          <div className="relative flex items-center">
-            <Search className="w-4 h-4 absolute left-3 text-serene-text-muted pointer-events-none" />
+        <div id="mobile-task-search" className={mobileSearchOpen || searchQuery ? "pt-2 md:hidden" : "hidden"}>
+          <div className="flex items-center gap-2">
             <input
-              type="text"
+              ref={mobileSearch}
+              type="search"
+              aria-label="Search tasks"
               value={searchQuery}
-              onChange={(e) => onSearchChange(e.target.value)}
-              placeholder="Search focus tasks..."
-              className="w-full pl-9 pr-12 py-1.5 bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark rounded-lg text-xs text-serene-text-primary dark:text-serene-text-darkPrimary border border-serene-border-light dark:border-serene-border-dark placeholder:text-serene-text-muted focus:outline-none focus:ring-2 focus:ring-serene-primary/40 focus:border-serene-primary transition-all"
+              onChange={(event) => onSearchChange(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === 'Escape') closeMobileSearch();
+              }}
+              placeholder="Search tasks"
+              className="min-w-0 flex-1 rounded-lg border border-serene-border-light bg-serene-surfaceAlt-light px-3 py-2.5 text-base dark:border-serene-border-dark dark:bg-serene-surfaceAlt-dark"
             />
-            {searchQuery && (
-              <button
-                onClick={() => onSearchChange('')}
-                className="absolute right-2.5 text-xs text-serene-text-muted hover:text-serene-text-primary px-1.5 py-0.5 rounded hover:bg-black/5 dark:hover:bg-white/10"
-              >
-                Clear
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={closeMobileSearch}
+              aria-label="Close task search"
+              className="grid h-11 w-11 shrink-0 place-items-center rounded-lg"
+            >
+              <X />
+            </button>
           </div>
         </div>
       </div>

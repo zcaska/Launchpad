@@ -131,19 +131,6 @@ const mockStorage = new MockLocalStorage();
   mockStorage.clear();
   const dummyData: AppData = {
     ...DEFAULT_SEED_DATA,
-    calendarEvents: [
-      {
-        id: 'e1',
-        summary: 'Heavy Cache Event',
-        startTime: '2026-10-21T10:00:00Z',
-        endTime: '2026-10-21T11:00:00Z',
-        startMs: 1,
-        endMs: 2,
-        durationMinutes: 60,
-        isAllDay: false,
-        status: 'confirmed',
-      },
-    ],
     growthHistory: {
       '2024-01-01': { tasksCompleted: 5, focusMinutes: 120, xpEarned: 100, dailyGoalCompleted: false },
       '2026-10-21': { tasksCompleted: 2, focusMinutes: 45, xpEarned: 50, dailyGoalCompleted: true },
@@ -151,7 +138,6 @@ const mockStorage = new MockLocalStorage();
   };
 
   const pruned = pruneExpendableData(dummyData);
-  assertEqual(pruned.calendarEvents?.length ?? 0, 0, 'pruneExpendableData clears re-fetchable calendarEvents');
   assert(Boolean(pruned.growthHistory['2026-10-21']), 'pruneExpendableData preserves recent growthHistory');
 
   // Trigger simulated quota failure
@@ -212,9 +198,11 @@ const mockStorage = new MockLocalStorage();
   assertEqual(metrics.linkCount, DEFAULT_SEED_DATA.links?.length ?? 0, 'getStorageMetrics counts links');
 }
 
-// 6. TickTick links and subtask text must survive a browser reload.
+// 6. Existing imported tasks survive without retired integration metadata or credentials.
 {
   mockStorage.clear();
+  mockStorage.setItem('launchpad_ticktick_settings_v1', 'legacy token');
+  mockStorage.setItem('launchpad_gcal_token_v1', 'legacy token');
   const linkedTask = {
     id: 'tt-1', text: 'Review draft', isDone: false, createdAt: 1000,
     source: 'ticktick' as const, ticktickTaskId: 'remote-1',
@@ -224,10 +212,11 @@ const mockStorage = new MockLocalStorage();
   };
   saveAppData({ ...DEFAULT_SEED_DATA, quickNotes: [linkedTask] });
   const restored = loadAppData().quickNotes[0];
-  assertEqual(restored.source, 'ticktick', 'reload retains TickTick source');
-  assertEqual(restored.ticktickTaskId, 'remote-1', 'reload retains remote task ID');
-  assertEqual(restored.ticktickProjectId, 'project-1', 'reload retains remote project ID');
-  assertEqual(restored.syncStatus, 'synced', 'reload retains sync status');
+  for (const key of ['source', 'ticktickTaskId', 'ticktickProjectId', 'ticktickLastModified', 'syncStatus']) {
+    assert(!(key in restored), 'reload strips retired task metadata: ' + key);
+  }
+  assertEqual(mockStorage.getItem('launchpad_ticktick_settings_v1'), null, 'reload removes retired TickTick credentials');
+  assertEqual(mockStorage.getItem('launchpad_gcal_token_v1'), null, 'reload removes retired calendar credentials');
   assertEqual(restored.subtasks?.[0].text, 'Read introduction', 'reload retains subtask text');
 }
 

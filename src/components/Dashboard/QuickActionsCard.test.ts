@@ -28,7 +28,6 @@ assert(typeof QuickActionsCard === 'function', 'QuickActionsCard is exported as 
 // 2. Mock Action Callbacks
 let openedAddTask = false;
 let toggledScratchpad = false;
-let openedCalendar = false;
 let openedTasks = false;
 
 const propsTest: QuickActionsCardProps = {
@@ -37,9 +36,6 @@ const propsTest: QuickActionsCardProps = {
   },
   onToggleScratchpad: () => {
     toggledScratchpad = true;
-  },
-  onOpenCalendar: () => {
-    openedCalendar = true;
   },
   onOpenTasks: () => {
     openedTasks = true;
@@ -55,8 +51,6 @@ assert(openedAddTask, 'onOpenAddTask executes successfully');
 propsTest.onToggleScratchpad();
 assert(toggledScratchpad, 'onToggleScratchpad executes successfully');
 
-propsTest.onOpenCalendar();
-assert(openedCalendar, 'onOpenCalendar executes successfully');
 
 if (propsTest.onOpenTasks) {
   propsTest.onOpenTasks();
@@ -68,15 +62,13 @@ console.log('--- Action Button Definition Verification ---');
 const expectedActions = [
   { label: 'Add Task', icon: 'Plus' },
   { label: 'Capture Note', icon: 'FileText' },
-  { label: 'Open Calendar', icon: 'Calendar' },
   { label: 'Focus Mode', icon: 'Target' },
 ];
 
-assertEqual(expectedActions.length, 4, '2x2 grid contains exactly 4 quick actions');
+assertEqual(expectedActions.length, 3, 'Grid contains exactly 3 quick actions');
 assertEqual(expectedActions[0].label, 'Add Task', 'Action 1 is Add Task');
 assertEqual(expectedActions[1].label, 'Capture Note', 'Action 2 is Capture Note');
-assertEqual(expectedActions[2].label, 'Open Calendar', 'Action 3 is Open Calendar');
-assertEqual(expectedActions[3].label, 'Focus Mode', 'Action 4 is Focus Mode');
+assertEqual(expectedActions[2].label, 'Focus Mode', 'Action 3 is Focus Mode');
 
 // 5. Serene Hearth Quote Verification
 console.log('--- Serene Quote Verification ---');

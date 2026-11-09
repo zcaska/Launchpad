@@ -75,8 +75,6 @@ const mockTask: QuickNote = {
   durationMinutes: 120,
   deadline: '22:00', // Due today at 10:00 PM
   priority: 'high',
-  source: 'google_calendar',
-  eventId: 'gcal-event-123',
   subtasks: mockSubtasks,
 };
 
@@ -108,7 +106,6 @@ const propsTest: PrimaryFocusCardProps = {
   onCompleteTask: (_task: QuickNote) => {},
   onToggleSubtask: (_taskId: string, _subtaskId: string) => {},
   onOpenTaskEdit: (_task: QuickNote) => {},
-  onOpenCalendarSettings: () => {},
   clockFormat: '12h',
   className: 'custom-test-class',
 };

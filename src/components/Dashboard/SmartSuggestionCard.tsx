@@ -56,7 +56,7 @@ export const SmartSuggestionCard: React.FC<SmartSuggestionCardProps> = ({
     return (
       <div className="p-6 rounded-2xl bg-white dark:bg-serene-surface-dark border border-serene-border-light dark:border-serene-border-dark text-center space-y-3">
         <Sparkles className="w-8 h-8 mx-auto text-amber-500" />
-        <h3 className="text-sm font-bold text-serene-text-primary dark:text-serene-text-darkPrimary">
+        <h3 className="text-[22px] md:text-sm font-bold text-serene-text-primary dark:text-serene-text-darkPrimary">
           Great job! All focus recommendations explored.
         </h3>
         <p className="text-xs text-serene-text-muted max-w-md mx-auto">
@@ -131,11 +131,8 @@ export const SmartSuggestionCard: React.FC<SmartSuggestionCardProps> = ({
           <span className="p-1 rounded-lg bg-serene-primary-soft dark:bg-serene-primary/20 text-serene-primary dark:text-serene-primary-dark shrink-0">
             <Lightbulb className="w-4 h-4" />
           </span>
-          <span className="text-xs font-bold uppercase tracking-wider text-serene-primary dark:text-serene-primary-dark">
-            {isHabit ? 'Mindful Focus Habit' : 'Smart Focus Alternative'}
-          </span>
-          <span className="text-[10px] px-2 py-0.5 rounded-full bg-serene-primary-soft dark:bg-serene-primary/20 text-serene-primary dark:text-serene-primary-dark font-mono font-medium">
-            Learned from {approvalsCount + rejectionsCount} signals
+          <span className="text-sm font-semibold md:text-xs md:uppercase md:tracking-wider text-serene-primary dark:text-serene-primary-dark">
+            {isHabit ? 'Mindful focus habit' : 'Suggested focus'}
           </span>
         </div>
 
@@ -154,17 +151,11 @@ export const SmartSuggestionCard: React.FC<SmartSuggestionCardProps> = ({
           animate="animate"
           exit="exit"
         >
-          {/* Rationale Quote */}
-          <div className="p-2.5 rounded-xl bg-white/80 dark:bg-serene-surface-dark/80 border border-serene-border-light dark:border-serene-border-dark text-xs text-serene-text-secondary dark:text-serene-text-darkSecondary mb-4 flex items-start gap-2 shadow-2xs">
-            <Sparkles className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />
-            <span className="leading-relaxed italic break-words">{candidate.rationale}</span>
-          </div>
-
           {/* Main Candidate Card Item */}
-          <div className="flex flex-col @lg:flex-row @lg:items-center justify-between gap-3.5 sm:gap-4 p-3.5 sm:p-4 rounded-xl bg-white dark:bg-serene-surface-dark border border-serene-border-light dark:border-serene-border-dark shadow-subtle">
+          <div className="flex flex-col @lg:flex-row @lg:items-center justify-between gap-3.5 sm:gap-4 md:p-4 md:rounded-xl md:bg-white md:dark:bg-serene-surface-dark md:border md:border-serene-border-light md:dark:border-serene-border-dark md:shadow-subtle">
             <div className="flex items-start gap-3 min-w-0 flex-1">
               {/* Icon / Favicon */}
-              <div className="w-10 h-10 rounded-xl bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark border border-serene-border-light/60 dark:border-serene-border-dark flex items-center justify-center shrink-0 overflow-hidden shadow-2xs">
+              <div className="hidden md:flex w-10 h-10 rounded-xl bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark border border-serene-border-light/60 dark:border-serene-border-dark items-center justify-center shrink-0 overflow-hidden shadow-2xs">
                 {isHabit ? (
                   getHabitIcon(candidate)
                 ) : faviconUrl ? (
@@ -186,28 +177,15 @@ export const SmartSuggestionCard: React.FC<SmartSuggestionCardProps> = ({
                   {candidate.title}
                 </h4>
                 {candidate.description && (
-                  <p className="text-xs text-serene-text-secondary dark:text-serene-text-darkSecondary mt-1 leading-relaxed line-clamp-2 break-words">
+                  <p className="text-base md:text-xs text-serene-text-secondary dark:text-serene-text-darkSecondary mt-1 leading-relaxed md:line-clamp-2 break-words">
                     {candidate.description}
                   </p>
                 )}
-                <div className="flex items-center gap-1.5 mt-2 flex-wrap">
-                  <span className="text-[10px] font-mono text-serene-text-muted bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark px-1.5 py-0.5 rounded border border-serene-border-light dark:border-serene-border-dark">
-                    {domain || candidate.category || (isHabit ? 'Habit Idea' : 'Curated Web')}
-                  </span>
-                  {candidate.tags.slice(0, 3).map((tag, idx) => (
-                    <span
-                      key={idx}
-                      className="text-[10px] px-1.5 py-0.5 rounded bg-serene-primary-soft dark:bg-serene-primary/20 text-serene-primary dark:text-serene-primary-dark font-medium"
-                    >
-                      #{tag}
-                    </span>
-                  ))}
-                </div>
               </div>
             </div>
 
             {/* Action Controls: Responsive layout */}
-            <div className="flex items-center gap-2 shrink-0 pt-2.5 @lg:pt-0 border-t @lg:border-t-0 border-serene-border-light/50 dark:border-serene-border-dark/50">
+            <div className="grid grid-cols-2 md:flex items-center gap-2 shrink-0 pt-2.5 @lg:pt-0 border-t @lg:border-t-0 border-serene-border-light/50 dark:border-serene-border-dark/50">
               {/* Next Idea / Shuffle button without penalty */}
               <button
                 type="button"
@@ -220,10 +198,10 @@ export const SmartSuggestionCard: React.FC<SmartSuggestionCardProps> = ({
                   }
                 }}
                 title="Shuffle next suggestion without penalty (Press 'R')"
-                className="flex-1 @lg:flex-initial px-3 py-2 bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark hover:bg-amber-500/10 hover:text-amber-600 dark:hover:text-amber-400 border border-serene-border-light dark:border-serene-border-dark text-xs font-semibold rounded-xl transition-all flex items-center justify-center gap-1.5 text-center cursor-pointer"
+                className="min-h-[44px] md:min-h-0 flex-1 @lg:flex-initial px-3 py-2 bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark hover:bg-amber-500/10 hover:text-amber-600 dark:hover:text-amber-400 border border-serene-border-light dark:border-serene-border-dark text-xs font-semibold rounded-xl transition-all flex items-center justify-center gap-1.5 text-center cursor-pointer"
               >
                 <RotateCw className="w-3.5 h-3.5 shrink-0" />
-                <span className="truncate">Next Idea (R)</span>
+                <span className="truncate">Next idea<span className="hidden md:inline"> (R)</span></span>
               </button>
 
               {/* Dismiss / Dislike button */}
@@ -232,9 +210,10 @@ export const SmartSuggestionCard: React.FC<SmartSuggestionCardProps> = ({
                 onClick={handleRejectClick}
                 title="Don't suggest this again (dislike)"
                 aria-label="Don't suggest this again"
-                className="p-2 bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark hover:bg-rose-50 dark:hover:bg-rose-950/30 text-serene-text-muted hover:text-rose-600 dark:hover:text-rose-400 border border-serene-border-light dark:border-serene-border-dark rounded-xl transition-all flex items-center justify-center cursor-pointer"
+                className="min-h-[44px] md:min-h-0 gap-1.5 text-xs font-semibold p-2 bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark hover:bg-rose-50 dark:hover:bg-rose-950/30 text-serene-text-muted hover:text-rose-600 dark:hover:text-rose-400 border border-serene-border-light dark:border-serene-border-dark rounded-xl transition-all flex items-center justify-center cursor-pointer"
               >
                 <X className="w-3.5 h-3.5" />
+                <span className="md:hidden">Dismiss</span>
               </button>
 
               {/* Approve button */}
@@ -242,7 +221,7 @@ export const SmartSuggestionCard: React.FC<SmartSuggestionCardProps> = ({
                 type="button"
                 onClick={handleApproveClick}
                 title={isHabit ? "I'll do this activity (Press 'Enter')" : "Open this resource (Press 'Enter')"}
-                className="flex-1 @lg:flex-initial px-4 py-2 bg-serene-primary hover:bg-serene-primary-hover text-white text-xs font-semibold rounded-xl shadow-sm hover:shadow transition-all flex items-center justify-center gap-1.5 text-center cursor-pointer"
+                className="order-first col-span-2 min-h-[44px] md:order-none md:min-h-0 flex-1 @lg:flex-initial px-4 py-2 bg-serene-primary hover:bg-serene-primary-hover text-white text-xs font-semibold rounded-xl shadow-sm hover:shadow transition-all flex items-center justify-center gap-1.5 text-center cursor-pointer"
               >
                 {isApproving ? (
                   <Check className="w-3.5 h-3.5 shrink-0" />
@@ -255,6 +234,31 @@ export const SmartSuggestionCard: React.FC<SmartSuggestionCardProps> = ({
               </button>
             </div>
           </div>
+          <details className="mt-2 rounded-lg">
+            <summary className="min-h-[44px] cursor-pointer content-center text-sm font-semibold text-serene-primary dark:text-serene-primary-dark">
+              Why this suggestion?
+            </summary>
+            <p className="flex items-start gap-2 break-words text-sm text-serene-text-secondary dark:text-serene-text-darkSecondary">
+              <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" aria-hidden="true" />
+              {candidate.rationale}
+            </p>
+            <p className="mt-2 text-sm text-serene-text-secondary dark:text-serene-text-darkSecondary">
+              Learned from {approvalsCount + rejectionsCount} {approvalsCount + rejectionsCount === 1 ? 'signal' : 'signals'}
+            </p>
+            <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+              <span className="text-[10px] font-mono text-serene-text-muted bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark px-1.5 py-0.5 rounded border border-serene-border-light dark:border-serene-border-dark">
+                {domain || candidate.category || (isHabit ? 'Habit Idea' : 'Curated Web')}
+              </span>
+              {candidate.tags.slice(0, 3).map((tag, idx) => (
+                <span
+                  key={idx}
+                  className="text-[10px] px-1.5 py-0.5 rounded bg-serene-primary-soft dark:bg-serene-primary/20 text-serene-primary dark:text-serene-primary-dark font-medium"
+                >
+                  #{tag}
+                </span>
+              ))}
+            </div>
+          </details>
         </motion.div>
       </AnimatePresence>
 

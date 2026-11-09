@@ -4,16 +4,14 @@ import {
   Circle,
   Sparkle as Sparkles,
   Target,
-  ArrowSquareOut as ExternalLink,
   CaretLeft as ChevronLeft,
   CaretRight as ChevronRight,
   ListChecks as ListTodo,
   Plus,
   ArrowClockwise as RotateCw,
-  CalendarBlank as Calendar,
   CheckCircle as CheckCircle2
 } from '@phosphor-icons/react';
-import { DailyFocus, QuickNote, CalendarScheduleSummary } from '../../types';
+import { DailyFocus, QuickNote } from '../../types';
 import { CALM_QUOTES } from '../../data/seedData';
 import { TimeRadarWidget } from './TimeRadarWidget';
 import { DayTimeRemaining, TaskLoadSummary, BufferSummary } from '../../utils/timeBudget';
@@ -32,11 +30,6 @@ interface FocusHeroBannerProps {
   taskLoad?: TaskLoadSummary;
   buffer?: BufferSummary;
   endHour?: number;
-  calendarSummary?: CalendarScheduleSummary;
-  onSyncCalendar?: () => void;
-  isSyncingCalendar?: boolean;
-  onOpenCalendarSettings?: () => void;
-  onReauthorize?: () => void;
 }
 
 export const FocusHeroBanner: React.FC<FocusHeroBannerProps> = ({
@@ -51,11 +44,6 @@ export const FocusHeroBanner: React.FC<FocusHeroBannerProps> = ({
   taskLoad,
   buffer,
   endHour,
-  calendarSummary,
-  onSyncCalendar,
-  isSyncingCalendar,
-  onOpenCalendarSettings,
-  onReauthorize,
 }) => {
   const [currentTime, setCurrentTime] = useState<Date>(new Date());
   const [quoteIndex, setQuoteIndex] = useState(0);
@@ -235,43 +223,7 @@ export const FocusHeroBanner: React.FC<FocusHeroBannerProps> = ({
 
                 {/* Badges row: Estimated Time, Subtasks indicator, Attached URLs */}
                 <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
-                  {/* Google Calendar badge */}
-                  {activeTask.source === 'google_calendar' && (
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-sky-50 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800/50">
-                      <Calendar className="w-2.5 h-2.5" />
-                      Calendar Event
-                    </span>
-                  )}
 
-                  {/* Estimated Time badge */}
-                  {activeTask.durationMinutes && (
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-serene-primary-soft dark:bg-serene-primary/20 text-serene-primary dark:text-serene-primary-dark">
-                      ⏱️ {activeTask.durationMinutes}m
-                    </span>
-                  )}
-
-                  {/* Subtasks indicator */}
-                  {activeTask.subtasks && activeTask.subtasks.length > 0 && (
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-indigo-50 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 border border-indigo-200/50 dark:border-indigo-800/40">
-                      {activeTask.subtasks.filter((s) => s.isDone).length}/{activeTask.subtasks.length} subtasks
-                    </span>
-                  )}
-
-                  {/* Attached URLs badges */}
-                  {activeTask.attachedUrls && activeTask.attachedUrls.map((link) => (
-                    <a
-                      key={link.id}
-                      href={link.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={(e) => e.stopPropagation()}
-                      className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-medium bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark border border-serene-border-light dark:border-serene-border-dark text-serene-primary dark:text-serene-primary-dark hover:border-serene-primary/40 transition-colors shadow-2xs truncate max-w-[220px]"
-                      title={link.url}
-                    >
-                      <ExternalLink className="w-2.5 h-2.5 shrink-0" />
-                      <span className="truncate">{link.title || link.url.replace(/^https?:\/\//, '')}</span>
-                    </a>
-                  ))}
                 </div>
 
                 {/* View all pending tasks button */}
@@ -340,11 +292,6 @@ export const FocusHeroBanner: React.FC<FocusHeroBannerProps> = ({
               buffer={buffer}
               endHour={endHour}
               onOpenTasks={onOpenTasksScreen || (() => {})}
-              calendarSummary={calendarSummary}
-              onSyncCalendar={onSyncCalendar}
-              isSyncingCalendar={isSyncingCalendar}
-              onOpenCalendarSettings={onOpenCalendarSettings}
-              onReauthorize={onReauthorize}
             />
           </div>
         )}
