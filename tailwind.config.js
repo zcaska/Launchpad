@@ -56,9 +56,17 @@ export default {
         }
       },
       fontFamily: {
-        sans: ['Montserrat Numbers', 'Plus Jakarta Sans', 'Inter', 'system-ui', '-apple-system', 'sans-serif'],
-        mono: ['Montserrat Numbers', 'JetBrains Mono', 'Fira Code', 'monospace'],
-        serif: ['Montserrat Numbers', 'Georgia', 'serif'],
+        sans: ['"Segoe Print"', 'Segoe UI', 'system-ui', '-apple-system', 'sans-serif'],
+        mono: ['"Segoe Print"', 'JetBrains Mono', 'Fira Code', 'monospace'],
+        serif: ['"Segoe Print"', 'Georgia', 'serif'],
+      },
+      letterSpacing: {
+        tighter: '0',
+        tight: '0.01em',
+        normal: '0.02em',
+        wide: '0.04em',
+        wider: '0.06em',
+        widest: '0.1em',
       },
       boxShadow: {
         'subtle': '0 1px 3px 0 rgba(0, 0, 0, 0.04), 0 1px 2px -1px rgba(0, 0, 0, 0.04)',

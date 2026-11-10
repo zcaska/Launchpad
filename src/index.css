@@ -2,16 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Digits only: unicode-range keeps text in Plus Jakarta Sans and renders numbers in Montserrat. */
-@font-face {
-  font-family: 'Montserrat Numbers';
-  font-style: normal;
-  font-weight: 100 900;
-  font-display: swap;
-  src: url('./assets/fonts/montserrat-numbers.woff2') format('woff2');
-  unicode-range: U+0030-0039;
-}
-
 @layer base {
   :root {
     --color-bg-primary: #faf9fb;
@@ -26,12 +16,16 @@
   }
 
   body {
-    font-family: 'Montserrat Numbers', 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    font-family: 'Segoe Print', 'Segoe UI', system-ui, -apple-system, sans-serif;
+    letter-spacing: 0.015em;
+    line-height: 1.5;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
     overflow-x: hidden;
   }
 
   svg text {
-    font-family: 'Montserrat Numbers', 'Plus Jakarta Sans', sans-serif;
+    font-family: 'Segoe Print', 'Segoe UI', sans-serif;
   }
 }
 

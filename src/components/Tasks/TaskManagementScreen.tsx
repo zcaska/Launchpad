@@ -8,7 +8,6 @@ import {
   PencilSimple as Edit3,
   CalendarBlank as Calendar,
   Clock,
-  ArrowSquareOut as ExternalLink,
   MagnifyingGlass as Search,
   CheckCircle as CheckCircle2,
   Link as LinkIcon,
@@ -16,6 +15,8 @@ import {
   X,
   ArrowLeft,
   Warning as AlertTriangle,
+  CaretDown,
+  CaretUp,
 } from '@phosphor-icons/react';
 import { QuickNote, TaskPriority, TaskUrl, Subtask } from '../../types';
 import { bufferTextColor, formatMinutesToHours } from '../../utils/timeBudget';
@@ -23,6 +24,7 @@ import { taskPeriods, formatPeriodMinutes, addMonthsInclusive, type TaskPeriod }
 import type { TaskViewState } from './useTaskView';
 import { modalBackdropVariants, modalContentVariants, staggerItemVariants, staggerContainerVariants } from '../../utils/motion';
 import { SafeDescription } from '../Common/SafeDescription';
+import { TaskLinks } from './TaskLinks';
 import { toggleTaskInList, toggleSubtaskInList } from '../../utils/taskUrgency';
 
 export interface TaskManagementScreenProps {
@@ -60,6 +62,7 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
 }) => {
   // Filters & State
   const [activeTab, setActiveTab] = useState<FilterTab>('All');
+  const [showCompletedInAll, setShowCompletedInAll] = useState(true);
   const { period, setPeriod, customRange, setCustomRange, baseRange, defaultEndInclusive,
     range, rangeError, periodNotes, periodLoad, periodBuffer, hasPeriodBudget } = view;
   // Modal / Form state for Add / Edit
@@ -491,6 +494,28 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
     });
   }, [periodNotes, searchQuery, activeTab, now]);
 
+  // Partition into remaining and completed for 'All' view and sort
+  const remainingTasks = useMemo(() => {
+    return filteredTasks
+      .filter((task) => !task.isDone)
+      .sort((a, b) => {
+        const priorityRank = { urgent: 0, high: 1, medium: 2, low: 3 };
+        return (priorityRank[a.priority ?? 'medium'] ?? 2) - (priorityRank[b.priority ?? 'medium'] ?? 2);
+      });
+  }, [filteredTasks]);
+
+  const completedTasks = useMemo(() => {
+    return filteredTasks.filter((task) => task.isDone);
+  }, [filteredTasks]);
+
+  const sortedFilteredTasks = useMemo(() => {
+    if (activeTab === 'Completed') return filteredTasks;
+    const priorityRank = { urgent: 0, high: 1, medium: 2, low: 3 };
+    return [...filteredTasks].sort((a, b) => {
+      return (priorityRank[a.priority ?? 'medium'] ?? 2) - (priorityRank[b.priority ?? 'medium'] ?? 2);
+    });
+  }, [filteredTasks, activeTab]);
+
   // Tab counts computation
   const tabCounts = useMemo(() => {
     const counts: Record<FilterTab, number> = {
@@ -579,33 +604,215 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
     }
   };
 
+  const renderTaskCard = (task: QuickNote) => {
+    const deadlineInfo = getDeadlineStatus(task.deadline);
+    const subtasks = task.subtasks || [];
+    const completedSubtasks = subtasks.filter((s) => s.isDone).length;
+    const hasMetadata = !!(task.priority || task.durationMinutes || deadlineInfo || (task.attachedUrls && task.attachedUrls.length > 0));
+
+    return (
+      <motion.div
+        layout
+        key={task.id}
+        variants={staggerItemVariants}
+        className={`group rounded-xl md:rounded-2xl border p-3 sm:p-4 transition-all duration-200 flex flex-col justify-between ${getTaskCardBackground(task)}`}
+      >
+        <div className="space-y-2.5">
+          {/* Top Row: Checkbox, Title & Actions */}
+          <div className="flex items-start justify-between gap-2.5">
+            <div className="flex items-start gap-2 sm:gap-2.5 flex-1 min-w-0">
+              <button
+                onClick={() => handleToggleTaskComplete(task.id)}
+                className="mt-0.5 grid h-6 w-6 place-items-center rounded-md text-serene-text-muted hover:text-serene-primary dark:hover:text-serene-primary-dark transition-colors shrink-0"
+                title={task.isDone ? 'Mark as incomplete' : 'Mark as complete'}
+                aria-label={task.isDone ? 'Mark as incomplete' : 'Mark as complete'}
+              >
+                {task.isDone ? (
+                  <CheckSquare className="w-5 h-5 text-serene-primary dark:text-serene-primary-dark" />
+                ) : (
+                  <Square className="w-5 h-5" />
+                )}
+              </button>
+              
+              <div className="flex-1 min-w-0">
+                <h3
+                  className={`text-[15px] font-semibold text-serene-text-primary dark:text-serene-text-darkPrimary leading-snug break-words ${
+                    task.isDone
+                      ? 'line-through text-serene-text-muted dark:text-serene-text-darkMuted'
+                      : ''
+                  }`}
+                >
+                  {task.text}
+                </h3>
+                {task.description && (
+                  <div className={`mt-1 leading-relaxed ${task.isDone ? 'line-through opacity-70' : ''}`}>
+                    <SafeDescription
+                      text={task.description}
+                      className="text-xs text-serene-text-secondary dark:text-serene-text-darkSecondary line-clamp-3"
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Edit & Delete Actions: Always neatly pinned at top-right of card */}
+            <div className="flex items-center gap-0.5 shrink-0 opacity-70 group-hover:opacity-100 transition-opacity">
+              <button
+                onClick={() => handleOpenEditForm(task)}
+                className="p-1.5 rounded-lg text-serene-text-muted hover:text-serene-primary dark:hover:text-serene-primary-dark hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+                title="Edit Task"
+                aria-label="Edit Task"
+              >
+                <Edit3 className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => handleDeleteTask(task.id)}
+                className="p-1.5 rounded-lg text-serene-text-muted hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors"
+                title="Delete Task"
+                aria-label="Delete Task"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+
+          {/* Badges & Links Row: Unified, compact, wrapping cleanly */}
+          {hasMetadata && (
+            <div className="flex flex-wrap items-center gap-1.5 text-xs">
+              {/* Priority Badge */}
+              {task.priority === 'urgent' && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md font-bold text-[11px] bg-red-600 text-white shadow-2xs">
+                  <AlertTriangle className="w-3 h-3 shrink-0" />
+                  <span>Urgent</span>
+                </span>
+              )}
+              {task.priority === 'high' && (
+                <span className="inline-flex items-center px-2 py-0.5 rounded-md font-semibold bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-900/50">
+                  High Priority
+                </span>
+              )}
+              {task.priority === 'medium' && (
+                <span className="inline-flex items-center px-2 py-0.5 rounded-md font-semibold bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-900/50">
+                  Medium
+                </span>
+              )}
+              {task.priority === 'low' && (
+                <span className="inline-flex items-center px-2 py-0.5 rounded-md font-semibold bg-sky-100 dark:bg-sky-950/60 text-sky-800 dark:text-sky-300 border border-sky-200 dark:border-sky-900/50">
+                  Low
+                </span>
+              )}
+
+              {/* Estimated Time Badge */}
+              {task.durationMinutes && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md font-mono font-medium bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark text-serene-text-secondary dark:text-serene-text-darkSecondary border border-serene-border-light dark:border-serene-border-dark">
+                  <Clock className="w-3 h-3 text-serene-text-muted" />
+                  {formatMinutesToHours(task.durationMinutes)}
+                </span>
+              )}
+
+              {/* Deadline Badge */}
+              {deadlineInfo && (
+                <span
+                  className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md font-medium border ${
+                    deadlineInfo.isOverdue
+                      ? 'bg-red-50 dark:bg-red-950/50 text-red-700 dark:text-red-300 border-red-200 dark:border-red-900/50'
+                      : deadlineInfo.isDueToday || deadlineInfo.isDueSoon
+                      ? 'bg-amber-50 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-900/50'
+                      : 'bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark text-serene-text-secondary dark:text-serene-text-darkSecondary border-serene-border-light dark:border-serene-border-dark'
+                  }`}
+                >
+                  <Calendar className="w-3 h-3" />
+                  {deadlineInfo.label}
+                </span>
+              )}
+
+              {/* Attached URLs link pills (integrated right in the metadata row) */}
+              {task.attachedUrls && task.attachedUrls.length > 0 && (
+                <TaskLinks links={task.attachedUrls} compact />
+              )}
+            </div>
+          )}
+
+          {/* Subtasks Checklist Section */}
+          {subtasks.length > 0 && (
+            <div className="pt-2 border-t border-serene-border-light/50 dark:border-serene-border-dark/50">
+              <div className="flex items-center justify-between text-xs font-semibold text-serene-text-muted mb-1.5">
+                <span className="flex items-center gap-1">
+                  Checklist
+                </span>
+                <div className="flex items-center gap-2">
+                  <div className="w-14 bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark h-1 rounded-full overflow-hidden">
+                    <div
+                      className="bg-serene-primary dark:bg-serene-primary-dark h-full transition-all duration-300"
+                      style={{
+                        width: `${(completedSubtasks / subtasks.length) * 100}%`,
+                      }}
+                    />
+                  </div>
+                  <span className="font-mono text-[11px]">
+                    {completedSubtasks}/{subtasks.length} done
+                  </span>
+                </div>
+              </div>
+
+              {/* Subtasks checklist items */}
+              <div className="space-y-1">
+                {subtasks.map((st) => (
+                  <button
+                    key={st.id}
+                    type="button"
+                    onClick={() => handleToggleSubtask(task.id, st.id)}
+                    className="w-full flex items-center gap-2 py-0.5 px-1 rounded-md text-left text-xs hover:bg-black/5 dark:hover:bg-white/5 transition-colors group/sub"
+                  >
+                    {st.isDone ? (
+                      <CheckSquare className="w-3.5 h-3.5 text-serene-primary dark:text-serene-primary-dark shrink-0" />
+                    ) : (
+                      <Square className="w-3.5 h-3.5 text-serene-text-muted shrink-0" />
+                    )}
+                    <span
+                      className={`min-w-0 break-words whitespace-pre-line ${
+                        st.isDone
+                          ? 'line-through text-serene-text-muted dark:text-serene-text-darkMuted'
+                          : 'text-serene-text-primary dark:text-serene-text-darkPrimary'
+                      }`}
+                    >
+                      {st.text}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </motion.div>
+    );
+  };
+
   return (
     <div className="w-full flex flex-col h-full bg-serene-bg-light dark:bg-serene-bg-dark text-serene-text-primary dark:text-serene-text-darkPrimary overflow-hidden">
       {/* 1. TOP HEADER & OVERVIEW BAR */}
       <header className="w-full shrink-0 min-w-0 bg-white dark:bg-serene-surface-dark border-b border-serene-border-light dark:border-serene-border-dark px-3 sm:px-6 py-3.5 sm:py-4 shadow-subtle transition-colors overflow-hidden">
-        <div className="w-full min-w-0 flex flex-wrap items-center justify-between gap-3 sm:gap-4">
+        <div className="w-full min-w-0 flex items-center justify-between gap-2 sm:gap-4">
           
           {/* Left: Back button + Title */}
-          <div className="order-1 flex flex-1 flex-col sm:flex-row sm:items-center gap-3 min-w-[140px]">
-            <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
-              {onBackToDashboard && (
-                <button
-                  onClick={onBackToDashboard}
-                  className="p-2 rounded-xl bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark hover:bg-black/5 dark:hover:bg-white/10 text-serene-text-secondary dark:text-serene-text-darkSecondary border border-serene-border-light dark:border-serene-border-dark transition-all shrink-0"
-                  title="Back to Main Dashboard"
-                >
-                  <ArrowLeft className="w-4 h-4" />
-                </button>
-              )}
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+            {onBackToDashboard && (
+              <button
+                onClick={onBackToDashboard}
+                className="p-1.5 sm:p-2 rounded-xl bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark hover:bg-black/5 dark:hover:bg-white/10 text-serene-text-secondary dark:text-serene-text-darkSecondary border border-serene-border-light dark:border-serene-border-dark transition-all shrink-0"
+                title="Back to Main Dashboard"
+              >
+                <ArrowLeft className="w-4 h-4" />
+              </button>
+            )}
 
-              <div className="flex items-center gap-2 min-w-0">
-                <div className="p-1.5 rounded-lg bg-serene-primary-soft dark:bg-serene-primary/20 text-serene-primary dark:text-serene-primary-dark shrink-0">
-                  <ListTodo className="w-5 h-5" />
-                </div>
-                <h1 className="text-lg lg:text-xl font-bold tracking-tight text-serene-text-primary dark:text-serene-text-darkPrimary truncate">
-                  Tasks
-                </h1>
+            <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+              <div className="p-1.5 rounded-lg bg-serene-primary-soft dark:bg-serene-primary/20 text-serene-primary dark:text-serene-primary-dark shrink-0">
+                <ListTodo className="w-4 h-4 sm:w-5 sm:h-5" />
               </div>
+              <h1 className="text-base sm:text-lg lg:text-xl font-bold tracking-tight text-serene-text-primary dark:text-serene-text-darkPrimary truncate">
+                Tasks
+              </h1>
             </div>
 
             {/* Desktop Status metrics row */}
@@ -630,51 +837,46 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
             </div>
           </div>
 
-          {/* Mobile Status Metrics 3-Column Symmetrical Grid */}
-          <div className="order-3 hidden md:grid grid-cols-3 gap-2 w-full lg:hidden">
-            <div className="flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-xl bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark border border-serene-border-light dark:border-serene-border-dark text-[11px] sm:text-xs text-serene-text-secondary dark:text-serene-text-darkSecondary">
-              <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse shrink-0" />
-              <span className="truncate"><strong>{loadSummary.pendingCount}</strong> pending</span>
-            </div>
-            <div className="flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-xl bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200/50 dark:border-emerald-900/40 text-[11px] sm:text-xs text-emerald-700 dark:text-emerald-400">
-              <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
-              <span className="truncate"><strong>{totalCompleted}</strong> done</span>
-            </div>
-            <div className="flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-xl bg-serene-primary-soft/60 dark:bg-serene-primary/15 border border-serene-primary/20 dark:border-serene-primary/30 text-[11px] sm:text-xs text-serene-primary dark:text-serene-primary-dark font-mono">
-              <Clock className="w-3.5 h-3.5 shrink-0" />
-              <span className="truncate"><strong>{loadSummary.formattedPending}</strong> load</span>
-            </div>
-          </div>
-
-          <div className="order-2 ml-auto flex w-full sm:w-auto max-w-full flex-wrap items-center justify-end gap-2">
-            {/* Compact date trigger shown right beside the View dropdown. Formatted visible text
-                (DD-MMM-YY) drives the UI; a native date input preserves keyboard and picker support. */}
+          {/* Right: Date trigger & Period dropdown (shifted up to row 1 on mobile) */}
+          <div className="flex items-center justify-end gap-1.5 sm:gap-2 shrink-0">
             {hasPeriodBudget && (
-              <div className="flex max-w-full flex-wrap items-center gap-2">
+              <div className="flex items-center gap-1.5 sm:gap-2">
                 {period === 'Today' ? (
                   <>
-                    <label className="relative inline-flex min-h-[44px] sm:min-h-[32px] items-center rounded-lg border border-serene-border-light bg-serene-surfaceAlt-light px-2 text-xs font-semibold dark:border-serene-border-dark dark:bg-serene-surfaceAlt-dark focus-within:ring-2 focus-within:ring-serene-primary">{formatDDMMMYY(customRange?.start ?? range.start)}<input aria-label="Pick date"
-                      type="date"
-                      value={formatLocalYMD(customRange?.start ?? range.start)}
-                      onChange={(e) => handleTodayDateChange(e.target.value)}
-                      className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
-                      /></label>
+                    <label className="relative inline-flex min-h-[34px] sm:min-h-[32px] items-center rounded-lg border border-serene-border-light bg-serene-surfaceAlt-light px-2 text-xs font-semibold dark:border-serene-border-dark dark:bg-serene-surfaceAlt-dark focus-within:ring-2 focus-within:ring-serene-primary">
+                      {formatDDMMMYY(customRange?.start ?? range.start)}
+                      <input
+                        aria-label="Pick date"
+                        type="date"
+                        value={formatLocalYMD(customRange?.start ?? range.start)}
+                        onChange={(e) => handleTodayDateChange(e.target.value)}
+                        className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                      />
+                    </label>
                   </>
                 ) : (
                   <>
-                    <label className="relative inline-flex min-h-[44px] sm:min-h-[32px] items-center rounded-lg border border-serene-border-light bg-serene-surfaceAlt-light px-2 text-xs font-semibold dark:border-serene-border-dark dark:bg-serene-surfaceAlt-dark focus-within:ring-2 focus-within:ring-serene-primary">{formatDDMMMYY(customRange?.start ?? range.start)}<input aria-label="Pick start date"
-                      type="date"
-                      value={formatLocalYMD(customRange?.start ?? range.start)}
-                      onChange={(e) => handleDateStartChange(e.target.value)}
-                      className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
-                      /></label>
+                    <label className="relative inline-flex min-h-[34px] sm:min-h-[32px] items-center rounded-lg border border-serene-border-light bg-serene-surfaceAlt-light px-2 text-xs font-semibold dark:border-serene-border-dark dark:bg-serene-surfaceAlt-dark focus-within:ring-2 focus-within:ring-serene-primary">
+                      {formatDDMMMYY(customRange?.start ?? range.start)}
+                      <input
+                        aria-label="Pick start date"
+                        type="date"
+                        value={formatLocalYMD(customRange?.start ?? range.start)}
+                        onChange={(e) => handleDateStartChange(e.target.value)}
+                        className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                      />
+                    </label>
                     <span className="text-xs text-serene-text-muted shrink-0">–</span>
-                    <label className="relative inline-flex min-h-[44px] sm:min-h-[32px] items-center rounded-lg border border-serene-border-light bg-serene-surfaceAlt-light px-2 text-xs font-semibold dark:border-serene-border-dark dark:bg-serene-surfaceAlt-dark focus-within:ring-2 focus-within:ring-serene-primary">{formatDDMMMYY(customRange?.end ?? defaultEndInclusive)}<input aria-label="Pick end date"
-                      type="date"
-                      value={formatLocalYMD(customRange?.end ?? defaultEndInclusive)}
-                      onChange={(e) => handleDateEndChange(e.target.value)}
-                      className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
-                      /></label>
+                    <label className="relative inline-flex min-h-[34px] sm:min-h-[32px] items-center rounded-lg border border-serene-border-light bg-serene-surfaceAlt-light px-2 text-xs font-semibold dark:border-serene-border-dark dark:bg-serene-surfaceAlt-dark focus-within:ring-2 focus-within:ring-serene-primary">
+                      {formatDDMMMYY(customRange?.end ?? defaultEndInclusive)}
+                      <input
+                        aria-label="Pick end date"
+                        type="date"
+                        value={formatLocalYMD(customRange?.end ?? defaultEndInclusive)}
+                        onChange={(e) => handleDateEndChange(e.target.value)}
+                        className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                      />
+                    </label>
                   </>
                 )}
                 {rangeError && (
@@ -684,18 +886,41 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
                 )}
               </div>
             )}
-            <label className="flex shrink-0 items-center gap-2 text-sm font-semibold ml-2">
+            <label className="flex shrink-0 items-center gap-1 sm:gap-2 text-xs sm:text-sm font-semibold">
               <span className="hidden sm:inline">View</span>
-              <select aria-label="Task time period" value={period} onChange={(event) => setPeriod(event.target.value as TaskPeriod)}
-                className="min-h-[44px] sm:min-h-[32px] min-w-[88px] rounded-lg border border-serene-border-light bg-serene-surfaceAlt-light px-2 text-sm text-serene-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-serene-primary dark:border-serene-border-dark dark:bg-serene-surfaceAlt-dark dark:text-serene-text-darkPrimary">
-                {taskPeriods.map((value) => <option key={value} value={value}>{value}</option>)}
+              <select
+                aria-label="Task time period"
+                value={period}
+                onChange={(event) => setPeriod(event.target.value as TaskPeriod)}
+                className="min-h-[34px] sm:min-h-[32px] min-w-[76px] sm:min-w-[88px] rounded-lg border border-serene-border-light bg-serene-surfaceAlt-light px-2 text-xs sm:text-sm text-serene-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-serene-primary dark:border-serene-border-dark dark:bg-serene-surfaceAlt-dark dark:text-serene-text-darkPrimary"
+              >
+                {taskPeriods.map((value) => (
+                  <option key={value} value={value}>{value}</option>
+                ))}
               </select>
             </label>
           </div>
         </div>
+
+        {/* Tablet Status Metrics 3-Column Symmetrical Grid (on md to lg) */}
+        <div className="hidden md:grid grid-cols-3 gap-2 w-full lg:hidden mt-2.5">
+          <div className="flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-xl bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark border border-serene-border-light dark:border-serene-border-dark text-[11px] sm:text-xs text-serene-text-secondary dark:text-serene-text-darkSecondary">
+            <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse shrink-0" />
+            <span className="truncate"><strong>{loadSummary.pendingCount}</strong> pending</span>
+          </div>
+          <div className="flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-xl bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200/50 dark:border-emerald-900/40 text-[11px] sm:text-xs text-emerald-700 dark:text-emerald-400">
+            <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+            <span className="truncate"><strong>{totalCompleted}</strong> done</span>
+          </div>
+          <div className="flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-xl bg-serene-primary-soft/60 dark:bg-serene-primary/15 border border-serene-primary/20 dark:border-serene-primary/30 text-[11px] sm:text-xs text-serene-primary dark:text-serene-primary-dark font-mono">
+            <Clock className="w-3.5 h-3.5 shrink-0" />
+            <span className="truncate"><strong>{loadSummary.formattedPending}</strong> load</span>
+          </div>
+        </div>
+
         {hasPeriodBudget ? (
-          <div className="mt-3 text-sm" aria-live="polite">
-            <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
+          <div className="mt-2 text-xs sm:text-sm" aria-live="polite">
+            <div className="flex flex-wrap items-baseline gap-x-3 sm:gap-x-4 gap-y-1">
               <span><strong>{formatPeriodMinutes(range.availableMinutes)}</strong> available</span>
               <span><strong>{formatPeriodMinutes(periodLoad.pendingMinutes)}</strong> pending</span>
               <strong className={bufferTextColor[periodBuffer.status]}>
@@ -778,7 +1003,7 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
       {/* 2. BODY CONTENT: Task list and schedule */}
       <div className="flex-1 flex overflow-hidden relative">
         {/* Main Task Cards Flow */}
-        <main className="flex-1 min-w-0 px-2 py-3 sm:p-6 overflow-y-auto space-y-4">
+        <main className="flex-1 min-w-0 px-2.5 py-3 sm:px-6 sm:py-5 overflow-y-auto space-y-4 @container">
           {filteredTasks.length === 0 ? (
             <div className="py-20 text-center rounded-2xl border border-dashed border-serene-border-light dark:border-serene-border-dark bg-white/40 dark:bg-serene-surface-dark/40 flex flex-col items-center justify-center p-6">
               <div className="w-12 h-12 rounded-2xl bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark flex items-center justify-center text-serene-text-muted mb-3">
@@ -802,220 +1027,83 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
                 <span>Create a task</span>
               </button>
             </div>
-          ) : (
-            <motion.div 
-              className="grid grid-cols-1 @4xl:grid-cols-2 gap-4 items-start"
-              variants={staggerContainerVariants}
-              initial="initial"
-              animate="animate"
-            >
-              {(['Remaining', 'Completed'] as const).map((group) => (
-                <section key={group} aria-label={group + ' tasks'} className="min-w-0 space-y-3">
-                  <h2 className="text-base font-semibold">{group} <span className="text-sm font-normal text-serene-text-muted">({filteredTasks.filter(task => task.isDone === (group === 'Completed')).length})</span></h2>
-                  {filteredTasks.filter(task => task.isDone === (group === 'Completed')).length === 0 && <p className="text-sm text-serene-text-muted">No {group.toLowerCase()} tasks in this view.</p>}
-                  {filteredTasks.filter(task => task.isDone === (group === 'Completed')).sort((a, b) => {
-                    if (group === 'Completed') return 0;
-                    const priorityRank = { urgent: 0, high: 1, medium: 2, low: 3 };
-                    return priorityRank[a.priority ?? 'medium'] - priorityRank[b.priority ?? 'medium'];
-                  }).map((task) => {
-                const deadlineInfo = getDeadlineStatus(task.deadline);
-                const subtasks = task.subtasks || [];
-                const completedSubtasks = subtasks.filter((s) => s.isDone).length;
-
-                return (
+          ) : activeTab === 'All' ? (
+            <div className="space-y-6">
+              {/* Remaining Section */}
+              {remainingTasks.length > 0 && (
+                <section aria-label="Remaining tasks" className="space-y-2.5">
+                  <h2 className="text-sm font-bold uppercase tracking-wider text-serene-text-secondary dark:text-serene-text-darkSecondary flex items-center gap-2">
+                    <span>Remaining</span>
+                    <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark border border-serene-border-light dark:border-serene-border-dark text-serene-text-primary dark:text-serene-text-darkPrimary">
+                      {remainingTasks.length}
+                    </span>
+                  </h2>
                   <motion.div
-                    layout
-                    key={task.id}
-                    variants={staggerItemVariants}
-                    className={`group rounded-xl md:rounded-2xl border p-2.5 sm:p-5 transition-all duration-200 flex flex-col justify-between ${getTaskCardBackground(task)}`}
+                    className="grid grid-cols-1 @xl:grid-cols-2 @5xl:grid-cols-3 gap-3 sm:gap-4 items-start"
+                    variants={staggerContainerVariants}
+                    initial="initial"
+                    animate="animate"
                   >
-                    <div>
-                      {/* Top Row: Checkbox, Title & Actions */}
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex items-start gap-1.5 md:gap-3 flex-1 min-w-0">
-                          <button
-                            onClick={() => handleToggleTaskComplete(task.id)}
-                            className="-ml-2 -mt-2 grid h-11 w-11 place-items-center rounded-lg md:ml-0 md:mt-0.5 md:h-auto md:w-auto text-serene-text-muted hover:text-serene-primary dark:hover:text-serene-primary-dark transition-colors shrink-0"
-                            title={task.isDone ? 'Mark as incomplete' : 'Mark as complete'}
-                          >
-                            {task.isDone ? (
-                              <CheckSquare className="w-5 h-5 text-serene-primary dark:text-serene-primary-dark" />
-                            ) : (
-                              <Square className="w-5 h-5" />
-                            )}
-                          </button>
-                          
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-1.5 flex-wrap">
-                              <h3
-                                className={`text-[15px] md:text-base font-semibold text-serene-text-primary dark:text-serene-text-darkPrimary leading-snug break-words ${
-                                  task.isDone
-                                    ? 'line-through text-serene-text-muted dark:text-serene-text-darkMuted'
-                                    : ''
-                                }`}
-                              >
-                                {task.text}
-                              </h3>
-                            </div>
-                            {task.description && (
-                              <div className={`mt-1 leading-relaxed ${task.isDone ? 'line-through opacity-70' : ''}`}>
-                                <SafeDescription
-                                  text={task.description}
-                                  className="text-sm md:text-xs text-serene-text-secondary dark:text-serene-text-darkSecondary"
-                                />
-                              </div>
-                            )}
-                          </div>
-                        </div>
-
-                      </div>
-
-                      {/* Badges Row: Priority, Time, Deadline */}
-                      <div className="flex flex-wrap items-center gap-2 mt-3 text-xs">
-                        {/* Edit & Delete Actions */}
-                        <div className="order-last ml-auto flex items-center gap-1 shrink-0 opacity-80 group-hover:opacity-100 transition-opacity">
-                          <button
-                            onClick={() => handleOpenEditForm(task)}
-                            className="grid h-11 w-11 place-items-center rounded-lg md:h-8 md:w-8 text-serene-text-muted hover:text-serene-primary dark:hover:text-serene-primary-dark hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
-                            title="Edit Task"
-                          >
-                            <Edit3 className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteTask(task.id)}
-                            className="grid h-11 w-11 place-items-center rounded-lg md:h-8 md:w-8 text-serene-text-muted hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors"
-                            title="Delete Task"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                        {/* Priority Badge */}
-                        {task.priority === 'urgent' && (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md font-bold text-[11px] bg-red-600 text-white shadow-2xs">
-                            <AlertTriangle className="w-3 h-3 shrink-0" />
-                            <span>Urgent</span>
-                          </span>
-                        )}
-                        {task.priority === 'high' && (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-md font-semibold bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-900/50">
-                            High Priority
-                          </span>
-                        )}
-                        {task.priority === 'medium' && (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-md font-semibold bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-900/50">
-                            Medium
-                          </span>
-                        )}
-                        {task.priority === 'low' && (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-md font-semibold bg-sky-100 dark:bg-sky-950/60 text-sky-800 dark:text-sky-300 border border-sky-200 dark:border-sky-900/50">
-                            Low
-                          </span>
-                        )}
-
-                        {/* Estimated Time Badge */}
-                        {task.durationMinutes && (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md font-mono font-medium bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark text-serene-text-secondary dark:text-serene-text-darkSecondary border border-serene-border-light dark:border-serene-border-dark">
-                            <Clock className="w-3 h-3 text-serene-text-muted" />
-                            {formatMinutesToHours(task.durationMinutes)}
-                          </span>
-                        )}
-
-                        {/* Deadline Badge */}
-                        {deadlineInfo && (
-                          <span
-                            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md font-medium border ${
-                              deadlineInfo.isOverdue
-                                ? 'bg-red-50 dark:bg-red-950/50 text-red-700 dark:text-red-300 border-red-200 dark:border-red-900/50'
-                                : deadlineInfo.isDueToday || deadlineInfo.isDueSoon
-                                ? 'bg-amber-50 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-900/50'
-                                : 'bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark text-serene-text-secondary dark:text-serene-text-darkSecondary border-serene-border-light dark:border-serene-border-dark'
-                            }`}
-                          >
-                            <Calendar className="w-3 h-3" />
-                            {deadlineInfo.label}
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Attached URLs link pills */}
-                      {task.attachedUrls && task.attachedUrls.length > 0 && (
-                        <div className="flex flex-wrap items-center gap-1.5 mt-3 pt-2 border-t border-serene-border-light/60 dark:border-serene-border-dark/60">
-                          {task.attachedUrls.map((link) => (
-                            <a
-                              key={link.id}
-                              href={link.url}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark text-serene-primary dark:text-serene-primary-dark hover:bg-serene-primary-soft dark:hover:bg-serene-primary/20 border border-serene-border-light dark:border-serene-border-dark hover:border-serene-primary/30 transition-all max-w-full truncate"
-                              title={link.url}
-                            >
-                              <LinkIcon className="w-3 h-3 shrink-0 text-serene-text-muted" />
-                              <span className="truncate max-w-[200px]">
-                                {link.title || link.url.replace(/^https?:\/\//, '')}
-                              </span>
-                              <ExternalLink className="w-2.5 h-2.5 shrink-0 opacity-70" />
-                            </a>
-                          ))}
-                        </div>
-                      )}
-
-                      {/* Subtasks Checklist Section */}
-                      {subtasks.length > 0 && (
-                        <div className="mt-3.5 pt-2.5 border-t border-serene-border-light/60 dark:border-serene-border-dark/60">
-                          <div className="flex items-center justify-between text-xs font-semibold text-serene-text-muted mb-1.5">
-                            <span className="flex items-center gap-1">
-                              Checklist
-                            </span>
-                            <span className="font-mono text-[11px]">
-                              {completedSubtasks}/{subtasks.length} done
-                            </span>
-                          </div>
-
-                          {/* Progress bar */}
-                          <div className="w-full bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark h-1.5 rounded-full overflow-hidden mb-2">
-                            <div
-                              className="bg-serene-primary dark:bg-serene-primary-dark h-full transition-all duration-300"
-                              style={{
-                                width: `${(completedSubtasks / subtasks.length) * 100}%`,
-                              }}
-                            />
-                          </div>
-
-                          {/* Subtasks checklist items */}
-                          <div className="space-y-1">
-                            {subtasks.map((st) => (
-                              <button
-                                key={st.id}
-                                type="button"
-                                onClick={() => handleToggleSubtask(task.id, st.id)}
-                                className="w-full flex items-center gap-2 p-1 rounded-lg text-left text-xs hover:bg-black/5 dark:hover:bg-white/5 transition-colors group/sub"
-                              >
-                                {st.isDone ? (
-                                  <CheckSquare className="w-3.5 h-3.5 text-serene-primary dark:text-serene-primary-dark shrink-0" />
-                                ) : (
-                                  <Square className="w-3.5 h-3.5 text-serene-text-muted shrink-0" />
-                                )}
-                                <span
-                                  className={`truncate ${
-                                    st.isDone
-                                      ? 'line-through text-serene-text-muted dark:text-serene-text-darkMuted'
-                                      : 'text-serene-text-primary dark:text-serene-text-darkPrimary'
-                                  }`}
-                                >
-                                  {st.text}
-                                </span>
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
+                    {remainingTasks.map(renderTaskCard)}
                   </motion.div>
-                );
-                  })}
                 </section>
-              ))}
-            </motion.div>
+              )}
+
+              {/* Completed Section (collapsible in All view) */}
+              {completedTasks.length > 0 && (
+                <section aria-label="Completed tasks" className={`${remainingTasks.length > 0 ? 'pt-4 border-t border-serene-border-light/60 dark:border-serene-border-dark/60' : ''} space-y-2.5`}>
+                  <button
+                    type="button"
+                    onClick={() => setShowCompletedInAll((prev) => !prev)}
+                    className="flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-serene-text-secondary dark:text-serene-text-darkSecondary hover:text-serene-text-primary dark:hover:text-serene-text-darkPrimary transition-colors group"
+                  >
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                    <span>Completed</span>
+                    <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/60 dark:border-emerald-900/40 text-emerald-700 dark:text-emerald-300">
+                      {completedTasks.length}
+                    </span>
+                    {showCompletedInAll ? (
+                      <CaretUp className="w-3.5 h-3.5 text-serene-text-muted ml-0.5" />
+                    ) : (
+                      <CaretDown className="w-3.5 h-3.5 text-serene-text-muted ml-0.5" />
+                    )}
+                    <span className="text-xs font-normal normal-case text-serene-text-muted group-hover:underline ml-1">
+                      {showCompletedInAll ? '(Click to collapse)' : '(Click to expand)'}
+                    </span>
+                  </button>
+                  {showCompletedInAll && (
+                    <motion.div
+                      className="grid grid-cols-1 @xl:grid-cols-2 @5xl:grid-cols-3 gap-3 sm:gap-4 items-start"
+                      variants={staggerContainerVariants}
+                      initial="initial"
+                      animate="animate"
+                    >
+                      {completedTasks.map(renderTaskCard)}
+                    </motion.div>
+                  )}
+                </section>
+              )}
+            </div>
+          ) : (
+            /* Specific Filtered Tab View ('Urgent', 'High Priority', 'Medium', 'Low', 'Due Soon', 'Completed') */
+            <section aria-label={`${activeTab} tasks`} className="space-y-2.5">
+              <div className="flex items-center justify-between">
+                <h2 className="text-sm font-bold uppercase tracking-wider text-serene-text-secondary dark:text-serene-text-darkSecondary flex items-center gap-2">
+                  <span>{activeTab}</span>
+                  <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark border border-serene-border-light dark:border-serene-border-dark text-serene-text-primary dark:text-serene-text-darkPrimary">
+                    {sortedFilteredTasks.length}
+                  </span>
+                </h2>
+              </div>
+              <motion.div
+                className="grid grid-cols-1 @xl:grid-cols-2 @5xl:grid-cols-3 gap-3 sm:gap-4 items-start"
+                variants={staggerContainerVariants}
+                initial="initial"
+                animate="animate"
+              >
+                {sortedFilteredTasks.map(renderTaskCard)}
+              </motion.div>
+            </section>
           )}
         </main>
 
