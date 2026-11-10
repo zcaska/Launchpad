@@ -56,9 +56,9 @@ export default {
         }
       },
       fontFamily: {
-        sans: ['"Segoe Print"', 'Kalam', 'Segoe UI', 'system-ui', '-apple-system', 'sans-serif'],
-        mono: ['"Segoe Print"', 'JetBrains Mono', 'Fira Code', 'monospace'],
-        serif: ['"Segoe Print"', 'Georgia', 'serif'],
+        sans: ['var(--font-launchpad)'],
+        mono: ['var(--font-launchpad)'],
+        serif: ['var(--font-launchpad)'],
       },
       letterSpacing: {
         tighter: '0',

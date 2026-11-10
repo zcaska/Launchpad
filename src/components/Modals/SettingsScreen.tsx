@@ -147,8 +147,8 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
 
   return (
     <>
-      <div className="mx-auto w-full max-w-3xl px-2 py-4 sm:px-6">
-        <div className="mb-4 flex items-center justify-between gap-3">
+      <div className="mobile-settings mx-auto w-full max-w-3xl px-2 py-4 sm:px-6">
+        <div className="settings-heading mb-4 flex items-center justify-between gap-3">
           <h1 className="text-xl font-bold">Settings</h1>
           <button type="button" onClick={onClose} className="min-h-11 rounded-lg px-3 text-sm font-semibold text-serene-primary dark:text-serene-primary-dark">
             Back

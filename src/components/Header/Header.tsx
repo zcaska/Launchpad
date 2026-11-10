@@ -73,8 +73,8 @@ export const Header: React.FC<HeaderProps> = ({
   };
 
   return (
-    <header className="w-full bg-white/90 dark:bg-serene-surface-dark/90 backdrop-blur-md border-b border-serene-border-light dark:border-serene-border-dark sticky top-0 z-30 transition-colors">
-      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-2 sm:py-2.5">
+    <header className="launchpad-header w-full bg-white/90 dark:bg-serene-surface-dark/90 backdrop-blur-md border-b border-serene-border-light dark:border-serene-border-dark sticky top-0 z-30 transition-colors">
+      <div className="launchpad-header-inner max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-2 sm:py-2.5">
         <div className="flex items-center justify-between gap-2 sm:gap-4">
           
           {/* Logo and brand */}
@@ -84,7 +84,7 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-1.5 sm:gap-2">
-                <h1 className="text-sm sm:text-base font-bold tracking-tight text-serene-text-primary dark:text-serene-text-darkPrimary truncate">
+                <h1 className="launchpad-wordmark text-sm sm:text-base font-bold tracking-tight text-serene-text-primary dark:text-serene-text-darkPrimary truncate">
                   LaunchPad
                 </h1>
                 <span className="hidden sm:inline-block text-[10px] uppercase font-semibold tracking-wider px-1.5 py-0.5 rounded bg-serene-primary-soft dark:bg-serene-primary/20 text-serene-primary dark:text-serene-primary-dark border border-serene-primary/20 dark:border-transparent shrink-0">
@@ -129,7 +129,7 @@ export const Header: React.FC<HeaderProps> = ({
 
           <div className="ml-auto flex shrink-0 items-center gap-1">
             <button type="button" onClick={onNewTask} aria-label="New task" title="New task"
-              className="flex h-11 items-center justify-center gap-2 rounded-lg bg-serene-primary px-2.5 text-white sm:px-3">
+              className="launchpad-new-task flex h-11 items-center justify-center gap-2 rounded-lg bg-serene-primary px-2.5 text-white sm:px-3">
               <Plus size={20} aria-hidden="true" />
               <span className="text-sm font-semibold">New task</span>
             </button>

@@ -18,8 +18,17 @@
   font-display: swap;
 }
 
+@font-face {
+  font-family: 'LaunchPad Numerals';
+  src: url('./assets/fonts/montserrat-numbers.woff2') format('woff2');
+  font-weight: 100 900;
+  font-display: swap;
+  unicode-range: U+0030-0039;
+}
+
 @layer base {
   :root {
+    --font-launchpad: 'LaunchPad Numerals', 'Segoe Print', system-ui, sans-serif;
     --color-bg-primary: #faf9fb;
     --color-surface-primary: #ffffff;
     --color-border-subtle: #e5e3e8;
@@ -32,7 +41,7 @@
   }
 
   body {
-    font-family: 'Segoe Print', 'Kalam', 'Segoe UI', system-ui, -apple-system, sans-serif;
+    font-family: var(--font-launchpad);
     letter-spacing: 0.015em;
     line-height: 1.5;
     text-rendering: optimizeLegibility;
@@ -41,8 +50,13 @@
   }
 
   svg text {
-    font-family: 'Segoe Print', 'Kalam', 'Segoe UI', sans-serif;
+    font-family: inherit;
   }
+}
+
+.task-details-dialog::backdrop {
+  background: rgb(0 0 0 / 55%);
+  backdrop-filter: blur(3px);
 }
 
 /* Custom Scrollbar */
@@ -90,6 +104,571 @@
 
 
 @media (max-width: 767px) {
+  .launchpad-shell {
+    padding-inline: env(safe-area-inset-left) env(safe-area-inset-right);
+  }
+
+  .dark :is(.launchpad-shell, .mobile-growth) {
+    background-color: #101114;
+  }
+
+  .launchpad-header-inner {
+    padding: calc(2px + env(safe-area-inset-top)) 12px 2px;
+  }
+
+  .launchpad-wordmark {
+    font-size: clamp(0.875rem, 4vw, 1.0625rem);
+    overflow: visible;
+    text-overflow: clip;
+  }
+
+  .launchpad-header-inner > div:first-child {
+    gap: 4px;
+  }
+
+  .launchpad-new-task {
+    gap: 4px;
+    padding-inline: 8px;
+  }
+
+  .dark .launchpad-new-task {
+    background-color: #16483f;
+  }
+
+  .mobile-navigation {
+    gap: 4px;
+  }
+
+  .mobile-navigation button {
+    min-height: 44px;
+    margin-block: 3px;
+    line-height: 1.25;
+  }
+
+  .mobile-navigation svg {
+    width: 19px;
+    height: 19px;
+  }
+
+  .mobile-home {
+    padding: 10px 12px 14px;
+  }
+
+  .home-greeting {
+    margin: 0 4px 10px;
+  }
+
+  .home-greeting h1 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    line-height: 1.35;
+  }
+
+  .home-greeting p {
+    color: inherit;
+    opacity: 0.8;
+    font-size: 0.8125rem;
+  }
+
+  .home-widgets {
+    gap: 12px;
+  }
+
+  .mobile-metadata,
+  .budget-summary dd,
+  .tasks-period,
+  .tasks-budget,
+  .task-card-metadata,
+  .growth-stats,
+  .growth-progress {
+    font-variant-numeric: tabular-nums;
+    letter-spacing: normal;
+  }
+
+  .focus-switcher {
+    min-width: 0;
+    gap: 3px;
+    padding: 0 3px;
+  }
+
+  .focus-switcher > button {
+    width: 36px;
+    height: 38px;
+    flex-shrink: 0;
+  }
+
+  .focus-switcher-dots {
+    max-width: 50px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .focus-switcher-dots button {
+    flex-shrink: 0;
+  }
+
+  .focus-task-menu,
+  .focus-subtask-check {
+    position: relative;
+  }
+
+  .focus-task-menu::before {
+    content: "";
+    position: absolute;
+    inset: -4px;
+  }
+
+  .mobile-focus .space-y-2 > :is(.focus-task-title, .focus-subtasks) {
+    margin-top: 4px;
+  }
+
+  .focus-subtask-check::before {
+    content: "";
+    position: absolute;
+    inset: -9px -5px;
+  }
+
+  .mobile-focus [aria-label="Task links"] a {
+    min-height: 34px;
+  }
+
+  .mobile-budget {
+    position: relative;
+    padding: 0 10px 10px;
+  }
+
+  .budget-icon {
+    width: 18px;
+    height: 18px;
+  }
+
+  .budget-summary {
+    border-top: 1px solid var(--color-border-subtle);
+    padding-top: 8px;
+    text-align: center;
+    font-size: 0.75rem;
+    line-height: 1.35;
+  }
+
+  .budget-summary > div {
+    min-width: 0;
+    display: flex;
+    flex-direction: column-reverse;
+    gap: 2px;
+  }
+
+  .budget-summary > div + div {
+    border-inline-start: 1px solid var(--color-border-subtle);
+  }
+
+  .budget-summary dd {
+    font-size: 1rem;
+    font-weight: 700;
+  }
+
+  .budget-details summary {
+    display: grid;
+    min-width: 36px;
+    min-height: 40px;
+    place-items: center;
+    cursor: pointer;
+  }
+
+  .budget-details summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .budget-details p {
+    position: absolute;
+    inset: 42px 8px auto;
+    z-index: 10;
+    padding: 8px 10px;
+    border: 1px solid var(--color-border-subtle);
+    border-radius: 8px;
+    background: var(--color-surface-primary);
+    font-size: 0.75rem;
+  }
+
+  .commitment-radar {
+    height: auto;
+    padding: 8px;
+  }
+
+  .radar-heading,
+  .radar-toolbar {
+    gap: 4px;
+  }
+
+  .radar-heading h2 {
+    font-size: 0.9375rem;
+    text-transform: none;
+    letter-spacing: normal;
+    white-space: normal;
+  }
+
+  .radar-heading-tooltip {
+    inset-inline: auto -65px;
+    width: min(220px, 65vw);
+  }
+
+  .radar-toolbar button[aria-label],
+  .radar-chart button[aria-label="Task legend"] {
+    min-width: 36px;
+    min-height: 36px;
+    justify-content: center;
+  }
+
+  .radar-toolbar select {
+    min-height: 40px;
+  }
+
+  .radar-heading:has(+ .radar-chart) .radar-all-tasks {
+    display: none;
+  }
+
+  .radar-chart {
+    min-height: 0;
+  }
+
+  .radar-plot {
+    max-height: 310px;
+  }
+
+  .radar-plot > svg {
+    overflow: hidden;
+  }
+
+  .radar-popover {
+    inset: auto 0 0 !important;
+    transform: none !important;
+    margin: 0 !important;
+    width: min(100%, 280px);
+    overflow-wrap: anywhere;
+  }
+
+  .radar-node-label {
+    display: grid;
+    gap: 1px;
+    padding: 3px 9px;
+    border: 1.5px solid var(--color-border-subtle);
+    border-radius: 9px;
+    background: var(--color-surface-primary);
+    font-size: 15px;
+    line-height: 1.25;
+  }
+
+  .dark .radar-node-label {
+    border-color: #838d9a;
+  }
+
+  .radar-node-label > * {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  .radar-summary {
+    padding-inline: 10px;
+    border: 1px solid var(--color-border-subtle);
+    border-radius: 12px;
+  }
+
+  .radar-summary-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .radar-summary-list {
+    max-height: 145px;
+    overflow-y: auto;
+  }
+
+  .radar-summary-list button {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto auto;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    min-height: 44px;
+    padding: 4px 2px;
+    border-top: 1px solid var(--color-border-subtle);
+    text-align: left;
+    font-size: 0.875rem;
+  }
+
+  .radar-summary-list .mobile-metadata {
+    font-size: 0.75rem;
+  }
+
+  .radar-task-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+  }
+
+  .radar-task-title {
+    overflow-wrap: anywhere;
+  }
+
+  .radar-caption-tooltip {
+    inset-inline: auto -30px;
+    width: min(230px, 68vw);
+    transform: none;
+  }
+
+  .radar-status {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    padding: 9px;
+  }
+
+  .radar-status-description {
+    white-space: normal;
+  }
+
+  .radar-status-counts {
+    align-self: stretch;
+    padding-top: 5px;
+  }
+
+  .radar-status-connector {
+    display: none;
+  }
+
+  .radar-status-counts > div + div {
+    border-inline-start: 1px solid var(--color-border-subtle);
+  }
+
+  .tasks-toolbar {
+    padding: 8px 12px 6px;
+  }
+
+  .tasks-toolbar-heading {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 6px;
+  }
+
+  .tasks-toolbar-heading h1 {
+    font-size: 1.125rem;
+  }
+
+  .tasks-back,
+  .growth-back {
+    display: grid;
+    width: 38px;
+    height: 40px;
+    place-items: center;
+    padding: 0;
+  }
+
+  .tasks-period {
+    display: contents;
+  }
+
+  .tasks-period-picker {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .tasks-period-picker select,
+  .tasks-dates label {
+    min-height: 44px;
+    white-space: nowrap;
+  }
+
+  .tasks-dates {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+
+  .tasks-toolbar-heading[data-date-range] .tasks-dates {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  }
+
+  .tasks-dates label {
+    justify-content: center;
+  }
+
+  .tasks-dates ::-webkit-calendar-picker-indicator {
+    position: absolute;
+    inset: 0;
+    width: auto;
+    height: auto;
+  }
+
+  .tasks-budget {
+    margin-top: 5px;
+    line-height: 1.4;
+  }
+
+  .tasks-budget > div {
+    column-gap: 10px;
+  }
+
+  .tasks-filter {
+    margin-top: 7px;
+    padding: 0 5px 0 8px;
+    border: 1px solid var(--color-border-subtle);
+    border-radius: 10px;
+  }
+
+  .tasks-filter select {
+    min-height: 40px;
+    border-color: transparent;
+    font-size: 0.875rem;
+  }
+
+  .tasks-list {
+    padding: 8px 12px 14px;
+  }
+
+  .tasks-list section > h2 {
+    text-transform: none;
+    letter-spacing: normal;
+  }
+
+  .mobile-task-card {
+    padding: 6px 9px 8px;
+  }
+
+  .mobile-task-card > div > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 4px;
+  }
+
+  .task-card-check,
+  .task-card-actions button {
+    display: grid;
+    width: 40px;
+    min-height: 44px;
+    place-items: center;
+    margin: 0;
+    padding: 0;
+  }
+
+  .mobile-task-card h3 {
+    padding-top: 8px;
+    overflow-wrap: anywhere;
+  }
+
+  .task-checklist-item {
+    min-height: 38px;
+  }
+
+  .task-edit-form :is(input, select, textarea) {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .growth-content {
+    padding: 10px 12px 0;
+  }
+
+  .growth-content > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 14px;
+  }
+
+  .growth-heading {
+    gap: 10px;
+    padding-bottom: 0;
+    border-bottom: 0;
+  }
+
+  .growth-heading h1 {
+    font-size: clamp(1.0625rem, 4.7vw, 1.375rem);
+    line-height: 1.25;
+  }
+
+  .growth-stats {
+    gap: 5px;
+  }
+
+  .growth-stats > div {
+    padding: 5px 8px;
+  }
+
+  .growth-hero {
+    padding: 10px;
+    border-radius: 16px;
+  }
+
+  .growth-hero-glow {
+    max-width: 100%;
+    margin-right: 0;
+  }
+
+  .growth-showcase,
+  .growth-profile {
+    align-items: start;
+    gap: 10px;
+  }
+
+  .growth-profile {
+    display: grid;
+    grid-template-columns: clamp(86px, 26vw, 120px) minmax(0, 1fr);
+  }
+
+  .growth-avatar {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1;
+  }
+
+  .growth-hero-tags {
+    gap: 4px;
+  }
+
+  .growth-hero-tags h2 {
+    flex-basis: 100%;
+    font-size: clamp(1.0625rem, 4.6vw, 1.375rem);
+    line-height: 1.3;
+  }
+
+  .growth-quote {
+    padding-inline-start: 7px;
+    font-family: inherit;
+    font-size: 0.75rem;
+    line-height: 1.45;
+  }
+
+  .growth-progress {
+    padding: 9px;
+    border-radius: 12px;
+  }
+
+  .growth-progress > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 6px;
+  }
+
+  .dark .growth-stage-chip.opacity-75 {
+    color: #b1bac8;
+  }
+
+  .growth-stage-title {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .mobile-settings {
+    padding: 8px 12px 16px;
+  }
+
+  .settings-heading {
+    margin-bottom: 8px;
+  }
+
+  .mobile-settings-content {
+    overflow-wrap: anywhere;
+  }
+
+  .mobile-settings-content > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 12px;
+  }
+
   .mobile-settings-content :is(input:not([type="checkbox"], [type="radio"]), select, textarea) {
     min-width: 0;
     min-height: 44px;

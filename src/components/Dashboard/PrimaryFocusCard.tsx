@@ -28,11 +28,12 @@ import {
 } from '../../utils/taskUrgency';
 import { SafeDescription } from '../Common/SafeDescription';
 import { TaskLinks } from '../Tasks/TaskLinks';
-import { formatEventTime, formatEventDuration } from '../../utils/textFormatting';
+import { formatEventTime, formatEventDuration, isSafeUrl } from '../../utils/textFormatting';
 import { SmartSuggestionCard } from './SmartSuggestionCard';
 
 export interface PrimaryFocusCardProps {
   tasks: QuickNote[];
+  now?: Date;
   selectedTaskId?: string | null;
   onSelectTask?: (id: string) => void;
   onPreviewTask?: (id: string) => void;
@@ -147,6 +148,7 @@ function parseSubtaskContent(rawText: string): { title: string; subtitle?: strin
  */
 export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
   tasks = [],
+  now,
   selectedTaskId,
   onSelectTask,
   onPreviewTask,
@@ -243,7 +245,6 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
     const nextTask = effectiveTodayTasks[idx];
     if (nextTask) {
       onSelectTask?.(nextTask.id);
-      onPreviewTask?.(nextTask.id);
     }
   };
 
@@ -264,7 +265,7 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
     }
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [effectiveTodayTasks, currentTaskIndex, completedTask, onSelectTask, onPreviewTask]);
+  }, [effectiveTodayTasks, currentTaskIndex, completedTask, onSelectTask]);
 
   // Pure visual task switcher: Chevrons + dynamic capsule dots (No explanatory text)
   const renderVisualTaskSwitcher = () => {
@@ -272,7 +273,7 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
 
     return (
       <div
-        className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full bg-stone-100/90 dark:bg-stone-800/90 border border-stone-200/80 dark:border-stone-700/80 shadow-2xs select-none"
+        className="focus-switcher inline-flex items-center gap-1.5 px-2 py-1 rounded-full bg-stone-100/90 dark:bg-stone-800/90 border border-stone-200/80 dark:border-stone-700/80 shadow-2xs select-none"
         role="group"
         aria-label="Today's focus task switcher"
       >
@@ -285,7 +286,7 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
           <ChevronLeft className="w-3.5 h-3.5" />
         </button>
 
-        <div className="flex items-center gap-1 px-0.5">
+        <div className="focus-switcher-dots flex items-center gap-1 px-0.5">
           {effectiveTodayTasks.map((t, idx) => {
             const isActive = idx === currentTaskIndex;
             return (
@@ -318,8 +319,8 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
 
   // Urgency calculation for active task
   const urgency = useMemo(() => {
-    return calculateTaskUrgency(activeTask?.deadline);
-  }, [activeTask?.deadline]);
+    return calculateTaskUrgency(activeTask?.deadline, now);
+  }, [activeTask?.deadline, now]);
 
   // Deadline labels and progress
   const deadlineMetrics = useMemo(() => {
@@ -327,8 +328,8 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
   }, [urgency]);
 
   const deadlineDateLabel = useMemo(() => {
-    return formatDeadlineDateLabel(urgency.deadlineDate);
-  }, [urgency.deadlineDate]);
+    return formatDeadlineDateLabel(urgency.deadlineDate, now);
+  }, [urgency.deadlineDate, now]);
 
   const deadlineTimeLabel = useMemo(() => {
     return urgency.deadlineDate ? formatEventTime(urgency.deadlineDate, clockFormat) : '--:--';
@@ -411,6 +412,11 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
     );
   }
 
+  const chatLink = subtaskState.totalCount > 0 ? activeTask.attachedUrls?.find(
+    (link) => /^chat\b/i.test(link.title?.trim() ?? '') && isSafeUrl(link.url),
+  ) : undefined;
+  const otherLinks = activeTask.attachedUrls?.filter((link) => link !== chatLink);
+
   // Priority Badge Styling
   const priorityColorClass =
     activeTask.priority === 'urgent'
@@ -486,7 +492,7 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
                       type="button"
                       onClick={() => onPreviewTask?.(activeTask.id)}
                       className="break-words text-left hover:text-teal-600 dark:hover:text-teal-400 transition-colors rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-teal-600"
-                      title="Open in Tasks"
+                      title="View task details"
                     >
                       {completedTask ? <s>{activeTask.text}</s> : activeTask.text}
                     </button>
@@ -724,7 +730,7 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
                     <div className="flex items-center gap-1 shrink-0 text-stone-400">
                       <button
                         type="button"
-                        onClick={() => onOpenTaskEdit?.(activeTask)}
+                        onClick={() => onPreviewTask?.(activeTask.id)}
                         className="p-1 rounded-md hover:bg-stone-200 dark:hover:bg-stone-700 hover:text-stone-700 dark:hover:text-stone-200 transition-colors"
                         title="View subtask details"
                       >
@@ -847,15 +853,15 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
       <div
         inert={Boolean(completedTask)}
         data-focus-completing={completedTask ? true : undefined}
-        className={`flex md:hidden flex-col w-full bg-white dark:bg-serene-surface-dark border border-serene-border-light dark:border-serene-border-dark rounded-xl p-3 sm:p-3.5 shadow-subtle hover:shadow-card transition-all justify-between ${className}`}
+        className={`mobile-focus flex md:hidden flex-col w-full bg-white dark:bg-serene-surface-dark border border-serene-border-light dark:border-serene-border-dark rounded-xl p-1.5 shadow-subtle hover:shadow-card transition-all justify-between ${className}`}
       >
         {/* 1. TOP HEADER: PRIMARY FOCUS (Mobile - with Info icon, no duplicate due date) */}
-        <div className="flex items-center justify-between gap-3 mb-2.5">
+        <div className="flex items-center justify-between gap-2 mb-1">
           <div className="flex items-center gap-2">
             <span className="p-1.5 rounded-lg bg-teal-50 dark:bg-teal-950/40 text-teal-700 dark:text-teal-400 shrink-0">
               <Target className="w-4 h-4" />
             </span>
-            <h2 className="text-base sm:text-lg font-bold text-serene-text-primary dark:text-serene-text-darkPrimary">
+            <h2 className="text-base font-bold text-serene-text-primary dark:text-serene-text-darkPrimary">
               Primary focus
             </h2>
             <Info className="w-4 h-4 text-stone-400 shrink-0" />
@@ -864,36 +870,28 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
         </div>
 
         {/* 2. ACTIVE TASK HIGHLIGHT CARD (ROUNDED PINK/ROSE-TINTED CONTAINER) */}
-        <div className="bg-[#fff5f5] dark:bg-rose-950/20 border border-rose-100 dark:border-rose-900/35 rounded-2xl p-3.5 sm:p-4 space-y-3 transition-colors">
+        <div className="bg-[#fff5f5] dark:bg-rose-950/20 border border-rose-100 dark:border-rose-900/60 rounded-xl p-2.5 space-y-2 transition-colors">
           {/* Row 1: Badges (left) and Compact Quick Actions (right) */}
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 flex-wrap">
               <span
-                className={`px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${priorityColorClass}`}
+                className={`px-2 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider ${priorityColorClass}`}
               >
                 {(activeTask.priority || 'high').toUpperCase()}
               </span>
-              <span className="px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300">
+              <span className="px-2 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300">
                 {urgency.badgeText.toUpperCase()}
               </span>
             </div>
 
-            {/* Quick Actions in a compact row: Chevron to open in Tasks + Overflow Menu */}
+            {/* Task actions */}
             <div className="flex items-center gap-2 shrink-0">
-              <button
-                type="button"
-                onClick={() => onPreviewTask?.(activeTask.id)}
-                className="w-8 h-8 rounded-lg bg-white/80 dark:bg-stone-900/60 border border-rose-200/60 dark:border-rose-900/40 flex items-center justify-center text-stone-500 hover:text-stone-800 dark:hover:text-stone-200 hover:bg-white dark:hover:bg-stone-800 transition-all cursor-pointer shadow-2xs"
-                title="Open in Tasks"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </button>
-
               <div className="relative shrink-0" ref={mobileOverflowRef}>
                 <button
                   type="button"
                   onClick={() => setIsOverflowMenuOpen((prev) => !prev)}
-                  className="w-8 h-8 rounded-lg bg-white/80 dark:bg-stone-900/60 border border-rose-200/60 dark:border-rose-900/40 flex items-center justify-center text-stone-500 hover:text-stone-800 dark:hover:text-stone-200 hover:bg-white dark:hover:bg-stone-800 transition-all cursor-pointer shadow-2xs"
+                  className="focus-task-menu grid h-8 w-8 place-items-center rounded-lg bg-white/80 dark:bg-stone-900/60 border border-rose-200/60 dark:border-rose-900/40 text-stone-500 hover:text-stone-800 dark:hover:text-stone-200 hover:bg-white dark:hover:bg-stone-800 transition-all cursor-pointer shadow-2xs"
+                  aria-expanded={isOverflowMenuOpen}
                   title="More actions"
                 >
                   <MoreHorizontal className="w-4 h-4" />
@@ -940,13 +938,13 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
           </div>
 
           {/* Row 2: Title & Description */}
-          <div>
-            <h3 className="text-xl sm:text-2xl font-bold text-serene-text-primary dark:text-serene-text-darkPrimary leading-snug break-words">
+          <div className="focus-task-title">
+            <h3 className="text-xl font-bold text-serene-text-primary dark:text-serene-text-darkPrimary leading-snug break-words">
               <button
                 type="button"
                 onClick={() => onPreviewTask?.(activeTask.id)}
-                className="text-left hover:text-teal-600 dark:hover:text-teal-400 transition-colors rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-teal-600"
-                title="Open in Tasks"
+                className="text-left [overflow-wrap:anywhere] hover:text-teal-600 dark:hover:text-teal-400 transition-colors rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-teal-600"
+                title="View task details"
               >
                 {completedTask ? <s>{activeTask.text}</s> : activeTask.text}
               </button>
@@ -963,125 +961,118 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
           </div>
 
           {/* Row 3: Deadline & Schedule Box (Streamlined dense layout matching reference) */}
-          <div className="rounded-xl border border-serene-border-light/80 dark:border-serene-border-dark bg-white p-3.5 dark:bg-serene-surfaceAlt-dark space-y-2.5 shadow-2xs" data-testid="focus-deadline-mobile">
-            {/* Top row: Date and Time separated by divider */}
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-1.5 text-sm sm:text-base font-bold text-serene-text-primary dark:text-serene-text-darkPrimary">
-                <Calendar className="w-4 h-4 text-slate-500 dark:text-slate-400 shrink-0" />
-                <span>{deadlineDateLabel}</span>
-              </div>
-              <div className="h-4 w-px bg-slate-200 dark:bg-slate-700" />
-              <div className="flex items-center gap-1.5 text-base sm:text-lg font-bold tabular-nums text-serene-text-primary dark:text-serene-text-darkPrimary">
-                <Clock className="w-4 h-4 text-slate-500 dark:text-slate-400 shrink-0" />
-                <span>{deadlineTimeLabel}</span>
-              </div>
+          <div className="mobile-metadata rounded-xl border border-serene-border-light/80 dark:border-serene-border-dark bg-white px-2.5 py-2 dark:bg-serene-surfaceAlt-dark shadow-2xs" data-testid="focus-deadline-mobile">
+            <div className="flex flex-wrap items-center justify-between gap-x-2 text-xs font-semibold">
+              {urgency.deadlineDate ? (
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                  <span className="inline-flex items-center gap-1.5"><Calendar size={15} aria-hidden="true" />{deadlineDateLabel}</span>
+                  <span className="inline-flex items-center gap-1.5"><Clock size={15} aria-hidden="true" />{deadlineTimeLabel}</span>
+                </div>
+              ) : <span>No deadline</span>}
+              <button
+                type="button"
+                onClick={() => onPreviewTask?.(activeTask.id)}
+                aria-label={"View task details, estimated duration " + durationEstimate}
+                className="inline-flex min-h-8 items-center gap-1 text-purple-700 dark:text-purple-300"
+              >
+                <Waves size={15} aria-hidden="true" />
+                {durationEstimate}
+              </button>
             </div>
-
-            {/* Middle row: Countdown left, Estimate right */}
-            <div className="flex items-center justify-between text-sm sm:text-base font-bold">
-              <span className="text-rose-600 dark:text-rose-400">
-                {deadlineMetrics.countdownText}
-              </span>
-              {durationEstimate && (
-                <button
-                  type="button"
-                  onClick={() => onOpenTaskEdit?.(activeTask)}
-                  className="inline-flex items-center gap-1 text-purple-700 dark:text-purple-300 font-bold hover:underline"
-                >
-                  <Waves className="w-4 h-4 shrink-0" />
-                  <span>{durationEstimate} est.</span>
-                </button>
-              )}
-            </div>
-
-            {/* Visual Progress Bar */}
-            <div className="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-rose-600 dark:bg-rose-400 rounded-full transition-all duration-300"
-                style={{ width: `${deadlineMetrics.progressPercent}%` }}
-              />
-            </div>
+            {urgency.deadlineDate && (
+              <>
+                <div className="mb-1 flex items-baseline justify-between gap-2 text-sm font-semibold text-rose-600 dark:text-rose-400">
+                  <span>{deadlineMetrics.countdownText}</span>
+                  <span className="text-xs text-serene-text-secondary dark:text-serene-text-darkSecondary">~{deadlineMetrics.progressPercent}%</span>
+                </div>
+                {/* Visual Progress Bar */}
+                <div className="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-rose-600 dark:bg-rose-400 rounded-full transition-all duration-300"
+                    style={{ width: `${deadlineMetrics.progressPercent}%` }}
+                  />
+                </div>
+              </>
+            )}
           </div>
 
           {/* Row 4: Attached URLs */}
-          <TaskLinks links={activeTask.attachedUrls} />
+          <TaskLinks links={otherLinks} compact />
 
           {/* Row 5: Subtask List Section (Mobile) */}
           {subtaskState.totalCount > 0 && (
-            <div className="pt-2.5 border-t border-rose-200/40 dark:border-rose-900/30 space-y-2.5">
+            <div className="focus-subtasks space-y-1">
               <div className="flex items-center justify-between gap-2">
                 <span className="text-sm sm:text-base font-bold text-serene-text-primary dark:text-serene-text-darkPrimary">
                   Subtasks ({subtaskState.completedCount} / {subtaskState.totalCount})
                 </span>
 
-                <div className="relative" ref={mobileProcedureRef}>
-                  <button
-                    type="button"
-                    onClick={() => setIsProcedureMenuOpen((prev) => !prev)}
-                    className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-serene-text-secondary dark:text-serene-text-darkSecondary hover:text-serene-text-primary dark:hover:text-serene-text-darkPrimary py-1 px-2.5 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800/60 transition-colors cursor-pointer"
-                  >
-                    <ListTodo className="w-4 h-4" />
-                    <span>
-                      {procedureSort === 'procedure'
-                        ? 'Step by step'
-                        : procedureSort === 'pending_first'
-                        ? 'Pending First'
-                        : 'Completed First'}
-                    </span>
-                    <ChevronDown className="w-3.5 h-3.5 opacity-70" />
-                  </button>
+                <div className="flex min-w-0 items-center gap-1">
+                  {chatLink && <TaskLinks links={[chatLink]} compact />}
+                  <div className="relative shrink-0" ref={mobileProcedureRef}>
+                    <button
+                      type="button"
+                      onClick={() => setIsProcedureMenuOpen((prev) => !prev)}
+                      aria-label="Sort subtasks"
+                      aria-expanded={isProcedureMenuOpen}
+                      className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-serene-text-secondary dark:text-serene-text-darkSecondary hover:text-serene-text-primary dark:hover:text-serene-text-darkPrimary min-h-9 px-1.5 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800/60 transition-colors cursor-pointer"
+                    >
+                      <ListTodo className="w-4 h-4" />
+                      <ChevronDown className="w-3.5 h-3.5 opacity-70" />
+                    </button>
 
-                  {isProcedureMenuOpen && (
-                    <div className="absolute right-0 top-full mt-1 w-44 bg-white dark:bg-serene-surface-dark border border-serene-border-light dark:border-serene-border-dark rounded-xl shadow-card py-1 z-20 animate-fadeIn text-xs sm:text-sm">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setProcedureSort('procedure');
-                          setIsProcedureMenuOpen(false);
-                        }}
-                        className={`w-full text-left px-3 py-1.5 flex items-center justify-between hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors ${
-                          procedureSort === 'procedure' ? 'font-bold text-serene-primary dark:text-serene-primary-dark' : 'text-serene-text-primary dark:text-serene-text-darkPrimary'
-                        }`}
-                      >
-                        <span>Step by step</span>
-                        {procedureSort === 'procedure' && <Check className="w-3.5 h-3.5" />}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setProcedureSort('pending_first');
-                          setIsProcedureMenuOpen(false);
-                        }}
-                        className={`w-full text-left px-3 py-1.5 flex items-center justify-between hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors ${
-                          procedureSort === 'pending_first' ? 'font-bold text-serene-primary dark:text-serene-primary-dark' : 'text-serene-text-primary dark:text-serene-text-darkPrimary'
-                        }`}
-                      >
-                        <span>Pending First</span>
-                        {procedureSort === 'pending_first' && <Check className="w-3.5 h-3.5" />}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setProcedureSort('completed_first');
-                          setIsProcedureMenuOpen(false);
-                        }}
-                        className={`w-full text-left px-3 py-1.5 flex items-center justify-between hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors ${
-                          procedureSort === 'completed_first' ? 'font-bold text-serene-primary dark:text-serene-primary-dark' : 'text-serene-text-primary dark:text-serene-text-darkPrimary'
-                        }`}
-                      >
-                        <span>Completed First</span>
-                        {procedureSort === 'completed_first' && <Check className="w-3.5 h-3.5" />}
-                      </button>
-                    </div>
-                  )}
+                    {isProcedureMenuOpen && (
+                      <div className="absolute right-0 top-full mt-1 w-44 bg-white dark:bg-serene-surface-dark border border-serene-border-light dark:border-serene-border-dark rounded-xl shadow-card py-1 z-20 animate-fadeIn text-xs sm:text-sm">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setProcedureSort('procedure');
+                            setIsProcedureMenuOpen(false);
+                          }}
+                          className={`w-full text-left px-3 py-1.5 flex items-center justify-between hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors ${
+                            procedureSort === 'procedure' ? 'font-bold text-serene-primary dark:text-serene-primary-dark' : 'text-serene-text-primary dark:text-serene-text-darkPrimary'
+                          }`}
+                        >
+                          <span>Step by step</span>
+                          {procedureSort === 'procedure' && <Check className="w-3.5 h-3.5" />}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setProcedureSort('pending_first');
+                            setIsProcedureMenuOpen(false);
+                          }}
+                          className={`w-full text-left px-3 py-1.5 flex items-center justify-between hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors ${
+                            procedureSort === 'pending_first' ? 'font-bold text-serene-primary dark:text-serene-primary-dark' : 'text-serene-text-primary dark:text-serene-text-darkPrimary'
+                          }`}
+                        >
+                          <span>Pending First</span>
+                          {procedureSort === 'pending_first' && <Check className="w-3.5 h-3.5" />}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setProcedureSort('completed_first');
+                            setIsProcedureMenuOpen(false);
+                          }}
+                          className={`w-full text-left px-3 py-1.5 flex items-center justify-between hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors ${
+                            procedureSort === 'completed_first' ? 'font-bold text-serene-primary dark:text-serene-primary-dark' : 'text-serene-text-primary dark:text-serene-text-darkPrimary'
+                          }`}
+                        >
+                          <span>Completed First</span>
+                          {procedureSort === 'completed_first' && <Check className="w-3.5 h-3.5" />}
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
 
               <div
                 className={
                   isSubtasksExpanded
-                    ? 'space-y-2 max-h-56 overflow-y-auto overscroll-contain pr-1 scrollbar-thin'
-                    : 'space-y-2 overflow-hidden'
+                    ? 'space-y-1 max-h-56 overflow-y-auto overscroll-contain pr-1 scrollbar-thin'
+                    : 'space-y-1'
                 }
               >
                 {subtaskState.visibleSubtasks.map((subtask) => {
@@ -1090,9 +1081,9 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
                   return (
                     <div
                       key={subtask.id}
-                      className="flex items-center justify-between gap-2.5 py-2 px-2.5 rounded-xl bg-stone-50/70 dark:bg-stone-900/30 border border-stone-200/60 dark:border-stone-800/50 hover:bg-stone-100/80 dark:hover:bg-stone-800/40 transition-colors"
+                      className="flex items-center justify-between gap-1 px-1.5 rounded-xl bg-stone-50/70 dark:bg-stone-900/30 border border-stone-200/60 dark:border-stone-800/50 hover:bg-stone-100/80 dark:hover:bg-stone-800/40 transition-colors"
                     >
-                      <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                      <div className="flex items-center gap-1.5 min-w-0 flex-1">
                         {/* Drag grip dots handle */}
                         <DotsSixVertical className="w-4 h-4 text-stone-400 dark:text-stone-500 shrink-0" />
 
@@ -1100,7 +1091,9 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
                         <button
                           type="button"
                           onClick={() => onToggleSubtask?.(activeTask.id, subtask.id)}
-                          className="w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all cursor-pointer focus:outline-none"
+                          aria-pressed={subtask.isDone}
+                          aria-label={"Toggle subtask: " + title}
+                          className="focus-subtask-check w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all cursor-pointer focus:outline-none"
                           style={{
                             borderColor: subtask.isDone ? '#0f4c4c' : 'currentColor',
                             backgroundColor: subtask.isDone ? '#0f4c4c' : 'transparent',
@@ -1135,8 +1128,8 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
                       <div className="flex items-center gap-1 shrink-0 text-stone-400">
                         <button
                           type="button"
-                          onClick={() => onOpenTaskEdit?.(activeTask)}
-                          className="p-1.5 rounded-md hover:bg-stone-200 dark:hover:bg-stone-700 hover:text-stone-700 dark:hover:text-stone-200 transition-colors cursor-pointer"
+                          onClick={() => onPreviewTask?.(activeTask.id)}
+                          className="grid h-9 w-8 place-items-center rounded-md hover:bg-stone-200 dark:hover:bg-stone-700 hover:text-stone-700 dark:hover:text-stone-200 transition-colors cursor-pointer"
                           title="View subtask details"
                         >
                           <FileText className="w-4 h-4" />
@@ -1144,7 +1137,7 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
                         <button
                           type="button"
                           onClick={() => onToggleSubtask?.(activeTask.id, subtask.id)}
-                          className="p-1.5 rounded-md hover:bg-stone-200 dark:hover:bg-stone-700 hover:text-stone-700 dark:hover:text-stone-200 transition-colors cursor-pointer"
+                          className="grid h-9 w-8 place-items-center rounded-md hover:bg-stone-200 dark:hover:bg-stone-700 hover:text-stone-700 dark:hover:text-stone-200 transition-colors cursor-pointer"
                           title="More options"
                         >
                           <MoreVertical className="w-4 h-4" />
@@ -1159,7 +1152,8 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
                 <button
                   type="button"
                   onClick={() => setIsSubtasksExpanded((prev) => !prev)}
-                  className="w-full pt-1.5 pb-0.5 text-center text-xs sm:text-sm font-semibold text-serene-text-muted dark:text-serene-text-darkMuted hover:text-serene-primary dark:hover:text-serene-primary-dark transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                  aria-expanded={isSubtasksExpanded}
+                  className="min-h-10 w-full text-center text-xs sm:text-sm font-semibold text-serene-text-muted dark:text-serene-text-darkMuted hover:text-serene-primary dark:hover:text-serene-primary-dark transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
                 >
                   <span>
                     {isSubtasksExpanded
@@ -1177,11 +1171,11 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
           )}
 
           {/* Row 6: Action Button (Mobile) - Full-width CTA */}
-          <div className="pt-2">
+          <div>
             <button
               type="button"
               onClick={() => onCompleteTask?.(activeTask)}
-              className="w-full min-h-[46px] bg-[#0f4c4c] hover:bg-[#0a3535] active:scale-[0.99] dark:bg-teal-700 dark:hover:bg-teal-600 text-white font-semibold text-sm sm:text-base py-3 px-4 rounded-xl shadow-xs flex items-center justify-center gap-2 transition-all cursor-pointer"
+              className="w-full min-h-11 bg-[#0f4c4c] hover:bg-[#0a3535] active:scale-[0.99] dark:bg-teal-700 dark:hover:bg-teal-600 text-white font-semibold text-sm px-3 rounded-xl shadow-xs flex items-center justify-center gap-2 transition-all cursor-pointer"
               title="Mark task as complete"
             >
               <Check className="w-4 h-4 stroke-[2.5]" />

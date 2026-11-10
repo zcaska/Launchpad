@@ -16,6 +16,7 @@ import {
   ArrowLeft,
   Warning as AlertTriangle,
   CaretDown,
+  FunnelSimple,
   CaretUp,
 } from '@phosphor-icons/react';
 import { QuickNote, TaskPriority, TaskUrl, Subtask } from '../../types';
@@ -36,6 +37,7 @@ export interface TaskManagementScreenProps {
   searchQuery: string;
   onSearchChange: (query: string) => void;
   onUpdateNotes: (notes: QuickNote[]) => void;
+  onViewTask: (taskId: string) => void;
   onBackToDashboard?: () => void;
   initialTaskId?: string | null;
   onInitialTaskOpened?: () => void;
@@ -54,6 +56,7 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
   searchQuery,
   onSearchChange: setSearchQuery,
   onUpdateNotes,
+  onViewTask,
   onBackToDashboard,
   initialTaskId,
   onInitialTaskOpened,
@@ -63,6 +66,7 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
   // Filters & State
   const [activeTab, setActiveTab] = useState<FilterTab>('All');
   const [showCompletedInAll, setShowCompletedInAll] = useState(true);
+  const [expandedChecklists, setExpandedChecklists] = useState<Record<string, boolean>>({});
   const { period, setPeriod, customRange, setCustomRange, baseRange, defaultEndInclusive,
     range, rangeError, periodNotes, periodLoad, periodBuffer, hasPeriodBudget } = view;
   // Modal / Form state for Add / Edit
@@ -615,7 +619,12 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
         layout
         key={task.id}
         variants={staggerItemVariants}
-        className={`group rounded-xl md:rounded-2xl border p-3 sm:p-4 transition-all duration-200 flex flex-col justify-between ${getTaskCardBackground(task)}`}
+        onClick={(event) => {
+          if (!(event.target instanceof Element) || event.target.closest("button, a, input, label")) return;
+          if (window.getSelection()?.isCollapsed === false) return;
+          onViewTask(task.id);
+        }}
+        className={`mobile-task-card group cursor-pointer rounded-xl md:rounded-2xl border p-3 sm:p-4 transition-all duration-200 flex flex-col justify-between ${getTaskCardBackground(task)}`}
       >
         <div className="space-y-2.5">
           {/* Top Row: Checkbox, Title & Actions */}
@@ -623,7 +632,7 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
             <div className="flex items-start gap-2 sm:gap-2.5 flex-1 min-w-0">
               <button
                 onClick={() => handleToggleTaskComplete(task.id)}
-                className="mt-0.5 grid h-6 w-6 place-items-center rounded-md text-serene-text-muted hover:text-serene-primary dark:hover:text-serene-primary-dark transition-colors shrink-0"
+                className="task-card-check mt-0.5 grid h-6 w-6 place-items-center rounded-md text-serene-text-muted hover:text-serene-primary dark:hover:text-serene-primary-dark transition-colors shrink-0"
                 title={task.isDone ? 'Mark as incomplete' : 'Mark as complete'}
                 aria-label={task.isDone ? 'Mark as incomplete' : 'Mark as complete'}
               >
@@ -642,7 +651,13 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
                       : ''
                   }`}
                 >
-                  {task.text}
+                  <button
+                    type="button"
+                    onClick={() => onViewTask(task.id)}
+                    className="max-w-full rounded text-left [overflow-wrap:anywhere] hover:text-serene-primary dark:hover:text-serene-primary-dark"
+                  >
+                    {task.text}
+                  </button>
                 </h3>
                 {task.description && (
                   <div className={`mt-1 leading-relaxed ${task.isDone ? 'line-through opacity-70' : ''}`}>
@@ -656,7 +671,7 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
             </div>
 
             {/* Edit & Delete Actions: Always neatly pinned at top-right of card */}
-            <div className="flex items-center gap-0.5 shrink-0 opacity-70 group-hover:opacity-100 transition-opacity">
+            <div className="task-card-actions flex items-center gap-0.5 shrink-0 opacity-70 group-hover:opacity-100 transition-opacity">
               <button
                 onClick={() => handleOpenEditForm(task)}
                 className="p-1.5 rounded-lg text-serene-text-muted hover:text-serene-primary dark:hover:text-serene-primary-dark hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
@@ -678,7 +693,7 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
 
           {/* Badges & Links Row: Unified, compact, wrapping cleanly */}
           {hasMetadata && (
-            <div className="flex flex-wrap items-center gap-1.5 text-xs">
+            <div className="task-card-metadata flex flex-wrap items-center gap-1.5 text-xs">
               {/* Priority Badge */}
               {task.priority === 'urgent' && (
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md font-bold text-[11px] bg-red-600 text-white shadow-2xs">
@@ -736,7 +751,18 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
           {/* Subtasks Checklist Section */}
           {subtasks.length > 0 && (
             <div className="pt-2 border-t border-serene-border-light/50 dark:border-serene-border-dark/50">
-              <div className="flex items-center justify-between text-xs font-semibold text-serene-text-muted mb-1.5">
+              <button
+                type="button"
+                aria-expanded={Boolean(expandedChecklists[task.id])}
+                aria-controls={"task-checklist-" + task.id}
+                onClick={() => setExpandedChecklists((current) => ({ ...current, [task.id]: !current[task.id] }))}
+                className="flex min-h-10 w-full items-center gap-2 text-left text-sm md:hidden"
+              >
+                <span>Checklist</span>
+                <span className="mobile-metadata text-xs">{completedSubtasks} / {subtasks.length}</span>
+                <CaretDown aria-hidden="true" className={expandedChecklists[task.id] ? "ml-auto rotate-180" : "ml-auto"} />
+              </button>
+              <div className="hidden md:flex items-center justify-between text-xs font-semibold text-serene-text-muted mb-1.5">
                 <span className="flex items-center gap-1">
                   Checklist
                 </span>
@@ -756,13 +782,14 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
               </div>
 
               {/* Subtasks checklist items */}
-              <div className="space-y-1">
+              <div id={"task-checklist-" + task.id} className={expandedChecklists[task.id] ? "space-y-1" : "hidden space-y-1 md:block"}>
                 {subtasks.map((st) => (
                   <button
                     key={st.id}
                     type="button"
                     onClick={() => handleToggleSubtask(task.id, st.id)}
-                    className="w-full flex items-center gap-2 py-0.5 px-1 rounded-md text-left text-xs hover:bg-black/5 dark:hover:bg-white/5 transition-colors group/sub"
+                    aria-pressed={st.isDone}
+                    className="task-checklist-item w-full flex items-center gap-2 py-0.5 px-1 rounded-md text-left text-xs hover:bg-black/5 dark:hover:bg-white/5 transition-colors group/sub"
                   >
                     {st.isDone ? (
                       <CheckSquare className="w-3.5 h-3.5 text-serene-primary dark:text-serene-primary-dark shrink-0" />
@@ -791,15 +818,15 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
   return (
     <div className="w-full flex flex-col h-full bg-serene-bg-light dark:bg-serene-bg-dark text-serene-text-primary dark:text-serene-text-darkPrimary overflow-hidden">
       {/* 1. TOP HEADER & OVERVIEW BAR */}
-      <header className="w-full shrink-0 min-w-0 bg-white dark:bg-serene-surface-dark border-b border-serene-border-light dark:border-serene-border-dark px-3 sm:px-6 py-3.5 sm:py-4 shadow-subtle transition-colors overflow-hidden">
-        <div className="w-full min-w-0 flex items-center justify-between gap-2 sm:gap-4">
+      <header className="tasks-toolbar w-full shrink-0 min-w-0 bg-white dark:bg-serene-surface-dark border-b border-serene-border-light dark:border-serene-border-dark px-3 sm:px-6 py-3.5 sm:py-4 shadow-subtle transition-colors overflow-hidden">
+        <div data-date-range={hasPeriodBudget && period !== "Today" ? true : undefined} className="tasks-toolbar-heading w-full min-w-0 flex items-center justify-between gap-2 sm:gap-4">
           
           {/* Left: Back button + Title */}
           <div className="flex items-center gap-2 sm:gap-3 min-w-0">
             {onBackToDashboard && (
               <button
                 onClick={onBackToDashboard}
-                className="p-1.5 sm:p-2 rounded-xl bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark hover:bg-black/5 dark:hover:bg-white/10 text-serene-text-secondary dark:text-serene-text-darkSecondary border border-serene-border-light dark:border-serene-border-dark transition-all shrink-0"
+                className="tasks-back p-1.5 sm:p-2 rounded-xl bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark hover:bg-black/5 dark:hover:bg-white/10 text-serene-text-secondary dark:text-serene-text-darkSecondary border border-serene-border-light dark:border-serene-border-dark transition-all shrink-0"
                 title="Back to Main Dashboard"
               >
                 <ArrowLeft className="w-4 h-4" />
@@ -838,12 +865,13 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
           </div>
 
           {/* Right: Date trigger & Period dropdown (shifted up to row 1 on mobile) */}
-          <div className="flex items-center justify-end gap-1.5 sm:gap-2 shrink-0">
+          <div className="tasks-period flex items-center justify-end gap-1.5 sm:gap-2 shrink-0">
             {hasPeriodBudget && (
-              <div className="flex items-center gap-1.5 sm:gap-2">
+              <div className="tasks-dates flex items-center gap-1.5 sm:gap-2">
                 {period === 'Today' ? (
                   <>
                     <label className="relative inline-flex min-h-[34px] sm:min-h-[32px] items-center rounded-lg border border-serene-border-light bg-serene-surfaceAlt-light px-2 text-xs font-semibold dark:border-serene-border-dark dark:bg-serene-surfaceAlt-dark focus-within:ring-2 focus-within:ring-serene-primary">
+                      <Calendar className="mr-1.5 hidden max-md:block" size={15} aria-hidden="true" />
                       {formatDDMMMYY(customRange?.start ?? range.start)}
                       <input
                         aria-label="Pick date"
@@ -879,15 +907,10 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
                     </label>
                   </>
                 )}
-                {rangeError && (
-                  <span className="mt-0.5 text-xs font-medium text-rose-500 dark:text-rose-400" role="alert">
-                    {rangeError}
-                  </span>
-                )}
               </div>
             )}
-            <label className="flex shrink-0 items-center gap-1 sm:gap-2 text-xs sm:text-sm font-semibold">
-              <span className="hidden sm:inline">View</span>
+            <label className="tasks-period-picker flex shrink-0 items-center gap-1 sm:gap-2 text-xs sm:text-sm font-semibold">
+              <span className="hidden md:inline">View</span>
               <select
                 aria-label="Task time period"
                 value={period}
@@ -901,6 +924,8 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
             </label>
           </div>
         </div>
+
+        {rangeError && <p className="mt-1 text-xs font-medium text-rose-600 dark:text-rose-400" role="alert">{rangeError}</p>}
 
         {/* Tablet Status Metrics 3-Column Symmetrical Grid (on md to lg) */}
         <div className="hidden md:grid grid-cols-3 gap-2 w-full lg:hidden mt-2.5">
@@ -919,7 +944,7 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
         </div>
 
         {hasPeriodBudget ? (
-          <div className="mt-2 text-xs sm:text-sm" aria-live="polite">
+          <div className="tasks-budget mt-2 text-xs sm:text-sm" aria-live="polite">
             <div className="flex flex-wrap items-baseline gap-x-3 sm:gap-x-4 gap-y-1">
               <span><strong>{formatPeriodMinutes(range.availableMinutes)}</strong> available</span>
               <span><strong>{formatPeriodMinutes(periodLoad.pendingMinutes)}</strong> pending</span>
@@ -935,9 +960,9 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
         ) : null}
 
         {/* 2. SUB-BAR: Filter Tabs & Search Bar Toolbar */}
-        <div className="w-full min-w-0 flex flex-col sm:flex-row sm:items-center justify-between gap-3 mt-3.5 pt-3 border-t border-serene-border-light/60 dark:border-serene-border-dark/60">
-          <label className="flex items-center gap-3 text-sm font-semibold md:hidden">
-            Filters
+        <div className="tasks-filter w-full min-w-0 flex flex-col sm:flex-row sm:items-center justify-between gap-3 mt-3.5 pt-3 border-t border-serene-border-light/60 dark:border-serene-border-dark/60">
+          <label className="flex w-full items-center gap-2 text-sm font-semibold md:hidden">
+            <FunnelSimple size={16} aria-hidden="true" /> Filters
             <select
               value={activeTab}
               onChange={(event) => setActiveTab(event.target.value as FilterTab)}
@@ -1003,7 +1028,7 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
       {/* 2. BODY CONTENT: Task list and schedule */}
       <div className="flex-1 flex overflow-hidden relative">
         {/* Main Task Cards Flow */}
-        <main className="flex-1 min-w-0 px-2.5 py-3 sm:px-6 sm:py-5 overflow-y-auto space-y-4 @container">
+        <main className="tasks-list flex-1 min-w-0 px-2.5 py-3 sm:px-6 sm:py-5 overflow-y-auto space-y-4 @container">
           {filteredTasks.length === 0 ? (
             <div className="py-20 text-center rounded-2xl border border-dashed border-serene-border-light dark:border-serene-border-dark bg-white/40 dark:bg-serene-surface-dark/40 flex flex-col items-center justify-center p-6">
               <div className="w-12 h-12 rounded-2xl bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark flex items-center justify-center text-serene-text-muted mb-3">
@@ -1124,6 +1149,7 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
             <motion.div 
               role="dialog"
               aria-modal="true"
+              aria-labelledby="task-form-title"
               variants={modalContentVariants}
               initial="initial"
               animate="animate"
@@ -1137,7 +1163,7 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
                 <div className="p-1.5 rounded-lg bg-serene-primary-soft dark:bg-serene-primary/20 text-serene-primary dark:text-serene-primary-dark">
                   {editingTaskId ? <Edit3 className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
                 </div>
-                <h2 className="text-base font-bold text-serene-text-primary dark:text-serene-text-darkPrimary">
+                <h2 id="task-form-title" className="text-base font-bold text-serene-text-primary dark:text-serene-text-darkPrimary">
                   {editingTaskId ? 'Edit Task' : 'Create New Task'}
                 </h2>
               </div>
@@ -1150,7 +1176,7 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
             </div>
 
             {/* Modal Scrollable Body */}
-            <form onSubmit={handleSaveTask} className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-5">
+            <form onSubmit={handleSaveTask} className="task-edit-form flex-1 overflow-y-auto p-4 sm:p-6 space-y-5">
               
               {/* Title input */}
               <div>

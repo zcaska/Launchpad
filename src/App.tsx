@@ -26,6 +26,7 @@ import { Sidebar } from './components/Sidebar/Sidebar';
 import { TaskClearReflection } from './components/Dashboard/TaskClearReflection';
 import { ConfettiOverlay } from './components/Dashboard/ConfettiOverlay';
 import { PrimaryFocusCard } from './components/Dashboard/PrimaryFocusCard';
+import { TaskPreviewPopUp } from './components/Tasks/TaskPreviewPopUp';
 import { SmartSuggestionCard } from './components/Dashboard/SmartSuggestionCard';
 import LaunchpadPet from './components/Pet/LaunchpadPet';
 import { usePetController } from './components/Pet/usePetController';
@@ -102,6 +103,15 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
   const [isBackupDismissed, setIsBackupDismissed] = useState(false);
   const [selectedFocusTaskId, setSelectedFocusTaskId] = useState<string | null>(null);
   const [editingTaskIdForScreen, setEditingTaskIdForScreen] = useState<string | null>(null);
+  const [viewingTaskId, setViewingTaskId] = useState<string | null>(null);
+  const viewingTask = viewingTaskId === null ? undefined : appData.quickNotes.find((task) => task.id === viewingTaskId);
+
+  const openTaskEdit = (taskId: string) => {
+    setViewingTaskId(null);
+    setEditingTaskIdForScreen(taskId);
+    if (activeView !== "tasks") setSearchQuery("");
+    setActiveView("tasks");
+  };
 
 
   // Live clock tick for time radar calculations
@@ -541,7 +551,7 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
   return (
     <MotionConfig reducedMotion="user">
     <IconContext.Provider value={{ size: 20, weight: 'regular', mirrored: false }}>
-      <div className="h-dvh flex flex-col overflow-hidden bg-serene-bg-light dark:bg-serene-bg-dark text-serene-text-primary dark:text-serene-text-darkPrimary">
+      <div className="launchpad-shell h-dvh flex flex-col overflow-hidden bg-serene-bg-light dark:bg-serene-bg-dark text-serene-text-primary dark:text-serene-text-darkPrimary">
       {/* Streamlined Header */}
       <Header
         searchQuery={searchQuery}
@@ -668,6 +678,7 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
                   view={taskView}
                   now={now}
                   onUpdateNotes={handleUpdateNotes}
+                  onViewTask={setViewingTaskId}
                   onBackToDashboard={() => {
                     setEditingTaskIdForScreen(null);
                     setActiveView('dashboard');
@@ -686,29 +697,25 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
               initial="initial"
               animate="animate"
               exit="exit"
-              className="flex-1 h-full min-w-0 px-2 py-3 sm:p-5 lg:p-6 overflow-y-auto space-y-5 @container"
+              className="mobile-home flex-1 h-full min-w-0 px-2 py-3 sm:p-5 lg:p-6 overflow-y-auto @container"
             >
-              <div className="grid grid-cols-1 items-start gap-4 sm:gap-5 @6xl:grid-cols-12 motion-safe:animate-fadeIn">
+              <div className="home-greeting md:hidden">
+                <h1>Good {now.getHours() < 12 ? 'morning' : now.getHours() < 18 ? 'afternoon' : 'evening'} <span aria-hidden="true">👋</span></h1>
+                <p>Focus · Execute · Grow</p>
+              </div>
+              <div className="home-widgets grid grid-cols-1 items-start gap-4 sm:gap-5 @6xl:grid-cols-12 motion-safe:animate-fadeIn">
                 {/* Focus and available time share a row when the workspace is wide. */}
                 <div className="min-w-0 @6xl:col-span-7">
                   <PrimaryFocusCard
                     tasks={dashboardTodayTasks}
+                    now={now}
                     selectedTaskId={selectedFocusTaskId}
                     onSelectTask={setSelectedFocusTaskId}
-                    onPreviewTask={(id) => {
-                      setSelectedFocusTaskId(id);
-                      setEditingTaskIdForScreen(null);
-                      setSearchQuery('');
-                      setActiveView('tasks');
-                    }}
+                    onPreviewTask={setViewingTaskId}
                     completedTask={dashboardTodayTasks.find((t) => t.id === completedFocusTask?.id) ?? null}
                     onCompleteTask={completeFocusTask}
                     onToggleSubtask={toggleFocusSubtask}
-                    onOpenTaskEdit={(task) => {
-                      setEditingTaskIdForScreen(task.id);
-                      setSearchQuery('');
-                      setActiveView('tasks');
-                    }}
+                    onOpenTaskEdit={(task) => openTaskEdit(task.id)}
                     clockFormat={appData.settings.clockFormat}
                     showSuggestion={todayPendingCount === 0}
                     suggestionCandidate={currentSuggestion}
@@ -732,13 +739,8 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
                 <div className="min-w-0 @6xl:col-span-12">
                   <CommitmentRadarWidget
                     tasks={appData.quickNotes}
-                    onSelectTask={(id) => {
-                      setSelectedFocusTaskId(id);
-                      setEditingTaskIdForScreen(id);
-                      setSearchQuery('');
-                      setActiveView('tasks');
-                    }}
-                    onPreviewTask={(id) => setSelectedFocusTaskId(id)}
+                    onSelectTask={setSelectedFocusTaskId}
+                    onPreviewTask={setViewingTaskId}
                     onOpenTasks={() => setActiveView('tasks')}
                   />
                 </div>
@@ -779,7 +781,7 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
         </AnimatePresence>
       </div>
 
-      <nav aria-label="Main navigation" className="grid shrink-0 grid-cols-4 border-t border-serene-border-light bg-white px-2 pb-[env(safe-area-inset-bottom)] dark:border-serene-border-dark dark:bg-serene-surface-dark md:hidden">
+      <nav aria-label="Main navigation" className="mobile-navigation grid shrink-0 grid-cols-4 border-t border-serene-border-light bg-white px-2 pb-[env(safe-area-inset-bottom)] dark:border-serene-border-dark dark:bg-serene-surface-dark md:hidden">
         {([
           ['dashboard', 'Home', House],
           ['tasks', 'Tasks', CheckSquare],
@@ -802,6 +804,17 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
           </button>
         ))}
       </nav>
+
+      {viewingTask && (
+        <TaskPreviewPopUp
+          key={viewingTask.id}
+          task={viewingTask}
+          now={now}
+          clockFormat={appData.settings.clockFormat}
+          onClose={() => setViewingTaskId(null)}
+          onEdit={() => openTaskEdit(viewingTask.id)}
+        />
+      )}
 
       {/* On-Demand Spark Focus Idea Modal */}
       <AnimatePresence>

@@ -58,6 +58,7 @@ export const GrowthMasteryScreen: React.FC<GrowthMasteryScreenProps> = ({
   onImportBackup,
   onBackToDashboard,
 }) => {
+  const [showMilestoneDetails, setShowMilestoneDetails] = useState(false);
   const [activeTab, setActiveTab] = useState<HorizonTab>('weekly');
   const [importError, setImportError] = useState<string | null>(null);
   const [importSuccess, setImportSuccess] = useState<string | null>(null);
@@ -207,20 +208,20 @@ export const GrowthMasteryScreen: React.FC<GrowthMasteryScreenProps> = ({
   };
 
   return (
-    <div className="w-full h-full overflow-y-auto bg-serene-bg-light dark:bg-serene-bg-dark text-serene-text-primary dark:text-serene-text-darkPrimary pb-6 md:pb-12">
-      <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 pt-4 space-y-6 md:pt-6 md:space-y-8">
+    <div className="mobile-growth w-full h-full overflow-y-auto bg-serene-bg-light dark:bg-serene-bg-dark text-serene-text-primary dark:text-serene-text-darkPrimary pb-6 md:pb-12">
+      <div className="growth-content max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 pt-4 space-y-6 md:pt-6 md:space-y-8">
         {/* ========================================================= */}
         {/* 1. Header Bar                                             */}
         {/* ========================================================= */}
-        <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-serene-border-light dark:border-serene-border-dark">
+        <header className="growth-heading flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-serene-border-light dark:border-serene-border-dark">
           <div className="flex items-center gap-3">
             <button
               onClick={onBackToDashboard}
               aria-label="Back to Dashboard"
-              className="group flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-xl text-serene-text-secondary dark:text-serene-text-darkSecondary hover:text-serene-text-primary dark:hover:text-serene-text-darkPrimary bg-white dark:bg-serene-surface-dark border border-serene-border-light dark:border-serene-border-dark hover:border-serene-primary/40 shadow-subtle transition-all duration-150"
+              className="growth-back group flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-xl text-serene-text-secondary dark:text-serene-text-darkSecondary hover:text-serene-text-primary dark:hover:text-serene-text-darkPrimary bg-white dark:bg-serene-surface-dark border border-serene-border-light dark:border-serene-border-dark hover:border-serene-primary/40 shadow-subtle transition-all duration-150"
             >
               <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-0.5" />
-              <span className="hidden sm:inline">Dashboard</span>
+              <span className="hidden md:inline">Dashboard</span>
             </button>
 
             <div className="flex items-center gap-3">
@@ -240,7 +241,7 @@ export const GrowthMasteryScreen: React.FC<GrowthMasteryScreenProps> = ({
           </div>
 
           {/* Quick Stats Pills */}
-          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+          <div className="growth-stats flex flex-wrap items-center gap-2 sm:gap-3">
             {/* Streak Pill */}
             <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-orange-500/10 dark:bg-orange-500/15 text-orange-600 dark:text-orange-400 border border-orange-500/20 text-xs font-semibold shadow-subtle">
               <Flame className="w-4 h-4 text-orange-500" />
@@ -267,14 +268,14 @@ export const GrowthMasteryScreen: React.FC<GrowthMasteryScreenProps> = ({
         {/* ========================================================= */}
         {/* 2. Active Hero Showcase Banner                           */}
         {/* ========================================================= */}
-        <section aria-label="Active Hero Showcase" className="relative overflow-hidden rounded-3xl bg-white dark:bg-serene-surface-dark border border-serene-border-light dark:border-serene-border-dark shadow-card p-4 md:p-6 lg:p-8">
+        <section aria-label="Active Hero Showcase" className="growth-hero relative overflow-hidden rounded-3xl bg-white dark:bg-serene-surface-dark border border-serene-border-light dark:border-serene-border-dark shadow-card p-4 md:p-6 lg:p-8">
           {/* Subtle decorative background glow */}
-          <div className="absolute top-0 right-0 -mr-16 -mt-16 w-80 h-80 rounded-full bg-gradient-to-br from-serene-primary/10 to-transparent blur-3xl pointer-events-none" />
+          <div aria-hidden="true" className="growth-hero-glow absolute top-0 right-0 -mr-16 -mt-16 w-80 h-80 rounded-full bg-gradient-to-br from-serene-primary/10 to-transparent blur-3xl pointer-events-none" />
 
-          <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+          <div className="growth-showcase relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
             {/* Left: Avatar + Title + Category + Quote */}
-            <div className="flex items-start sm:items-center gap-5">
-              <div className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-2xl overflow-hidden shadow-xl ring-4 ring-serene-primary/30 shrink-0 bg-slate-950 group">
+            <div className="growth-profile flex items-start sm:items-center gap-5">
+              <div className="growth-avatar relative w-24 h-24 sm:w-28 sm:h-28 rounded-2xl overflow-hidden shadow-xl ring-4 ring-serene-primary/30 shrink-0 bg-slate-950 group">
                 <img
                   src={getBadgeSrc(activeHero.badgeImage)}
                   alt={activeHero.name}
@@ -290,7 +291,7 @@ export const GrowthMasteryScreen: React.FC<GrowthMasteryScreenProps> = ({
               </div>
 
               <div className="space-y-1.5">
-                <div className="flex flex-wrap items-center gap-2">
+                <div className="growth-hero-tags flex flex-wrap items-center gap-2">
                   <h2 className="text-xl sm:text-2xl font-bold text-serene-text-primary dark:text-serene-text-darkPrimary">
                     {activeHero.name}
                   </h2>
@@ -314,12 +315,12 @@ export const GrowthMasteryScreen: React.FC<GrowthMasteryScreenProps> = ({
                 </p>
 
                 {/* Emotional Achievement Quote */}
-                <blockquote className="italic font-serif text-sm text-serene-text-secondary dark:text-serene-text-darkSecondary pt-1 border-l-2 border-serene-primary/40 dark:border-serene-primary-dark/40 pl-3">
+                <blockquote className="growth-quote italic font-serif text-sm text-serene-text-secondary dark:text-serene-text-darkSecondary pt-1 border-l-2 border-serene-primary/40 dark:border-serene-primary-dark/40 pl-3">
                   "{activeHero.quote}"
                 </blockquote>
 
                 {/* Psychological Milestone Reflection */}
-                <div className="flex items-start gap-1.5 text-xs text-serene-text-secondary dark:text-serene-text-darkSecondary pt-1">
+                <div className="hidden md:flex items-start gap-1.5 text-xs text-serene-text-secondary dark:text-serene-text-darkSecondary pt-1">
                   <Brain className="w-3.5 h-3.5 text-serene-primary dark:text-serene-primary-dark shrink-0 mt-0.5" />
                   <span>
                     <strong className="text-serene-text-primary dark:text-serene-text-darkPrimary">
@@ -332,7 +333,7 @@ export const GrowthMasteryScreen: React.FC<GrowthMasteryScreenProps> = ({
             </div>
 
             {/* Right: Sub-Level Micro-Progress & Horizon Stepper */}
-            <div className="w-full lg:w-96 shrink-0 bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark/60 rounded-2xl p-4 sm:p-5 border border-serene-border-light dark:border-serene-border-dark space-y-3.5 shadow-subtle">
+            <div className="growth-progress w-full lg:w-96 shrink-0 bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark/60 rounded-2xl p-4 sm:p-5 border border-serene-border-light dark:border-serene-border-dark space-y-3.5 shadow-subtle">
               {/* Header: Sub-Level Mastery Status */}
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-1.5 text-xs font-bold text-serene-text-primary dark:text-serene-text-darkPrimary">
@@ -355,7 +356,7 @@ export const GrowthMasteryScreen: React.FC<GrowthMasteryScreenProps> = ({
                     return (
                       <div
                         key={st.stage}
-                        className={`flex flex-col items-center py-1.5 px-1 rounded-xl text-center border transition-all ${
+                        className={`growth-stage-chip flex flex-col items-center py-1.5 px-1 rounded-xl text-center border transition-all ${
                           isCurrent
                             ? 'bg-serene-primary/15 border-serene-primary text-serene-primary dark:text-serene-primary-dark font-bold ring-1 ring-serene-primary/30'
                             : isAchieved
@@ -369,7 +370,7 @@ export const GrowthMasteryScreen: React.FC<GrowthMasteryScreenProps> = ({
                           ) : null}
                           <span>Stage {st.roman}</span>
                         </div>
-                        <span className="text-[9px] truncate max-w-full leading-tight font-medium">
+                        <span className="growth-stage-title text-[9px] truncate max-w-full leading-tight font-medium">
                           {st.title}
                         </span>
                       </div>
@@ -378,61 +379,74 @@ export const GrowthMasteryScreen: React.FC<GrowthMasteryScreenProps> = ({
                 </div>
               )}
 
-              {/* Micro-Progress Bar to Next Sub-Stage */}
-              {activeSubLevel.nextStage ? (
-                <div className="space-y-2 pt-1 border-t border-serene-border-light/60 dark:border-serene-border-dark/60">
-                  <div className="flex justify-between items-center text-[11px]">
-                    <span className="text-serene-text-secondary dark:text-serene-text-darkSecondary font-medium">
-                      Next Step:{' '}
-                      <strong className="text-serene-text-primary dark:text-serene-text-darkPrimary">
-                        Stage {activeSubLevel.nextStage.roman} ({activeSubLevel.nextStage.title})
-                      </strong>
-                    </span>
-                    <span className="text-serene-primary dark:text-serene-primary-dark font-semibold">
-                      {activeSubLevel.progressPercent}%
-                    </span>
-                  </div>
-                  <div className="w-full h-2 rounded-full bg-serene-border-light dark:bg-serene-border-dark overflow-hidden">
-                    <div
-                      className="h-full rounded-full bg-gradient-to-r from-amber-500 via-orange-500 to-serene-primary transition-all duration-500 ease-out"
-                      style={{ width: `${activeSubLevel.progressPercent}%` }}
-                    />
-                  </div>
-                  <div className="flex justify-between items-center text-[10px] text-serene-text-muted">
-                    <span>
-                      Streak: {gamification.currentStreak} / {activeSubLevel.nextStage.minStreakDays}d
-                    </span>
-                    <span>
-                      XP: {(gamification.currentXp || 0).toLocaleString()} /{' '}
-                      {activeSubLevel.nextStage.minLifetimeXp.toLocaleString()}
-                    </span>
-                  </div>
-                </div>
-              ) : (
-                <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-center text-xs font-semibold text-emerald-600 dark:text-emerald-400">
-                  Tier {activeHero.level} Mastery Completed!
-                </div>
-              )}
+              <button
+                type="button"
+                aria-expanded={showMilestoneDetails}
+                aria-controls="growth-milestone-details"
+                onClick={() => setShowMilestoneDetails((visible) => !visible)}
+                className="flex min-h-9 w-full items-center text-left text-xs font-semibold text-serene-primary md:hidden dark:text-serene-primary-dark"
+              >
+                {showMilestoneDetails ? "Hide milestone details" : "Milestone details"}
+              </button>
+              <div id="growth-milestone-details" className={showMilestoneDetails ? "flex flex-col gap-2 md:gap-3.5" : "hidden flex-col md:flex md:gap-3.5"}>
+                <p className="text-xs leading-relaxed md:hidden">{activeHero.realLifeMeaning}</p>
 
-              {/* Next Major Frontier Mystery Teaser */}
-              {nextLockedHero ? (
-                <div className="pt-2 border-t border-serene-border-light/60 dark:border-serene-border-dark/60 flex items-center justify-between text-[11px] text-serene-text-secondary dark:text-serene-text-darkSecondary">
-                  <div className="flex items-center gap-1.5">
-                    <Lock className="w-3.5 h-3.5 text-amber-500" />
-                    <span>
-                      Next Frontier: <strong>Level {nextLockedHero.level} (Mystery Tier)</strong>
+                {/* Micro-Progress Bar to Next Sub-Stage */}
+                {activeSubLevel.nextStage ? (
+                  <div className="space-y-2 pt-1 border-t border-serene-border-light/60 dark:border-serene-border-dark/60">
+                    <div className="flex justify-between items-center text-[11px]">
+                      <span className="text-serene-text-secondary dark:text-serene-text-darkSecondary font-medium">
+                        Next Step:{' '}
+                        <strong className="text-serene-text-primary dark:text-serene-text-darkPrimary">
+                          Stage {activeSubLevel.nextStage.roman} ({activeSubLevel.nextStage.title})
+                        </strong>
+                      </span>
+                      <span className="text-serene-primary dark:text-serene-primary-dark font-semibold">
+                        {activeSubLevel.progressPercent}%
+                      </span>
+                    </div>
+                    <div className="w-full h-2 rounded-full bg-serene-border-light dark:bg-serene-border-dark overflow-hidden">
+                      <div
+                        className="h-full rounded-full bg-gradient-to-r from-amber-500 via-orange-500 to-serene-primary transition-all duration-500 ease-out"
+                        style={{ width: `${activeSubLevel.progressPercent}%` }}
+                      />
+                    </div>
+                    <div className="flex justify-between items-center text-[10px] text-serene-text-muted">
+                      <span>
+                        Streak: {gamification.currentStreak} / {activeSubLevel.nextStage.minStreakDays}d
+                      </span>
+                      <span>
+                        XP: {(gamification.currentXp || 0).toLocaleString()} /{' '}
+                        {activeSubLevel.nextStage.minLifetimeXp.toLocaleString()}
+                      </span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-center text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+                    Tier {activeHero.level} Mastery Completed!
+                  </div>
+                )}
+
+                {/* Next Major Frontier Mystery Teaser */}
+                {nextLockedHero ? (
+                  <div className="pt-2 border-t border-serene-border-light/60 dark:border-serene-border-dark/60 flex items-center justify-between text-[11px] text-serene-text-secondary dark:text-serene-text-darkSecondary">
+                    <div className="flex items-center gap-1.5">
+                      <Lock className="w-3.5 h-3.5 text-amber-500" />
+                      <span>
+                        Next Frontier: <strong>Level {nextLockedHero.level} (Mystery Tier)</strong>
+                      </span>
+                    </div>
+                    <span className="text-[10px] font-semibold text-amber-600 dark:text-amber-400">
+                      {nextHeroMetrics?.overallPct || 0}%
                     </span>
                   </div>
-                  <span className="text-[10px] font-semibold text-amber-600 dark:text-amber-400">
-                    {nextHeroMetrics?.overallPct || 0}%
-                  </span>
-                </div>
-              ) : (
-                <div className="pt-2 border-t border-serene-border-light/60 dark:border-serene-border-dark/60 flex items-center justify-center gap-1.5 text-xs text-amber-500 font-semibold">
-                  <Crown className="w-4 h-4" />
-                  <span>All 7 Ranks Mastered</span>
-                </div>
-              )}
+                ) : (
+                  <div className="pt-2 border-t border-serene-border-light/60 dark:border-serene-border-dark/60 flex items-center justify-center gap-1.5 text-xs text-amber-500 font-semibold">
+                    <Crown className="w-4 h-4" />
+                    <span>All 7 Ranks Mastered</span>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </section>

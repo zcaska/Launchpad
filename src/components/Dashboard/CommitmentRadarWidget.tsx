@@ -1,6 +1,8 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import {
   Plus,
+  Target,
+  CaretRight,
   Info,
   ArrowRight,
   Plant as Leaf,
@@ -13,7 +15,6 @@ import {
   X
 } from '@phosphor-icons/react';
 import { QuickNote } from '../../types';
-import { TaskPreviewPopUp } from '../Tasks/TaskPreviewPopUp';
 import { defaultPeriodRange, tasksInPeriod } from '../../utils/taskPeriod';
 import {
   projectTasksToRadarCoordinates,
@@ -120,7 +121,6 @@ export const CommitmentRadarWidget: React.FC<CommitmentRadarWidgetProps> = React
   const [viewMode, setViewMode] = useState<RadarViewMode>('radar');
   const [period, setPeriod] = useState<RadarPeriod>('Today');
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
-  const [previewTaskId, setPreviewTaskId] = useState<string | null>(null);
   const [selectedLegendTier, setSelectedLegendTier] = useState<UrgencyTier | 'critical_all' | null>(null);
   const [showHeaderTooltip, setShowHeaderTooltip] = useState(false);
   const [showCenterCaptionTooltip, setShowCenterCaptionTooltip] = useState(false);
@@ -289,6 +289,42 @@ export const CommitmentRadarWidget: React.FC<CommitmentRadarWidgetProps> = React
   // Stable nodes list: keep deterministic order so hover does not cause DOM reordering or jitter
   const sortedNodes = visibleNodes;
 
+  function getCalloutBox(node: RadarProjectedNode, width: number, height: number, gap = 12) {
+    const isRightHalf = node.x >= RADAR_VIEWBOX.centerX;
+    const x = isRightHalf
+      ? Math.min(node.x + gap, RADAR_VIEWBOX.width - width - 8)
+      : Math.max(node.x - width - gap, 8);
+    const y = Math.max(16, Math.min(node.y - height / 2, RADAR_VIEWBOX.height - height - 20));
+    return { x, y, width, height, isRightHalf };
+  }
+
+  // Sparse callouts leave room for the markers. Every title is also in the mobile summary.
+  const callouts = useMemo(() => {
+    const placed: { x: number; y: number; width: number; height: number }[] = [];
+    return sortedNodes.map((node, index) => {
+      const mobile = getCalloutBox(node, 152, 48, node.nodeSize + 6);
+      const { x, y, width, height } = mobile;
+      const overlapsMarker = sortedNodes.some((other) => {
+        const radius = other.nodeSize + 4;
+        return x < other.x + radius && x + width > other.x - radius &&
+          y < other.y + radius && y + height > other.y - radius;
+      });
+      const overlapsLabel = placed.some((other) =>
+        x < other.x + other.width + 4 && x + width + 4 > other.x &&
+        y < other.y + other.height + 4 && y + height + 4 > other.y,
+      );
+      const fitsMobile = index < 2 && !overlapsMarker && !overlapsLabel;
+      if (fitsMobile) placed.push({ x, y, width, height });
+      return { desktop: getCalloutBox(node, 108, 32), mobile: fitsMobile ? mobile : null };
+    });
+  }, [sortedNodes]);
+
+  function openTask(id: string) {
+    setActiveTaskId(id);
+    onPreviewTask?.(id);
+    onSelectTask?.(id);
+  }
+
   const activeNode = useMemo(() => {
     if (!hoveredTaskId) return null;
     return sortedNodes.find((n) => n.task.id === hoveredTaskId) || null;
@@ -297,24 +333,25 @@ export const CommitmentRadarWidget: React.FC<CommitmentRadarWidgetProps> = React
   return (
     <>
       <div
-        className={`@container w-full h-full bg-white dark:bg-serene-surface-dark border border-serene-border-light dark:border-serene-border-dark rounded-2xl p-4 sm:p-5 shadow-subtle hover:shadow-card transition-all flex flex-col justify-between select-none ${className}`}
+        className={`commitment-radar @container w-full h-full bg-white dark:bg-serene-surface-dark border border-serene-border-light dark:border-serene-border-dark rounded-2xl p-4 sm:p-5 shadow-subtle hover:shadow-card transition-all flex flex-col justify-between select-none ${className}`}
         data-testid="commitment-radar-widget"
       >
       {/* ===================================================================== */}
       {/* 1. TOP HEADER ROW                                                     */}
       {/* ===================================================================== */}
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-2">
+      <div className="radar-heading flex flex-wrap items-center justify-between gap-3 mb-2">
         {/* Left: Circle Plus, Title, Info Tooltip */}
         <div className="flex items-center gap-2 min-w-0">
           <span
             className="w-6 h-6 rounded-full bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200/80 dark:border-emerald-800/60 text-[#1b6b55] dark:text-[#a5cfc3] flex items-center justify-center shrink-0 shadow-xs"
             aria-hidden="true"
           >
-            <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
+            <Plus className="hidden h-3.5 w-3.5 stroke-[2.5] md:block" />
+            <Target className="h-4 w-4 md:hidden" />
           </span>
 
           <h2 className="text-xs font-bold uppercase tracking-wider text-serene-text-primary dark:text-serene-text-darkPrimary truncate">
-            COMMITMENT RADAR
+            Commitment Radar
           </h2>
 
           {/* Info Tooltip */}
@@ -333,7 +370,7 @@ export const CommitmentRadarWidget: React.FC<CommitmentRadarWidgetProps> = React
             {showHeaderTooltip && (
               <div
                 role="tooltip"
-                className="absolute z-30 left-0 top-full mt-1.5 w-64 p-2.5 bg-slate-900/95 dark:bg-slate-800/95 text-white text-[11px] leading-relaxed rounded-xl shadow-modal backdrop-blur-sm border border-slate-700/60 pointer-events-none animate-fadeIn"
+                className="radar-heading-tooltip absolute z-30 left-0 top-full mt-1.5 w-64 p-2.5 bg-slate-900/95 dark:bg-slate-800/95 text-white text-[11px] leading-relaxed rounded-xl shadow-modal backdrop-blur-sm border border-slate-700/60 pointer-events-none animate-fadeIn"
               >
                 Visualizes your pending commitments by deadline urgency. Tasks closer to the center
                 require immediate attention, radiating outward to longer horizon tasks.
@@ -343,14 +380,13 @@ export const CommitmentRadarWidget: React.FC<CommitmentRadarWidgetProps> = React
         </div>
 
         {/* Right: Accessible List/Radar Toggle & "View all tasks ->" */}
-        <div className="ml-auto flex flex-wrap items-center gap-2.5">
+        <div className="radar-toolbar ml-auto flex flex-wrap items-center gap-2.5">
           <select aria-label="Commitment radar time period" value={period}
             onChange={(event) => {
               setPeriod(event.target.value as RadarPeriod);
               setSelectedLegendTier(null);
               setActiveTaskId(null);
               setHoveredTaskId(null);
-              setPreviewTaskId(null);
             }}
             className="min-h-[44px] sm:min-h-[32px] rounded-lg border border-serene-border-light bg-serene-surfaceAlt-light px-2 text-xs text-serene-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-serene-primary dark:border-serene-border-dark dark:bg-serene-surfaceAlt-dark dark:text-serene-text-darkPrimary">
             {(['Today', 'Weekly', 'Monthly', 'All time'] as RadarPeriod[]).map((value) => <option key={value}>{value}</option>)}
@@ -381,7 +417,7 @@ export const CommitmentRadarWidget: React.FC<CommitmentRadarWidgetProps> = React
             <button
               type="button"
               onClick={onOpenTasks}
-              className="text-xs font-semibold text-serene-primary dark:text-serene-primary-dark hover:underline flex items-center gap-1 transition-colors group cursor-pointer"
+              className="text-xs font-semibold text-serene-primary dark:text-serene-primary-dark hover:underline flex items-center gap-1 transition-colors group cursor-pointer radar-all-tasks"
               title="Open task management"
             >
               <span className="hidden sm:inline">View all tasks</span>
@@ -396,7 +432,7 @@ export const CommitmentRadarWidget: React.FC<CommitmentRadarWidgetProps> = React
       {/* 2. MAIN BODY: RADAR GRAPHIC OR ACCESSIBLE LIST VIEW                   */}
       {/* ===================================================================== */}
       {viewMode === 'radar' ? (
-        <div className="relative w-full flex-1 flex flex-col justify-center items-center my-0 min-h-[290px] overflow-visible">
+        <div className="radar-chart relative w-full flex-1 flex flex-col justify-center items-center my-0 min-h-[290px] overflow-visible">
           {/* Collapsed legend toggle — panel opens on demand instead of covering the radar */}
           <div className="absolute top-1 right-1 z-20 flex flex-col items-end gap-1.5">
             <button
@@ -546,7 +582,7 @@ export const CommitmentRadarWidget: React.FC<CommitmentRadarWidgetProps> = React
           </div>
 
           {/* Radar graphic container with aspect ratio locked to SVG viewBox (5:4) */}
-          <div className="relative w-full aspect-[5/4] max-h-[360px] max-w-[450px] mx-auto flex items-center justify-center">
+          <div className="radar-plot relative w-full aspect-[5/4] max-h-[360px] max-w-[450px] mx-auto flex items-center justify-center">
             {/* SVG Concentric Radar graphic with mountain silhouettes */}
             <svg
               viewBox="0 0 500 400"
@@ -716,24 +752,14 @@ export const CommitmentRadarWidget: React.FC<CommitmentRadarWidgetProps> = React
                 const isActive = activeTaskId === node.task.id;
                 const showCallout = sortedNodes.length <= 6 || isActive || index < 5;
 
-                // Smart callout placement offsetting away from center
-                const isRightHalf = node.x >= RADAR_VIEWBOX.centerX;
-                const boxWidth = 108;
-                const boxHeight = 32;
-                const labelX = isRightHalf
-                  ? Math.min(node.x + 12, RADAR_VIEWBOX.width - boxWidth - 8)
-                  : Math.max(node.x - boxWidth - 12, 8);
-                const labelY = Math.max(16, Math.min(node.y - 16, RADAR_VIEWBOX.height - boxHeight - 20));
+                const { desktop, mobile } = callouts[index];
+                const { x: labelX, y: labelY, width: boxWidth, height: boxHeight, isRightHalf } = desktop;
 
                 return (
                   <g
                     key={node.task.id}
                     className="cursor-pointer group"
-                    onClick={() => {
-                      setActiveTaskId(node.task.id);
-                      onPreviewTask?.(node.task.id);
-                      onSelectTask?.(node.task.id);
-                    }}
+                    onClick={() => openTask(node.task.id)}
                     onMouseEnter={() => handleTaskMouseEnter(node.task.id)}
                     onMouseLeave={handleTaskMouseLeave}
                     tabIndex={0}
@@ -742,9 +768,7 @@ export const CommitmentRadarWidget: React.FC<CommitmentRadarWidgetProps> = React
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' || e.key === ' ') {
                         e.preventDefault();
-                        setActiveTaskId(node.task.id);
-                        onPreviewTask?.(node.task.id);
-                        onSelectTask?.(node.task.id);
+                        openTask(node.task.id);
                       }
                     }}
                   >
@@ -755,7 +779,7 @@ export const CommitmentRadarWidget: React.FC<CommitmentRadarWidgetProps> = React
                         stroke="transparent"
                         strokeWidth="28"
                         strokeLinecap="round"
-                        className="cursor-pointer"
+                        className="hidden cursor-pointer md:block"
                       />
                     )}
 
@@ -789,10 +813,21 @@ export const CommitmentRadarWidget: React.FC<CommitmentRadarWidgetProps> = React
                       className="drop-shadow-sm transition-transform duration-200 pointer-events-none"
                     />
 
-                    {/* Callout Card Pill matching Image 1 */}
+                    {mobile && (
+                      <foreignObject x={mobile.x} y={mobile.y} width={mobile.width} height={mobile.height} className="md:hidden">
+                        <div className="radar-node-label" aria-hidden="true">
+                          <strong>{node.task.text}</strong>
+                          <span className="mobile-metadata" style={{ color: tierMeta.legendDotColor }}>
+                            {countdown.replace(/^Overdue by (.+)$/, '$1 overdue')}
+                          </span>
+                        </div>
+                      </foreignObject>
+                    )}
+
+                    {/* Desktop callout */}
                     {showCallout && (
                       <g
-                        className={`transition-all duration-200 ${
+                        className={`hidden transition-all duration-200 md:block ${
                           isActive ? 'opacity-100 drop-shadow-lg' : 'opacity-90 group-hover:opacity-100'
                         }`}
                       >
@@ -818,7 +853,7 @@ export const CommitmentRadarWidget: React.FC<CommitmentRadarWidgetProps> = React
                           fontWeight="600"
                           className="fill-slate-800 dark:fill-slate-100 font-sans select-none"
                         >
-                          {truncateText(node.task.text, 14)}
+                          {truncateText(node.task.text, 11)}
                         </text>
 
                         {/* Countdown Subtext */}
@@ -830,7 +865,7 @@ export const CommitmentRadarWidget: React.FC<CommitmentRadarWidgetProps> = React
                           fill={tierMeta.legendDotColor}
                           className="font-sans select-none"
                         >
-                          {countdown}
+                          {truncateText(countdown.replace(/^Overdue by (.+)$/, '$1 overdue'), 15)}
                         </text>
                       </g>
                     )}
@@ -877,7 +912,7 @@ export const CommitmentRadarWidget: React.FC<CommitmentRadarWidgetProps> = React
                 onMouseEnter={handleCardMouseEnter}
                 onMouseLeave={handleCardMouseLeave}
                 style={style}
-                className="w-[280px] sm:w-[310px] max-w-[calc(100vw-32px)] bg-white/95 dark:bg-serene-surface-dark/95 backdrop-blur-md border border-serene-border-light dark:border-serene-border-dark rounded-xl sm:rounded-2xl p-3 sm:p-3.5 shadow-modal text-left animate-fadeIn pointer-events-auto"
+                className="radar-popover w-[280px] sm:w-[310px] max-w-[calc(100vw-32px)] bg-white/95 dark:bg-serene-surface-dark/95 backdrop-blur-md border border-serene-border-light dark:border-serene-border-dark rounded-xl sm:rounded-2xl p-3 sm:p-3.5 shadow-modal text-left animate-fadeIn pointer-events-auto"
               >
                 {/* Header: Tier, Countdown, Priority, Close */}
                 <div className="flex items-center justify-between gap-1.5 mb-2 flex-wrap">
@@ -992,11 +1027,11 @@ export const CommitmentRadarWidget: React.FC<CommitmentRadarWidgetProps> = React
                 <button
                   type="button"
                   onClick={() => {
-                    onSelectTask?.(activeNode.task.id);
+                    openTask(activeNode.task.id);
                   }}
                   className="w-full mt-1 py-1.5 px-2.5 rounded-lg text-[11px] font-semibold bg-serene-primary hover:bg-serene-primary-hover text-white shadow-sm transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
                 >
-                  <span>Open in Tasks</span>
+                  <span>View task details</span>
                   <ArrowRight className="w-3 h-3" />
                 </button>
               </div>
@@ -1023,24 +1058,22 @@ export const CommitmentRadarWidget: React.FC<CommitmentRadarWidgetProps> = React
               const countdown = formatTaskCountdown(node.task, now);
 
               return (
-                <div
+                <button
                   key={node.task.id}
-                  onClick={() => {
-                    onPreviewTask?.(node.task.id);
-                    onSelectTask?.(node.task.id);
-                  }}
-                  className="p-2.5 rounded-xl bg-serene-surfaceAlt-light/60 dark:bg-serene-surfaceAlt-dark/40 border border-serene-border-light/70 dark:border-serene-border-dark/70 hover:border-serene-primary/50 dark:hover:border-serene-primary-dark/50 transition-all flex items-center justify-between gap-3 cursor-pointer group"
+                  type="button"
+                  onClick={() => openTask(node.task.id)}
+                  className="w-full p-2.5 text-left rounded-xl bg-serene-surfaceAlt-light/60 dark:bg-serene-surfaceAlt-dark/40 border border-serene-border-light/70 dark:border-serene-border-dark/70 hover:border-serene-primary/50 dark:hover:border-serene-primary-dark/50 transition-all flex items-center justify-between gap-3 cursor-pointer group"
                 >
-                  <div className="flex items-center gap-2.5 min-w-0">
+                  <span className="flex items-center gap-2.5 min-w-0">
                     <span
                       className="w-2.5 h-2.5 rounded-full shrink-0"
                       style={{ backgroundColor: tierMeta.legendDotColor }}
                     />
-                    <div className="min-w-0">
-                      <div className="text-xs font-semibold text-serene-text-primary dark:text-serene-text-darkPrimary truncate group-hover:text-serene-primary dark:group-hover:text-serene-primary-dark transition-colors">
+                    <span className="min-w-0">
+                      <span className="block text-xs font-semibold text-serene-text-primary dark:text-serene-text-darkPrimary truncate group-hover:text-serene-primary dark:group-hover:text-serene-primary-dark transition-colors">
                         {node.task.text}
-                      </div>
-                      <div className="text-[10px] text-serene-text-muted dark:text-serene-text-darkMuted flex items-center gap-2 mt-0.5">
+                      </span>
+                      <span className="text-[10px] text-serene-text-muted dark:text-serene-text-darkMuted flex items-center gap-2 mt-0.5">
                         <span className="font-mono flex items-center gap-1">
                           <Clock className="w-3 h-3 text-serene-text-muted" />
                           {countdown}
@@ -1055,24 +1088,55 @@ export const CommitmentRadarWidget: React.FC<CommitmentRadarWidgetProps> = React
                             {node.task.subtasks.filter((s) => s.isDone).length}/{node.task.subtasks.length} subtasks
                           </span>
                         )}
-                      </div>
-                    </div>
-                  </div>
+                      </span>
+                    </span>
+                  </span>
 
                   <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${tierMeta.badgeBg} ${tierMeta.badgeText} shrink-0`}>
                     {tierMeta.legendLabel}
                   </span>
-                </div>
+                </button>
               );
             })
           )}
         </div>
       )}
 
+      {viewMode === "radar" && (
+        <section aria-label="Radar task summary" className="radar-summary md:hidden">
+          <div className="radar-summary-heading">
+            <h3>Tasks ({sortedNodes.length})</h3>
+            {onOpenTasks && (
+              <button type="button" onClick={onOpenTasks} className="inline-flex min-h-10 items-center gap-1 text-sm text-serene-primary dark:text-serene-primary-dark">
+                All tasks <ArrowRight size={15} aria-hidden="true" />
+              </button>
+            )}
+          </div>
+          {sortedNodes.length === 0 ? (
+            <p className="pb-2 text-xs text-serene-text-muted dark:text-serene-text-darkMuted">No tasks in this view.</p>
+          ) : (
+            <ul className="radar-summary-list">
+              {sortedNodes.map((node) => (
+                <li key={node.task.id}>
+                  <button type="button" onClick={() => openTask(node.task.id)}>
+                    <span className="radar-task-dot" style={{ backgroundColor: TIER_PRESENTATION_MAP[node.tier].legendDotColor }} aria-hidden="true" />
+                    <span className="radar-task-title">{node.task.text}</span>
+                    <span className={"mobile-metadata " + (node.tier === "overdue" ? "text-rose-600 dark:text-rose-400" : "")}>
+                      {formatTaskCountdown(node.task, now)}
+                    </span>
+                    <CaretRight size={14} aria-hidden="true" />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      )}
+
       {/* ===================================================================== */}
       {/* 3. BOTTOM CAPTION: "Closer to the center = more urgent (i)"           */}
       {/* ===================================================================== */}
-      <div className="flex items-center justify-center gap-1.5 text-[11px] text-serene-text-muted dark:text-serene-text-darkMuted select-none mt-1 mb-2">
+      <div className="radar-caption flex items-center justify-center gap-1.5 text-[11px] text-serene-text-muted dark:text-serene-text-darkMuted select-none mt-1 mb-2">
         <span className="text-slate-400 dark:text-slate-500 font-mono text-[10px]" aria-hidden="true">←</span>
         <span>Closer to the center = more urgent</span>
         <div className="relative inline-block">
@@ -1090,7 +1154,7 @@ export const CommitmentRadarWidget: React.FC<CommitmentRadarWidgetProps> = React
           {showCenterCaptionTooltip && (
             <div
               role="tooltip"
-              className="absolute z-30 bottom-full left-1/2 -translate-x-1/2 mb-1.5 w-60 p-2.5 bg-slate-900/95 dark:bg-slate-800/95 text-white text-[11px] leading-relaxed rounded-xl shadow-modal backdrop-blur-sm border border-slate-700/60 pointer-events-none animate-fadeIn text-center"
+              className="radar-caption-tooltip absolute z-30 bottom-full left-1/2 -translate-x-1/2 mb-1.5 w-60 p-2.5 bg-slate-900/95 dark:bg-slate-800/95 text-white text-[11px] leading-relaxed rounded-xl shadow-modal backdrop-blur-sm border border-slate-700/60 pointer-events-none animate-fadeIn text-center"
             >
               Innermost rings represent overdue and critical commitments (&lt;24h). Expanding outward
               indicates further horizon and flexible tasks.
@@ -1103,7 +1167,7 @@ export const CommitmentRadarWidget: React.FC<CommitmentRadarWidgetProps> = React
       {/* 4. BOTTOM OVERALL STATUS CARD / STRIP MATCHING IMAGE 1                */}
       {/* ===================================================================== */}
       <div
-        className="p-3 sm:p-3.5 rounded-2xl bg-serene-surfaceAlt-light/60 dark:bg-serene-surfaceAlt-dark/40 border border-serene-border-light/80 dark:border-serene-border-dark/80 flex flex-col @md:flex-row @md:items-center justify-between gap-3 min-w-0"
+        className="radar-status p-3 sm:p-3.5 rounded-2xl bg-serene-surfaceAlt-light/60 dark:bg-serene-surfaceAlt-dark/40 border border-serene-border-light/80 dark:border-serene-border-dark/80 flex flex-col @md:flex-row @md:items-center justify-between gap-3 min-w-0"
         role="region"
         aria-label="Overall commitment status and timeline"
       >
@@ -1120,25 +1184,25 @@ export const CommitmentRadarWidget: React.FC<CommitmentRadarWidgetProps> = React
             <div className="text-sm font-bold text-serene-text-primary dark:text-serene-text-darkPrimary leading-tight">
               {overallStatus.title}
             </div>
-            <div className="text-[11px] text-serene-text-muted dark:text-serene-text-darkMuted leading-tight mt-0.5 truncate">
+            <div className="text-[11px] text-serene-text-muted dark:text-serene-text-darkMuted radar-status-description leading-tight mt-0.5 truncate">
               {overallStatus.subtitle}
             </div>
           </div>
         </div>
 
         {/* Right: Horizontal Segmented Bar with Dots and Reconciled Task Counts */}
-        <div className="flex items-center justify-between gap-1 @xs:gap-2 sm:gap-4 self-stretch @md:self-auto shrink-0 min-w-0 pt-1 @md:pt-0 overflow-hidden">
+        <div className="radar-status-counts flex items-center justify-between gap-1 @xs:gap-2 sm:gap-4 self-stretch @md:self-auto shrink-0 min-w-0 pt-1 @md:pt-0 overflow-hidden">
           {/* Milestone 1: Critical */}
           <div className="flex flex-col items-center flex-1 min-w-0">
             <div className="flex items-center w-full justify-center">
               <span className="w-2.5 h-2.5 rounded-full bg-[#f43f5e] ring-4 ring-rose-100 dark:ring-rose-950/60 shrink-0" />
-              <span className="h-0.5 w-3 @xs:w-6 @sm:w-10 bg-slate-200 dark:bg-slate-700 mx-1" />
+              <span className="radar-status-connector h-0.5 w-3 @xs:w-6 @sm:w-10 bg-slate-200 dark:bg-slate-700 mx-1" />
             </div>
             <div className="text-[10px] font-semibold text-serene-text-secondary dark:text-serene-text-darkSecondary mt-1 whitespace-nowrap">
               Critical
             </div>
             <div className="text-[10px] text-serene-text-muted dark:text-serene-text-darkMuted whitespace-nowrap">
-              {tierCounts.critical} {tierCounts.critical === 1 ? 'task' : 'tasks'}
+              {tierCounts.critical}<span className="hidden md:inline"> {tierCounts.critical === 1 ? 'task' : 'tasks'}</span>
             </div>
           </div>
 
@@ -1146,13 +1210,13 @@ export const CommitmentRadarWidget: React.FC<CommitmentRadarWidgetProps> = React
           <div className="flex flex-col items-center flex-1 min-w-0">
             <div className="flex items-center w-full justify-center">
               <span className="w-2.5 h-2.5 rounded-full bg-[#f97316] ring-4 ring-amber-100 dark:ring-amber-950/60 shrink-0" />
-              <span className="h-0.5 w-3 @xs:w-6 @sm:w-10 bg-slate-200 dark:bg-slate-700 mx-1" />
+              <span className="radar-status-connector h-0.5 w-3 @xs:w-6 @sm:w-10 bg-slate-200 dark:bg-slate-700 mx-1" />
             </div>
             <div className="text-[10px] font-semibold text-serene-text-secondary dark:text-serene-text-darkSecondary mt-1 whitespace-nowrap">
               Upcoming
             </div>
             <div className="text-[10px] text-serene-text-muted dark:text-serene-text-darkMuted whitespace-nowrap">
-              {tierCounts.upcoming} {tierCounts.upcoming === 1 ? 'task' : 'tasks'}
+              {tierCounts.upcoming}<span className="hidden md:inline"> {tierCounts.upcoming === 1 ? 'task' : 'tasks'}</span>
             </div>
           </div>
 
@@ -1160,13 +1224,13 @@ export const CommitmentRadarWidget: React.FC<CommitmentRadarWidgetProps> = React
           <div className="flex flex-col items-center flex-1 min-w-0">
             <div className="flex items-center w-full justify-center">
               <span className="w-2.5 h-2.5 rounded-full bg-[#eab308] ring-4 ring-yellow-100 dark:ring-yellow-950/60 shrink-0" />
-              <span className="h-0.5 w-3 @xs:w-6 @sm:w-10 bg-slate-200 dark:bg-slate-700 mx-1" />
+              <span className="radar-status-connector h-0.5 w-3 @xs:w-6 @sm:w-10 bg-slate-200 dark:bg-slate-700 mx-1" />
             </div>
             <div className="text-[10px] font-semibold text-serene-text-secondary dark:text-serene-text-darkSecondary mt-1 whitespace-nowrap">
               Later
             </div>
             <div className="text-[10px] text-serene-text-muted dark:text-serene-text-darkMuted whitespace-nowrap">
-              {tierCounts.later} {tierCounts.later === 1 ? 'task' : 'tasks'}
+              {tierCounts.later}<span className="hidden md:inline"> {tierCounts.later === 1 ? 'task' : 'tasks'}</span>
             </div>
           </div>
 
@@ -1179,23 +1243,13 @@ export const CommitmentRadarWidget: React.FC<CommitmentRadarWidgetProps> = React
               Long term
             </div>
             <div className="text-[10px] text-serene-text-muted dark:text-serene-text-darkMuted whitespace-nowrap">
-              {tierCounts.longTerm} {tierCounts.longTerm === 1 ? 'task' : 'tasks'}
+              {tierCounts.longTerm}<span className="hidden md:inline"> {tierCounts.longTerm === 1 ? 'task' : 'tasks'}</span>
             </div>
           </div>
         </div>
       </div>
     </div>
 
-    {previewTaskId && tasks.some((t) => t.id === previewTaskId) && (
-      <TaskPreviewPopUp
-        task={tasks.find((t) => t.id === previewTaskId)!}
-        onClose={() => setPreviewTaskId(null)}
-        onOpenTask={(id) => {
-          setPreviewTaskId(null);
-          onSelectTask?.(id);
-        }}
-      />
-    )}
     </>
   );
 });
