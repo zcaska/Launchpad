@@ -847,7 +847,7 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
       <div
         inert={Boolean(completedTask)}
         data-focus-completing={completedTask ? true : undefined}
-        className={`flex md:hidden flex-col w-full bg-white dark:bg-serene-surface-dark border border-serene-border-light dark:border-serene-border-dark rounded-xl p-2.5 shadow-subtle hover:shadow-card transition-all justify-between ${className}`}
+        className={`flex md:hidden flex-col w-full bg-white dark:bg-serene-surface-dark border border-serene-border-light dark:border-serene-border-dark rounded-xl p-3 sm:p-3.5 shadow-subtle hover:shadow-card transition-all justify-between ${className}`}
       >
         {/* 1. TOP HEADER: PRIMARY FOCUS (Mobile - with Info icon, no duplicate due date) */}
         <div className="flex items-center justify-between gap-3 mb-2.5">
@@ -855,52 +855,52 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
             <span className="p-1.5 rounded-lg bg-teal-50 dark:bg-teal-950/40 text-teal-700 dark:text-teal-400 shrink-0">
               <Target className="w-4 h-4" />
             </span>
-            <h2 className="text-base font-semibold text-serene-text-primary dark:text-serene-text-darkPrimary">
+            <h2 className="text-base sm:text-lg font-bold text-serene-text-primary dark:text-serene-text-darkPrimary">
               Primary focus
             </h2>
-            <Info className="w-3.5 h-3.5 text-stone-400 shrink-0" />
+            <Info className="w-4 h-4 text-stone-400 shrink-0" />
           </div>
           {renderVisualTaskSwitcher()}
         </div>
 
         {/* 2. ACTIVE TASK HIGHLIGHT CARD (ROUNDED PINK/ROSE-TINTED CONTAINER) */}
-        <div className="bg-[#fff5f5] dark:bg-rose-950/20 border border-rose-100 dark:border-rose-900/35 rounded-2xl p-3 sm:p-3.5 space-y-2.5 transition-colors">
+        <div className="bg-[#fff5f5] dark:bg-rose-950/20 border border-rose-100 dark:border-rose-900/35 rounded-2xl p-3.5 sm:p-4 space-y-3 transition-colors">
           {/* Row 1: Badges (left) and Compact Quick Actions (right) */}
           <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-1.5 flex-wrap">
+            <div className="flex items-center gap-2 flex-wrap">
               <span
-                className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${priorityColorClass}`}
+                className={`px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${priorityColorClass}`}
               >
                 {(activeTask.priority || 'high').toUpperCase()}
               </span>
-              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300">
+              <span className="px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300">
                 {urgency.badgeText.toUpperCase()}
               </span>
             </div>
 
             {/* Quick Actions in a compact row: Chevron to open in Tasks + Overflow Menu */}
-            <div className="flex items-center gap-1.5 shrink-0">
+            <div className="flex items-center gap-2 shrink-0">
               <button
                 type="button"
                 onClick={() => onPreviewTask?.(activeTask.id)}
-                className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-white/80 dark:bg-stone-900/60 border border-rose-200/60 dark:border-rose-900/40 flex items-center justify-center text-stone-500 hover:text-stone-800 dark:hover:text-stone-200 hover:bg-white dark:hover:bg-stone-800 transition-all cursor-pointer shadow-2xs"
+                className="w-8 h-8 rounded-lg bg-white/80 dark:bg-stone-900/60 border border-rose-200/60 dark:border-rose-900/40 flex items-center justify-center text-stone-500 hover:text-stone-800 dark:hover:text-stone-200 hover:bg-white dark:hover:bg-stone-800 transition-all cursor-pointer shadow-2xs"
                 title="Open in Tasks"
               >
-                <ChevronRight className="w-3.5 h-3.5" />
+                <ChevronRight className="w-4 h-4" />
               </button>
 
               <div className="relative shrink-0" ref={mobileOverflowRef}>
                 <button
                   type="button"
                   onClick={() => setIsOverflowMenuOpen((prev) => !prev)}
-                  className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-white/80 dark:bg-stone-900/60 border border-rose-200/60 dark:border-rose-900/40 flex items-center justify-center text-stone-500 hover:text-stone-800 dark:hover:text-stone-200 hover:bg-white dark:hover:bg-stone-800 transition-all cursor-pointer shadow-2xs"
+                  className="w-8 h-8 rounded-lg bg-white/80 dark:bg-stone-900/60 border border-rose-200/60 dark:border-rose-900/40 flex items-center justify-center text-stone-500 hover:text-stone-800 dark:hover:text-stone-200 hover:bg-white dark:hover:bg-stone-800 transition-all cursor-pointer shadow-2xs"
                   title="More actions"
                 >
-                  <MoreHorizontal className="w-3.5 h-3.5" />
+                  <MoreHorizontal className="w-4 h-4" />
                 </button>
 
                 {isOverflowMenuOpen && (
-                  <div className="absolute right-0 top-full mt-1.5 w-48 bg-white dark:bg-serene-surface-dark border border-serene-border-light dark:border-serene-border-dark rounded-xl shadow-card py-1.5 z-30 animate-fadeIn text-xs">
+                  <div className="absolute right-0 top-full mt-1.5 w-48 bg-white dark:bg-serene-surface-dark border border-serene-border-light dark:border-serene-border-dark rounded-xl shadow-card py-1.5 z-30 animate-fadeIn text-xs sm:text-sm">
                     <button
                       type="button"
                       onClick={() => {
@@ -909,7 +909,7 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
                       }}
                       className="w-full text-left px-3 py-2 flex items-center gap-2 hover:bg-stone-100 dark:hover:bg-stone-800 text-serene-text-primary dark:text-serene-text-darkPrimary transition-colors"
                     >
-                      <Edit3 className="w-3.5 h-3.5 text-serene-text-muted" />
+                      <Edit3 className="w-4 h-4 text-serene-text-muted" />
                       <span>Edit task details</span>
                     </button>
 
@@ -921,7 +921,7 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
                       }}
                       className="w-full text-left px-3 py-2 flex items-center gap-2 hover:bg-stone-100 dark:hover:bg-stone-800 text-serene-text-primary dark:text-serene-text-darkPrimary transition-colors"
                     >
-                      <Check className="w-3.5 h-3.5 text-teal-600" />
+                      <Check className="w-4 h-4 text-teal-600" />
                       <span>{activeTask.isDone ? 'Mark as incomplete' : 'Mark as complete'}</span>
                     </button>
 
@@ -930,7 +930,7 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
                       onClick={handleCopyTitle}
                       className="w-full text-left px-3 py-2 flex items-center gap-2 hover:bg-stone-100 dark:hover:bg-stone-800 text-serene-text-primary dark:text-serene-text-darkPrimary transition-colors"
                     >
-                      <Copy className="w-3.5 h-3.5 text-serene-text-muted" />
+                      <Copy className="w-4 h-4 text-serene-text-muted" />
                       <span>{copyFeedback ? 'Copied!' : 'Copy task title'}</span>
                     </button>
                   </div>
@@ -941,7 +941,7 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
 
           {/* Row 2: Title & Description */}
           <div>
-            <h3 className="text-xl font-bold text-serene-text-primary dark:text-serene-text-darkPrimary leading-snug break-words">
+            <h3 className="text-xl sm:text-2xl font-bold text-serene-text-primary dark:text-serene-text-darkPrimary leading-snug break-words">
               <button
                 type="button"
                 onClick={() => onPreviewTask?.(activeTask.id)}
@@ -953,33 +953,33 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
             </h3>
 
             {activeTask.description && (
-              <div className="mt-0.5">
+              <div className="mt-1">
                 <SafeDescription
                   text={activeTask.description}
-                  className="text-xs sm:text-sm text-serene-text-secondary dark:text-serene-text-darkSecondary line-clamp-2"
+                  className="text-sm sm:text-base text-serene-text-secondary dark:text-serene-text-darkSecondary line-clamp-2"
                 />
               </div>
             )}
           </div>
 
           {/* Row 3: Deadline & Schedule Box (Streamlined dense layout matching reference) */}
-          <div className="rounded-xl border border-serene-border-light/80 dark:border-serene-border-dark bg-white p-3 dark:bg-serene-surfaceAlt-dark space-y-2 shadow-2xs" data-testid="focus-deadline-mobile">
+          <div className="rounded-xl border border-serene-border-light/80 dark:border-serene-border-dark bg-white p-3.5 dark:bg-serene-surfaceAlt-dark space-y-2.5 shadow-2xs" data-testid="focus-deadline-mobile">
             {/* Top row: Date and Time separated by divider */}
-            <div className="flex items-center gap-2.5">
-              <div className="flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-serene-text-primary dark:text-serene-text-darkPrimary">
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-1.5 text-sm sm:text-base font-bold text-serene-text-primary dark:text-serene-text-darkPrimary">
                 <Calendar className="w-4 h-4 text-slate-500 dark:text-slate-400 shrink-0" />
                 <span>{deadlineDateLabel}</span>
               </div>
-              <div className="h-3.5 w-px bg-slate-200 dark:bg-slate-700" />
-              <div className="flex items-center gap-1.5 text-sm sm:text-base font-bold tabular-nums text-serene-text-primary dark:text-serene-text-darkPrimary">
+              <div className="h-4 w-px bg-slate-200 dark:bg-slate-700" />
+              <div className="flex items-center gap-1.5 text-base sm:text-lg font-bold tabular-nums text-serene-text-primary dark:text-serene-text-darkPrimary">
                 <Clock className="w-4 h-4 text-slate-500 dark:text-slate-400 shrink-0" />
                 <span>{deadlineTimeLabel}</span>
               </div>
             </div>
 
             {/* Middle row: Countdown left, Estimate right */}
-            <div className="flex items-center justify-between text-xs font-semibold">
-              <span className="text-serene-text-secondary dark:text-serene-text-darkSecondary font-bold">
+            <div className="flex items-center justify-between text-sm sm:text-base font-bold">
+              <span className="text-rose-600 dark:text-rose-400">
                 {deadlineMetrics.countdownText}
               </span>
               {durationEstimate && (
@@ -988,14 +988,14 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
                   onClick={() => onOpenTaskEdit?.(activeTask)}
                   className="inline-flex items-center gap-1 text-purple-700 dark:text-purple-300 font-bold hover:underline"
                 >
-                  <Waves className="w-3.5 h-3.5 shrink-0" />
+                  <Waves className="w-4 h-4 shrink-0" />
                   <span>{durationEstimate} est.</span>
                 </button>
               )}
             </div>
 
             {/* Visual Progress Bar */}
-            <div className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+            <div className="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
               <div
                 className="h-full bg-rose-600 dark:bg-rose-400 rounded-full transition-all duration-300"
                 style={{ width: `${deadlineMetrics.progressPercent}%` }}
@@ -1008,9 +1008,9 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
 
           {/* Row 5: Subtask List Section (Mobile) */}
           {subtaskState.totalCount > 0 && (
-            <div className="pt-2 border-t border-rose-200/40 dark:border-rose-900/30 space-y-2">
+            <div className="pt-2.5 border-t border-rose-200/40 dark:border-rose-900/30 space-y-2.5">
               <div className="flex items-center justify-between gap-2">
-                <span className="text-sm font-bold text-serene-text-primary dark:text-serene-text-darkPrimary">
+                <span className="text-sm sm:text-base font-bold text-serene-text-primary dark:text-serene-text-darkPrimary">
                   Subtasks ({subtaskState.completedCount} / {subtaskState.totalCount})
                 </span>
 
@@ -1018,9 +1018,9 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
                   <button
                     type="button"
                     onClick={() => setIsProcedureMenuOpen((prev) => !prev)}
-                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-serene-text-secondary dark:text-serene-text-darkSecondary hover:text-serene-text-primary dark:hover:text-serene-text-darkPrimary py-1 px-2 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800/60 transition-colors cursor-pointer"
+                    className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-serene-text-secondary dark:text-serene-text-darkSecondary hover:text-serene-text-primary dark:hover:text-serene-text-darkPrimary py-1 px-2.5 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800/60 transition-colors cursor-pointer"
                   >
-                    <ListTodo className="w-3.5 h-3.5" />
+                    <ListTodo className="w-4 h-4" />
                     <span>
                       {procedureSort === 'procedure'
                         ? 'Step by step'
@@ -1032,7 +1032,7 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
                   </button>
 
                   {isProcedureMenuOpen && (
-                    <div className="absolute right-0 top-full mt-1 w-44 bg-white dark:bg-serene-surface-dark border border-serene-border-light dark:border-serene-border-dark rounded-xl shadow-card py-1 z-20 animate-fadeIn text-xs">
+                    <div className="absolute right-0 top-full mt-1 w-44 bg-white dark:bg-serene-surface-dark border border-serene-border-light dark:border-serene-border-dark rounded-xl shadow-card py-1 z-20 animate-fadeIn text-xs sm:text-sm">
                       <button
                         type="button"
                         onClick={() => {
@@ -1080,8 +1080,8 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
               <div
                 className={
                   isSubtasksExpanded
-                    ? 'space-y-1.5 max-h-52 overflow-y-auto overscroll-contain pr-1 scrollbar-thin'
-                    : 'space-y-1.5 overflow-hidden'
+                    ? 'space-y-2 max-h-56 overflow-y-auto overscroll-contain pr-1 scrollbar-thin'
+                    : 'space-y-2 overflow-hidden'
                 }
               >
                 {subtaskState.visibleSubtasks.map((subtask) => {
@@ -1090,9 +1090,9 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
                   return (
                     <div
                       key={subtask.id}
-                      className="flex items-center justify-between gap-2 py-1.5 px-2 rounded-xl bg-stone-50/70 dark:bg-stone-900/30 border border-stone-200/60 dark:border-stone-800/50 hover:bg-stone-100/80 dark:hover:bg-stone-800/40 transition-colors"
+                      className="flex items-center justify-between gap-2.5 py-2 px-2.5 rounded-xl bg-stone-50/70 dark:bg-stone-900/30 border border-stone-200/60 dark:border-stone-800/50 hover:bg-stone-100/80 dark:hover:bg-stone-800/40 transition-colors"
                     >
-                      <div className="flex items-center gap-2 min-w-0 flex-1">
+                      <div className="flex items-center gap-2.5 min-w-0 flex-1">
                         {/* Drag grip dots handle */}
                         <DotsSixVertical className="w-4 h-4 text-stone-400 dark:text-stone-500 shrink-0" />
 
@@ -1100,7 +1100,7 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
                         <button
                           type="button"
                           onClick={() => onToggleSubtask?.(activeTask.id, subtask.id)}
-                          className="w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-all cursor-pointer focus:outline-none"
+                          className="w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all cursor-pointer focus:outline-none"
                           style={{
                             borderColor: subtask.isDone ? '#0f4c4c' : 'currentColor',
                             backgroundColor: subtask.isDone ? '#0f4c4c' : 'transparent',
@@ -1108,15 +1108,15 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
                           title={subtask.isDone ? 'Mark as incomplete' : 'Mark as complete'}
                         >
                           {subtask.isDone ? (
-                            <Check className="w-2.5 h-2.5 text-white stroke-[3]" />
+                            <Check className="w-3 h-3 text-white stroke-[3]" />
                           ) : (
-                            <span className="w-1.5 h-1.5 rounded-full opacity-0 hover:opacity-30 bg-current transition-opacity" />
+                            <span className="w-2 h-2 rounded-full opacity-0 hover:opacity-30 bg-current transition-opacity" />
                           )}
                         </button>
 
                         <div className="min-w-0 flex-1">
                           <p
-                            className={`text-xs sm:text-sm font-semibold break-words ${
+                            className={`text-sm sm:text-base font-semibold break-words ${
                               subtask.isDone
                                 ? 'line-through text-serene-text-muted dark:text-serene-text-darkMuted'
                                 : 'text-serene-text-primary dark:text-serene-text-darkPrimary'
@@ -1125,29 +1125,29 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
                             {title}
                           </p>
                           {subtitle && (
-                            <p className="text-[10px] text-serene-text-muted dark:text-serene-text-darkMuted break-words">
+                            <p className="text-xs text-serene-text-muted dark:text-serene-text-darkMuted break-words mt-0.5">
                               {subtitle}
                             </p>
                           )}
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-0.5 shrink-0 text-stone-400">
+                      <div className="flex items-center gap-1 shrink-0 text-stone-400">
                         <button
                           type="button"
                           onClick={() => onOpenTaskEdit?.(activeTask)}
-                          className="p-1 rounded-md hover:bg-stone-200 dark:hover:bg-stone-700 hover:text-stone-700 dark:hover:text-stone-200 transition-colors cursor-pointer"
+                          className="p-1.5 rounded-md hover:bg-stone-200 dark:hover:bg-stone-700 hover:text-stone-700 dark:hover:text-stone-200 transition-colors cursor-pointer"
                           title="View subtask details"
                         >
-                          <FileText className="w-3.5 h-3.5" />
+                          <FileText className="w-4 h-4" />
                         </button>
                         <button
                           type="button"
                           onClick={() => onToggleSubtask?.(activeTask.id, subtask.id)}
-                          className="p-1 rounded-md hover:bg-stone-200 dark:hover:bg-stone-700 hover:text-stone-700 dark:hover:text-stone-200 transition-colors cursor-pointer"
+                          className="p-1.5 rounded-md hover:bg-stone-200 dark:hover:bg-stone-700 hover:text-stone-700 dark:hover:text-stone-200 transition-colors cursor-pointer"
                           title="More options"
                         >
-                          <MoreVertical className="w-3.5 h-3.5" />
+                          <MoreVertical className="w-4 h-4" />
                         </button>
                       </div>
                     </div>
@@ -1159,7 +1159,7 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
                 <button
                   type="button"
                   onClick={() => setIsSubtasksExpanded((prev) => !prev)}
-                  className="w-full pt-1 pb-0.5 text-center text-xs font-semibold text-serene-text-muted dark:text-serene-text-darkMuted hover:text-serene-primary dark:hover:text-serene-primary-dark transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                  className="w-full pt-1.5 pb-0.5 text-center text-xs sm:text-sm font-semibold text-serene-text-muted dark:text-serene-text-darkMuted hover:text-serene-primary dark:hover:text-serene-primary-dark transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
                 >
                   <span>
                     {isSubtasksExpanded
@@ -1167,9 +1167,9 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
                       : `+ ${subtaskState.hiddenCount} more subtasks`}
                   </span>
                   {isSubtasksExpanded ? (
-                    <ChevronUp className="w-3.5 h-3.5" />
+                    <ChevronUp className="w-4 h-4" />
                   ) : (
-                    <ChevronDown className="w-3.5 h-3.5" />
+                    <ChevronDown className="w-4 h-4" />
                   )}
                 </button>
               )}
@@ -1177,11 +1177,11 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
           )}
 
           {/* Row 6: Action Button (Mobile) - Full-width CTA */}
-          <div className="pt-1.5">
+          <div className="pt-2">
             <button
               type="button"
               onClick={() => onCompleteTask?.(activeTask)}
-              className="w-full min-h-[44px] bg-[#0f4c4c] hover:bg-[#0a3535] active:scale-[0.99] dark:bg-teal-700 dark:hover:bg-teal-600 text-white font-semibold text-xs sm:text-sm py-2.5 px-4 rounded-xl shadow-xs flex items-center justify-center gap-2 transition-all cursor-pointer"
+              className="w-full min-h-[46px] bg-[#0f4c4c] hover:bg-[#0a3535] active:scale-[0.99] dark:bg-teal-700 dark:hover:bg-teal-600 text-white font-semibold text-sm sm:text-base py-3 px-4 rounded-xl shadow-xs flex items-center justify-center gap-2 transition-all cursor-pointer"
               title="Mark task as complete"
             >
               <Check className="w-4 h-4 stroke-[2.5]" />
