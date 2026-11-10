@@ -18,8 +18,8 @@ const categories: QuoteCategory[] = [
   'overwhelmed',
   'inactivitySlump',
   'coffeeBreak',
-  'focusStart',
   'welcomeBack',
+  'companionship',
 ];
 
 for (const cat of categories) {

@@ -1,6 +1,7 @@
 import { memo, useState, useEffect } from 'react';
 import { PetState, PetTier } from '../../utils/petState';
 import { Mascot } from './Mascot';
+import { usePetCelebration } from './usePetCelebration';
 import {
   MascotExpressionId,
   MascotPoseId,
@@ -16,10 +17,14 @@ import {
  * - Lighter coral rounded side fins (#FF9A6B), controllable pose
  * - Adaptive minimal eyes (#1A1A1A) with glossy white highlights
  * - Tiny expressive mouth capable of smile, open, down, line
- * - No arms, no legs, no feet, no ears, no belly marks, no clothes
+ * - Original silhouette with cosmetic accessories unlocked by earned levels
  * - Reads with striking clarity on Launchpad's dark-charcoal UI (#13171d)
  */
 export interface PetSpriteProps {
+  celebrationSequence?: number;
+  onCelebrationSettled?: (sequence: number) => void;
+  evolutionLevel?: number;
+  paused?: boolean;
   state: PetState;
   tier: PetTier;
   facing: 1 | -1;
@@ -37,7 +42,7 @@ export function resolveMascotVisual(
   state: PetState,
   petted: boolean,
   isDragging: boolean,
-  idleMicroExpr: 'calm' | 'curious' | 'welcoming' = 'calm',
+  idleMicroExpr: MascotExpressionId = 'calm',
   isSippingCoffee: boolean = false
 ): {
   expression: MascotExpressionId;
@@ -83,7 +88,7 @@ export function resolveMascotVisual(
   switch (state) {
     case 'happy':
       return {
-        expression: 'happy',
+        expression: 'excited',
         pose: 'task_completion',
         leftFinAngle: 20,
         rightFinAngle: 20,
@@ -103,7 +108,7 @@ export function resolveMascotVisual(
 
     case 'welcome-back':
       return {
-        expression: 'curious',
+        expression: 'welcoming',
         pose: 'return_after_away',
         leftFinAngle: 18,
         rightFinAngle: 6,
@@ -111,17 +116,7 @@ export function resolveMascotVisual(
         sparkles: false,
       };
 
-    case 'focused':
-      return {
-        expression: 'focused',
-        pose: 'focus',
-        leftFinAngle: -6,
-        rightFinAngle: -6,
-        glow: true,
-        sparkles: false,
-      };
-
-    case 'curious':
+case 'curious':
       return {
         expression: 'curious',
         leftFinAngle: 14,
@@ -178,7 +173,7 @@ export function resolveMascotVisual(
 
     case 'roaming':
       return {
-        expression: 'welcoming',
+        expression: idleMicroExpr === 'calm' ? 'welcoming' : idleMicroExpr,
         leftFinAngle: 10,
         rightFinAngle: 10,
         glow: false,
@@ -206,7 +201,7 @@ export function resolveMascotVisual(
         };
       }
       return {
-        expression: 'calm',
+        expression: idleMicroExpr,
         pose: 'idle',
         leftFinAngle: 0,
         rightFinAngle: 0,
@@ -236,8 +231,6 @@ export function getPetMotionClass(
       return 'pet-motion-major-celebration';
     case 'welcome-back':
       return 'pet-motion-return-greeting';
-    case 'focused':
-      return 'pet-motion-focus-steady';
     case 'sad':
     case 'sleeping':
       return 'pet-motion-low-energy';
@@ -254,6 +247,10 @@ export function getPetMotionClass(
 }
 
 function PetSpriteComponent({
+  celebrationSequence = 0,
+  onCelebrationSettled,
+  evolutionLevel = 1,
+  paused = false,
   state,
   tier,
   facing,
@@ -263,10 +260,11 @@ function PetSpriteComponent({
   reducedMotion,
   petted,
 }: PetSpriteProps) {
-  const [idleMicroExpr, setIdleMicroExpr] = useState<'calm' | 'curious' | 'welcoming'>('calm');
+  const [idleMicroExpr, setIdleMicroExpr] = useState<MascotExpressionId>('calm');
 
   useEffect(() => {
-    if (state !== 'idle' || petted || isDragging || reducedMotion) {
+    const ambient = state === 'idle' || state === 'roaming';
+    if (!ambient || petted || isDragging || paused) {
       setIdleMicroExpr('calm');
       return;
     }
@@ -274,6 +272,8 @@ function PetSpriteComponent({
     let cycleTimeout: ReturnType<typeof setTimeout> | null = null;
     let revertTimeout: ReturnType<typeof setTimeout> | null = null;
     let isCancelled = false;
+    const expressions: MascotExpressionId[] = ['curious', 'happy', 'welcoming', 'surprised'];
+    let expressionIndex = Math.floor(Math.random() * expressions.length);
 
     const scheduleDrift = () => {
       // Ambient interval between 5-9s of calm
@@ -282,7 +282,8 @@ function PetSpriteComponent({
       cycleTimeout = setTimeout(() => {
         if (isCancelled) return;
         // Occasionally show gentle micro-attentive curiosity ('curious' or 'welcoming')
-        const nextExpr: 'curious' | 'welcoming' = Math.random() < 0.5 ? 'curious' : 'welcoming';
+        if (document.hidden) { scheduleDrift(); return; }
+        const nextExpr = expressions[expressionIndex++ % expressions.length];
         setIdleMicroExpr(nextExpr);
 
         // Hold for 2.8-3.6s, then smoothly return to 'calm'
@@ -302,16 +303,18 @@ function PetSpriteComponent({
       if (cycleTimeout) clearTimeout(cycleTimeout);
       if (revertTimeout) clearTimeout(revertTimeout);
     };
-  }, [state, petted, isDragging, reducedMotion]);
+  }, [state === 'idle' || state === 'roaming', petted, isDragging, paused]);
 
-  const visual = resolveMascotVisual(state, petted, isDragging, idleMicroExpr, isSippingCoffee);
+  const celebration = usePetCelebration(celebrationSequence, reducedMotion || isDragging, onCelebrationSettled);
+  const visualState = celebration.spinning && state !== 'celebration-streak' ? 'happy' : state;
+  const visual = resolveMascotVisual(visualState, petted, isDragging, idleMicroExpr, isSippingCoffee);
   const motionClass = getPetMotionClass(state, reducedMotion, isDragging, petted);
 
   // Streak master tier adds a rich warm amber ambient aura
-  const isStreakMaster = tier === 'streak-master';
+  const isStreakMaster = tier === 'streak-master' || evolutionLevel >= 6;
 
   const showCoffeeMug = Boolean(isSippingCoffee || state === 'coffee-break');
-  const showLaptop = state === 'focused';
+
 
   return (
     <div
@@ -326,9 +329,6 @@ function PetSpriteComponent({
         /* Mascot Motion System Styles & Keyframes (Launchpad Mascot Animation Sheet) */
         .pet-motion-idle-float {
           animation: pet-idle-float 3.2s cubic-bezier(0.65, 0, 0.35, 1) infinite;
-        }
-        .pet-motion-focus-steady {
-          animation: pet-focus-steady 3.6s cubic-bezier(0.65, 0, 0.35, 1) infinite;
         }
         .pet-motion-routine-bounce {
           animation: pet-routine-bounce 0.85s cubic-bezier(0.33, 1, 0.68, 1) 1;
@@ -351,15 +351,11 @@ function PetSpriteComponent({
 
         /* 1. Context-aware gentle floating (6-12px vertical range, easeInOutCubic) */
         @keyframes pet-idle-float {
-          0%, 100% { transform: translateY(0px) rotate(0deg); }
-          50%      { transform: translateY(-9px) rotate(0.6deg); }
+          0%, 100% { transform: translateY(0px); }
+          50%      { transform: translateY(-7px); }
         }
 
         /* 2. Focused working float (calm, low amplitude, stable over laptop) */
-        @keyframes pet-focus-steady {
-          0%, 100% { transform: translateY(0px); }
-          50%      { transform: translateY(-3px); }
-        }
 
         /* 3. Routine task completion: subtle satisfaction (0.6-1.0s, easeOutCubic) */
         @keyframes pet-routine-bounce {
@@ -435,7 +431,6 @@ function PetSpriteComponent({
         @media (prefers-reduced-motion: reduce) {
           .lp-reduced .lp-sprite-motion,
           .lp-reduced .pet-motion-idle-float,
-          .lp-reduced .pet-motion-focus-steady,
           .lp-reduced .pet-motion-routine-bounce,
           .lp-reduced .pet-motion-major-celebration,
           .lp-reduced .pet-motion-return-greeting,
@@ -451,7 +446,6 @@ function PetSpriteComponent({
         }
         .lp-reduced .lp-sprite-motion,
         .lp-reduced .pet-motion-idle-float,
-        .lp-reduced .pet-motion-focus-steady,
         .lp-reduced .pet-motion-routine-bounce,
         .lp-reduced .pet-motion-major-celebration,
         .lp-reduced .pet-motion-return-greeting,
@@ -467,6 +461,7 @@ function PetSpriteComponent({
       `}</style>
 
       {/* Synchronized motion wrapper: mascot & attached props animate together */}
+      <div ref={celebration.ref} data-testid="pet-completion-spin" style={{ transformOrigin: '50% 50%' }}>
       <div
         className={`lp-sprite-motion relative inline-flex items-center justify-center ${motionClass}`}
         style={{
@@ -474,6 +469,7 @@ function PetSpriteComponent({
         }}
       >
         <Mascot
+          evolutionLevel={evolutionLevel}
           expression={visual.expression}
           pose={visual.pose}
           leftFinAngle={visual.leftFinAngle}
@@ -486,8 +482,8 @@ function PetSpriteComponent({
           isFlying={isFlying}
         />
 
-        {/* Animated props overlay (steaming coffee mug & working laptop) */}
-        {(showCoffeeMug || showLaptop) && (
+        {/* Animated props overlay (steaming coffee mug) */}
+        {showCoffeeMug && (
           <svg
             width={84}
             height={70}
@@ -552,86 +548,6 @@ function PetSpriteComponent({
             </g>
           )}
 
-          {/* Working Laptop (Faithful to Reference Sheet §4: positioned in front of mascot, screen facing mascot, back of lid with Launchpad emblem facing viewer) */}
-          {showLaptop && (
-            <g data-prop="laptop">
-              <defs>
-                <linearGradient id="pet-laptop-glow" x1="1" y1="0.5" x2="0" y2="0.5">
-                  <stop offset="0%" stopColor="#60A5FA" stopOpacity="0.65" />
-                  <stop offset="60%" stopColor="#38BDF8" stopOpacity="0.25" />
-                  <stop offset="100%" stopColor="#93C5FD" stopOpacity="0" />
-                </linearGradient>
-                <linearGradient id="pet-lid-gradient" x1="0" y1="0" x2="1" y2="1">
-                  <stop offset="0%" stopColor="#2E3C4F" />
-                  <stop offset="100%" stopColor="#1E293B" />
-                </linearGradient>
-              </defs>
-
-              {/* Soft luminous screen glow radiating from open screen toward mascot's face & chest */}
-              <ellipse
-                cx={64}
-                cy={63}
-                rx={12}
-                ry={9}
-                fill="url(#pet-laptop-glow)"
-                className={reducedMotion ? undefined : 'pet-screen-glow'}
-              />
-
-              {/* Laptop base / keyboard tray (resting in perspective between mascot's fin and screen) */}
-              <polygon
-                points="57,73 83,71 90,79 62,81"
-                fill="#334155"
-                stroke="#1E293B"
-                strokeWidth={0.6}
-              />
-              {/* Keyboard keys area on base */}
-              <polygon
-                points="63,74 81,72.5 85,76 65,77.5"
-                fill="#1E293B"
-                opacity={0.75}
-              />
-              {/* Spacebar / trackpad detail */}
-              <line
-                x1={68}
-                y1={78.5}
-                x2={76}
-                y2={78}
-                stroke="#64748B"
-                strokeWidth={0.8}
-                strokeLinecap="round"
-                opacity={0.85}
-              />
-
-              {/* Laptop open screen lid (back of lid facing viewer, angled in 3/4 perspective toward mascot) */}
-              <polygon
-                points="68,53 92,51 90,71 66,73"
-                fill="url(#pet-lid-gradient)"
-                stroke="#475569"
-                strokeWidth={0.7}
-              />
-
-              {/* Lid top edge highlight */}
-              <line
-                x1={68}
-                y1={53}
-                x2={92}
-                y2={51}
-                stroke="#64748B"
-                strokeWidth={0.9}
-                strokeLinecap="round"
-                opacity={0.85}
-              />
-
-              {/* Launchpad emblem on back of laptop lid */}
-              <g transform="translate(79, 61.5) scale(0.75)" opacity={0.85}>
-                <circle cx={0} cy={0} r={2.5} fill="#94A3B8" />
-                <path d="M 0 -2 L 1.2 1.5 L -1.2 1.5 Z" fill="#F8FAFC" />
-              </g>
-
-              {/* Laptop hinge line */}
-              <rect x={66.5} y={71.5} width={23.5} height={1.4} rx={0.6} fill="#0F172A" />
-            </g>
-          )}
         </svg>
       )}
 
@@ -658,6 +574,7 @@ function PetSpriteComponent({
           </svg>
         </div>
       )}
+      </div>
       </div>
     </div>
   );

@@ -14,6 +14,7 @@ import {
 } from '@phosphor-icons/react';
 import { QuickNote } from '../../types';
 import { TaskPreviewPopUp } from '../Tasks/TaskPreviewPopUp';
+import { defaultPeriodRange, tasksInPeriod } from '../../utils/taskPeriod';
 import {
   projectTasksToRadarCoordinates,
   RADAR_VIEWBOX,
@@ -22,7 +23,10 @@ import {
   calculateTaskUrgency,
   UrgencyTier,
   RadarProjectedNode,
+  formatTaskCountdown,
 } from '../../utils/taskUrgency';
+
+export { formatTaskCountdown };
 
 export interface CommitmentRadarWidgetProps {
   tasks: QuickNote[];
@@ -33,6 +37,7 @@ export interface CommitmentRadarWidgetProps {
 }
 
 export type RadarViewMode = 'radar' | 'list';
+type RadarPeriod = 'Today' | 'Weekly' | 'Monthly' | 'All time';
 
 /**
  * Visual styling token mapping aligned with Image 1 & Serene Hearth theme.
@@ -98,52 +103,6 @@ export const TIER_PRESENTATION_MAP: Record<UrgencyTier, TierPresentation> = {
 };
 
 /**
- * Derives human-friendly countdown strings matching Image 1:
- * "5h 35m left", "2 days left", "4 days left", "6 days left", "1 week left"
- */
-export function formatTaskCountdown(task: QuickNote, refDate: Date = new Date()): string {
-  const urgency = calculateTaskUrgency(task.deadline, refDate);
-
-  if (!urgency.deadlineDate || urgency.diffMs === null) {
-    return 'No deadline';
-  }
-
-  const diffMs = urgency.diffMs;
-
-  if (diffMs < 0) {
-    const overdueMins = Math.max(1, Math.round(Math.abs(diffMs) / 60000));
-    if (overdueMins < 60) return `${overdueMins}m overdue`;
-    const hours = Math.floor(overdueMins / 60);
-    const mins = overdueMins % 60;
-    if (hours < 24) return mins > 0 ? `${hours}h ${mins}m overdue` : `${hours}h overdue`;
-    const days = Math.floor(hours / 24);
-    const remHours = hours % 24;
-    return remHours > 0 ? `${days}d ${remHours}h overdue` : `${days}d overdue`;
-  }
-
-  const totalMins = Math.max(1, Math.round(diffMs / 60000));
-  const hours = Math.floor(totalMins / 60);
-  const mins = totalMins % 60;
-
-  if (hours < 24) {
-    if (hours === 0) return `${mins}m left`;
-    return mins > 0 ? `${hours}h ${mins}m left` : `${hours}h left`;
-  }
-
-  const days = Math.floor(hours / 24);
-  const remHours = hours % 24;
-  if (days < 7) {
-    if (remHours > 0) {
-      return `${days} ${days === 1 ? 'day' : 'days'} ${remHours}h left`;
-    }
-    return `${days} ${days === 1 ? 'day' : 'days'} left`;
-  }
-
-  const weeks = Math.round(days / 7);
-  return `${weeks} ${weeks === 1 ? 'week' : 'weeks'} left`;
-}
-
-/**
  * Truncates task titles gracefully for SVG node callout labels.
  */
 function truncateText(str: string, maxLength: number = 16): string {
@@ -159,6 +118,7 @@ export const CommitmentRadarWidget: React.FC<CommitmentRadarWidgetProps> = React
   className = '',
 }) => {
   const [viewMode, setViewMode] = useState<RadarViewMode>('radar');
+  const [period, setPeriod] = useState<RadarPeriod>('Today');
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
   const [previewTaskId, setPreviewTaskId] = useState<string | null>(null);
   const [selectedLegendTier, setSelectedLegendTier] = useState<UrgencyTier | 'critical_all' | null>(null);
@@ -220,8 +180,9 @@ export const CommitmentRadarWidget: React.FC<CommitmentRadarWidgetProps> = React
 
   // 1. Filter active pending tasks
   const pendingTasks = useMemo(() => {
-    return tasks.filter((t) => !t.isDone);
-  }, [tasks]);
+    const range = defaultPeriodRange(period, now);
+    return tasksInPeriod(tasks, period, now, range).filter((t) => !t.isDone);
+  }, [tasks, period, now]);
 
   // 2. Project tasks onto Concentric Radar coordinates
   const projectedNodes = useMemo<RadarProjectedNode[]>(() => {
@@ -287,7 +248,7 @@ export const CommitmentRadarWidget: React.FC<CommitmentRadarWidgetProps> = React
     if (tierCounts.total === 0) {
       return {
         title: 'Clear horizon',
-        subtitle: 'All commitments cleared. Pure vibes and open focus time.',
+        subtitle: 'No pending commitments in this view.',
         isOptimal: true,
       };
     }
@@ -303,7 +264,7 @@ export const CommitmentRadarWidget: React.FC<CommitmentRadarWidgetProps> = React
     if (tierCounts.critical > 3) {
       return {
         title: 'High workload',
-        subtitle: `${tierCounts.critical} tasks due today. Lock in on your top priority first.`,
+        subtitle: `${tierCounts.critical} tasks due within 24 hours. Start with your top priority.`,
         isOptimal: false,
       };
     }
@@ -311,10 +272,10 @@ export const CommitmentRadarWidget: React.FC<CommitmentRadarWidgetProps> = React
     // Default matching Image 1: "On track"
     return {
       title: 'On track',
-      subtitle: "You're cooking — everything on your plate is totally doable today.",
+      subtitle: `${tierCounts.total} pending ${tierCounts.total === 1 ? 'commitment' : 'commitments'} ${period === 'Today' ? 'due today' : period === 'Weekly' ? 'due this week' : period === 'Monthly' ? 'due this month' : 'across all dates'}.`,
       isOptimal: true,
     };
-  }, [tierCounts]);
+  }, [tierCounts, period]);
 
   // Filtered nodes if a legend tier is selected for interactive focus
   const visibleNodes = useMemo(() => {
@@ -342,7 +303,7 @@ export const CommitmentRadarWidget: React.FC<CommitmentRadarWidgetProps> = React
       {/* ===================================================================== */}
       {/* 1. TOP HEADER ROW                                                     */}
       {/* ===================================================================== */}
-      <div className="flex items-center justify-between gap-3 mb-2">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-2">
         {/* Left: Circle Plus, Title, Info Tooltip */}
         <div className="flex items-center gap-2 min-w-0">
           <span
@@ -382,7 +343,18 @@ export const CommitmentRadarWidget: React.FC<CommitmentRadarWidgetProps> = React
         </div>
 
         {/* Right: Accessible List/Radar Toggle & "View all tasks ->" */}
-        <div className="flex items-center gap-2.5 shrink-0">
+        <div className="ml-auto flex flex-wrap items-center gap-2.5">
+          <select aria-label="Commitment radar time period" value={period}
+            onChange={(event) => {
+              setPeriod(event.target.value as RadarPeriod);
+              setSelectedLegendTier(null);
+              setActiveTaskId(null);
+              setHoveredTaskId(null);
+              setPreviewTaskId(null);
+            }}
+            className="min-h-[44px] sm:min-h-[32px] rounded-lg border border-serene-border-light bg-serene-surfaceAlt-light px-2 text-xs text-serene-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-serene-primary dark:border-serene-border-dark dark:bg-serene-surfaceAlt-dark dark:text-serene-text-darkPrimary">
+            {(['Today', 'Weekly', 'Monthly', 'All time'] as RadarPeriod[]).map((value) => <option key={value}>{value}</option>)}
+          </select>
           {/* Accessible View Mode Toggle */}
           <button
             type="button"

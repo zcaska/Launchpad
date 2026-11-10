@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "test": "tsx src/utils/storage.test.ts && tsx src/services/cloudWorkspace.test.ts",
+    "test": "tsx src/utils/storage.test.ts && tsx src/services/cloudWorkspace.test.ts && tsx src/utils/taskPeriod.test.ts && tsx src/utils/petEvolution.test.ts && tsx src/utils/taskReflection.test.ts",
     "preview": "vite preview",
     "predeploy": "npm run build",
     "deploy": "gh-pages -d dist"

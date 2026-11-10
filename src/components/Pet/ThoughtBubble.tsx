@@ -20,7 +20,7 @@ export function ThoughtBubble({
       if (timerRef.current) clearTimeout(timerRef.current);
       timerRef.current = setTimeout(() => {
         onDismiss();
-      }, 4500);
+      }, Math.min(10000, Math.max(4500, (quote?.length ?? 0) * 38)));
     }
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);

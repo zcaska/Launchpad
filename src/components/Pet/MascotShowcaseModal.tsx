@@ -30,13 +30,10 @@ const EXPRESSIONS_LIST: MascotExpressionId[] = [
   'disappointed',
   'sleepy',
   'excited',
-  'focused',
-  'determined',
 ];
 
 const POSES_LIST: MascotPoseId[] = [
   'idle',
-  'focus',
   'low_energy',
   'task_completion',
   'return_after_away',

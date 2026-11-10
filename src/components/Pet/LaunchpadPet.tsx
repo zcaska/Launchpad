@@ -6,6 +6,7 @@ import { usePetMotion } from './usePetMotion';
 import { getPetQuote } from './petQuotes';
 import type { QuoteCategory } from './petQuotes';
 import type { PetState, PetTier } from '../../utils/petState';
+import { petEvolutionMessage, PET_EVOLUTION_REWARDS } from '../../utils/petEvolution';
 
 // Launchpad Mascot Pet — coordinator container.
 // Coordinates motion, thought bubbles, quotes, dragging, and pause states;
@@ -16,6 +17,7 @@ import type { PetState, PetTier } from '../../utils/petState';
 //   diffuse highlight #FFD6B3, shadow #E05A20, adaptive eyes #1A1A1A, shine #FFFFFF.
 
 export interface LaunchpadPetProps {
+  evolutionLevel?: number;
   controller: PetController;
   paused: boolean;
   onTogglePaused: () => void;
@@ -27,8 +29,9 @@ const STATE_QUOTE_CATEGORY_MAP: Partial<Record<PetState, QuoteCategory>> = {
   overwhelmed: 'overwhelmed',
   sad: 'inactivitySlump',
   'coffee-break': 'coffeeBreak',
-  focused: 'focusStart',
+
   'welcome-back': 'welcomeBack',
+  'celebration-streak': 'taskComplete',
 };
 
 function LaunchpadPetComponent({
@@ -36,8 +39,12 @@ function LaunchpadPetComponent({
   paused,
   onTogglePaused,
   tier,
+  evolutionLevel = 1,
 }: LaunchpadPetProps) {
   const state: PetState = controller.state;
+  // The user's explicit request for a living, animated companion uses the
+  // existing in-app pause control. Pausing still freezes every motion layer.
+  const reducedMotion = paused;
 
   // Hovering/petting reaction: a quick wiggle and a heart.
   const [petted, setPetted] = useState(false);
@@ -64,18 +71,29 @@ function LaunchpadPetComponent({
   const motion = usePetMotion({
     roaming: state === 'roaming',
     paused,
-    reducedMotion: paused,
-    focusActive: state === 'focused',
+    reducedMotion,
+    resting: state === 'happy' || state === 'celebration-streak' || state === 'sleeping' || state === 'sad',
   });
 
   // Single click: pet reaction, joyful wiggle, heart emote, and thought bubble
   const handlePetClick = useCallback(() => {
     if (motion.justDragged) return;
     onPet();
-    const quoteCat: QuoteCategory = STATE_QUOTE_CATEGORY_MAP[state] || 'welcomeBack';
-    setQuote(getPetQuote(quoteCat));
+    const quoteCat: QuoteCategory = STATE_QUOTE_CATEGORY_MAP[state] || 'companionship';
+    setQuote(`${getPetQuote(quoteCat)} ${petEvolutionMessage(evolutionLevel)}`);
     setQuoteVisible(true);
-  }, [motion.justDragged, onPet, state]);
+  }, [motion.justDragged, onPet, state, evolutionLevel]);
+
+  const previousLevel = useRef(evolutionLevel);
+  const levelUpUntil = useRef(0);
+  useEffect(() => {
+    if (evolutionLevel > previousLevel.current) {
+      levelUpUntil.current = Date.now() + 4500;
+      setQuote(`We reached level ${evolutionLevel} together! ${PET_EVOLUTION_REWARDS[evolutionLevel - 1]} unlocked.`);
+      setQuoteVisible(true);
+    }
+    previousLevel.current = evolutionLevel;
+  }, [evolutionLevel]);
 
   // Double click: deliberately pause / resume motion
   const handleDoubleClick = useCallback((e: React.MouseEvent) => {
@@ -94,7 +112,7 @@ function LaunchpadPetComponent({
     if (prevStateRef.current !== state) {
       prevStateRef.current = state;
       const cat = STATE_QUOTE_CATEGORY_MAP[state];
-      if (cat) {
+      if (cat && Date.now() >= levelUpUntil.current) {
         setQuote(getPetQuote(cat));
         setQuoteVisible(true);
       }
@@ -113,8 +131,6 @@ function LaunchpadPetComponent({
     switch (state) {
       case 'happy':
         return 'Ema: Massive W! Task crushed 🎉';
-      case 'focused':
-        return 'Ema: Shhh... we are locked in 🧠⚡';
       case 'celebration-streak':
         return 'Ema: Legendary streak! Pure aura 👑';
       case 'thinking':
@@ -172,18 +188,22 @@ function LaunchpadPetComponent({
               ? { filter: 'drop-shadow(0 0 6px rgba(245,158,11,.6))' }
               : undefined),
           }}
-          aria-label={`Launchpad pet, ${state}. ${paused ? 'Movement paused' : 'Moving'}. Click to pet, drag to move, double-click to ${paused ? 'resume' : 'pause'} movement`}
-          title={petStatusMessage}
+          aria-label={`Launchpad pet, ${state}. Level ${evolutionLevel}. ${paused ? 'Movement paused' : 'Moving'}. Click to pet, drag to move, double-click to ${paused ? 'resume' : 'pause'} movement`}
+          title={`${petStatusMessage}\n${petEvolutionMessage(evolutionLevel)}`}
           aria-pressed={paused}
         >
           <PetSprite
+            evolutionLevel={evolutionLevel}
+            celebrationSequence={controller.celebrationSequence}
+            onCelebrationSettled={controller.settleCelebration}
+            paused={paused}
             state={state}
             tier={tier}
             facing={motion.facing}
             isFlying={motion.isFlying}
             isDragging={motion.isDragging}
             isSippingCoffee={state === 'coffee-break'}
-            reducedMotion={paused}
+            reducedMotion={reducedMotion}
             petted={petted}
           />
         </button>

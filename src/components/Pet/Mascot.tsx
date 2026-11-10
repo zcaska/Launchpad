@@ -8,8 +8,11 @@ import {
   MASCOT_EXPRESSIONS,
   MASCOT_STATE_POSES,
 } from './mascotManifest';
+import { petAccessories } from '../../utils/petEvolution';
 
 export interface MascotProps {
+  /** Earned companion level; accessories are cosmetic and never alter rewards. */
+  evolutionLevel?: number;
   /** Expression preset (e.g. 'calm', 'curious', 'happy', etc.) */
   expression?: MascotExpressionId;
   /** High-level state pose preset (e.g. 'idle', 'focus', 'task_completion', etc.) */
@@ -292,7 +295,8 @@ function SparkleStar({ x, y, size = 6, delay = 0 }: { x: number; y: number; size
 }
 
 function MascotComponent({
-  expression = 'calm',
+  expression,
+  evolutionLevel = 1,
   pose,
   leftFinAngle: overrideLeftFin,
   rightFinAngle: overrideRightFin,
@@ -314,7 +318,8 @@ function MascotComponent({
 
   // Resolve active expression and pose configurations
   const activePoseConfig = pose ? MASCOT_STATE_POSES[pose] : undefined;
-  const effectiveExpressionId = activePoseConfig ? activePoseConfig.expression : expression;
+  const effectiveExpressionId = expression ?? activePoseConfig?.expression ?? 'calm';
+  const accessories = petAccessories(evolutionLevel);
   const exprConfig = MASCOT_EXPRESSIONS[effectiveExpressionId] ?? MASCOT_EXPRESSIONS.calm;
 
   // Resolve values with priority: explicit prop > pose override > expression preset
@@ -361,6 +366,7 @@ function MascotComponent({
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       shapeRendering="geometricPrecision"
+      data-expression={effectiveExpressionId}
       className={`lp-mascot select-none transition-transform duration-300 ${
         reducedMotion ? 'lp-reduced' : ''
       } ${isFlying ? 'mascot-is-flying' : ''} ${className}`.trim()}
@@ -424,18 +430,44 @@ function MascotComponent({
         .lp-mascot.mascot-is-flying .mascot-fin-breathe-r { animation: mascot-fin-flutter 0.3s ease-in-out infinite !important; }
         .lp-mascot .mascot-sparkle     { animation: mascot-sparkle 1.8s ease-in-out infinite; }
         .lp-mascot .mascot-eye-blink   { animation: mascot-blink 4.8s steps(1, end) infinite; transform-box: fill-box; transform-origin: 50% 50%; }
+        .lp-mascot .mascot-breath { animation: mascot-breath 3.6s ease-in-out infinite; transform-origin: 60px 65px; }
+        .lp-mascot .mascot-gaze { animation: mascot-gaze 9s ease-in-out infinite; }
+        .pet-motion-focus-steady .mascot-gaze { animation: none; }
+        .pet-motion-focus-steady .mascot-fin-breathe-l,
+        .pet-motion-focus-steady .mascot-fin-breathe-r { animation-name: mascot-fin-focus; animation-duration: 4.5s; }
+        .pet-motion-low-energy .mascot-breath { animation-duration: 6s; }
+        .pet-motion-return-greeting .mascot-fin-breathe-r { animation: mascot-fin-wave 1.5s ease-in-out 1; }
+
+        @keyframes mascot-breath {
+          0%, 100% { transform: scale(1, 1); }
+          50% { transform: scale(1.025, 0.975); }
+        }
+        @keyframes mascot-gaze {
+          0%, 48%, 100% { transform: translate(0, 0); }
+          56%, 70% { transform: translate(2px, -1px); }
+          82%, 90% { transform: translate(-1.5px, 0); }
+        }
+        @keyframes mascot-fin-focus {
+          0%, 100% { transform: rotate(0deg); }
+          50% { transform: rotate(3deg); }
+        }
+        @keyframes mascot-fin-wave {
+          0%, 100% { transform: rotate(0deg); }
+          20%, 60% { transform: rotate(-28deg); }
+          40%, 80% { transform: rotate(6deg); }
+        }
 
         @keyframes mascot-float {
           0%, 100% { transform: scale(1, 1); }
-          50%      { transform: scale(1.02, 0.98); }
+          50%      { transform: translateY(-2px); }
         }
         @keyframes mascot-fin-breathe-l {
           0%, 100% { transform: rotate(0deg); }
-          50%      { transform: rotate(-7deg); }
+          50%      { transform: rotate(-14deg); }
         }
         @keyframes mascot-fin-breathe-r {
           0%, 100% { transform: rotate(0deg); }
-          50%      { transform: rotate(7deg); }
+          50%      { transform: rotate(12deg); }
         }
         @keyframes mascot-fin-flutter {
           0%, 100% { transform: rotate(0deg); }
@@ -551,6 +583,7 @@ function MascotComponent({
             - Plump cheeks and smooth rounded base
             - Dimensions: width ~70 units, height ~53 units
           */}
+          <g className={!reducedMotion ? 'mascot-breath' : undefined}>
           <g data-part="body">
             {/* Base body geometry */}
             <path
@@ -589,7 +622,7 @@ function MascotComponent({
             - Mouth: Center (60, 56.5)
             - No nose, no cheeks blush circles, no belly markings
           */}
-          <g data-part="face">
+          <g data-part="face" className={!reducedMotion && effectiveExpressionId !== 'sleepy' ? 'mascot-gaze' : undefined}>
             {/* Left Eye */}
             <g data-part="eye-left">
               <Eye
@@ -618,6 +651,32 @@ function MascotComponent({
             <g data-part="mouth">
               <Mouth shape={mouth} />
             </g>
+          </g>
+          {/* Earned accessories share the body's transform, so they never drift from the face. */}
+          <g data-part="accessories" data-evolution-level={evolutionLevel} pointerEvents="none">
+            {accessories.scarf && <g data-accessory="scarf">
+              <path d="M32 69 Q60 82 88 69 L86 76 Q60 89 34 76Z" fill="#0f766e" stroke="#99f6e4" strokeWidth="1.2" />
+              <path d="M72 77 L84 79 L80 92 L70 88Z" fill="#14b8a6" stroke="#99f6e4" strokeWidth="1" />
+            </g>}
+            {accessories.glasses && <g data-accessory="glasses" stroke="#203047" strokeWidth="2.8" fill="none">
+              <circle cx="47" cy="49" r="10" /><circle cx="73" cy="49" r="10" />
+              <path d="M57 48 Q60 45 63 48 M37 47 L30 44 M83 47 L90 44" />
+              <path d="M41 44 L44 42 M67 44 L70 42" stroke="#e0f2fe" strokeWidth="1.8" />
+            </g>}
+            {accessories.headphones && <g data-accessory="headphones">
+              <path d="M29 46 C24 4 96 4 91 46" stroke="#334155" strokeWidth="6" fill="none" />
+              <path d="M29 38 C30 10 90 10 91 38" stroke="#c4b5fd" strokeWidth="2" fill="none" />
+              <rect x="23" y="40" width="10" height="20" rx="5" fill="#8b5cf6" stroke="#ddd6fe" strokeWidth="1.5" />
+              <rect x="87" y="40" width="10" height="20" rx="5" fill="#8b5cf6" stroke="#ddd6fe" strokeWidth="1.5" />
+            </g>}
+            {accessories.star && <path data-accessory="star" d="M47 74 L49 78 L54 79 L50 82 L51 87 L47 84 L43 87 L44 82 L40 79 L45 78Z" fill="#fde68a" stroke="#b45309" strokeWidth="1" />}
+            {accessories.crown && <g data-accessory={accessories.crown === 'jeweled' ? 'jeweled-crown' : 'crown'}>
+              <path d="M43 26 L39 10 L51 17 L60 5 L69 17 L81 10 L77 26Z" fill="#fbbf24" stroke="#fef3c7" strokeWidth="1.5" strokeLinejoin="round" />
+              <rect x="43" y="23" width="34" height="6" rx="2" fill="#d97706" stroke="#fde68a" />
+              <path d="M60 12 L64 18 L60 23 L56 18Z" fill={accessories.crown === 'jeweled' ? '#a78bfa' : '#fff7ed'} />
+              {accessories.crown === 'jeweled' && <g fill="#5eead4"><circle cx="49" cy="24" r="2" /><circle cx="71" cy="24" r="2" /></g>}
+            </g>}
+          </g>
           </g>
         </g>
       </g>

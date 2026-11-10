@@ -3,10 +3,18 @@ export type QuoteCategory =
   | 'overwhelmed'
   | 'inactivitySlump'
   | 'coffeeBreak'
-  | 'focusStart'
-  | 'welcomeBack';
+  | 'welcomeBack'
+  | 'companionship';
+// Companion prompts describe shared progress without judging inactivity.
 
 export const QUOTE_LIBRARY: Record<QuoteCategory, string[]> = {
+  companionship: [
+    'One small step at a time. I am here with you.',
+    'Ready for our next little adventure?',
+    'A little focus, a little rest. We have got this.',
+    'Thanks for the head pat. Keeping you company is my favorite job.',
+    'Your progress is our story. Let us keep adding to it.',
+  ],
   taskComplete: [
     'Massive W! Task crushed into dust. ✨',
     "Boom! You actually understood the assignment.",
@@ -35,12 +43,6 @@ export const QUOTE_LIBRARY: Record<QuoteCategory, string[]> = {
     'Fueling up before we get back to cooking.',
     'Resting the gears for a moment.',
     'Ah, the simple joy of a warm mug.',
-  ],
-  focusStart: [
-    "Locked in mode activated. Let's do this! 🧠⚡",
-    'Noise cancelling on, distractions defeated.',
-    'Deep focus time — I will keep you company quietly.',
-    'Entering the flow state. Time to cook.',
   ],
   welcomeBack: [
     'Welcome back! Time to secure the daily W.',

@@ -195,6 +195,7 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
               type="button"
               onClick={() => onSelectView?.('tasks')}
               title={isCollapsed ? `Tasks (${pendingTasksCount} pending)` : undefined}
+              aria-label={`Tasks (${pendingTasksCount} pending)`}
               className={`relative flex items-center transition-all cursor-pointer ${
                 isCollapsed
                   ? 'w-12 h-12 mx-auto justify-center rounded-xl'

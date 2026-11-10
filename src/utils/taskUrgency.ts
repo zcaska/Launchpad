@@ -1,4 +1,5 @@
 import { QuickNote, TaskPriority, Subtask } from '../types';
+import { formatApproximateDuration } from './timeBudget';
 
 // ============================================================================
 // 1. Task Deadline Urgency Types & Constants
@@ -189,16 +190,9 @@ export function calculateTaskUrgency(
 
   // Tier 1: Overdue
   if (diffMs < 0) {
-    const overdueHours = Math.abs(diffHours);
-    let label = 'Overdue';
-    if (overdueHours < 1) {
-      label = `Overdue by ${Math.max(1, Math.round(Math.abs(diffMs) / 60000))}m`;
-    } else if (overdueHours < 24) {
-      label = `Overdue by ${Math.round(overdueHours)}h`;
-    } else {
-      const overdueDays = Math.round(Math.abs(diffDays));
-      label = `Overdue by ${overdueDays}d`;
-    }
+    const overdueMins = Math.max(1, Math.round(Math.abs(diffMs) / 60000));
+    const timeStr = formatApproximateDuration(overdueMins, { allowWeeks: true });
+    const label = `Overdue by ${timeStr}`;
 
     return {
       tier: 'overdue',
@@ -246,7 +240,7 @@ export function calculateTaskUrgency(
   // Tier 3: Upcoming (1 - 3 days / 24h to < 72h)
   if (diffHours < 72) {
     const daysRemaining = Math.max(1, Math.round(diffDays));
-    const label = daysRemaining === 1 ? 'Due tomorrow' : `Due in ${daysRemaining} days`;
+    const label = daysRemaining === 1 ? 'Due tomorrow' : `Due in ${daysRemaining}d`;
 
     return {
       tier: 'upcoming',
@@ -852,8 +846,8 @@ export function rankTasksByOpportunity(
 
 /**
  * Derives human-friendly countdown strings matching Image 1:
- * "5h 35m left", "2 days left", "4 days left", "6 days left", "1 week left",
- * "18m overdue", "No deadline"
+ * "5h 35m left", "2d left", "4d left", "6d left", "1w left",
+ * "18m overdue", "Overdue by 5h", "No deadline"
  */
 export function formatTaskCountdown(task: QuickNote, refDate: Date = new Date()): string {
   const urgency = calculateTaskUrgency(task.deadline, refDate);
@@ -867,30 +861,12 @@ export function formatTaskCountdown(task: QuickNote, refDate: Date = new Date())
   if (diffMs < 0) {
     const overdueMins = Math.max(1, Math.round(Math.abs(diffMs) / 60000));
     if (overdueMins < 60) return `${overdueMins}m overdue`;
-    const hours = Math.floor(overdueMins / 60);
-    const mins = overdueMins % 60;
-    if (hours < 24) {
-      const timeStr = mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
-      return `Overdue by ${timeStr}`;
-    }
-    const days = Math.floor(hours / 24);
-    const remHours = hours % 24;
-    const timeStr = remHours > 0 ? `${days}d ${remHours}h` : `${days}d`;
+    const timeStr = formatApproximateDuration(overdueMins, { allowWeeks: true });
     return `Overdue by ${timeStr}`;
   }
 
   const totalMinutes = Math.max(1, Math.round(diffMs / 60000));
-  const hours = Math.floor(totalMinutes / 60);
-  const mins = totalMinutes % 60;
-
-  if (hours < 24) {
-    const timeStr = hours > 0 ? (mins > 0 ? `${hours}h ${mins}m` : `${hours}h`) : `${mins}m`;
-    return `${timeStr} left`;
-  }
-
-  const days = Math.floor(hours / 24);
-  const remHours = hours % 24;
-  const timeStr = remHours > 0 ? `${days}d ${remHours}h` : `${days}d`;
+  const timeStr = formatApproximateDuration(totalMinutes, { allowWeeks: true });
   return `${timeStr} left`;
 }
 

@@ -29,7 +29,8 @@ import { PrimaryFocusCard } from './components/Dashboard/PrimaryFocusCard';
 import { SmartSuggestionCard } from './components/Dashboard/SmartSuggestionCard';
 import LaunchpadPet from './components/Pet/LaunchpadPet';
 import { usePetController } from './components/Pet/usePetController';
-import { petTierForStreak } from './utils/petState';
+import { petTierForStreak, petTaskChanges } from './utils/petState';
+import { earnedPetLevel } from './utils/petEvolution';
 import { CommitmentRadarWidget } from './components/Dashboard/CommitmentRadarWidget';
 import TimeRadarWidget from './components/Dashboard/TimeRadarWidget';
 import { toggleTaskInList, toggleSubtaskInList } from './utils/taskUrgency';
@@ -59,6 +60,9 @@ import {
   calculateDayTimeRemaining,
   calculateBuffer
 } from './utils/timeBudget';
+import { tasksDueToday } from './utils/taskPeriod';
+import { getReflectionTasks, resetReflectionTasks } from './utils/taskReflection';
+import { useTaskView } from './components/Tasks/useTaskView';
 import { 
   generateCandidatePool, 
   getRankedRecommendations, 
@@ -212,6 +216,7 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
   const petPaused = appData.settings.pet?.paused ?? false;
   const streakCount = appData.gamification?.currentStreak ?? 0;
   const petTier = useMemo(() => petTierForStreak(streakCount), [streakCount]);
+  const petLevel = useMemo(() => earnedPetLevel(appData.gamification), [appData.gamification]);
 
   const handleTogglePetPaused = useCallback(() => {
     setAppData((prev) => {
@@ -229,25 +234,26 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
     [appData.quickNotes]
   );
 
-  const prevPendingCountRef = useRef(pendingTaskCount);
+  const previousPetTasks = useRef(appData.quickNotes);
   const pet = usePetController({
     enabled: petEnabled,
     paused: petPaused,
-    focusActive: Boolean(focusTimer?.running),
     pendingCount: pendingTaskCount,
     uiActive: activeView === 'settings' || isSparkIdeaModalOpen || isQuickNotesOpen || isQuickAddTaskOpen,
   });
 
   // Pet Event triggers
+  const previousPetLevel = useRef(petLevel);
   useEffect(() => {
-    const prev = prevPendingCountRef.current;
-    prevPendingCountRef.current = pendingTaskCount;
-    if (pendingTaskCount < prev) {
-      pet.cue('feed-task-done');
-    } else if (pendingTaskCount > prev) {
-      pet.cue('feed-task-added');
-    }
-  }, [pendingTaskCount, pet]);
+    if (petLevel > previousPetLevel.current) pet.cue('feed-streak-milestone');
+    previousPetLevel.current = petLevel;
+  }, [petLevel, pet.cue]);
+  useEffect(() => {
+    const changes = petTaskChanges(previousPetTasks.current, appData.quickNotes);
+    previousPetTasks.current = appData.quickNotes;
+    for (let index = 0; index < changes.completed; index++) pet.cue('feed-task-done');
+    if (changes.added) pet.cue('feed-task-added');
+  }, [appData.quickNotes, pet.cue, petEnabled, petPaused]);
 
   // Time & Workload computations
   const timeOfDay = useMemo(() => getTimeOfDayBucket(now), [now]);
@@ -259,10 +265,27 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
     );
   }, [now, appData.settings.daySchedule.startHour, appData.settings.daySchedule.endHour]);
 
-  const taskLoad = useMemo(() => calculateTaskLoad(appData.quickNotes), [appData.quickNotes]);
-  const buffer = useMemo(
-    () => calculateBuffer(timeRemaining.totalMinutes, taskLoad.pendingMinutes),
-    [timeRemaining, taskLoad]
+  const taskView = useTaskView(appData.quickNotes, now, appData.settings.daySchedule);
+
+  // Dashboard today-only scope: tasks due today (local date), includes done tasks.
+  // Derived from actual local `now` so midnight rollover updates via the existing App clock.
+  const dashboardTodayTasks = useMemo(
+    () => tasksDueToday(appData.quickNotes, now),
+    [appData.quickNotes, now]
+  );
+
+  // Dashboard workload and time buffer calculated strictly from today-scoped tasks.
+  const todayTaskLoad = useMemo(
+    () => calculateTaskLoad(dashboardTodayTasks),
+    [dashboardTodayTasks]
+  );
+  const todayBuffer = useMemo(
+    () => calculateBuffer(timeRemaining.totalMinutes, todayTaskLoad.pendingMinutes),
+    [timeRemaining, todayTaskLoad]
+  );
+  const todayPendingCount = useMemo(
+    () => dashboardTodayTasks.filter((t) => !t.isDone).length,
+    [dashboardTodayTasks]
   );
   // Recommender Engine: Candidates & Scored Suggestions
   const candidatePool = useMemo(() => {
@@ -313,10 +336,10 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
     const timeout = window.setTimeout(() => setShowReflectionCelebration(false), 3600);
     return () => window.clearTimeout(timeout);
   }, [showReflectionCelebration]);
-  const previousTasks = useRef(appData.quickNotes);
-  const allTasksDone = appData.quickNotes.length > 0 && pendingTaskCount === 0 && appData.quickNotes.some((task) => task.pendingReflection);
+  const reflectionTasks = useMemo(() => getReflectionTasks(appData.quickNotes, now), [appData.quickNotes, now]);
+  const reflectionKey = JSON.stringify(reflectionTasks.map(task => task.id).sort());
+  const reflectionReady = reflectionTasks.length > 0;
   const applyCloudDownload = useCallback((next: AppData) => {
-    previousTasks.current = next.quickNotes;
     setShowReflection(false);
     setFocusTimer((timer) => timer && next.quickNotes.some((task) => task.id === timer.taskId && !task.isDone) ? timer : null);
     setAppData(next);
@@ -329,11 +352,9 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
     let resetAfterLeave: AppData | null = null;
     const onLeave = () => {
       const { appData: current, workspace: activeWorkspace, saveOnLeave } = leavingRef.current;
-      if (!current.quickNotes.length || current.quickNotes.some((task) => !task.isDone)
-          || !current.quickNotes.some((task) => task.pendingReflection)) return;
-      resetAfterLeave = { ...current, quickNotes: current.quickNotes.map((task) =>
-        task.isDone ? { ...task, isDone: false, rewardAlreadyGranted: task.rewardAlreadyGranted || !task.pendingReflection, pendingReflection: false,
-          subtasks: task.subtasks?.map((subtask) => ({ ...subtask, isDone: false })) } : task) };
+      const reset = resetReflectionTasks(current.quickNotes, new Date());
+      if (reset === current.quickNotes) return;
+      resetAfterLeave = { ...current, quickNotes: reset };
       if (activeWorkspace) saveOnLeave(resetAfterLeave);
       else {
         flushAppDataSave();
@@ -356,17 +377,12 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
   }, []);
 
   useEffect(() => {
-    const before = previousTasks.current;
-    previousTasks.current = appData.quickNotes;
-    if (!allTasksDone) {
-      setShowReflection(false);
-      return;
-    }
-
-    if (before !== appData.quickNotes || appData.quickNotes.some((task) => task.pendingReflection)) {
-      setShowReflection(true);
-    }
-  }, [appData.quickNotes, allTasksDone]);
+    setShowReflection(false);
+    if (!reflectionReady) return;
+    // A short celebration grace period, never gated by an optional pet or animation promise.
+    const timer = window.setTimeout(() => setShowReflection(true), 1500);
+    return () => window.clearTimeout(timer);
+  }, [reflectionKey, reflectionReady]);
 
   useEffect(() => {
     if (!completedFocusTask) return;
@@ -543,10 +559,10 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
         onOpenScratchpad={() => setIsQuickNotesOpen(true)}
       />
 
-      {(workspace || cloudNotice) && (
+      {!workspace && cloudNotice && (
         <button type="button" onClick={openSettings}
           className="hidden md:block shrink-0 truncate border-b border-teal-700/20 bg-teal-500/10 px-4 py-1.5 text-left text-xs">
-          {workspace ? `${workspace.project.name} · ${cloudSync.cacheError ? 'Offline storage unavailable' : cloudSync.status}` : cloudNotice}
+          {cloudNotice}
         </button>
       )}
 
@@ -567,7 +583,7 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
           onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
           currentView={activeView}
           onSelectView={setActiveView}
-          pendingTasksCount={taskLoad.pendingCount}
+          pendingTasksCount={taskView.periodLoad.pendingCount}
           gamification={appData.gamification}
           suggestionCandidate={currentSuggestion}
           onApproveSuggestion={handleApproveSuggestion}
@@ -577,7 +593,7 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
 
         {/* Launchpad Pet */}
         {petEnabled && (
-          <div className="hidden md:contents"><LaunchpadPet controller={pet} paused={petPaused} onTogglePaused={handleTogglePetPaused} tier={petTier} /></div>
+          <div className="hidden md:contents"><LaunchpadPet controller={pet} paused={petPaused} onTogglePaused={handleTogglePetPaused} tier={petTier} evolutionLevel={petLevel} /></div>
         )}
 
         {/* Content Area */}
@@ -649,6 +665,8 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
                   searchQuery={searchQuery}
                   onSearchChange={setSearchQuery}
                   notes={appData.quickNotes}
+                  view={taskView}
+                  now={now}
                   onUpdateNotes={handleUpdateNotes}
                   onBackToDashboard={() => {
                     setEditingTaskIdForScreen(null);
@@ -674,19 +692,25 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
                 {/* Focus and available time share a row when the workspace is wide. */}
                 <div className="min-w-0 @6xl:col-span-7">
                   <PrimaryFocusCard
-                    tasks={appData.quickNotes}
+                    tasks={dashboardTodayTasks}
                     selectedTaskId={selectedFocusTaskId}
                     onSelectTask={setSelectedFocusTaskId}
-                    onPreviewTask={setSelectedFocusTaskId}
-                    completedTask={completedFocusTask}
+                    onPreviewTask={(id) => {
+                      setSelectedFocusTaskId(id);
+                      setEditingTaskIdForScreen(null);
+                      setSearchQuery('');
+                      setActiveView('tasks');
+                    }}
+                    completedTask={dashboardTodayTasks.find((t) => t.id === completedFocusTask?.id) ?? null}
                     onCompleteTask={completeFocusTask}
                     onToggleSubtask={toggleFocusSubtask}
                     onOpenTaskEdit={(task) => {
                       setEditingTaskIdForScreen(task.id);
+                      setSearchQuery('');
                       setActiveView('tasks');
                     }}
                     clockFormat={appData.settings.clockFormat}
-                    showSuggestion={pendingTaskCount === 0}
+                    showSuggestion={todayPendingCount === 0}
                     suggestionCandidate={currentSuggestion}
                     onApproveSuggestion={handleApproveSuggestion}
                     onRejectSuggestion={handleRejectSuggestion}
@@ -699,8 +723,8 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
                 <div className="min-w-0 @6xl:col-span-5">
                   <TimeRadarWidget
                     timeRemaining={timeRemaining}
-                    taskLoad={taskLoad}
-                    buffer={buffer}
+                    taskLoad={todayTaskLoad}
+                    buffer={todayBuffer}
                     endHour={appData.settings.daySchedule.endHour}
                     onOpenTasks={() => setActiveView('tasks')}
                   />
@@ -711,6 +735,7 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
                     onSelectTask={(id) => {
                       setSelectedFocusTaskId(id);
                       setEditingTaskIdForScreen(id);
+                      setSearchQuery('');
                       setActiveView('tasks');
                     }}
                     onPreviewTask={(id) => setSelectedFocusTaskId(id)}
@@ -841,23 +866,22 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
         }}
       />
 
-      {showReflection && allTasksDone && !completedFocusTask && (
+      {showReflection && reflectionReady && (
         <TaskClearReflection
           style={appData.settings.confettiStyle}
           onClose={() => {
             setShowReflection(false);
-            setAppData((prev) => ({ ...prev, quickNotes: prev.quickNotes.map((task) =>
-              task.isDone ? { ...task, isDone: false, rewardAlreadyGranted: task.rewardAlreadyGranted || !task.pendingReflection, pendingReflection: false,
-                subtasks: task.subtasks?.map((subtask) => ({ ...subtask, isDone: false })) } : task) }));
+            setAppData((prev) => ({ ...prev, quickNotes: resetReflectionTasks(prev.quickNotes, new Date()) }));
           }}
           onSubmit={(questions, answers) => {
             if (questions.length !== 5 || answers.length !== 5
               || answers.some((answer) => answer.trim().split(/\s+/u).filter(Boolean).length < 150)) return;
-            const completedTasks = appData.quickNotes.filter((task) => task.pendingReflection && task.isDone);
-            if (!completedTasks.length || appData.quickNotes.some((task) => !task.isDone)) return;
+            const completedTasks = getReflectionTasks(appData.quickNotes, new Date());
+            if (!completedTasks.length) return;
             setAppData((prev) => {
-              const completed = prev.quickNotes.filter((task) => task.pendingReflection && task.isDone);
-              if (!completed.length || prev.quickNotes.some((task) => !task.isDone)) return prev;
+              const completed = getReflectionTasks(prev.quickNotes, new Date());
+              if (!completed.length) return prev;
+              const completedIds = new Set(completed.map(task => task.id));
               let gamification = prev.gamification;
               let history = prev.growthHistory;
               for (const task of completed) {
@@ -869,7 +893,7 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
               return { ...prev, gamification, growthHistory: history,
                 reflections: [...(prev.reflections || []), { date: new Date().toISOString(), questions, answers,
                   taskTitles: completed.map((task) => task.text) }],
-                quickNotes: [] };
+                quickNotes: prev.quickNotes.filter(task => !completedIds.has(task.id)) };
             });
             setShowReflection(false);
             setShowReflectionCelebration(true);

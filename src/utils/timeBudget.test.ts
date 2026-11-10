@@ -1,4 +1,4 @@
-import { formatMinutesToHours } from './timeBudget';
+import { formatMinutesToHours, formatApproximateDuration } from './timeBudget';
 import { formatEventDuration } from './textFormatting';
 import { formatTaskCountdown } from './taskUrgency';
 import { QuickNote } from '../types';
@@ -45,6 +45,16 @@ assertEqual(formatEventDuration(1440), '1d', '24h event returns 1d');
 assertEqual(formatEventDuration(1500), '1d 1h', '25h event returns 1d 1h');
 assertEqual(formatEventDuration(2880), '2d', '48h event returns 2d');
 assertEqual(formatEventDuration(3000), '2d 2h', '50h event returns 2d 2h');
+
+// 2b. Test formatApproximateDuration (2-level approximation rule)
+console.log('\n--- 2b. formatApproximateDuration verification ---');
+assertEqual(formatApproximateDuration(155), '2h 35m', '2h 35m remains as 2h 35m');
+assertEqual(formatApproximateDuration(3636), '2d 12h', '2d 12h 36m extends to at most 2 levels: 2d 12h');
+assertEqual(formatApproximateDuration(4 * 43200 + 12 * 1440), '4mo 12d', '4 months 12 days formats as 4mo 12d');
+assertEqual(formatApproximateDuration(4 * 43200 + 12 * 1440 + 36), '4mo 12d', '4mo 12d with minutes drops minutes');
+assertEqual(formatApproximateDuration(10080, { allowWeeks: true }), '1w', '7 days with allowWeeks formats as 1w');
+assertEqual(formatApproximateDuration(10080 + 3 * 1440, { allowWeeks: true }), '1w 3d', '10 days with allowWeeks formats as 1w 3d');
+assertEqual(formatApproximateDuration(518400 + 2 * 43200), '1y 2mo', '1 year 2 months formats as 1y 2mo');
 
 // 3. Test formatTaskCountdown
 console.log('\n--- 3. formatTaskCountdown verification ---');
@@ -139,6 +149,36 @@ const taskOverdue48h: QuickNote = {
   priority: 'high',
 };
 assertEqual(formatTaskCountdown(taskOverdue48h, refDate), 'Overdue by 2d', 'Overdue 48h formats as Overdue by 2d');
+
+const taskDue2d12h36m: QuickNote = {
+  id: 't-10',
+  text: 'Task 2d 12h 36m',
+  isDone: false,
+  createdAt: Date.now(),
+  deadline: new Date(refDate.getTime() + (2 * 1440 + 12 * 60 + 36) * 60000).toISOString(),
+  priority: 'medium',
+};
+assertEqual(formatTaskCountdown(taskDue2d12h36m, refDate), '2d 12h left', '2d 12h 36m formats as 2d 12h left');
+
+const taskDue4mo12d: QuickNote = {
+  id: 't-11',
+  text: 'Task 4mo 12d',
+  isDone: false,
+  createdAt: Date.now(),
+  deadline: new Date(refDate.getTime() + (4 * 43200 + 12 * 1440) * 60000).toISOString(),
+  priority: 'low',
+};
+assertEqual(formatTaskCountdown(taskDue4mo12d, refDate), '4mo 12d left', '4 months 12 days formats as 4mo 12d left');
+
+const taskDue1w: QuickNote = {
+  id: 't-12',
+  text: 'Task 1w',
+  isDone: false,
+  createdAt: Date.now(),
+  deadline: new Date(refDate.getTime() + 7 * 24 * 60 * 60000).toISOString(),
+  priority: 'low',
+};
+assertEqual(formatTaskCountdown(taskDue1w, refDate), '1w left', '7 days formats as 1w left');
 
 console.log('\n=======================================');
 if (failures > 0) {

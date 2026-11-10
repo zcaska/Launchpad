@@ -18,13 +18,17 @@ import {
   Warning as AlertTriangle,
 } from '@phosphor-icons/react';
 import { QuickNote, TaskPriority, TaskUrl, Subtask } from '../../types';
-import { calculateTaskLoad, formatMinutesToHours } from '../../utils/timeBudget';
+import { bufferTextColor, formatMinutesToHours } from '../../utils/timeBudget';
+import { taskPeriods, formatPeriodMinutes, addMonthsInclusive, type TaskPeriod } from '../../utils/taskPeriod';
+import type { TaskViewState } from './useTaskView';
 import { modalBackdropVariants, modalContentVariants, staggerItemVariants, staggerContainerVariants } from '../../utils/motion';
 import { SafeDescription } from '../Common/SafeDescription';
 import { toggleTaskInList, toggleSubtaskInList } from '../../utils/taskUrgency';
 
 export interface TaskManagementScreenProps {
   notes: QuickNote[];
+  view: TaskViewState;
+  now?: Date;
   createTaskRequested: boolean;
   onCreateTaskOpened: () => void;
   searchQuery: string;
@@ -41,6 +45,8 @@ type FilterTab = 'All' | 'Urgent' | 'High Priority' | 'Medium' | 'Low' | 'Due So
 
 export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
   notes,
+  view,
+  now = new Date(),
   createTaskRequested,
   onCreateTaskOpened,
   searchQuery,
@@ -54,6 +60,8 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
 }) => {
   // Filters & State
   const [activeTab, setActiveTab] = useState<FilterTab>('All');
+  const { period, setPeriod, customRange, setCustomRange, baseRange, defaultEndInclusive,
+    range, rangeError, periodNotes, periodLoad, periodBuffer, hasPeriodBudget } = view;
   // Modal / Form state for Add / Edit
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
@@ -76,8 +84,8 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
   const [subtaskInput, setSubtaskInput] = useState('');
 
   // Quick stats
-  const loadSummary = useMemo(() => calculateTaskLoad(notes), [notes]);
-  const totalCompleted = useMemo(() => notes.filter((n) => n.isDone).length, [notes]);
+  const loadSummary = periodLoad;
+  const totalCompleted = periodLoad.completedCount;
 
   // Deadline & Date Helpers
   const formatLocalYMD = (d: Date) => {
@@ -87,12 +95,50 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
     return `${yyyy}-${mm}-${dd}`;
   };
 
-  const todayYMD = useMemo(() => formatLocalYMD(new Date()), []);
+  // Add calendar days to a local-midnight Date without UTC parsing.
+  const addDaysLocal = (d: Date, n: number) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
+
+  // Parse a date-input value into a local-midnight Date without UTC parsing or rollover.
+  // Returns null for empty/invalid input so callers can reset to the default range instead of showing NaN.
+  const parseLocalDateValue = (s: string): Date | null => {
+    if (!s) return null;
+    const parts = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
+    if (!parts) return null;
+    const y = +parts[1];
+    const m = +parts[2];
+    const d = +parts[3];
+    const date = new Date(y, m - 1, d);
+    if (date.getFullYear() !== y || date.getMonth() !== m - 1 || date.getDate() !== d) return null;
+    return date;
+  };
+
+  const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  // DD-MMM-YY (e.g. 01-Nov-26), not locale-dependent so the format is stable across browsers.
+  const formatDDMMMYY = (d: Date) => `${String(d.getDate()).padStart(2, '0')}-${MONTH_NAMES[d.getMonth()]}-${String(d.getFullYear() % 100).padStart(2, '0')}`;
+
+  const handleTodayDateChange = (value: string) => {
+    const selected = parseLocalDateValue(value);
+    if (!selected) { setCustomRange(null); return; }
+    setCustomRange({ start: selected, end: selected });
+  };
+  const handleDateStartChange = (value: string) => {
+    const selected = parseLocalDateValue(value);
+    if (!selected) { setCustomRange(null); return; }
+    const end = period === 'Today' ? selected : period === 'Weekly' ? addDaysLocal(selected, 6) : addMonthsInclusive(selected, 1);
+    setCustomRange({ start: selected, end });
+  };
+  const handleDateEndChange = (value: string) => {
+    const selected = parseLocalDateValue(value);
+    if (!selected) { setCustomRange(null); return; }
+    setCustomRange((prev) => ({ start: prev?.start ?? baseRange.start, end: selected }));
+  };
+
+  const todayYMD = formatLocalYMD(now);
   const tomorrowYMD = useMemo(() => {
-    const d = new Date();
+    const d = new Date(now);
     d.setDate(d.getDate() + 1);
     return formatLocalYMD(d);
-  }, []);
+  }, [todayYMD]);
 
   const getDeadlineDatePart = (str: string) => {
     if (!str) return '';
@@ -401,7 +447,7 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
 
   // Filtered tasks computation
   const filteredTasks = useMemo(() => {
-    return notes.filter((task) => {
+    return periodNotes.filter((task) => {
       // Search filter
       if (searchQuery.trim()) {
         const query = searchQuery.toLowerCase();
@@ -443,12 +489,12 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
           return true;
       }
     });
-  }, [notes, searchQuery, activeTab]);
+  }, [periodNotes, searchQuery, activeTab, now]);
 
   // Tab counts computation
   const tabCounts = useMemo(() => {
     const counts: Record<FilterTab, number> = {
-      'All': notes.length,
+      'All': periodNotes.length,
       'Urgent': 0,
       'High Priority': 0,
       'Medium': 0,
@@ -457,7 +503,7 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
       'Completed': 0,
     };
 
-    notes.forEach((task) => {
+    periodNotes.forEach((task) => {
       if (task.isDone) {
         counts['Completed']++;
       } else {
@@ -476,7 +522,7 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
     });
 
     return counts;
-  }, [notes]);
+  }, [periodNotes, now]);
 
   // Tab Badge Style reflecting nature
   const getTabBadgeStyle = (tab: FilterTab, isActive: boolean) => {
@@ -537,10 +583,10 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
     <div className="w-full flex flex-col h-full bg-serene-bg-light dark:bg-serene-bg-dark text-serene-text-primary dark:text-serene-text-darkPrimary overflow-hidden">
       {/* 1. TOP HEADER & OVERVIEW BAR */}
       <header className="w-full shrink-0 min-w-0 bg-white dark:bg-serene-surface-dark border-b border-serene-border-light dark:border-serene-border-dark px-3 sm:px-6 py-3.5 sm:py-4 shadow-subtle transition-colors overflow-hidden">
-        <div className="w-full min-w-0 flex flex-col lg:flex-row lg:items-center justify-between gap-3 sm:gap-4">
+        <div className="w-full min-w-0 flex flex-wrap items-center justify-between gap-3 sm:gap-4">
           
           {/* Left: Back button + Title */}
-          <div className="flex flex-col sm:flex-row sm:items-center gap-3 w-full lg:w-auto min-w-0">
+          <div className="order-1 flex flex-1 flex-col sm:flex-row sm:items-center gap-3 min-w-[140px]">
             <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
               {onBackToDashboard && (
                 <button
@@ -585,7 +631,7 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
           </div>
 
           {/* Mobile Status Metrics 3-Column Symmetrical Grid */}
-          <div className="hidden md:grid grid-cols-3 gap-2 w-full lg:hidden">
+          <div className="order-3 hidden md:grid grid-cols-3 gap-2 w-full lg:hidden">
             <div className="flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-xl bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark border border-serene-border-light dark:border-serene-border-dark text-[11px] sm:text-xs text-serene-text-secondary dark:text-serene-text-darkSecondary">
               <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse shrink-0" />
               <span className="truncate"><strong>{loadSummary.pendingCount}</strong> pending</span>
@@ -600,7 +646,68 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
             </div>
           </div>
 
+          <div className="order-2 ml-auto flex w-full sm:w-auto max-w-full flex-wrap items-center justify-end gap-2">
+            {/* Compact date trigger shown right beside the View dropdown. Formatted visible text
+                (DD-MMM-YY) drives the UI; a native date input preserves keyboard and picker support. */}
+            {hasPeriodBudget && (
+              <div className="flex max-w-full flex-wrap items-center gap-2">
+                {period === 'Today' ? (
+                  <>
+                    <label className="relative inline-flex min-h-[44px] sm:min-h-[32px] items-center rounded-lg border border-serene-border-light bg-serene-surfaceAlt-light px-2 text-xs font-semibold dark:border-serene-border-dark dark:bg-serene-surfaceAlt-dark focus-within:ring-2 focus-within:ring-serene-primary">{formatDDMMMYY(customRange?.start ?? range.start)}<input aria-label="Pick date"
+                      type="date"
+                      value={formatLocalYMD(customRange?.start ?? range.start)}
+                      onChange={(e) => handleTodayDateChange(e.target.value)}
+                      className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                      /></label>
+                  </>
+                ) : (
+                  <>
+                    <label className="relative inline-flex min-h-[44px] sm:min-h-[32px] items-center rounded-lg border border-serene-border-light bg-serene-surfaceAlt-light px-2 text-xs font-semibold dark:border-serene-border-dark dark:bg-serene-surfaceAlt-dark focus-within:ring-2 focus-within:ring-serene-primary">{formatDDMMMYY(customRange?.start ?? range.start)}<input aria-label="Pick start date"
+                      type="date"
+                      value={formatLocalYMD(customRange?.start ?? range.start)}
+                      onChange={(e) => handleDateStartChange(e.target.value)}
+                      className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                      /></label>
+                    <span className="text-xs text-serene-text-muted shrink-0">–</span>
+                    <label className="relative inline-flex min-h-[44px] sm:min-h-[32px] items-center rounded-lg border border-serene-border-light bg-serene-surfaceAlt-light px-2 text-xs font-semibold dark:border-serene-border-dark dark:bg-serene-surfaceAlt-dark focus-within:ring-2 focus-within:ring-serene-primary">{formatDDMMMYY(customRange?.end ?? defaultEndInclusive)}<input aria-label="Pick end date"
+                      type="date"
+                      value={formatLocalYMD(customRange?.end ?? defaultEndInclusive)}
+                      onChange={(e) => handleDateEndChange(e.target.value)}
+                      className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                      /></label>
+                  </>
+                )}
+                {rangeError && (
+                  <span className="mt-0.5 text-xs font-medium text-rose-500 dark:text-rose-400" role="alert">
+                    {rangeError}
+                  </span>
+                )}
+              </div>
+            )}
+            <label className="flex shrink-0 items-center gap-2 text-sm font-semibold ml-2">
+              <span className="hidden sm:inline">View</span>
+              <select aria-label="Task time period" value={period} onChange={(event) => setPeriod(event.target.value as TaskPeriod)}
+                className="min-h-[44px] sm:min-h-[32px] min-w-[88px] rounded-lg border border-serene-border-light bg-serene-surfaceAlt-light px-2 text-sm text-serene-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-serene-primary dark:border-serene-border-dark dark:bg-serene-surfaceAlt-dark dark:text-serene-text-darkPrimary">
+                {taskPeriods.map((value) => <option key={value} value={value}>{value}</option>)}
+              </select>
+            </label>
+          </div>
         </div>
+        {hasPeriodBudget ? (
+          <div className="mt-3 text-sm" aria-live="polite">
+            <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
+              <span><strong>{formatPeriodMinutes(range.availableMinutes)}</strong> available</span>
+              <span><strong>{formatPeriodMinutes(periodLoad.pendingMinutes)}</strong> pending</span>
+              <strong className={bufferTextColor[periodBuffer.status]}>
+                {formatPeriodMinutes(Math.abs(periodBuffer.bufferMinutes))} {periodBuffer.bufferMinutes < 0 ? 'over capacity' : periodBuffer.status === 'tight' ? 'left · tight' : 'to spare'}
+              </strong>
+            </div>
+          </div>
+        ) : period === 'Undated' ? (
+          <p className="mt-2 text-xs text-serene-text-secondary dark:text-serene-text-darkSecondary">
+            Tasks without a valid due date. Add a deadline to include them in a period budget.
+          </p>
+        ) : null}
 
         {/* 2. SUB-BAR: Filter Tabs & Search Bar Toolbar */}
         <div className="w-full min-w-0 flex flex-col sm:flex-row sm:items-center justify-between gap-3 mt-3.5 pt-3 border-t border-serene-border-light/60 dark:border-serene-border-dark/60">
@@ -685,7 +792,7 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
                   ? `No tasks match your search "${searchQuery}".`
                   : activeTab !== 'All'
                   ? `No tasks currently inside filter "${activeTab}".`
-                  : 'Your task list is completely clear. Plan your next milestone.'}
+                  : hasPeriodBudget ? 'No tasks are due in the selected dates.' : 'No tasks in this view.'}
               </p>
               <button
                 onClick={handleOpenCreateForm}

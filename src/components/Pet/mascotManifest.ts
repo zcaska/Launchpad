@@ -7,7 +7,7 @@
  * - Fins: Two rounded side fins in lighter coral-orange (#FF9A6B / approx #F28B68). Controllable pose.
  * - Face: Adaptive minimal eyes (#1A1A1A) with glossy highlights (#FFFFFF); tiny expressive mouth.
  * - Limbs: No arms, hands, legs, or feet.
- * - Purity: No accessories, clothing, belly marks, glowing belly cores, decorative symbols, or text.
+ * - Base form stays unadorned; earned companion levels add cosmetic accessories.
  */
 
 export const MASCOT_PALETTE = {
@@ -30,13 +30,10 @@ export type MascotExpressionId =
   | 'surprised'
   | 'disappointed'
   | 'sleepy'
-  | 'excited'
-  | 'focused'
-  | 'determined';
+  | 'excited';
 
 export type MascotPoseId =
   | 'idle'
-  | 'focus'
   | 'low_energy'
   | 'task_completion'
   | 'return_after_away';
@@ -182,30 +179,6 @@ export const MASCOT_EXPRESSIONS: Record<MascotExpressionId, MascotExpressionConf
     bodyTilt: 0,
     eyeOpenness: 1.0,
   },
-  focused: {
-    id: 'focused',
-    label: 'Focused',
-    description: 'Calm, attentive gaze focused on work, serene neutral expression, and poised forward typing fins.',
-    leftEye: 'focused_slant',
-    rightEye: 'focused_slant',
-    mouth: 'focused_line',
-    leftFinAngle: -6,
-    rightFinAngle: -6,
-    bodyTilt: 0,
-    eyeOpenness: 0.85,
-  },
-  determined: {
-    id: 'determined',
-    label: 'Determined',
-    description: 'Resolute sharp angled eyes and firm determined mouth line.',
-    leftEye: 'focused_slant',
-    rightEye: 'focused_slant',
-    mouth: 'focused_line',
-    leftFinAngle: 10,
-    rightFinAngle: 10,
-    bodyTilt: 0,
-    eyeOpenness: 0.85,
-  },
 };
 
 export const MASCOT_STATE_POSES: Record<MascotPoseId, MascotPoseConfig> = {
@@ -217,17 +190,6 @@ export const MASCOT_STATE_POSES: Record<MascotPoseId, MascotPoseConfig> = {
     bodyOffsetY: 0,
     glow: false,
     sparkles: false,
-  },
-  focus: {
-    id: 'focus',
-    label: 'Focus Session',
-    expression: 'focused',
-    description: 'Distraction-free, poised posture alongside running timer with forward typing fins.',
-    bodyOffsetY: 0,
-    glow: true,
-    sparkles: false,
-    overrideLeftFin: -6,
-    overrideRightFin: -6,
   },
   low_energy: {
     id: 'low_energy',

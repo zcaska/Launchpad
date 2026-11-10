@@ -12,7 +12,8 @@ import {
   ChartBar as BarChart2,
   Trash
 } from '@phosphor-icons/react';
-import { AppData } from '../../types';
+import { AppData, type ConfettiStyle } from '../../types';
+import { ConfettiOverlay } from '../Dashboard/ConfettiOverlay';
 import { exportDataAsJson, importDataFromJson, getStorageMetrics } from '../../utils/storage';
 import { DEFAULT_INITIAL_PREFERENCES } from '../../data/seedData';
 import { Mascot } from '../Pet/Mascot';
@@ -46,6 +47,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
 }) => {
   const [copiedUrl, setCopiedUrl] = useState(false);
   const [isMascotShowcaseOpen, setIsMascotShowcaseOpen] = useState(false);
+  const [confettiPreview, setConfettiPreview] = useState<{ style: ConfettiStyle; key: number } | null>(null);
   const [isClearingData, setIsClearingData] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -507,7 +509,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
                   <div className="font-semibold text-serene-text-primary dark:text-serene-text-darkPrimary">
                     Confetti Celebration
                   </div>
-                  <div className="text-[10px] text-serene-text-muted">Animation shown when all tasks are done</div>
+                  <div className="text-[10px] text-serene-text-muted">Choose a style to preview its celebration animation</div>
                 </div>
                 <div className="flex flex-wrap items-center gap-1.5">
                   {([
@@ -517,7 +519,10 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
                   ] as const).map(({ id, label }) => (
                     <button
                       key={id}
-                      onClick={() => updateSetting('confettiStyle', id)}
+                      onClick={() => {
+                        updateSetting('confettiStyle', id);
+                        setConfettiPreview({ style: id, key: Date.now() });
+                      }}
                       className={`px-2.5 py-1.5 text-[11px] font-semibold rounded-md border transition-all ${
                         (appData.settings.confettiStyle || 'cascade') === id
                           ? 'bg-serene-primary text-white border-serene-primary shadow-2xs'
@@ -665,6 +670,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
         </div>
 
       </div>
+    {confettiPreview && <ConfettiOverlay key={confettiPreview.key} style={confettiPreview.style} />}
     <MascotShowcaseModal
       isOpen={isMascotShowcaseOpen}
       onClose={() => setIsMascotShowcaseOpen(false)}

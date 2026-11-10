@@ -102,7 +102,7 @@ export const TaskPreviewPopUp: React.FC<TaskPreviewPopUpProps> = ({
                   : 'text-serene-text-secondary dark:text-serene-text-darkSecondary'
               }`}
             >
-              {isOverdue ? `Overdue by ${countdown}` : `${countdown} left`}
+              {countdown}
             </span>
           </div>
 

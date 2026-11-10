@@ -1,6 +1,7 @@
 /**
  * Formatting helpers for task times, durations, and links.
  */
+import { formatApproximateDuration } from './timeBudget';
 
 /**
  * Extracts hours and minutes from a Date object or date/time string.
@@ -80,26 +81,7 @@ export function formatEventDuration(durationMinutes: number): string {
   if (typeof durationMinutes !== 'number' || isNaN(durationMinutes) || durationMinutes <= 0) {
     return '0m';
   }
-
-  const roundedMinutes = Math.round(durationMinutes);
-  const totalHours = Math.floor(roundedMinutes / 60);
-  const remainingMinutes = roundedMinutes % 60;
-
-  if (totalHours >= 24) {
-    const days = Math.floor(totalHours / 24);
-    const remHours = totalHours % 24;
-    return remHours > 0 ? `${days}d ${remHours}h` : `${days}d`;
-  }
-
-  if (totalHours === 0) {
-    return `${remainingMinutes}m`;
-  }
-
-  if (remainingMinutes === 0) {
-    return `${totalHours}h`;
-  }
-
-  return `${totalHours}h ${remainingMinutes}m`;
+  return formatApproximateDuration(durationMinutes, { allowWeeks: false });
 }
 
 /**

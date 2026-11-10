@@ -38,13 +38,11 @@ const requiredExpressions: MascotExpressionId[] = [
   'disappointed',
   'sleepy',
   'excited',
-  'focused',
-  'determined',
 ];
 
 assert(
-  requiredExpressions.length === 10,
-  'All 10 required expressions are enumerated'
+  requiredExpressions.length === 8,
+  'All 8 current expressions are enumerated'
 );
 
 for (const exprId of requiredExpressions) {
@@ -71,7 +69,6 @@ assert(
 // 4. All 4 State Pose References
 const requiredPoses: MascotPoseId[] = [
   'idle',
-  'focus',
   'low_energy',
   'task_completion',
   'return_after_away',

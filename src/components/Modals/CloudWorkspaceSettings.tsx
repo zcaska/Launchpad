@@ -50,6 +50,7 @@ export function CloudWorkspaceSettings({ workspace, onSwitch, sync }: {
   const connect = async (action: 'resume' | 'sign-in' | 'sign-up') => {
     setBusy(true);
     setMessage('');
+    let authenticated = false;
     try {
       const client = await getCloudClient(project);
       if (action === 'sign-up') {
@@ -57,24 +58,35 @@ export function CloudWorkspaceSettings({ workspace, onSwitch, sync }: {
         if (error) throw error;
         if (!data.session) {
           setMessage('Check your email to confirm your account, then return here and sign in.');
+          setPassword('');
           return;
         }
+        authenticated = true;
       } else if (action === 'sign-in') {
         const { error } = await client.auth.signInWithPassword({ email: email.trim(), password });
         if (error) throw error;
+        authenticated = true;
       }
       flushAppDataSave();
       const next = await openCloudWorkspace(project, copyLocal ? loadAppData() : undefined);
       if (!next) {
-        setMessage('Sign in to this Supabase project first.');
+        setMessage(authenticated
+          ? 'Signed in, but this browser could not restore the session. Check that site storage is enabled and try again.'
+          : 'Sign in to this Supabase project first.');
         return;
       }
+      setPassword('');
       onSwitch(next);
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Unable to open the cloud workspace.');
+      const detail = error instanceof Error ? error.message : 'Please try again.';
+      const stage = authenticated ? 'Signed in, but the workspace could not be opened'
+        : action === 'resume' ? 'Could not resume the workspace'
+        : action === 'sign-up' ? 'Account creation failed' : 'Sign-in failed';
+      setMessage(/failed to fetch|network request failed/i.test(detail)
+        ? `${stage}: this device could not reach the cloud service. Check its internet connection and try again.`
+        : `${stage}: ${detail}`);
     } finally {
       setBusy(false);
-      if (action !== 'resume') setPassword('');
     }
   };
 
@@ -96,6 +108,7 @@ export function CloudWorkspaceSettings({ workspace, onSwitch, sync }: {
     <section aria-labelledby="cloud-sync-title" className="space-y-3 rounded-xl border border-stone-300 p-4 dark:border-stone-700">
       <h3 id="cloud-sync-title" className="font-bold">Supabase cloud workspaces</h3>
       <p className="text-sm">Open the same project with the same account on each device to sync tasks, notes, preferences, and progress.</p>
+      {message && (projectForm || workspace?.project.url === project.url) && <p role="alert" className="break-words rounded-lg border border-amber-400/40 bg-amber-500/10 p-3 text-sm">{message}</p>}
       {workspace && (
         <div className="space-y-2 rounded-lg bg-teal-500/10 p-3 text-sm">
           <p className="break-words font-semibold">{workspace.project.name} · {workspace.email}</p>
@@ -154,6 +167,7 @@ export function CloudWorkspaceSettings({ workspace, onSwitch, sync }: {
             <input className="mt-1" type="checkbox" checked={copyLocal} onChange={(event) => setCopyLocal(event.target.checked)} disabled={busy} />
             Copy my local workspace into this cloud account if it has no workspace yet
           </label>
+          {message && <p role="alert" className="break-words rounded-lg border border-amber-400/40 bg-amber-500/10 p-3 text-sm">{message}</p>}
           <div className="flex flex-wrap gap-2">
             <button className={primary} type="submit" disabled={busy}>{busy ? 'Connecting…' : 'Sign in'}</button>
             <button className={button} type="submit" disabled={busy} onClick={(event) => {
@@ -165,7 +179,6 @@ export function CloudWorkspaceSettings({ workspace, onSwitch, sync }: {
           </div>
         </form>
       )}
-      {message && <p role="status" className="break-words text-sm">{message}</p>}
     </section>
   );
 }

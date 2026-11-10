@@ -49,19 +49,25 @@ function writeContinuity(value: Continuity) {
 export interface PetControllerOptions {
   enabled: boolean;
   paused: boolean;          // user paused movement (settings.pet.paused)
-  focusActive: boolean;
+
   pendingCount: number;
   uiActive: boolean;        // a modal is open or a text input is focused
 }
 
 export interface PetController {
   state: PetState;
+  celebrationSequence: number;
+  celebrating: boolean;
+  settleCelebration: (sequence: number) => void;
   /** Feed a pet cue from app events. */
   cue: (cue: PetCue) => void;
 }
 
 export function usePetController(opts: PetControllerOptions): PetController {
   const [state, setState] = useState<PetState>('idle');
+  const [celebrationSequence, setCelebrationSequence] = useState(0);
+  const [settledSequence, setSettledSequence] = useState(0);
+  const settleCelebration = useCallback((sequence: number) => setSettledSequence(previous => Math.max(previous, sequence)), []);
   // Mirror of state so decisions read it synchronously; keeps all timer/
   // dispatch side effects OUT of state updaters (StrictMode-safe).
   const stateRef = useRef<PetState>('idle');
@@ -104,12 +110,14 @@ export function usePetController(opts: PetControllerOptions): PetController {
     (cue: PetCue, variation?: VariationPick) => {
       const o = { ...optsRef.current, vibrateOk };
       if (!o.enabled) return;
+      if (cue === 'feed-task-done' || cue === 'feed-major-task-done') setCelebrationSequence(value => value + 1);
       const decision = nextPet(stateRef.current, cue, {
-        focusActive: o.focusActive,
         pendingCount: o.pendingCount,
         vibrateOk,
         variation,
       });
+      // Ignored cues must not cancel a reaction's pending return-to-idle timer.
+      if (decision.state === stateRef.current && !decision.transientMs) return;
       clearTransient();
       clearRoam();
 
@@ -119,7 +127,6 @@ export function usePetController(opts: PetControllerOptions): PetController {
           const oo = optsRef.current;
           apply(
             nextPet(stateRef.current, 'env-transient-end', {
-              focusActive: oo.focusActive,
               pendingCount: oo.pendingCount,
               vibrateOk,
             }).state
@@ -135,7 +142,6 @@ export function usePetController(opts: PetControllerOptions): PetController {
             const oo = optsRef.current;
             apply(
               nextPet(stateRef.current, 'env-roam-end', {
-                focusActive: oo.focusActive,
                 pendingCount: oo.pendingCount,
                 vibrateOk,              }).state
             );
@@ -150,17 +156,6 @@ export function usePetController(opts: PetControllerOptions): PetController {
   );
 
   const cue = useCallback((c: PetCue) => dispatch(c), [dispatch]);
-
-  // ---- Focus sessions: react to start/end, cancel any roam immediately ----
-  const prevFocusRef = useRef(opts.focusActive);
-  useEffect(() => {
-    if (prevFocusRef.current !== opts.focusActive) {
-      prevFocusRef.current = opts.focusActive;
-      dispatch(opts.focusActive ? 'feed-focus-start' : 'feed-focus-end');
-    } else if (opts.focusActive) {
-      clearRoam();
-    }
-  }, [opts.focusActive, dispatch, clearRoam]);
 
   // Pausing movement, open modals, or focused inputs: end any roam in progress
   // and park the pet back home (otherwise it would keep the walking pose).
@@ -212,8 +207,8 @@ export function usePetController(opts: PetControllerOptions): PetController {
       const o = optsRef.current;
       if (!o.enabled) return;
       if (away >= WELCOME_MS || stateRef.current === 'sleeping') {
-        dispatch('feed-user-wake'); // sleeping → welcome-back (long reunion); focused stays quiet
-      } else if (away >= 60_000 && stateRef.current === 'idle' && !o.focusActive) {
+        dispatch('feed-user-wake'); // sleeping → welcome-back (long reunion)
+      } else if (away >= 60_000 && stateRef.current === 'idle') {
         dispatch('feed-return-short'); // short absence → brief subtle greeting (0.8–1.2s)
       }
     };
@@ -236,10 +231,10 @@ export function usePetController(opts: PetControllerOptions): PetController {
     // it as a gentle hello, not a claim about productivity.
     const gap = continuity ? Date.now() - continuity.lastSeenAt : WELCOME_MS + 1;
     lastActivityRef.current = Date.now();
-    if (gap >= WELCOME_MS && !optsRef.current.focusActive) {
+    if (gap >= WELCOME_MS) {
       // Defer one beat so hydration and the initial paint settle first.
       const t = setTimeout(() => {
-        if (!document.hidden && !optsRef.current.focusActive) dispatch('env-greet');
+        if (!document.hidden) dispatch('env-greet');
       }, 600);
       return () => clearTimeout(t);
     }
@@ -263,7 +258,7 @@ export function usePetController(opts: PetControllerOptions): PetController {
         dispatch('env-doze');
         return;
       }
-      if (idleFor >= INACTIVITY_SLUMP_MS && !o.focusActive) {
+      if (idleFor >= INACTIVITY_SLUMP_MS) {
         if (stateRef.current !== 'sleeping' && stateRef.current !== 'sad') {
           dispatch('env-inactivity-slump');
         }
@@ -277,7 +272,6 @@ export function usePetController(opts: PetControllerOptions): PetController {
       // Overload check
       if (
         o.pendingCount >= PET_OVERWHELM_THRESHOLD &&
-        !o.focusActive &&
         Date.now() - lastOverwhelmedRef.current > OVERWHELM_COOLDOWN_MS
       ) {
         lastOverwhelmedRef.current = Date.now();
@@ -285,8 +279,8 @@ export function usePetController(opts: PetControllerOptions): PetController {
         return;
       }
 
-      // Idle variation: only from idle, never during focus.
-      if (stateRef.current !== 'idle' || o.focusActive) return;
+      // Idle variations never interrupt an event reaction.
+      if (stateRef.current !== 'idle') return;
 
       // Coffee break: rare idle variation
       if (Date.now() - lastCoffeeRef.current > COFFEE_COOLDOWN_MS) {
@@ -337,5 +331,5 @@ export function usePetController(opts: PetControllerOptions): PetController {
     };
   }, []);
 
-  return { state, cue };
+  return { state, cue, celebrationSequence, celebrating: celebrationSequence > settledSequence, settleCelebration };
 }

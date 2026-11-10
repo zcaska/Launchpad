@@ -8,20 +8,76 @@ export function getTimeOfDayBucket(date: Date = new Date()): TimeOfDayBucket {
   return 'night';
 }
 
-export function formatMinutesToHours(totalMinutes: number): string {
-  if (totalMinutes <= 0) return '0m';
-  const totalHours = Math.floor(totalMinutes / 60);
-  const mins = Math.round(totalMinutes % 60);
+export interface FormatApproximateDurationOptions {
+  allowWeeks?: boolean;
+}
 
-  if (totalHours >= 24) {
-    const days = Math.floor(totalHours / 24);
-    const remHours = totalHours % 24;
-    return remHours > 0 ? `${days}d ${remHours}h` : `${days}d`;
+/**
+ * Formats duration in minutes into a clean, human-readable approximate time format.
+ * Rules:
+ * - Extends to at most 2 levels (highest-order non-zero unit + immediate sub-unit).
+ * - Smallest unit is minutes (m).
+ * - Uses compact abbreviations: y (year), mo (month), w (week), d (day), h (hour), m (minute).
+ * - Fixed workload / calendar conversions: 1y = 12mo, 1mo = 30d, 1w = 7d, 1d = 24h, 1h = 60m.
+ * - Examples:
+ *   - 2h 35m -> "2h 35m"
+ *   - 2d 12h 36m -> "2d 12h"
+ *   - 4 months 12 days -> "4mo 12d"
+ *   - 1 week 3 days -> "1w 3d" (when allowWeeks: true)
+ */
+export function formatApproximateDuration(
+  totalMinutes: number,
+  options?: FormatApproximateDurationOptions
+): string {
+  const m = Math.floor(Math.max(0, totalMinutes));
+  if (m <= 0) return '0m';
+
+  const dayMin = 24 * 60; // 1440
+  const weekMin = 7 * dayMin; // 10080
+  const monthMin = 30 * dayMin; // 43200 (fixed 30-day month)
+  const yearMin = 12 * monthMin; // 518400 (fixed 12-month year)
+
+  // 1. Years (>= 1 year) -> at most 2 levels: y, mo
+  if (m >= yearMin) {
+    const years = Math.floor(m / yearMin);
+    const months = Math.floor((m % yearMin) / monthMin);
+    return months > 0 ? `${years}y ${months}mo` : `${years}y`;
   }
 
-  if (totalHours === 0) return `${mins}m`;
-  if (mins === 0) return `${totalHours}h`;
-  return `${totalHours}h ${mins}m`;
+  // 2. Months (>= 1 month = 30d) -> at most 2 levels: mo, d
+  if (m >= monthMin) {
+    const months = Math.floor(m / monthMin);
+    const days = Math.floor((m % monthMin) / dayMin);
+    return days > 0 ? `${months}mo ${days}d` : `${months}mo`;
+  }
+
+  // 3. Weeks (>= 1 week = 7d) -> at most 2 levels: w, d (if allowWeeks)
+  if (options?.allowWeeks && m >= weekMin) {
+    const weeks = Math.floor(m / weekMin);
+    const days = Math.floor((m % weekMin) / dayMin);
+    return days > 0 ? `${weeks}w ${days}d` : `${weeks}w`;
+  }
+
+  // 4. Days (>= 1 day = 24h) -> at most 2 levels: d, h
+  if (m >= dayMin) {
+    const days = Math.floor(m / dayMin);
+    const hours = Math.floor((m % dayMin) / 60);
+    return hours > 0 ? `${days}d ${hours}h` : `${days}d`;
+  }
+
+  // 5. Hours (>= 1 hour = 60m) -> at most 2 levels: h, m
+  if (m >= 60) {
+    const hours = Math.floor(m / 60);
+    const mins = m % 60;
+    return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
+  }
+
+  // 6. Minutes (< 60m) -> 1 level: m
+  return `${m}m`;
+}
+
+export function formatMinutesToHours(totalMinutes: number): string {
+  return formatApproximateDuration(totalMinutes, { allowWeeks: false });
 }
 
 export interface DayTimeRemaining {
@@ -124,6 +180,12 @@ export interface BufferSummary {
   formatted: string;
   loadRatioPercentage: number; // pendingMinutes / availableMinutes
 }
+
+export const bufferTextColor = {
+  surplus: 'text-emerald-700 dark:text-emerald-400',
+  tight: 'text-amber-700 dark:text-amber-400',
+  overloaded: 'text-red-700 dark:text-red-400',
+};
 
 export function calculateBuffer(
   availableMinutes: number,

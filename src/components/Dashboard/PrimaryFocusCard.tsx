@@ -19,13 +19,13 @@ import {
   CaretRight as ChevronRight
 } from '@phosphor-icons/react';
 import { QuickNote, RecommendationCandidate } from '../../types';
+import { formatApproximateDuration } from '../../utils/timeBudget';
 import {
   calculateTaskUrgency,
   computeSubtaskContainerState,
   TaskUrgencyInfo,
 } from '../../utils/taskUrgency';
 import { SafeDescription } from '../Common/SafeDescription';
-import { TaskPreviewPopUp } from '../Tasks/TaskPreviewPopUp';
 import { formatEventTime, formatEventDuration } from '../../utils/textFormatting';
 import { SmartSuggestionCard } from './SmartSuggestionCard';
 
@@ -102,48 +102,25 @@ function deriveDeadlineMetrics(urgency: TaskUrgencyInfo): {
 
   if (diffMs < 0) {
     const totalMinutes = Math.max(1, Math.round(Math.abs(diffMs) / 60000));
-    const hours = Math.floor(totalMinutes / 60);
-    const mins = totalMinutes % 60;
-
-    if (hours >= 24) {
-      const days = Math.floor(hours / 24);
-      const remHours = hours % 24;
-      const timeStr = remHours > 0 ? `${days}d ${remHours}h` : `${days}d`;
-      return {
-        headerBadge: `Overdue by ${timeStr}`,
-        countdownText: `${timeStr} overdue`,
-        progressPercent: 100,
-      };
-    }
-
-    const timeStr = hours > 0 ? (mins > 0 ? `${hours}h ${mins}m` : `${hours}h`) : `${mins}m`;
+    const timeStr = formatApproximateDuration(totalMinutes, { allowWeeks: true });
     return {
       headerBadge: `Overdue by ${timeStr}`,
-      countdownText: `${timeStr} overdue`,
+      countdownText: totalMinutes < 60 ? `${totalMinutes}m overdue` : `${timeStr} overdue`,
       progressPercent: 100,
     };
   }
 
   const totalMinutes = Math.max(1, Math.round(diffMs / 60000));
-  const hours = Math.floor(totalMinutes / 60);
-  const mins = totalMinutes % 60;
-
-  if (hours < 24) {
-    const timeStr = hours > 0 ? (mins > 0 ? `${hours}h ${mins}m` : `${hours}h`) : `${mins}m`;
-    return {
-      headerBadge: `Due in ${timeStr}`,
-      countdownText: `${timeStr} left`,
-      progressPercent: Math.min(100, Math.max(12, Math.round((1 - hours / 24) * 100))),
-    };
-  }
-
+  const timeStr = formatApproximateDuration(totalMinutes, { allowWeeks: true });
+  const hours = totalMinutes / 60;
   const days = Math.floor(hours / 24);
-  const remHours = hours % 24;
-  const timeStr = remHours > 0 ? `${days}d ${remHours}h` : `${days}d`;
+
   return {
     headerBadge: `Due in ${timeStr}`,
     countdownText: `${timeStr} left`,
-    progressPercent: days < 3 ? 45 : days < 14 ? 25 : 10,
+    progressPercent: hours < 24
+      ? Math.min(100, Math.max(12, Math.round((1 - hours / 24) * 100)))
+      : days < 3 ? 45 : days < 14 ? 25 : 10,
   };
 }
 
@@ -191,7 +168,6 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
   const [isProcedureMenuOpen, setIsProcedureMenuOpen] = useState(false);
   const [isOverflowMenuOpen, setIsOverflowMenuOpen] = useState(false);
   const [copyFeedback, setCopyFeedback] = useState(false);
-  const [previewTaskId, setPreviewTaskId] = useState<string | null>(null);
 
   const desktopProcedureRef = useRef<HTMLDivElement>(null);
   const mobileProcedureRef = useRef<HTMLDivElement>(null);
@@ -220,29 +196,22 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const { pendingTasks, todayTasks } = useMemo(() => {
+  // `tasks` is already scoped to today by the parent (tasksDueToday). Derive pending
+  // ranking for active-task selection; no re-filtering by date here.
+  const pendingTasks = useMemo(() => {
     const now = new Date();
-    const ranked = tasks
+    return tasks
       .filter((task) => !task.isDone)
       .map((task) => ({ task, urgency: calculateTaskUrgency(task.deadline, now) }))
-      .sort((a, b) => b.urgency.urgencyWeight - a.urgency.urgencyWeight);
-    const due = ranked.filter(({ urgency }) =>
-      urgency.isDueToday || urgency.isOverdue
-    );
-    const current = ranked.filter(({ urgency }) =>
-      urgency.tier !== 'upcoming' && urgency.tier !== 'later' && urgency.tier !== 'long_term'
-    );
-    return {
-      pendingTasks: ranked.map(({ task }) => task),
-      todayTasks: (due.length ? due : current.length ? current : ranked).map(({ task }) => task),
-    };
+      .sort((a, b) => b.urgency.urgencyWeight - a.urgency.urgencyWeight)
+      .map(({ task }) => task);
   }, [tasks]);
 
   const activeTask = completedTask ?? pendingTasks.find((task) => task.id === selectedTaskId) ?? pendingTasks[0];
   const effectiveTodayTasks = useMemo(() => {
-    if (!activeTask || completedTask || todayTasks.some((task) => task.id === activeTask.id)) return todayTasks;
-    return [activeTask, ...todayTasks];
-  }, [todayTasks, activeTask, completedTask]);
+    if (!activeTask || completedTask || pendingTasks.some((task) => task.id === activeTask.id)) return pendingTasks;
+    return [activeTask, ...pendingTasks];
+  }, [pendingTasks, activeTask, completedTask]);
 
   const currentTaskIndex = useMemo(() => {
     if (!activeTask || effectiveTodayTasks.length === 0) return -1;
@@ -256,7 +225,6 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
     const nextTask = effectiveTodayTasks[newIndex];
     if (nextTask) {
       onSelectTask?.(nextTask.id);
-      onPreviewTask?.(nextTask.id);
     }
   };
 
@@ -266,7 +234,6 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
     const nextTask = effectiveTodayTasks[newIndex];
     if (nextTask) {
       onSelectTask?.(nextTask.id);
-      onPreviewTask?.(nextTask.id);
     }
   };
 
@@ -432,10 +399,10 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
               <Target className="w-6 h-6" />
             </div>
             <h3 className="text-sm font-bold text-serene-text-primary dark:text-serene-text-darkPrimary">
-              No active task selected — nothing on your plate!
+              No tasks due today
             </h3>
             <p className="text-xs text-serene-text-muted dark:text-serene-text-darkMuted mt-1 max-w-sm mx-auto">
-              Add a new task or pick one from your queue to start cooking.
+              Everything due today is clear. Open Tasks to view or add upcoming tasks.
             </p>
           </div>
         )}
@@ -514,13 +481,13 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
 
                 {/* Task Title */}
                 <h3
-                  className="text-lg lg:text-xl font-bold text-serene-text-primary dark:text-serene-text-darkPrimary leading-snug line-clamp-2 cursor-pointer hover:text-teal-600 dark:hover:text-teal-400 transition-colors"
-                  onClick={() => {
-                    onPreviewTask?.(activeTask.id);
-                    setPreviewTaskId(activeTask.id);
-                  }}
+                  className="text-lg lg:text-xl font-bold text-serene-text-primary dark:text-serene-text-darkPrimary leading-snug"
                 >
-                  {completedTask ? <s>{activeTask.text}</s> : activeTask.text}
+                  <button type="button" onClick={() => onPreviewTask?.(activeTask.id)}
+                    className="line-clamp-2 text-left hover:text-teal-600 dark:hover:text-teal-400 transition-colors rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-teal-600"
+                    title="Open in Tasks">
+                    {completedTask ? <s>{activeTask.text}</s> : activeTask.text}
+                  </button>
                 </h3>
 
                 {/* Multiline Description with safe sanitization */}
@@ -575,24 +542,24 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
             </div>
 
             {/* Right section: Deadline Block with visual progress bar */}
-            <div className="pl-6 lg:pl-8 border-l border-rose-200 dark:border-rose-900/50 flex flex-col justify-center items-start shrink-0 min-w-[200px] lg:min-w-[220px]">
+            <div className="rounded-xl border border-serene-border-light bg-white p-4 dark:border-serene-border-dark dark:bg-serene-surfaceAlt-dark flex flex-col justify-center items-start shrink-0 min-w-[200px] lg:min-w-[220px]" data-testid="focus-deadline-desktop">
               <div className="w-full">
-                <div className="flex items-center gap-1.5 text-rose-500 dark:text-rose-400 mb-1">
+                <div className="flex items-center gap-1.5 text-rose-700 dark:text-rose-300 mb-1">
                   <Clock className="w-4 h-4 shrink-0" />
                   <span className="text-xs font-bold uppercase tracking-wider">Deadline</span>
                 </div>
-                <div className="text-base lg:text-lg font-bold text-rose-600 dark:text-rose-400 leading-snug">
+                <div className="text-base lg:text-lg font-bold text-serene-text-primary dark:text-serene-text-darkPrimary leading-snug">
                   {deadlineDateLabel} · <span className="font-mono text-sm font-semibold">{deadlineTimeLabel}</span>
                 </div>
-                <div className="text-xs sm:text-sm font-semibold text-rose-700/80 dark:text-rose-300/80 mt-1">
+                <div className="text-sm font-semibold text-serene-text-secondary dark:text-serene-text-darkSecondary mt-1">
                   {deadlineMetrics.countdownText}
                 </div>
               </div>
 
               {/* Visual Deadline Progress Bar */}
-              <div className="w-full h-2 bg-rose-200/80 dark:bg-rose-950/80 rounded-full overflow-hidden mt-2">
+              <div className="w-full h-2 bg-slate-200 dark:bg-slate-600 rounded-full overflow-hidden mt-2">
                 <div
-                  className="h-full bg-rose-500 rounded-full transition-all duration-300"
+                  className="h-full bg-rose-600 dark:bg-rose-400 rounded-full transition-all duration-300"
                   style={{ width: `${deadlineMetrics.progressPercent}%` }}
                 />
               </div>
@@ -892,15 +859,15 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
                   </span>
                 </div>
 
-                {/* Task Title (clickable for preview pop-up) */}
+                {/* Task title opens the Tasks view. */}
                 <h3
-                  className="text-xl font-bold text-serene-text-primary dark:text-serene-text-darkPrimary leading-snug break-words cursor-pointer hover:text-teal-600 dark:hover:text-teal-400 transition-colors"
-                  onClick={() => {
-                    onPreviewTask?.(activeTask.id);
-                    setPreviewTaskId(activeTask.id);
-                  }}
+                  className="text-xl font-bold text-serene-text-primary dark:text-serene-text-darkPrimary leading-snug break-words"
                 >
-                  {completedTask ? <s>{activeTask.text}</s> : activeTask.text}
+                  <button type="button" onClick={() => onPreviewTask?.(activeTask.id)}
+                    className="text-left hover:text-teal-600 dark:hover:text-teal-400 transition-colors rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-teal-600"
+                    title="Open in Tasks">
+                    {completedTask ? <s>{activeTask.text}</s> : activeTask.text}
+                  </button>
                 </h3>
 
                 {/* Multiline Description with safe sanitization */}
@@ -916,36 +883,38 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
               </div>
             </div>
 
-            {/* Right: Chevron button to open task preview pop-up */}
+            {/* Open the task in the Tasks view. */}
             <button
               type="button"
               onClick={() => {
                 onPreviewTask?.(activeTask.id);
-                setPreviewTaskId(activeTask.id);
               }}
               className="w-8 h-8 rounded-xl bg-white/60 dark:bg-stone-900/50 border border-rose-200/60 dark:border-rose-900/40 flex items-center justify-center text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 hover:bg-white dark:hover:bg-stone-800 transition-all cursor-pointer shrink-0 shadow-2xs"
-              title="Preview task"
+              title="Open in Tasks"
             >
               <ChevronRight className="w-4 h-4" />
             </button>
           </div>
 
           {/* Row 2: Deadline Block with visual progress bar (Horizontal Single-Row Layout) */}
-          <div className="pt-2 border-t border-rose-200/50 dark:border-rose-900/30">
+          <div className="rounded-lg border border-serene-border-light bg-white p-3 dark:border-serene-border-dark dark:bg-serene-surfaceAlt-dark" data-testid="focus-deadline-mobile">
             <div className="flex items-center justify-between gap-3 mb-1">
-              <div className="flex items-center gap-1.5 text-rose-500 dark:text-rose-400">
+              <div className="flex items-center gap-1.5 text-rose-700 dark:text-rose-300">
                 <Clock className="w-4 h-4 shrink-0" />
                 <span className="text-xs font-bold uppercase tracking-wider">DEADLINE</span>
               </div>
-              <div className="w-24 h-2 bg-rose-200/80 dark:bg-rose-950/80 rounded-full overflow-hidden">
+              <div className="w-24 h-2 bg-slate-200 dark:bg-slate-600 rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-rose-500 rounded-full transition-all duration-300"
+                  className="h-full bg-rose-600 dark:bg-rose-400 rounded-full transition-all duration-300"
                   style={{ width: `${deadlineMetrics.progressPercent}%` }}
                 />
               </div>
             </div>
-            <div className="text-base font-bold text-rose-600 dark:text-rose-400 leading-snug">
+            <div className="text-base font-bold text-serene-text-primary dark:text-serene-text-darkPrimary leading-snug">
               {deadlineDateLabel} · <span className="font-mono text-sm font-semibold">{deadlineTimeLabel}</span>
+            </div>
+            <div className="mt-1 text-sm font-semibold text-serene-text-secondary dark:text-serene-text-darkSecondary">
+              {deadlineMetrics.countdownText}
             </div>
           </div>
 
@@ -1244,16 +1213,6 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
         </div>
       </div>
 
-  {previewTaskId && tasks.some((t) => t.id === previewTaskId) && (
-    <TaskPreviewPopUp
-      task={tasks.find((t) => t.id === previewTaskId)!}
-      onClose={() => setPreviewTaskId(null)}
-      onOpenTask={(id) => {
-        setPreviewTaskId(null);
-        onSelectTask?.(id);
-      }}
-    />
-  )}
     </>
   );
 });

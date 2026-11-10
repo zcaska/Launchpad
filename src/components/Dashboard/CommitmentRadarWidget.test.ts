@@ -108,19 +108,37 @@ const countdownAi = formatTaskCountdown(mockTasksImage1[0], refDate);
 assertEqual(countdownAi, '5h 35m left', 'AI Summit countdown matches "5h 35m left"');
 
 const countdownEcon = formatTaskCountdown(mockTasksImage1[1], refDate);
-assertEqual(countdownEcon, '2 days left', 'Economics Essay countdown matches "2 days left"');
+assertEqual(countdownEcon, '2d left', 'Economics Essay countdown matches "2d left"');
 
 const countdownExcel = formatTaskCountdown(mockTasksImage1[2], refDate);
-assertEqual(countdownExcel, '4 days left', 'Excel Test countdown matches "4 days left"');
+assertEqual(countdownExcel, '4d left', 'Excel Test countdown matches "4d left"');
 
 const countdownDsc = formatTaskCountdown(mockTasksImage1[3], refDate);
-assertEqual(countdownDsc, '6 days left', 'DSC Interview countdown matches "6 days left"');
+assertEqual(countdownDsc, '6d left', 'DSC Interview countdown matches "6d left"');
 
 const countdownSpanish = formatTaskCountdown(mockTasksImage1[4], refDate);
-assertEqual(countdownSpanish, '1 week left', 'Spanish Practice countdown matches "1 week left"');
+assertEqual(countdownSpanish, '1w left', 'Spanish Practice countdown matches "1w left"');
 
 const countdownNoDeadline = formatTaskCountdown(mockTasksImage1[5], refDate);
 assertEqual(countdownNoDeadline, 'No deadline', 'Open Horizon task countdown returns "No deadline"');
+
+const countdown2d12h = formatTaskCountdown({
+  id: 'task-2d12h',
+  text: 'Research Draft',
+  isDone: false,
+  createdAt: refDate.getTime(),
+  deadline: new Date(refDate.getTime() + (2 * 1440 + 12 * 60 + 36) * 60000).toISOString(),
+}, refDate);
+assertEqual(countdown2d12h, '2d 12h left', 'Task in 2d 12h 36m matches "2d 12h left"');
+
+const countdown4mo12d = formatTaskCountdown({
+  id: 'task-4mo12d',
+  text: 'Long Term Goal',
+  isDone: false,
+  createdAt: refDate.getTime(),
+  deadline: new Date(refDate.getTime() + (4 * 43200 + 12 * 1440) * 60000).toISOString(),
+}, refDate);
+assertEqual(countdown4mo12d, '4mo 12d left', 'Task in 4 months 12 days matches "4mo 12d left"');
 
 // 5. Test Coordinate Projection via projectTasksToRadarCoordinates
 console.log('--- Coordinate Projection Verification ---');

@@ -1,6 +1,7 @@
 import { memo, useId, useState } from 'react';
 import { Clock } from '@phosphor-icons/react';
 import type { DayTimeRemaining, TaskLoadSummary, BufferSummary } from '../../utils/timeBudget';
+import { bufferTextColor } from '../../utils/timeBudget';
 
 interface TimeRadarWidgetProps {
   timeRemaining: DayTimeRemaining;
@@ -37,7 +38,7 @@ export const TimeRadarWidget = memo(function TimeRadarWidget({
           Manage tasks
         </button>
       </div>
-      <p className="mt-2 text-3xl font-bold tabular-nums">{buffer.bufferMinutes < 0 ? '−' : buffer.bufferMinutes > 0 ? '+' : ''}{buffer.formatted}</p>
+      <p className={`mt-2 text-3xl font-bold tabular-nums ${bufferTextColor[buffer.status]}`}>{buffer.bufferMinutes < 0 ? '−' : buffer.bufferMinutes > 0 ? '+' : ''}{buffer.formatted}</p>
       <p className="mt-1 text-sm text-serene-text-secondary dark:text-serene-text-darkSecondary">{statusText[buffer.status]}</p>
       <button type="button" aria-expanded={showBreakdown} aria-controls={breakdownId}
         onClick={() => setShowBreakdown(!showBreakdown)}

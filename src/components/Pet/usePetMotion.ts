@@ -6,7 +6,7 @@ export interface PetMotionOptions {
   paused: boolean;
   reducedMotion: boolean;
   dockPosition?: { x: number; y: number };
-  focusActive?: boolean;
+  resting?: boolean;
   onPetClick?: () => void;
 }
 
@@ -183,7 +183,7 @@ export function usePetMotion({
   paused,
   reducedMotion,
   dockPosition,
-  focusActive = false,
+  resting = false,
   onPetClick,
 }: PetMotionOptions): PetMotionState {
   const [pos, setPos] = useState<{ x: number; y: number }>(() => {
@@ -302,7 +302,7 @@ export function usePetMotion({
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    if (paused || isDragging || focusActive) {
+    if (paused || reducedMotion || isDragging || resting) {
       clearTimers();
       setIsFlying(false);
       return;
@@ -315,7 +315,7 @@ export function usePetMotion({
     return () => {
       clearTimers();
     };
-  }, [paused, isDragging, focusActive, roaming, clearTimers]);
+  }, [paused, reducedMotion, isDragging, resting, roaming, clearTimers]);
 
   // Pointer drag handlers
   const onPointerDown = useCallback((e: React.PointerEvent<HTMLElement>) => {
