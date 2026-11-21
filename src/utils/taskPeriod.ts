@@ -110,7 +110,12 @@ export function parsePeriodDeadline(deadline: string | undefined, now: Date): Da
     if (!isValidLocalDate(y, m, d)) return null;
     return new Date(y, m - 1, d, 23, 59, 59);
   }
-  const fallback = new Date(deadline.replace(' ', 'T'));
+  // Leave legacy formats intact for the native parser.
+  const dateTime = deadline.replace(
+    /^(\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:?\d{2})?)$/i,
+    '$1T$2',
+  );
+  const fallback = new Date(dateTime);
   return Number.isNaN(fallback.getTime()) ? null : fallback;
 }
 

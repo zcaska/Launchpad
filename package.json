@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "test": "tsx src/utils/storage.test.ts && tsx src/services/cloudWorkspace.test.ts && tsx src/utils/taskPeriod.test.ts && tsx src/components/Tasks/taskListProjection.test.ts && tsx src/components/Tasks/taskDialog.test.tsx && tsx src/utils/petEvolution.test.ts && tsx src/utils/taskReflection.test.ts",
+    "test": "tsx src/utils/storage.test.ts && tsx src/services/cloudWorkspace.test.ts && tsx src/utils/taskPeriod.test.ts && tsx src/components/Tasks/taskListProjection.test.ts && tsx src/components/Tasks/taskDeadlineEditor.test.ts && tsx src/components/Tasks/taskDialog.test.tsx && tsx src/utils/petEvolution.test.ts && tsx src/utils/taskReflection.test.ts",
     "preview": "vite preview",
     "predeploy": "npm run build",
     "deploy": "gh-pages -d dist"

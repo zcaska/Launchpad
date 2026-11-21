@@ -28,6 +28,7 @@ import { staggerItemVariants, staggerContainerVariants } from '../../utils/motio
 import { SafeDescription } from '../Common/SafeDescription';
 import { TaskLinks } from './TaskLinks';
 import { TaskEditorDialog } from './TaskEditorDialog';
+import { formatLocalYMD, projectDeadlineEditor } from './taskDeadlineEditor';
 import type { TaskDialogTrigger } from './TaskDialog';
 import type { TaskAction } from '../../utils/taskCompletion';
 
@@ -98,13 +99,6 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
   const totalCompleted = periodLoad.completedCount;
 
   // Deadline & Date Helpers
-  const formatLocalYMD = (d: Date) => {
-    const yyyy = d.getFullYear();
-    const mm = String(d.getMonth() + 1).padStart(2, '0');
-    const dd = String(d.getDate()).padStart(2, '0');
-    return `${yyyy}-${mm}-${dd}`;
-  };
-
   // Add calendar days to a local-midnight Date without UTC parsing.
   const addDaysLocal = (d: Date, n: number) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
 
@@ -150,49 +144,9 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
     return formatLocalYMD(d);
   }, [todayYMD]);
 
-  const getDeadlineDatePart = (str: string) => {
-    if (!str) return '';
-    const match = str.match(/\d{4}-\d{2}-\d{2}/);
-    return match ? match[0] : '';
-  };
-
-  const getDeadlineTimePart = (str: string) => {
-    if (!str) return '';
-    const match = str.match(/(?:^|\s|T)(\d{2}:\d{2})/);
-    return match ? match[1] : '';
-  };
-
-  const handleSetTomorrow = () => {
-    const time = getDeadlineTimePart(formDeadline);
-    setFormDeadline(time ? `${tomorrowYMD} ${time}` : tomorrowYMD);
-  };
-
-  const handleSetToday = () => {
-    const time = getDeadlineTimePart(formDeadline);
-    setFormDeadline(time ? `${todayYMD} ${time}` : todayYMD);
-  };
-
-  const handleDeadlineDateChange = (newDate: string) => {
-    const time = getDeadlineTimePart(formDeadline);
-    if (!newDate) {
-      setFormDeadline(time || '');
-    } else {
-      setFormDeadline(time ? `${newDate} ${time}` : newDate);
-    }
-  };
-
-  const handleDeadlineTimeChange = (newTime: string) => {
-    const date = getDeadlineDatePart(formDeadline);
-    if (!newTime) {
-      setFormDeadline(date || '');
-    } else {
-      if (date) {
-        setFormDeadline(`${date} ${newTime}`);
-      } else {
-        setFormDeadline(`${todayYMD} ${newTime}`);
-      }
-    }
-  };
+  const deadlineFields = projectDeadlineEditor(formDeadline, now);
+  const handleDeadlineDateChange = (date: string) => setFormDeadline(deadlineFields.withDate(date));
+  const handleDeadlineTimeChange = (time: string) => setFormDeadline(deadlineFields.withTime(time));
 
   // Open Task Creation
   const handleOpenCreateForm = useCallback((trigger: TaskDialogTrigger | null) => {
@@ -308,7 +262,7 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
       description: formDescription.trim() || undefined,
       durationMinutes: formDuration,
       priority: formPriority,
-      deadline: formDeadline.trim() || undefined,
+      deadline: deadlineFields.value,
       attachedUrls: formUrls.length > 0 ? formUrls : undefined,
       subtasks: formSubtasks.length > 0 ? formSubtasks : undefined,
     };
@@ -1084,9 +1038,9 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
                   <div className="flex items-center gap-1.5">
                     <button
                       type="button"
-                      onClick={handleSetToday}
+                      onClick={() => handleDeadlineDateChange(todayYMD)}
                       className={`px-2 py-0.5 rounded-md text-[11px] font-medium border transition-colors ${
-                        getDeadlineDatePart(formDeadline) === todayYMD
+                        deadlineFields.date === todayYMD
                           ? 'bg-serene-primary text-white border-serene-primary'
                           : 'bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark text-serene-text-muted hover:text-serene-text-primary border-serene-border-light dark:border-serene-border-dark'
                       }`}
@@ -1095,9 +1049,9 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
                     </button>
                     <button
                       type="button"
-                      onClick={handleSetTomorrow}
+                      onClick={() => handleDeadlineDateChange(tomorrowYMD)}
                       className={`px-2 py-0.5 rounded-md text-[11px] font-medium border transition-colors ${
-                        getDeadlineDatePart(formDeadline) === tomorrowYMD
+                        deadlineFields.date === tomorrowYMD
                           ? 'bg-serene-primary text-white border-serene-primary'
                           : 'bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark text-serene-text-muted hover:text-serene-text-primary border-serene-border-light dark:border-serene-border-dark'
                       }`}
@@ -1121,7 +1075,7 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
                     <Calendar className="w-3.5 h-3.5 absolute left-3 text-serene-text-muted pointer-events-none" />
                     <input
                       type="date"
-                      value={getDeadlineDatePart(formDeadline)}
+                      value={deadlineFields.date}
                       onChange={(e) => handleDeadlineDateChange(e.target.value)}
                       className="w-full pl-8 pr-3 py-2 bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark border border-serene-border-light dark:border-serene-border-dark rounded-xl text-xs text-serene-text-primary dark:text-serene-text-darkPrimary focus:outline-none focus:ring-2 focus:ring-serene-primary/40 focus:border-serene-primary [color-scheme:light] dark:[color-scheme:dark]"
                     />
@@ -1130,7 +1084,7 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
                     <Clock className="w-3.5 h-3.5 absolute left-3 text-serene-text-muted pointer-events-none" />
                     <input
                       type="time"
-                      value={getDeadlineTimePart(formDeadline)}
+                      value={deadlineFields.time}
                       onChange={(e) => handleDeadlineTimeChange(e.target.value)}
                       placeholder="Optional time"
                       className="w-full pl-8 pr-3 py-2 bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark border border-serene-border-light dark:border-serene-border-dark rounded-xl text-xs text-serene-text-primary dark:text-serene-text-darkPrimary focus:outline-none focus:ring-2 focus:ring-serene-primary/40 focus:border-serene-primary [color-scheme:light] dark:[color-scheme:dark]"

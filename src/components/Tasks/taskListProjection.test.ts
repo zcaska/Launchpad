@@ -116,6 +116,26 @@ const undated = projectTaskList(tasksInPeriod(mixedTasks, 'Undated', now, custom
 assert.deepEqual(rowIds(undated, 'All'), ['invalid-text', 'invalid-date', 'invalid-time', 'no-deadline']);
 assert.equal(taskTabCount(undated, 'Due Soon'), 0);
 
+const legacyNow = new Date(2026, 10, 21, 8);
+const legacyRange = defaultPeriodRange('Today', legacyNow);
+const legacyDateTimes = [
+  task('rfc-date-time', 'Sat, 21 Nov 2026 18:30:00 GMT'),
+  task('slash-date-time', '11/21/2026 18:30'),
+  task('outside-range', '2026-11-24'),
+  task('unparsed', 'some day'),
+];
+for (const period of ['All time', 'Today'] as const) {
+  const legacyProjection = projectTaskList(tasksInPeriod(legacyDateTimes, period, legacyNow, legacyRange), legacyNow);
+  assert.deepEqual(rowIds(legacyProjection, 'Due Soon'), ['rfc-date-time', 'slash-date-time'], period);
+  assert.equal(taskTabCount(legacyProjection, 'Due Soon'), 2, period);
+  const timeLabel = (hour: number) => new Date(2026, 10, 21, hour, 30).toLocaleTimeString([], {
+    hour: '2-digit', minute: '2-digit',
+  });
+  assert.equal(badgeFor(legacyProjection, 'rfc-date-time')?.label, `Due today ${timeLabel(13)}`);
+  assert.equal(badgeFor(legacyProjection, 'slash-date-time')?.label, `Due today ${timeLabel(18)}`);
+}
+assert.deepEqual(tasksInPeriod(legacyDateTimes, 'Undated', legacyNow, legacyRange).map(({ id }) => id), ['unparsed']);
+
 const rolloverNotes = [
   task('time-only', '00:00'),
   task('utc-timestamp', '2026-11-11T04:55:00Z'), // Nov 10 at 23:55 in New York.
