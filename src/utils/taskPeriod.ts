@@ -92,7 +92,7 @@ export function defaultPeriodRange(period: TaskPeriod, now: Date): DateRange {
   return { start: today, end: addDays(today, 1) };
 }
 
-function deadlineDate(deadline: string | undefined, now: Date): Date | null {
+export function parsePeriodDeadline(deadline: string | undefined, now: Date): Date | null {
   if (!deadline) return null;
   if (/^\d{2}:\d{2}$/.test(deadline)) {
     const [hour, minute] = deadline.split(':').map(Number);
@@ -161,7 +161,7 @@ export function tasksInPeriod(
 ): QuickNote[] {
   return notes.filter((task) => {
     if (period === 'All time') return true;
-    const due = deadlineDate(task.deadline, now);
+    const due = parsePeriodDeadline(task.deadline, now);
     if (period === 'Undated') return !due;
     // Date-scoped views: only tasks due inside [start, end). No undated tasks,
     // no carry-forward of overdue work from outside the range, completion ignored.
@@ -175,7 +175,7 @@ export function tasksDueToday(notes: QuickNote[], now: Date): QuickNote[] {
   const today = startOfLocalDay(now);
   const tomorrow = addDays(today, 1);
   return notes.filter((task) => {
-    const due = deadlineDate(task.deadline, now);
+    const due = parsePeriodDeadline(task.deadline, now);
     return due != null && due >= today && due < tomorrow;
   });
 }

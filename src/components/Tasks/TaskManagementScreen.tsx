@@ -23,6 +23,7 @@ import { QuickNote, TaskPriority, TaskUrl, Subtask } from '../../types';
 import { bufferTextColor, formatMinutesToHours } from '../../utils/timeBudget';
 import { taskPeriods, formatPeriodMinutes, addMonthsInclusive, type TaskPeriod } from '../../utils/taskPeriod';
 import type { TaskViewState } from './useTaskView';
+import { projectTaskList, selectTaskRows, taskDeadlineBadge, taskFilterTabs, taskTabCount, type FilterTab, type TaskRow } from './taskListProjection';
 import { modalBackdropVariants, modalContentVariants, staggerItemVariants, staggerContainerVariants } from '../../utils/motion';
 import { SafeDescription } from '../Common/SafeDescription';
 import { TaskLinks } from './TaskLinks';
@@ -31,7 +32,7 @@ import type { TaskAction } from '../../utils/taskCompletion';
 export interface TaskManagementScreenProps {
   notes: QuickNote[];
   view: TaskViewState;
-  now?: Date;
+  now: Date;
   createTaskRequested: boolean;
   onCreateTaskOpened: () => void;
   searchQuery: string;
@@ -44,12 +45,10 @@ export interface TaskManagementScreenProps {
   onTaskAction: (taskId: string, action: TaskAction) => void;
 }
 
-type FilterTab = 'All' | 'Urgent' | 'High Priority' | 'Medium' | 'Low' | 'Due Soon' | 'Completed';
-
 export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
   notes,
   view,
-  now = new Date(),
+  now,
   createTaskRequested,
   onCreateTaskOpened,
   searchQuery,
@@ -189,94 +188,6 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
     }
   };
 
-  // Deadline calculation helpers
-  const getDeadlineStatus = (deadlineStr?: string) => {
-    if (!deadlineStr) return null;
-    try {
-      const now = new Date();
-      // If only time is provided (e.g. HH:MM)
-      if (/^\d{2}:\d{2}$/.test(deadlineStr)) {
-        const [hours, minutes] = deadlineStr.split(':').map(Number);
-        const deadlineDate = new Date();
-        deadlineDate.setHours(hours, minutes, 0, 0);
-        const diffMinutes = Math.round((deadlineDate.getTime() - now.getTime()) / 60000);
-        if (diffMinutes < 0) return { label: `Overdue (${deadlineStr})`, isOverdue: true, isDueToday: true };
-        if (diffMinutes <= 120) return { label: `Due in ${diffMinutes}m`, isDueSoon: true, isDueToday: true };
-        return { label: `Due at ${deadlineStr}`, isDueToday: true };
-      }
-
-      // If YYYY-MM-DD or YYYY-MM-DD HH:MM
-      let deadlineDate: Date;
-      if (/^\d{4}-\d{2}-\d{2}$/.test(deadlineStr)) {
-        const [y, m, d] = deadlineStr.split('-').map(Number);
-        deadlineDate = new Date(y, m - 1, d, 23, 59, 59);
-      } else if (/^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}/.test(deadlineStr)) {
-        const [datePart, timePart] = deadlineStr.replace('T', ' ').split(' ');
-        const [y, m, d] = datePart.split('-').map(Number);
-        const [hh, mm] = timePart.split(':').map(Number);
-        deadlineDate = new Date(y, m - 1, d, hh, mm, 0);
-      } else {
-        deadlineDate = new Date(deadlineStr);
-      }
-
-      if (isNaN(deadlineDate.getTime())) {
-        return { label: deadlineStr, isGeneral: true };
-      }
-
-      const isToday =
-        deadlineDate.getFullYear() === now.getFullYear() &&
-        deadlineDate.getMonth() === now.getMonth() &&
-        deadlineDate.getDate() === now.getDate();
-
-      const diffHours = (deadlineDate.getTime() - now.getTime()) / (1000 * 60 * 60);
-
-      if (deadlineDate.getTime() < now.getTime()) {
-        return { 
-          label: `Overdue (${deadlineDate.toLocaleDateString([], { month: 'short', day: 'numeric' })})`, 
-          isOverdue: true, 
-          isDueToday: isToday 
-        };
-      }
-      if (isToday) {
-        const hasTime = deadlineStr.includes(':');
-        return { 
-          label: hasTime 
-            ? `Due today ${deadlineDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` 
-            : 'Due today', 
-          isDueToday: true,
-          isDueSoon: diffHours <= 24 
-        };
-      }
-
-      const tomorrow = new Date();
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      const isTomorrow =
-        deadlineDate.getFullYear() === tomorrow.getFullYear() &&
-        deadlineDate.getMonth() === tomorrow.getMonth() &&
-        deadlineDate.getDate() === tomorrow.getDate();
-      if (isTomorrow) {
-        const hasTime = deadlineStr.includes(':');
-        return {
-          label: hasTime 
-            ? `Tomorrow ${deadlineDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
-            : 'Due tomorrow',
-          isDueSoon: true,
-        };
-      }
-
-      if (diffHours <= 48 && diffHours > 0) {
-        return { label: `Due soon (${deadlineDate.toLocaleDateString([], { month: 'short', day: 'numeric' })})`, isDueSoon: true };
-      }
-
-      return { 
-        label: deadlineDate.toLocaleDateString([], { month: 'short', day: 'numeric', year: deadlineDate.getFullYear() !== now.getFullYear() ? 'numeric' : undefined }), 
-        isFuture: true 
-      };
-    } catch {
-      return { label: deadlineStr, isGeneral: true };
-    }
-  };
-
   // Open Task Creation
   const handleOpenCreateForm = useCallback(() => {
     setEditingTaskId(null);
@@ -411,106 +322,12 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
     onUpdateNotes(notes.filter((n) => n.id !== taskId));
   };
 
-  // Filtered tasks computation
-  const filteredTasks = useMemo(() => {
-    return periodNotes.filter((task) => {
-      // Search filter
-      if (searchQuery.trim()) {
-        const query = searchQuery.toLowerCase();
-        const matchesTitle = task.text.toLowerCase().includes(query);
-        const matchesDesc = task.description ? task.description.toLowerCase().includes(query) : false;
-        const matchesSubtasks = task.subtasks?.some((st) =>
-          st.text.toLowerCase().includes(query)
-        );
-        const matchesUrls = task.attachedUrls?.some(
-          (u) =>
-            u.url.toLowerCase().includes(query) ||
-            (u.title && u.title.toLowerCase().includes(query))
-        );
-        if (!matchesTitle && !matchesDesc && !matchesSubtasks && !matchesUrls) {
-          return false;
-        }
-      }
-
-      // Tab filter
-      switch (activeTab) {
-        case 'All':
-          return true;
-        case 'Urgent':
-          return !task.isDone && task.priority === 'urgent';
-        case 'High Priority':
-          return !task.isDone && task.priority === 'high';
-        case 'Medium':
-          return !task.isDone && task.priority === 'medium';
-        case 'Low':
-          return !task.isDone && task.priority === 'low';
-        case 'Due Soon': {
-          if (task.isDone || !task.deadline) return false;
-          const status = getDeadlineStatus(task.deadline);
-          return !!(status?.isDueSoon || status?.isOverdue || status?.isDueToday);
-        }
-        case 'Completed':
-          return task.isDone;
-        default:
-          return true;
-      }
-    });
-  }, [periodNotes, searchQuery, activeTab, now]);
-
-  // Partition into remaining and completed for 'All' view and sort
-  const remainingTasks = useMemo(() => {
-    return filteredTasks
-      .filter((task) => !task.isDone)
-      .sort((a, b) => {
-        const priorityRank = { urgent: 0, high: 1, medium: 2, low: 3 };
-        return (priorityRank[a.priority ?? 'medium'] ?? 2) - (priorityRank[b.priority ?? 'medium'] ?? 2);
-      });
-  }, [filteredTasks]);
-
-  const completedTasks = useMemo(() => {
-    return filteredTasks.filter((task) => task.isDone);
-  }, [filteredTasks]);
-
-  const sortedFilteredTasks = useMemo(() => {
-    if (activeTab === 'Completed') return filteredTasks;
-    const priorityRank = { urgent: 0, high: 1, medium: 2, low: 3 };
-    return [...filteredTasks].sort((a, b) => {
-      return (priorityRank[a.priority ?? 'medium'] ?? 2) - (priorityRank[b.priority ?? 'medium'] ?? 2);
-    });
-  }, [filteredTasks, activeTab]);
-
-  // Tab counts computation
-  const tabCounts = useMemo(() => {
-    const counts: Record<FilterTab, number> = {
-      'All': periodNotes.length,
-      'Urgent': 0,
-      'High Priority': 0,
-      'Medium': 0,
-      'Low': 0,
-      'Due Soon': 0,
-      'Completed': 0,
-    };
-
-    periodNotes.forEach((task) => {
-      if (task.isDone) {
-        counts['Completed']++;
-      } else {
-        if (task.priority === 'urgent') counts['Urgent']++;
-        else if (task.priority === 'high') counts['High Priority']++;
-        else if (task.priority === 'medium') counts['Medium']++;
-        else if (task.priority === 'low') counts['Low']++;
-
-        if (task.deadline) {
-          const status = getDeadlineStatus(task.deadline);
-          if (status?.isDueSoon || status?.isOverdue || status?.isDueToday) {
-            counts['Due Soon']++;
-          }
-        }
-      }
-    });
-
-    return counts;
-  }, [periodNotes, now]);
+  const projection = useMemo(() => projectTaskList(periodNotes, now), [periodNotes, now]);
+  const { pending: remainingTasks, completed: completedTasks } = useMemo(
+    () => selectTaskRows(projection, activeTab, searchQuery),
+    [projection, activeTab, searchQuery],
+  );
+  const tabTasks = activeTab === 'Completed' ? completedTasks : remainingTasks;
 
   // Tab Badge Style reflecting nature
   const getTabBadgeStyle = (tab: FilterTab, isActive: boolean) => {
@@ -567,8 +384,9 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
     }
   };
 
-  const renderTaskCard = (task: QuickNote) => {
-    const deadlineInfo = getDeadlineStatus(task.deadline);
+  const renderTaskCard = (row: TaskRow) => {
+    const { task } = row;
+    const deadlineInfo = taskDeadlineBadge(row, projection.clock);
     const subtasks = task.subtasks || [];
     const completedSubtasks = subtasks.filter((s) => s.isDone).length;
     const hasMetadata = !!(task.priority || task.durationMinutes || deadlineInfo || (task.attachedUrls && task.attachedUrls.length > 0));
@@ -690,7 +508,7 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
                   className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md font-medium border ${
                     deadlineInfo.isOverdue
                       ? 'bg-red-50 dark:bg-red-950/50 text-red-700 dark:text-red-300 border-red-200 dark:border-red-900/50'
-                      : deadlineInfo.isDueToday || deadlineInfo.isDueSoon
+                      : deadlineInfo.isDueSoon
                       ? 'bg-amber-50 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-900/50'
                       : 'bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark text-serene-text-secondary dark:text-serene-text-darkSecondary border-serene-border-light dark:border-serene-border-dark'
                   }`}
@@ -927,17 +745,17 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
               onChange={(event) => setActiveTab(event.target.value as FilterTab)}
               className="min-h-[44px] min-w-0 flex-1 rounded-lg border border-serene-border-light bg-serene-surfaceAlt-light px-3 text-base dark:border-serene-border-dark dark:bg-serene-surfaceAlt-dark"
             >
-              {(['All', 'Urgent', 'High Priority', 'Medium', 'Low', 'Due Soon', 'Completed'] as FilterTab[]).map((tab) => (
-                <option key={tab} value={tab}>{tab} ({tabCounts[tab] ?? 0})</option>
+              {taskFilterTabs.map((tab) => (
+                <option key={tab} value={tab}>{tab} ({taskTabCount(projection, tab)})</option>
               ))}
             </select>
           </label>
           {/* Desktop filter tabs */}
           <div className="hidden md:flex items-center gap-1.5 overflow-x-auto pb-0.5 text-xs no-scrollbar min-w-0 flex-1">
-          {(['All', 'Urgent', 'High Priority', 'Medium', 'Low', 'Due Soon', 'Completed'] as FilterTab[]).map(
+          {taskFilterTabs.map(
             (tab) => {
               const isActive = activeTab === tab;
-              const count = tabCounts[tab] ?? 0;
+              const count = taskTabCount(projection, tab);
               return (
                 <button
                   key={tab}
@@ -988,7 +806,7 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
       <div className="flex-1 flex overflow-hidden relative">
         {/* Main Task Cards Flow */}
         <main className="tasks-list flex-1 min-w-0 px-2.5 py-3 sm:px-6 sm:py-5 overflow-y-auto space-y-4 @container">
-          {filteredTasks.length === 0 ? (
+          {remainingTasks.length === 0 && completedTasks.length === 0 ? (
             <div className="py-20 text-center rounded-2xl border border-dashed border-serene-border-light dark:border-serene-border-dark bg-white/40 dark:bg-serene-surface-dark/40 flex flex-col items-center justify-center p-6">
               <div className="w-12 h-12 rounded-2xl bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark flex items-center justify-center text-serene-text-muted mb-3">
                 <CheckSquare className="w-6 h-6 opacity-60" />
@@ -1075,7 +893,7 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
                 <h2 className="text-sm font-bold uppercase tracking-wider text-serene-text-secondary dark:text-serene-text-darkSecondary flex items-center gap-2">
                   <span>{activeTab}</span>
                   <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark border border-serene-border-light dark:border-serene-border-dark text-serene-text-primary dark:text-serene-text-darkPrimary">
-                    {sortedFilteredTasks.length}
+                    {tabTasks.length}
                   </span>
                 </h2>
               </div>
@@ -1085,7 +903,7 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
                 initial="initial"
                 animate="animate"
               >
-                {sortedFilteredTasks.map(renderTaskCard)}
+                {tabTasks.map(renderTaskCard)}
               </motion.div>
             </section>
           )}
