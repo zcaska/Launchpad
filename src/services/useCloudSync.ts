@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { AppData } from '../types';
 import {
-  cloudData, readCloudRecord, saveCloudCache, writeCloudRecord, clearCloudWorkspaceData,
-  type CloudRecord, type CloudWorkspace,
+  editCloudRecord, prepareCloudWrite, reconcileCloudRevision,
+  readCloudRecord, saveCloudCache, writeCloudRecord, clearCloudWorkspaceData,
+  type CloudAcknowledgement, type CloudRecord, type CloudWorkspace,
 } from './cloudWorkspace';
 
 export function useCloudSync(workspace: CloudWorkspace | null, data: AppData, onDownload: (data: AppData) => void) {
@@ -31,7 +32,7 @@ export function useCloudSync(workspace: CloudWorkspace | null, data: AppData, on
     if (!workspace || !current.current) return;
     if (data !== lastAppData.current) {
       lastAppData.current = data;
-      persist({ data: cloudData(data), revision: current.current.revision, dirty: true });
+      persist(editCloudRecord(current.current, data));
       if (!conflictRef.current) setStatus('Device changes queued.');
     } else {
       persist(current.current);
@@ -49,6 +50,15 @@ export function useCloudSync(workspace: CloudWorkspace | null, data: AppData, on
       return;
     }
     inFlight.current = true;
+    const finishSave = (acknowledgement: CloudAcknowledgement) => {
+      persist(acknowledgement.record);
+      if (acknowledgement.action === 'queue') {
+        syncRequested.current = true;
+        setStatus('Device changes queued.');
+      } else {
+        setStatus('Synced with Supabase');
+      }
+    };
     try {
       const starting = current.current;
       const unchangedRevision = starting.dirty ? undefined : starting.revision ?? undefined;
@@ -56,40 +66,40 @@ export function useCloudSync(workspace: CloudWorkspace | null, data: AppData, on
       if (!active.current) return;
       const local = current.current;
       if (!local) return;
-      const remoteRevision = remote?.revision ?? null;
-      if (remote && local.pendingRevision === remoteRevision) {
-        // Recover from a write that committed but whose response was lost.
-        persist({ ...local, revision: remoteRevision, dirty: false, pendingRevision: undefined });
-      } else if (remote && local.revision !== remoteRevision) {
-        if (local.dirty) {
+      if (remote) {
+        const decision = reconcileCloudRevision(local, remote.revision);
+        if ('record' in decision) {
+          finishSave(decision);
+          return;
+        }
+        if (decision.action === 'conflict') {
           conflictRef.current = remote;
           setConflict(remote);
           setStatus('Cloud and device both have changes.');
           return;
         }
-        lastAppData.current = remote.data;
-        persist(remote);
-        onDownload(remote.data);
-      } else if (!remote && local.revision && !unchangedRevision) {
+        if (decision.action === 'download') {
+          lastAppData.current = remote.data;
+          persist(remote);
+          onDownload(remote.data);
+        }
+      } else if (local.revision && !unchangedRevision) {
         throw new Error('The cloud workspace is missing. Your device copy is available for export.');
-      } else if (local.dirty) {
+      }
+      if (local.dirty) {
         setStatus('Saving to Supabase…');
-        const nextRevision = crypto.randomUUID();
-        const pending = { ...local, pendingRevision: nextRevision };
+        const pending = prepareCloudWrite(local);
         persist(pending);
-        const written = await writeCloudRecord(workspace, local, nextRevision);
-        if (!active.current) return;
+        const written = await writeCloudRecord(workspace, pending, pending.pendingRevision);
+        if (!active.current || !current.current) return;
+        const decision = reconcileCloudRevision(current.current, pending.pendingRevision, 'response');
+        if (decision.action === 'superseded') return;
         if (!written) {
           setStatus('Cloud changed during this save. Checking again…');
           return;
         }
-        const latest = current.current ?? pending;
-        const dirty = latest !== pending;
-        persist({ ...latest, revision: nextRevision, dirty, pendingRevision: undefined });
-        if (dirty) {
-          setStatus('Device changes queued.');
-          return;
-        }
+        if ('record' in decision) finishSave(decision);
+        return;
       }
       setStatus('Synced with Supabase');
     } catch (error) {
@@ -161,7 +171,7 @@ export function useCloudSync(workspace: CloudWorkspace | null, data: AppData, on
   const saveOnLeave = (next: AppData) => {
     if (!workspace || !current.current) return;
     active.current = false;
-    const record = { data: cloudData(next), revision: current.current.revision, dirty: true };
+    const record = editCloudRecord(current.current, next);
     current.current = record;
     saveCloudCache(workspace, record);
   };

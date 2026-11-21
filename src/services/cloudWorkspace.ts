@@ -14,6 +14,8 @@ export interface CloudRecord {
   revision: string | null;
   dirty: boolean;
   pendingRevision?: string;
+  // Earlier writes against the same base can still commit after a local edit.
+  previousPendingRevisions?: string[];
 }
 
 export interface CloudWorkspace {
@@ -22,6 +24,41 @@ export interface CloudWorkspace {
   userId: string;
   email?: string;
   initial: CloudRecord;
+}
+
+export function editCloudRecord(local: CloudRecord, data: AppData): CloudRecord {
+  const previous = local.previousPendingRevisions;
+  return {
+    revision: local.revision, data: cloudData(data), dirty: true,
+    previousPendingRevisions: local.pendingRevision ? [...(previous ?? []), local.pendingRevision] : previous,
+  };
+}
+
+export function prepareCloudWrite(local: CloudRecord) {
+  // Reuse a token only while its payload is unchanged.
+  return { ...local, pendingRevision: local.pendingRevision ?? crypto.randomUUID() };
+}
+
+export type CloudAcknowledgement = { action: 'queue' | 'synced'; record: CloudRecord };
+
+type CloudRevisionDecision =
+  | CloudAcknowledgement
+  | { action: 'superseded' | 'conflict' | 'download' | 'unchanged' };
+
+export function reconcileCloudRevision(
+  local: CloudRecord,
+  revision: string,
+  source: 'remote' | 'response' = 'remote',
+): CloudRevisionDecision {
+  const earlierWrite = local.previousPendingRevisions?.includes(revision) === true;
+  if (local.pendingRevision === revision || earlierWrite) {
+    // Only one write can win the compare-and-swap against this base. Every
+    // other pending token from that base is settled when we acknowledge it.
+    return { action: earlierWrite ? 'queue' : 'synced', record: { data: local.data, revision, dirty: earlierWrite } };
+  }
+  if (source === 'response') return { action: 'superseded' };
+  if (revision !== local.revision) return { action: local.dirty ? 'conflict' : 'download' };
+  return { action: 'unchanged' };
 }
 
 export const DEFAULT_CLOUD_PROJECT: CloudProject = {
@@ -104,12 +141,18 @@ function cacheKey(project: CloudProject, userId: string) {
   return `launchpad_cloud_cache_v1:${project.url}:${userId}`;
 }
 
-function readCache(project: CloudProject, userId: string): CloudRecord | null {
+export function readCloudCache(project: CloudProject, userId: string): CloudRecord | null {
   try {
     const raw = localStorage.getItem(cacheKey(project, userId));
     if (!raw) return null;
     const record: CloudRecord = JSON.parse(raw);
-    return { ...record, data: decodeSnapshot(record.data) };
+    const data = decodeSnapshot(record.data);
+    // Loading can repair older snapshots. A retry of the repaired payload
+    // needs a fresh token just like an edit made by the user.
+    if (record.pendingRevision && JSON.stringify(data) !== JSON.stringify(record.data)) {
+      return editCloudRecord(record, data);
+    }
+    return { ...record, data };
   } catch {
     return null;
   }
@@ -137,7 +180,7 @@ export async function openCloudWorkspace(project: CloudProject, copyLocal?: AppD
   if (error) throw error;
   if (!session) return null;
   const userId = session.user.id;
-  const cached = readCache(project, userId);
+  const cached = readCloudCache(project, userId);
   const initial = cached ?? await readCloudRecord(client, userId) ?? {
     data: cloudData(copyLocal ?? DEFAULT_SEED_DATA), revision: null, dirty: true,
   };

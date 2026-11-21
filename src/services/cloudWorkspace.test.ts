@@ -3,7 +3,8 @@ import { createClient } from '@supabase/supabase-js';
 import { DEFAULT_SEED_DATA } from '../data/seedData';
 import {
   cloudData, DEFAULT_CLOUD_PROJECT, readCloudRecord, validateCloudProject, writeCloudRecord,
-  clearCloudWorkspaceData, type CloudWorkspace,
+  clearCloudWorkspaceData, editCloudRecord, prepareCloudWrite, reconcileCloudRevision,
+  readCloudCache, saveCloudCache, type CloudWorkspace,
 } from './cloudWorkspace';
 
 const project = DEFAULT_CLOUD_PROJECT;
@@ -56,6 +57,11 @@ const client = createClient(project.url, project.key, {
 const workspace: CloudWorkspace = {
   project, client, userId, initial: { data: local, revision: null, dirty: true },
 };
+const cache = new Map<string, string>();
+Object.defineProperty(globalThis, 'localStorage', { configurable: true, value: {
+  getItem: (key: string) => cache.get(key) ?? null,
+  setItem: (key: string, value: string) => cache.set(key, value),
+} });
 assert.equal(await readCloudRecord(client, userId), null);
 assert.equal(await writeCloudRecord(workspace, workspace.initial, 'first'), true);
 assert.equal(await writeCloudRecord(workspace, workspace.initial, 'duplicate'), false);
@@ -79,3 +85,103 @@ assert.equal(cloudAfterClear.data.quickNotes.length, 0);
 assert.equal(cloudAfterClear.data.scratchpadText, '');
 
 console.log('Cloud workspace validation, credential filtering, stale-write protection, and clear-data passed.');
+
+// A later edit must survive both a direct write response and recovery from cache.
+const original = { data: local, revision: cloudAfterClear.revision, dirty: true };
+const sent = prepareCloudWrite(original);
+assert(await writeCloudRecord(workspace, sent, sent.pendingRevision));
+const edited = editCloudRecord(sent, { ...local, scratchpadText: 'Newer device note' });
+const newest = editCloudRecord(edited, { ...local, scratchpadText: 'Latest device note' });
+const committed = await readCloudRecord(client, userId);
+assert(committed);
+saveCloudCache(workspace, newest);
+const restored = readCloudCache(project, userId);
+assert(restored);
+assert.equal(readCloudCache(project, 'different-user'), null);
+for (const [device, revision, source] of [
+  [restored, committed.revision, 'remote'],
+  [newest, sent.pendingRevision, 'response'],
+] as const) {
+  const acknowledgement = reconcileCloudRevision(device, revision, source);
+  assert.equal(acknowledgement.action, 'queue', 'acknowledging the first save must queue the latest edit');
+  assert(acknowledgement.action === 'queue');
+  assert.equal(acknowledgement.record.revision, sent.pendingRevision);
+  assert.equal(acknowledgement.record.dirty, true);
+  assert.equal(acknowledgement.record.data.scratchpadText, 'Latest device note');
+  assert.equal(acknowledgement.record.pendingRevision, undefined);
+}
+
+const recovered = reconcileCloudRevision(newest, committed.revision);
+assert(recovered.action === 'queue');
+const followUp = prepareCloudWrite(recovered.record);
+assert.notEqual(followUp.pendingRevision, sent.pendingRevision);
+assert(await writeCloudRecord(workspace, followUp, followUp.pendingRevision));
+assert.equal((await readCloudRecord(client, userId))?.data.scratchpadText, 'Latest device note');
+const completed = reconcileCloudRevision(followUp, followUp.pendingRevision);
+assert(completed.action === 'synced');
+assert.equal(completed.record.dirty, false);
+assert.equal(completed.record.pendingRevision, undefined);
+
+// A timed-out write may still commit after a retry reads the previous revision.
+// Either write can win the compare-and-swap, but only its own snapshot can
+// carry its token. An older winner advances the base and queues the latest edit.
+const delayed = prepareCloudWrite(editCloudRecord(completed.record, { ...local, scratchpadText: 'Before timeout' }));
+const postTimeoutEdit = editCloudRecord(delayed, { ...local, scratchpadText: 'After timeout' });
+const oldRemote = await readCloudRecord(client, userId);
+assert(oldRemote);
+assert.equal(reconcileCloudRevision(postTimeoutEdit, oldRemote.revision).action, 'unchanged');
+const retry = prepareCloudWrite(postTimeoutEdit);
+assert.notEqual(retry.pendingRevision, delayed.pendingRevision, 'an edited retry must have its own token');
+assert(await writeCloudRecord(workspace, delayed, delayed.pendingRevision));
+assert.equal(await writeCloudRecord(workspace, retry, retry.pendingRevision), false);
+const winner = await readCloudRecord(client, userId);
+assert(winner);
+assert.equal(winner.data.scratchpadText, 'Before timeout');
+assert.equal(reconcileCloudRevision(retry, winner.revision).action, 'queue');
+const anotherEdit = editCloudRecord(retry, { ...local, scratchpadText: 'Edit after the second attempt' });
+const oldestAck = reconcileCloudRevision(anotherEdit, winner.revision);
+assert(oldestAck.action === 'queue');
+assert.equal(oldestAck.record.data.scratchpadText, 'Edit after the second attempt');
+assert.equal(reconcileCloudRevision(oldestAck.record, retry.pendingRevision, 'response').action, 'superseded');
+
+// Two tabs restore the same pending request. The second tab's edited retry
+// reaches the server first and closes before the first tab observes its result.
+const shared = prepareCloudWrite(editCloudRecord(winner, { ...winner.data, scratchpadText: 'Tab A' }));
+saveCloudCache(workspace, shared);
+const tabA = readCloudCache(project, userId);
+const tabB = readCloudCache(project, userId);
+assert(tabA?.pendingRevision && tabB?.pendingRevision);
+assert.equal(tabA.pendingRevision, tabB.pendingRevision);
+const tabBEdit = editCloudRecord(tabB, { ...local, scratchpadText: 'Tab B' });
+const tabBSave = prepareCloudWrite(tabBEdit);
+assert(await writeCloudRecord(workspace, tabBSave, tabBSave.pendingRevision));
+assert.equal(await writeCloudRecord(workspace, tabA, tabA.pendingRevision), false);
+const tabBRemote = await readCloudRecord(client, userId);
+assert(tabBRemote);
+assert.equal(tabBRemote.data.scratchpadText, 'Tab B');
+assert.notEqual(tabBRemote.revision, tabA.pendingRevision);
+assert.equal(reconcileCloudRevision(tabA, tabBRemote.revision).action, 'conflict');
+assert.equal(reconcileCloudRevision(winner, tabBRemote.revision).action, 'download');
+assert.equal(reconcileCloudRevision(tabBSave, tabBRemote.revision).action, 'synced');
+
+// If a legacy snapshot needs repair on load, its old token still identifies
+// the pre-repair payload. A retry of the repaired copy gets a fresh token.
+saveCloudCache(workspace, { ...shared, data: {
+  ...shared.data, dailyFocus: { ...shared.data.dailyFocus, date: '' },
+} });
+const repaired = readCloudCache(project, userId);
+assert(repaired?.data.dailyFocus.date);
+assert.notEqual(prepareCloudWrite(repaired).pendingRevision, shared.pendingRevision);
+assert.equal(reconcileCloudRevision(repaired, shared.pendingRevision).action, 'queue');
+
+assert.equal(reconcileCloudRevision(newest, 'another-device').action, 'conflict');
+assert.equal(reconcileCloudRevision(followUp, sent.pendingRevision, 'response').action, 'superseded');
+assert.equal(reconcileCloudRevision(completed.record, sent.pendingRevision, 'response').action, 'superseded');
+
+// Older clients retained a pending token only while the data still matched its write.
+const legacy = { data: local, revision: 'prior', pendingRevision: 'legacy-save', dirty: true };
+const legacyAck = reconcileCloudRevision(legacy, 'legacy-save');
+assert(legacyAck.action === 'synced');
+assert.equal(legacyAck.record.dirty, false);
+assert.equal(reconcileCloudRevision(original, original.revision).action, 'unchanged');
+console.log('Cloud revision recovery, queued edits, uncertain retries and superseded acknowledgements passed.');
