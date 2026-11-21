@@ -813,8 +813,10 @@ export function rankTasksByOpportunity(
  * "18m overdue", "Overdue by 5h", "No deadline"
  */
 export function formatTaskCountdown(task: QuickNote, refDate: Date = new Date()): string {
-  const urgency = calculateTaskUrgency(task.deadline, refDate);
+  return formatUrgencyCountdown(calculateTaskUrgency(task.deadline, refDate));
+}
 
+export function formatUrgencyCountdown(urgency: TaskUrgencyInfo): string {
   if (!urgency.deadlineDate || urgency.diffMs === null) {
     return 'No deadline';
   }

@@ -21,13 +21,12 @@ import {
   RADAR_VIEWBOX,
   RADAR_RINGS,
   URGENCY_COLOR_MAP,
-  calculateTaskUrgency,
   UrgencyTier,
   RadarProjectedNode,
-  formatTaskCountdown,
+  formatUrgencyCountdown,
 } from '../../utils/taskUrgency';
 
-export { formatTaskCountdown };
+export { formatTaskCountdown } from '../../utils/taskUrgency';
 
 export interface CommitmentRadarWidgetProps {
   tasks: QuickNote[];
@@ -204,8 +203,7 @@ export const CommitmentRadarWidget: React.FC<CommitmentRadarWidgetProps> = React
     let longTerm = 0;
     let noDeadline = 0;
 
-    pendingTasks.forEach((t) => {
-      const urgency = calculateTaskUrgency(t.deadline, now);
+    projectedNodes.forEach(({ urgency }) => {
       switch (urgency.tier) {
         case 'overdue':
           overdue++;
@@ -239,9 +237,9 @@ export const CommitmentRadarWidget: React.FC<CommitmentRadarWidgetProps> = React
       later,
       longTerm,
       noDeadline,
-      total: pendingTasks.length,
+      total: projectedNodes.length,
     };
-  }, [pendingTasks, now]);
+  }, [projectedNodes]);
 
   // 4. Derive Overall Status headline & narrative
   const overallStatus = useMemo(() => {
@@ -748,7 +746,7 @@ export const CommitmentRadarWidget: React.FC<CommitmentRadarWidgetProps> = React
             <g className="radar-nodes">
               {sortedNodes.map((node, index) => {
                 const tierMeta = TIER_PRESENTATION_MAP[node.tier] || TIER_PRESENTATION_MAP.no_deadline;
-                const countdown = formatTaskCountdown(node.task, now);
+                const countdown = formatUrgencyCountdown(node.urgency);
                 const isActive = activeTaskId === node.task.id;
                 const showCallout = sortedNodes.length <= 6 || isActive || index < 5;
 
@@ -878,7 +876,7 @@ export const CommitmentRadarWidget: React.FC<CommitmentRadarWidgetProps> = React
           {/* Interactive Task Detail Hover Popover */}
           {activeNode && (() => {
             const tierMeta = TIER_PRESENTATION_MAP[activeNode.tier] || TIER_PRESENTATION_MAP.no_deadline;
-            const countdown = formatTaskCountdown(activeNode.task, now);
+            const countdown = formatUrgencyCountdown(activeNode.urgency);
             const isRight = activeNode.x >= RADAR_VIEWBOX.centerX;
             const isTop = activeNode.y < 110;
             const isBottom = activeNode.y > 270;
@@ -1053,7 +1051,7 @@ export const CommitmentRadarWidget: React.FC<CommitmentRadarWidgetProps> = React
           ) : (
             visibleNodes.map((node) => {
               const tierMeta = TIER_PRESENTATION_MAP[node.tier] || TIER_PRESENTATION_MAP.no_deadline;
-              const countdown = formatTaskCountdown(node.task, now);
+              const countdown = formatUrgencyCountdown(node.urgency);
 
               return (
                 <button
@@ -1120,7 +1118,7 @@ export const CommitmentRadarWidget: React.FC<CommitmentRadarWidgetProps> = React
                     <span className="radar-task-dot" style={{ backgroundColor: TIER_PRESENTATION_MAP[node.tier].legendDotColor }} aria-hidden="true" />
                     <span className="radar-task-title">{node.task.text}</span>
                     <span className={"mobile-metadata " + (node.tier === "overdue" ? "text-rose-600 dark:text-rose-400" : "")}>
-                      {formatTaskCountdown(node.task, now)}
+                      {formatUrgencyCountdown(node.urgency)}
                     </span>
                     <CaretRight size={14} aria-hidden="true" />
                   </button>

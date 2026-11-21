@@ -1,3 +1,5 @@
+import { createElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
 import {
   CommitmentRadarWidget,
   CommitmentRadarWidgetProps,
@@ -212,6 +214,44 @@ assert(richTask.attachedUrls !== undefined && richTask.attachedUrls.length === 1
 assertEqual(richTask.attachedUrls![0].title, 'Team Sync Agenda Doc', 'Link title preserved');
 assertEqual(richTask.attachedUrls![0].url, 'https://docs.google.com/document/d/agenda-office-hours', 'Link URL preserved');
 assert(richTask.subtasks !== undefined && richTask.subtasks.length === 2, 'Task subtasks defined');
+
+// 9. Render due-today tasks and count the clock deadline parses.
+const renderDate = new Date(2026, 9, 13, 12);
+const renderTasks: QuickNote[] = Array.from({ length: 12 }, (_, index) => ({
+  id: `render-task-${index}`,
+  text: `Render task ${index + 1}`,
+  isDone: false,
+  createdAt: renderDate.getTime(),
+  deadline: '12:30',
+}));
+const RealDate = Date;
+const setHours = RealDate.prototype.setHours;
+let deadlineParses = 0;
+let markup: string;
+
+try {
+  globalThis.Date = new Proxy(RealDate, {
+    construct(target, args) {
+      return args.length === 0 ? new target(renderDate.getTime()) : Reflect.construct(target, args);
+    },
+  });
+  RealDate.prototype.setHours = function (this: Date, ...args: Parameters<Date['setHours']>) {
+    if (args[0] === 12 && args[1] === 30) deadlineParses++;
+    return setHours.apply(this, args);
+  };
+  markup = renderToStaticMarkup(createElement(CommitmentRadarWidget, { ...validProps, tasks: renderTasks }));
+} finally {
+  RealDate.prototype.setHours = setHours;
+  globalThis.Date = RealDate;
+}
+
+for (const task of renderTasks) {
+  assert(markup.includes(`aria-label="${task.text}: 30m left"`), `Radar announces the countdown for ${task.text}`);
+}
+assert(markup.includes('>30m left</span>'), 'Mobile summary shows the countdown');
+assert(markup.includes('12 tasks due within 24 hours.'), 'Status reports all 12 due-soon tasks');
+assert(/>Critical<\/div><div[^>]*>12<span[^>]*>[^]*?tasks<\/span>/.test(markup), 'Timeline shows the critical tier total');
+assert(deadlineParses <= 24, `Radar parses 12 deadlines at most 24 times (observed ${deadlineParses})`);
 
 console.log('\n=======================================');
 if (failures === 0) {
