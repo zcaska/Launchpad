@@ -1,3 +1,4 @@
+import { isClockOnlyDeadline } from '../../utils/taskDeadline';
 import { parsePeriodDeadline } from '../../utils/taskPeriod';
 
 export function formatLocalYMD(date: Date): string {
@@ -15,13 +16,15 @@ function joinDeadlineParts(date: string, time: string): string {
 export function projectDeadlineEditor(deadline: string, now: Date) {
   const text = deadline.trim();
   const hasClock = /(?:^|\s|T)\d{1,2}:\d{2}/i.test(text);
-  const timeOnly = /^\d{1,2}:\d{2}(?::\d{2}(?:\.\d+)?)?$/.test(text);
-  const localDateTime = /^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?$/.test(text);
-  // Local form values already contain the picker fields. Other valid date-times
-  // use the same local calendar and clock as the Tasks list.
-  const parsed = hasClock && !timeOnly && !localDateTime ? parsePeriodDeadline(text, now) : null;
-  const date = parsed ? formatLocalYMD(parsed) : deadline.match(/\d{4}-\d{2}-\d{2}/)?.[0] ?? '';
-  const time = parsed ? parsed.toTimeString().slice(0, 5) : deadline.match(/(?:^|\s|T)(\d{2}:\d{2})/)?.[1] ?? '';
+  // Recover the original fields for invalid imports so they can still be edited.
+  let date = deadline.match(/\d{4}-\d{2}-\d{2}/)?.[0] ?? '';
+  let time = deadline.match(/(?:^|\s|T)(\d{2}:\d{2})/i)?.[1] ?? '';
+  const parsed = hasClock ? parsePeriodDeadline(text, now) : null;
+  if (parsed) {
+    const clockOnly = isClockOnlyDeadline(text);
+    if (!clockOnly) date = formatLocalYMD(parsed);
+    time = clockOnly ? text.padStart(5, '0') : parsed.toTimeString().slice(0, 5);
+  }
 
   return {
     value: deadline || undefined,

@@ -92,6 +92,21 @@ assert.deepEqual(badgeFor(mixed, 'invalid-time'), { label: '25:00', isOverdue: f
 assert.equal(badgeFor(mixed, 'invalid-text')?.label, 'some day');
 assert.equal(badgeFor(mixed, 'no-deadline'), null);
 
+const importedClocks = [
+  task('elapsed', ' 9:15 '),
+  task('nearby', ' 13:30 '),
+  task('upcoming', ' 14:30 '),
+  task('invalid', ' 9:60 '),
+];
+const clocks = projectTaskList(
+  tasksInPeriod(importedClocks, 'Today', now, defaultPeriodRange('Today', now)), now,
+);
+assert.deepEqual(rowIds(clocks, 'Due Soon'), ['elapsed', 'nearby', 'upcoming']);
+assert.equal(badgeFor(clocks, 'elapsed')?.label, 'Overdue (9:15)');
+assert.equal(badgeFor(clocks, 'nearby')?.label, 'Due in 90m');
+assert.equal(badgeFor(clocks, 'upcoming')?.label, 'Due at 14:30');
+assert.equal(badgeFor(projectTaskList(importedClocks, now), 'invalid')?.label, ' 9:60 ');
+
 const matches = projectTaskList([
   task('subtask', '2026-11-10', { priority: 'high', subtasks: [{ id: 's', text: 'Write NEEDLE', isDone: false }] }),
   task('url', '2026-11-10', { priority: 'urgent', attachedUrls: [{ id: 'link', url: 'https://example.test/needle', title: 'Source' }] }),

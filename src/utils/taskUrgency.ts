@@ -1,4 +1,5 @@
 import { QuickNote, TaskPriority, Subtask } from '../types';
+import { parseDeadline } from './taskDeadline';
 import { formatApproximateDuration } from './timeBudget';
 
 // ============================================================================
@@ -106,46 +107,8 @@ export const URGENCY_TIER_WEIGHTS: Record<UrgencyTier, number> = {
 // 1. Deadline Parsing & Urgency Calculation
 // ============================================================================
 
-/**
- * Robustly parses task deadline strings:
- * - HH:MM (e.g. "14:30") -> Today at that time
- * - YYYY-MM-DD -> End of that day (23:59:59.999 local time)
- * - YYYY-MM-DD HH:MM or YYYY-MM-DDTHH:MM -> Specific date & time
- * - Standard ISO 8601 strings
- */
 export function parseTaskDeadline(deadlineStr?: string, refDate: Date = new Date()): Date | null {
-  if (!deadlineStr || typeof deadlineStr !== 'string') return null;
-  const cleanStr = deadlineStr.trim();
-  if (!cleanStr) return null;
-
-  // 1. Time only format: HH:MM
-  if (/^\d{1,2}:\d{2}$/.test(cleanStr)) {
-    const [hours, minutes] = cleanStr.split(':').map(Number);
-    if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) return null;
-    const d = new Date(refDate);
-    d.setHours(hours, minutes, 0, 0);
-    return d;
-  }
-
-  // 2. Date only format: YYYY-MM-DD -> Set to end of day
-  if (/^\d{4}-\d{2}-\d{2}$/.test(cleanStr)) {
-    const [year, month, day] = cleanStr.split('-').map(Number);
-    const d = new Date(year, month - 1, day, 23, 59, 59, 999);
-    return isNaN(d.getTime()) ? null : d;
-  }
-
-  // 3. Combined date and time format: YYYY-MM-DD HH:MM or YYYY-MM-DDTHH:MM
-  if (/^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}(?::\d{2})?$/.test(cleanStr)) {
-    const [datePart, timePart] = cleanStr.replace('T', ' ').split(' ');
-    const [year, month, day] = datePart.split('-').map(Number);
-    const [hours, minutes] = timePart.split(':').map(Number);
-    const d = new Date(year, month - 1, day, hours, minutes, 0, 0);
-    return isNaN(d.getTime()) ? null : d;
-  }
-
-  // 4. Fallback to native Date parser
-  const parsed = new Date(cleanStr);
-  return isNaN(parsed.getTime()) ? null : parsed;
+  return parseDeadline(deadlineStr, refDate);
 }
 
 /**

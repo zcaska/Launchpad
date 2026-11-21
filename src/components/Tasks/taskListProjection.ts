@@ -1,4 +1,5 @@
 import type { QuickNote, TaskPriority } from '../../types';
+import { isClockOnlyDeadline } from '../../utils/taskDeadline';
 import { parsePeriodDeadline } from '../../utils/taskPeriod';
 
 export const taskFilterTabs = ['All', 'Urgent', 'High Priority', 'Medium', 'Low', 'Due Soon', 'Completed'] as const;
@@ -36,7 +37,7 @@ function classifyDeadline(raw: string | undefined, clock: DeadlineClock): Deadli
 
   const dueMs = date.getTime();
   const diffMs = dueMs - clock.now.getTime();
-  if (/^\d{2}:\d{2}$/.test(raw)) {
+  if (isClockOnlyDeadline(raw)) {
     const minutes = Math.round(diffMs / 60_000);
     if (minutes < 0) return { kind: 'overdue-time' };
     if (minutes <= 120) return { kind: 'in-minutes', minutes };
@@ -132,8 +133,8 @@ function shortTime(date: Date): string {
 function deadlineLabel(status: DeadlineStatus, raw: string, now: Date): string {
   switch (status.kind) {
     case 'invalid': return raw;
-    case 'overdue-time': return `Overdue (${raw})`;
-    case 'at-time': return `Due at ${raw}`;
+    case 'overdue-time': return `Overdue (${raw.trim()})`;
+    case 'at-time': return `Due at ${raw.trim()}`;
     case 'in-minutes': return `Due in ${status.minutes}m`;
     case 'overdue': return `Overdue (${shortDate(status.date)})`;
     case 'today': return raw.includes(':') ? `Due today ${shortTime(status.date)}` : 'Due today';

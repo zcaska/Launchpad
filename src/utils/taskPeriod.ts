@@ -1,4 +1,5 @@
 import type { QuickNote } from '../types';
+import { parseDeadline } from './taskDeadline';
 import { formatApproximateDuration } from './timeBudget';
 
 export type TaskPeriod = 'All time' | 'Today' | 'Weekly' | 'Monthly' | 'Undated';
@@ -93,30 +94,7 @@ export function defaultPeriodRange(period: TaskPeriod, now: Date): DateRange {
 }
 
 export function parsePeriodDeadline(deadline: string | undefined, now: Date): Date | null {
-  if (!deadline) return null;
-  if (/^\d{2}:\d{2}$/.test(deadline)) {
-    const [hour, minute] = deadline.split(':').map(Number);
-    if (hour > 23 || minute > 59) return null;
-    const date = new Date(now);
-    date.setHours(hour, minute, 0, 0);
-    return date;
-  }
-  const parts = /^(\d{4})-(\d{2})-(\d{2})$/.exec(deadline);
-  if (parts) {
-    const y = +parts[1];
-    const m = +parts[2];
-    const d = +parts[3];
-    // Reject rollover dates (e.g. 2026-02-30) that Date would normalize into March.
-    if (!isValidLocalDate(y, m, d)) return null;
-    return new Date(y, m - 1, d, 23, 59, 59);
-  }
-  // Leave legacy formats intact for the native parser.
-  const dateTime = deadline.replace(
-    /^(\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:?\d{2})?)$/i,
-    '$1T$2',
-  );
-  const fallback = new Date(dateTime);
-  return Number.isNaN(fallback.getTime()) ? null : fallback;
+  return parseDeadline(deadline, now);
 }
 
 export function getTaskPeriod(
@@ -175,7 +153,7 @@ export function tasksInPeriod(
   });
 }
 
-/** Tasks with a valid deadline falling inside actual local today (incl. time-only HH:MM). */
+/** Tasks with a valid deadline falling inside actual local today, including clock-only deadlines. */
 export function tasksDueToday(notes: QuickNote[], now: Date): QuickNote[] {
   const today = startOfLocalDay(now);
   const tomorrow = addDays(today, 1);

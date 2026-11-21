@@ -11,6 +11,7 @@ const timeZones = [
     time: '05:00',
     rfcDate: '2026-11-22',
     rfcTime: '00:00',
+    springGapTime: '02:30',
   },
   {
     zone: 'America/Los_Angeles',
@@ -21,6 +22,7 @@ const timeZones = [
     time: '18:30',
     rfcDate: '2026-11-21',
     rfcTime: '10:30',
+    springGapTime: '03:30',
   },
 ];
 
@@ -58,7 +60,9 @@ for (const fixture of timeZones) {
     ['17:45', '', '17:45'],
     ['2026-11-22 17:45', '2026-11-22', '17:45'],
     ['2026-11-22T17:45:00', '2026-11-22', '17:45'],
+    ['2026-11-22t17:45:00', '2026-11-22', '17:45'],
     ['2026-02-30', '2026-02-30', ''],
+    ['2026-02-30T09:15:17Z', '2026-02-30', '09:15'],
     ['2026-11-22T25:00:00Z', '2026-11-22', '25:00'],
     ['unparsed with time 17:45', '', '17:45'],
   ]) {
@@ -69,5 +73,28 @@ for (const fixture of timeZones) {
   assert.equal(projectDeadlineEditor('17:45', now).withTime('18:00'), '2026-11-20 18:00');
   assert.equal(projectDeadlineEditor('', now).withTime('18:00'), '2026-11-20 18:00');
   assert.equal(projectDeadlineEditor('17:45', now).withDate('2026-11-22'), '2026-11-22 17:45');
+  for (const deadline of ['9:15', ' 9:15 ', ' 09:15 ']) {
+    const editor = projectDeadlineEditor(deadline, now);
+    assert.deepEqual([editor.date, editor.time], ['', '09:15'], deadline);
+    assert.equal(editor.value, deadline);
+    assert.equal(editor.withTime('09:15'), deadline);
+    assert.equal(editor.withTime('09:30'), '2026-11-20 09:30');
+    assert.equal(editor.withDate('2026-11-22'), '2026-11-22 09:15');
+  }
+  const invalidClock = projectDeadlineEditor(' 25:00 ', now);
+  assert.equal(invalidClock.time, '25:00');
+  assert.equal(invalidClock.value, ' 25:00 ');
+
+  const endOfDay = projectDeadlineEditor(' 2026-03-02T24:00 ', now);
+  assert.deepEqual([endOfDay.date, endOfDay.time], ['2026-03-03', '00:00']);
+  assert.equal(endOfDay.value, ' 2026-03-02T24:00 ');
+  assert.equal(endOfDay.withDate('2026-03-03'), ' 2026-03-02T24:00 ');
+  assert.equal(endOfDay.withTime('00:00'), ' 2026-03-02T24:00 ');
+  assert.equal(endOfDay.withTime('00:15'), '2026-03-03 00:15');
+  assert.equal(endOfDay.withDate('2026-03-04'), '2026-03-04 00:00');
+
+  const springGap = projectDeadlineEditor('2026-03-08 02:30', now);
+  assert.deepEqual([springGap.date, springGap.time], ['2026-03-08', fixture.springGapTime]);
+  assert.equal(springGap.withTime(fixture.springGapTime), '2026-03-08 02:30');
   console.log(`Task deadline editor tests passed in ${fixture.zone} (observed ${observedZone}, offset ${now.getTimezoneOffset()} minutes)`);
 }
