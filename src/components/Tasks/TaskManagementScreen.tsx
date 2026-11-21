@@ -26,7 +26,7 @@ import type { TaskViewState } from './useTaskView';
 import { modalBackdropVariants, modalContentVariants, staggerItemVariants, staggerContainerVariants } from '../../utils/motion';
 import { SafeDescription } from '../Common/SafeDescription';
 import { TaskLinks } from './TaskLinks';
-import { toggleTaskInList, toggleSubtaskInList } from '../../utils/taskUrgency';
+import type { TaskAction } from '../../utils/taskCompletion';
 
 export interface TaskManagementScreenProps {
   notes: QuickNote[];
@@ -41,8 +41,7 @@ export interface TaskManagementScreenProps {
   onBackToDashboard?: () => void;
   initialTaskId?: string | null;
   onInitialTaskOpened?: () => void;
-  onToggleTask?: (taskId: string) => void;
-  onToggleSubtask?: (taskId: string, subtaskId: string) => void;
+  onTaskAction: (taskId: string, action: TaskAction) => void;
 }
 
 type FilterTab = 'All' | 'Urgent' | 'High Priority' | 'Medium' | 'Low' | 'Due Soon' | 'Completed';
@@ -60,8 +59,7 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
   onBackToDashboard,
   initialTaskId,
   onInitialTaskOpened,
-  onToggleTask,
-  onToggleSubtask,
+  onTaskAction,
 }) => {
   // Filters & State
   const [activeTab, setActiveTab] = useState<FilterTab>('All');
@@ -384,44 +382,23 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
     e.preventDefault();
     if (!formTitle.trim()) return;
 
+    const fields = {
+      text: formTitle.trim(),
+      description: formDescription.trim() || undefined,
+      durationMinutes: formDuration,
+      priority: formPriority,
+      deadline: formDeadline.trim() || undefined,
+      attachedUrls: formUrls.length > 0 ? formUrls : undefined,
+      subtasks: formSubtasks.length > 0 ? formSubtasks : undefined,
+    };
     if (editingTaskId) {
-      const existing = notes.find((n) => n.id === editingTaskId);
-      const allSubtasksDone = formSubtasks.length > 0 && formSubtasks.every((st) => st.isDone);
-      let nextIsDone = existing ? existing.isDone : false;
-      if (formSubtasks.length > 0) {
-        if (allSubtasksDone) nextIsDone = true;
-        else if (nextIsDone) nextIsDone = false;
-      }
-      onUpdateNotes(
-        notes.map((n) =>
-          n.id === editingTaskId
-            ? {
-                ...n,
-                text: formTitle.trim(),
-                description: formDescription.trim() || undefined,
-                durationMinutes: formDuration,
-                priority: formPriority,
-                deadline: formDeadline.trim() || undefined,
-                attachedUrls: formUrls.length > 0 ? formUrls : undefined,
-                subtasks: formSubtasks.length > 0 ? formSubtasks : undefined,
-                isDone: nextIsDone,
-              }
-            : n
-        )
-      );
+      onTaskAction(editingTaskId, { kind: 'edit', fields });
     } else {
-      const allSubtasksDone = formSubtasks.length > 0 && formSubtasks.every((st) => st.isDone);
       const newTask: QuickNote = {
+        ...fields,
         id: `task-${Date.now()}`,
-        text: formTitle.trim(),
-        description: formDescription.trim() || undefined,
-        isDone: allSubtasksDone,
+        isDone: formSubtasks.length > 0 && formSubtasks.every(st => st.isDone),
         createdAt: Date.now(),
-        durationMinutes: formDuration,
-        priority: formPriority,
-        deadline: formDeadline.trim() || undefined,
-        attachedUrls: formUrls.length > 0 ? formUrls : undefined,
-        subtasks: formSubtasks.length > 0 ? formSubtasks : undefined,
       };
       onUpdateNotes([newTask, ...notes]);
     }
@@ -430,26 +407,8 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
   };
 
   // Direct In-Card Actions
-  const handleToggleTaskComplete = (taskId: string) => {
-    if (onToggleTask) {
-      onToggleTask(taskId);
-    } else {
-      const { updatedTasks } = toggleTaskInList(notes, taskId);
-      onUpdateNotes(updatedTasks);
-    }
-  };
-
   const handleDeleteTask = (taskId: string) => {
     onUpdateNotes(notes.filter((n) => n.id !== taskId));
-  };
-
-  const handleToggleSubtask = (taskId: string, subtaskId: string) => {
-    if (onToggleSubtask) {
-      onToggleSubtask(taskId, subtaskId);
-    } else {
-      const { updatedTasks } = toggleSubtaskInList(notes, taskId, subtaskId);
-      onUpdateNotes(updatedTasks);
-    }
   };
 
   // Filtered tasks computation
@@ -631,7 +590,7 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
           <div className="flex items-start justify-between gap-2.5">
             <div className="flex items-start gap-2 sm:gap-2.5 flex-1 min-w-0">
               <button
-                onClick={() => handleToggleTaskComplete(task.id)}
+                onClick={() => onTaskAction(task.id, { kind: 'toggleTask' })}
                 className="task-card-check mt-0.5 grid h-6 w-6 place-items-center rounded-md text-serene-text-muted hover:text-serene-primary dark:hover:text-serene-primary-dark transition-colors shrink-0"
                 title={task.isDone ? 'Mark as incomplete' : 'Mark as complete'}
                 aria-label={task.isDone ? 'Mark as incomplete' : 'Mark as complete'}
@@ -787,7 +746,7 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
                   <button
                     key={st.id}
                     type="button"
-                    onClick={() => handleToggleSubtask(task.id, st.id)}
+                    onClick={() => onTaskAction(task.id, { kind: 'toggleSubtask', subtaskId: st.id })}
                     aria-pressed={st.isDone}
                     className="task-checklist-item w-full flex items-center gap-2 py-0.5 px-1 rounded-md text-left text-xs hover:bg-black/5 dark:hover:bg-white/5 transition-colors group/sub"
                   >

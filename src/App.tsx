@@ -34,12 +34,10 @@ import { petTierForStreak, petTaskChanges } from './utils/petState';
 import { earnedPetLevel } from './utils/petEvolution';
 import { CommitmentRadarWidget } from './components/Dashboard/CommitmentRadarWidget';
 import TimeRadarWidget from './components/Dashboard/TimeRadarWidget';
-import { toggleTaskInList, toggleSubtaskInList } from './utils/taskUrgency';
+import { transitionTask, type TaskAction } from './utils/taskCompletion';
 import {
-  FocusTimerState,
   loadFocusTimer,
   saveFocusTimer,
-  elapsedSeconds,
 } from './utils/focusTimer';
 import { QuickNotesWidget } from './components/QuickNotes/QuickNotesWidget';
 import { QuickAddTaskModal } from './components/Modals/QuickAddTaskModal';
@@ -80,8 +78,24 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
   onSwitchWorkspace?: (workspace: CloudWorkspace | null) => void;
   cloudNotice?: string;
 } = {}) {
-  const [appData, setAppData] = useState<AppData>(() => workspace?.initial.data ?? loadAppData());
   const workspaceScope = workspace ? `${workspace.project.url}:${workspace.userId}` : undefined;
+  // Commit task completion and its timer and focus changes together.
+  const [session, setSession] = useState(() => ({
+    appData: workspace?.initial.data ?? loadAppData(),
+    focusTimer: loadFocusTimer(workspaceScope),
+    selectedFocusTaskId: null as string | null,
+    completedFocusTask: null as QuickNote | null,
+  }));
+  const { appData, focusTimer, selectedFocusTaskId, completedFocusTask } = session;
+  const setAppData = useCallback((update: React.SetStateAction<AppData>) => {
+    setSession(prev => {
+      const next = typeof update === 'function' ? update(prev.appData) : update;
+      return next === prev.appData ? prev : { ...prev, appData: next };
+    });
+  }, []);
+  const setSelectedFocusTaskId = useCallback((id: string) => {
+    setSession(prev => ({ ...prev, selectedFocusTaskId: id }));
+  }, []);
   const [activeView, setActiveView] = useState<'dashboard' | 'tasks' | 'growth' | 'settings'>('dashboard');
   const [searchQuery, setSearchQuery] = useState('');
   const previousView = useRef<'dashboard' | 'tasks' | 'growth'>('dashboard');
@@ -101,7 +115,6 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
   const [isSparkIdeaModalOpen, setIsSparkIdeaModalOpen] = useState(false);
   const [now, setNow] = useState<Date>(new Date());
   const [isBackupDismissed, setIsBackupDismissed] = useState(false);
-  const [selectedFocusTaskId, setSelectedFocusTaskId] = useState<string | null>(null);
   const [editingTaskIdForScreen, setEditingTaskIdForScreen] = useState<string | null>(null);
   const [viewingTaskId, setViewingTaskId] = useState<string | null>(null);
   const viewingTask = viewingTaskId === null ? undefined : appData.quickNotes.find((task) => task.id === viewingTaskId);
@@ -151,75 +164,26 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
   }, [appData.settings.theme]);
 
   // --- Focus Timer State -----------------------------------------------
-  const [focusTimer, setFocusTimer] = useState<FocusTimerState | null>(() => loadFocusTimer(workspaceScope));
 
   // Save timer whenever state changes
   useEffect(() => {
     saveFocusTimer(focusTimer, workspaceScope);
   }, [focusTimer, workspaceScope]);
 
-  const handleTimerEnd = useCallback(() => {
-    if (!focusTimer) return;
-    const totalSecs = elapsedSeconds(focusTimer);
-    if (totalSecs > 0) {
-      setAppData((prev) => ({
-        ...prev,
-        quickNotes: prev.quickNotes.map((n) =>
-          n.id === focusTimer.taskId
-            ? { ...n, timeSpentSeconds: (n.timeSpentSeconds || 0) + totalSecs }
-            : n
-        ),
-      }));
-    }
-    setFocusTimer(null);
-  }, [focusTimer]);
-
-  // --- Unified Task & Subtask Completion Handlers ----------------------
-  const handleToggleTaskWithTimer = useCallback((taskId: string) => {
-    const targetTask = appData.quickNotes.find((n) => n.id === taskId);
-    const becomingDone = targetTask ? !targetTask.isDone : false;
-
-    if (becomingDone && focusTimer && focusTimer.taskId === taskId) {
-      const totalSecs = elapsedSeconds(focusTimer);
-      if (totalSecs > 0) {
-        setAppData((prev) => ({
-          ...prev,
-          quickNotes: prev.quickNotes.map((n) =>
-            n.id === taskId ? { ...n, timeSpentSeconds: (n.timeSpentSeconds || 0) + totalSecs } : n
-          ),
-        }));
-      }
-      setFocusTimer(null);
-    }
-
-    setAppData((prev) => {
-      const { updatedTasks } = toggleTaskInList(prev.quickNotes, taskId);
-      return { ...prev, quickNotes: updatedTasks.map((task) => task.id === taskId
-        ? { ...task, pendingReflection: task.isDone } : task) };
+  const handleTaskAction = useCallback((id: string, action: TaskAction, fromFocus = false) => {
+    const nowMs = Date.now();
+    setSession(prev => {
+      if (fromFocus && prev.completedFocusTask) return prev;
+      const result = transitionTask(prev.appData.quickNotes, prev.focusTimer, id, action, nowMs);
+      if (result.notes === prev.appData.quickNotes) return prev;
+      return {
+        appData: { ...prev.appData, quickNotes: result.notes },
+        focusTimer: result.timer,
+        selectedFocusTaskId: result.completedTask && prev.selectedFocusTaskId === id ? null : prev.selectedFocusTaskId,
+        completedFocusTask: (fromFocus && result.completedTask) || prev.completedFocusTask,
+      };
     });
-
-    if (targetTask && !becomingDone && !targetTask.pendingReflection) {
-    }
-
-    if (selectedFocusTaskId === taskId && becomingDone) {
-      setSelectedFocusTaskId(null);
-    }
-  }, [appData.quickNotes, focusTimer, selectedFocusTaskId]);
-
-  const handleToggleSubtask = useCallback((taskId: string, subtaskId: string) => {
-    if (focusTimer?.taskId === taskId) {
-      const task = appData.quickNotes.find((note) => note.id === taskId);
-      if (task && toggleSubtaskInList([task], taskId, subtaskId).parentBecameDone) {
-        handleTimerEnd();
-      }
-    }
-
-    setAppData((prev) => {
-      const { updatedTasks, parentBecameDone } = toggleSubtaskInList(prev.quickNotes, taskId, subtaskId);
-      return { ...prev, quickNotes: updatedTasks.map((task) => task.id === taskId
-        ? { ...task, pendingReflection: parentBecameDone ? true : task.isDone && task.pendingReflection } : task) };
-    });
-  }, [appData.quickNotes, focusTimer, handleTimerEnd]);
+  }, []);
 
   // --- Launchpad Pet Controller ----------------------------------------
   const petEnabled = appData.settings.pet?.enabled ?? true;
@@ -338,7 +302,6 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
     setSuggestionOffset((prev) => prev + 1);
   }, [appData.learnedPreferences, timeOfDay]);
 
-  const [completedFocusTask, setCompletedFocusTask] = useState<QuickNote | null>(null);
   const [showReflection, setShowReflection] = useState(false);
   const [showReflectionCelebration, setShowReflectionCelebration] = useState(false);
   useEffect(() => {
@@ -351,8 +314,10 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
   const reflectionReady = reflectionTasks.length > 0;
   const applyCloudDownload = useCallback((next: AppData) => {
     setShowReflection(false);
-    setFocusTimer((timer) => timer && next.quickNotes.some((task) => task.id === timer.taskId && !task.isDone) ? timer : null);
-    setAppData(next);
+    setSession(prev => ({
+      ...prev, appData: next,
+      focusTimer: next.quickNotes.some(task => task.id === prev.focusTimer?.taskId && !task.isDone) ? prev.focusTimer : null,
+    }));
   }, []);
   const cloudSync = useCloudSync(workspace, appData, applyCloudDownload);
   const leavingRef = useRef({ appData, workspace, saveOnLeave: cloudSync.saveOnLeave, resume: cloudSync.resumeAfterLeave });
@@ -396,26 +361,16 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
 
   useEffect(() => {
     if (!completedFocusTask) return;
-    const timeout = window.setTimeout(() => setCompletedFocusTask(null), 420);
+    const timeout = window.setTimeout(() => setSession(prev => ({ ...prev, completedFocusTask: null })), 420);
     return () => window.clearTimeout(timeout);
   }, [completedFocusTask]);
 
   const completeFocusTask = (task: QuickNote) => {
-    if (completedFocusTask) return;
-    setCompletedFocusTask({ ...task, isDone: true });
-    handleToggleTaskWithTimer(task.id);
+    handleTaskAction(task.id, { kind: 'toggleTask' }, true);
   };
 
   const toggleFocusSubtask = (taskId: string, subtaskId: string) => {
-    if (completedFocusTask) return;
-    const task = appData.quickNotes.find((note) => note.id === taskId);
-    if (!task) return;
-    const { parentBecameDone, parentTask } = toggleSubtaskInList([task], taskId, subtaskId);
-    if (parentBecameDone && parentTask) {
-      setCompletedFocusTask(parentTask);
-      setSelectedFocusTaskId(null);
-    }
-    handleToggleSubtask(taskId, subtaskId);
+    handleTaskAction(taskId, { kind: 'toggleSubtask', subtaskId }, true);
   };
 
   // Keyboard shortcuts
@@ -512,9 +467,7 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
     };
 
     saveAppData(nextAppData);
-    setAppData(nextAppData);
-    setSelectedFocusTaskId(null);
-    setFocusTimer(null);
+    setSession({ appData: nextAppData, focusTimer: null, selectedFocusTaskId: null, completedFocusTask: null });
 
     if (workspace && cloudSync) {
       await cloudSync.clearCloud(nextAppData);
@@ -685,8 +638,7 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
                   }}
                   initialTaskId={editingTaskIdForScreen}
                   onInitialTaskOpened={() => setEditingTaskIdForScreen(null)}
-                  onToggleTask={handleToggleTaskWithTimer}
-                  onToggleSubtask={handleToggleSubtask}
+                  onTaskAction={handleTaskAction}
                 />
               </Suspense>
             </motion.main>
@@ -773,7 +725,7 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
                   onUpdateNotes={handleUpdateNotes}
                   onUpdateScratchpad={handleUpdateScratchpad}
                   onClose={() => setIsQuickNotesOpen(false)}
-                  onToggleTask={handleToggleTaskWithTimer}
+                  onToggleTask={id => handleTaskAction(id, { kind: 'toggleTask' })}
                 />
               </motion.aside>
             </>
