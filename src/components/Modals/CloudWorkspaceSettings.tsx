@@ -113,7 +113,6 @@ export function CloudWorkspaceSettings({ workspace, onSwitch, sync }: {
         <div className="space-y-2 rounded-lg bg-teal-500/10 p-3 text-sm">
           <p className="break-words font-semibold">{workspace.project.name} · {workspace.email}</p>
           <p role="status">{sync.status}</p>
-          {sync.cacheError && <p role="alert">The offline copy could not be saved. Export a backup before leaving this workspace.</p>}
           {sync.conflict && (
             <>
               <p>Export a backup if you want to keep both versions. Choose which copy to continue with.</p>

@@ -542,6 +542,16 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
         </button>
       )}
 
+      {workspace && cloudSync.cacheError && (
+        <div className="flex shrink-0 flex-wrap items-center justify-between gap-x-3 border-b border-amber-400/40 bg-amber-500/10 px-4 py-1.5 text-sm">
+          <p role="alert">This device couldn’t save an offline copy. Export a backup before leaving.</p>
+          <button type="button" onClick={handleQuickBackup}
+            className="min-h-10 rounded px-1 font-semibold underline underline-offset-2">
+            Export backup
+          </button>
+        </div>
+      )}
+
       {/* 5-Day Automated Backup Reminder Banner */}
       {daysSinceBackup >= 5 && !isBackupDismissed && (
         <BackupReminderToast

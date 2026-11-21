@@ -16,16 +16,14 @@ export function useCloudSync(workspace: CloudWorkspace | null, data: AppData, on
   const [conflict, setConflict] = useState<CloudRecord | null>(null);
   const [status, setStatus] = useState('Checking cloud workspace…');
   const [cacheError, setCacheError] = useState(false);
+  const cacheWriteFailed = useRef(false);
 
   const persist = useCallback((record: CloudRecord) => {
     current.current = record;
     if (!workspace) return;
-    try {
-      saveCloudCache(workspace, record);
-      setCacheError(false);
-    } catch {
-      setCacheError(true);
-    }
+    const failed = !saveCloudCache(workspace, record);
+    cacheWriteFailed.current = failed;
+    setCacheError(failed);
   }, [workspace]);
 
   useEffect(() => {
@@ -40,13 +38,15 @@ export function useCloudSync(workspace: CloudWorkspace | null, data: AppData, on
   }, [data, persist, workspace]);
 
   const sync = useCallback(async () => {
-    if (!workspace || !active.current || conflictRef.current || !current.current) return;
+    if (!workspace || !active.current || !current.current) return;
+    if (cacheWriteFailed.current) persist(current.current);
+    if (conflictRef.current) return;
     if (inFlight.current) {
       syncRequested.current = true;
       return;
     }
     if (!navigator.onLine) {
-      setStatus('Offline. Changes are queued on this device.');
+      setStatus('Offline. Reconnect to sync changes.');
       return;
     }
     inFlight.current = true;
@@ -123,7 +123,7 @@ export function useCloudSync(workspace: CloudWorkspace | null, data: AppData, on
     const timer = window.setInterval(() => {
       if (document.visibilityState === 'visible') void sync();
     }, 12000);
-    const onOffline = () => setStatus('Offline. Changes are queued on this device.');
+    const onOffline = () => setStatus('Offline. Reconnect to sync changes.');
     window.addEventListener('online', sync);
     window.addEventListener('focus', sync);
     window.addEventListener('offline', onOffline);
@@ -171,9 +171,7 @@ export function useCloudSync(workspace: CloudWorkspace | null, data: AppData, on
   const saveOnLeave = (next: AppData) => {
     if (!workspace || !current.current) return;
     active.current = false;
-    const record = editCloudRecord(current.current, next);
-    current.current = record;
-    saveCloudCache(workspace, record);
+    persist(editCloudRecord(current.current, next));
   };
 
   const resumeAfterLeave = () => {
@@ -184,12 +182,12 @@ export function useCloudSync(workspace: CloudWorkspace | null, data: AppData, on
   const clearCloud = useCallback(async (cleared: AppData) => {
     if (!workspace) return;
     const record = await clearCloudWorkspaceData(workspace, cleared, current.current?.revision);
-    current.current = record;
+    persist(record);
     lastAppData.current = cleared;
     conflictRef.current = null;
     setConflict(null);
     setStatus('Cloud workspace data cleared');
-  }, [workspace]);
+  }, [persist, workspace]);
 
   return { status, cacheError, conflict: Boolean(conflict), resolve, sync, saveOnLeave, resumeAfterLeave, clearCloud };
 }

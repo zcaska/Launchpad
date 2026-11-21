@@ -58,9 +58,13 @@ const workspace: CloudWorkspace = {
   project, client, userId, initial: { data: local, revision: null, dirty: true },
 };
 const cache = new Map<string, string>();
+let cacheQuotaExceeded = false;
 Object.defineProperty(globalThis, 'localStorage', { configurable: true, value: {
   getItem: (key: string) => cache.get(key) ?? null,
-  setItem: (key: string, value: string) => cache.set(key, value),
+  setItem: (key: string, value: string) => {
+    if (cacheQuotaExceeded) throw new DOMException('Fixture storage quota exceeded', 'QuotaExceededError');
+    cache.set(key, value);
+  },
 } });
 assert.equal(await readCloudRecord(client, userId), null);
 assert.equal(await writeCloudRecord(workspace, workspace.initial, 'first'), true);
@@ -185,3 +189,19 @@ assert(legacyAck.action === 'synced');
 assert.equal(legacyAck.record.dirty, false);
 assert.equal(reconcileCloudRevision(original, original.revision).action, 'unchanged');
 console.log('Cloud revision recovery, queued edits, uncertain retries and superseded acknowledgements passed.');
+
+saveCloudCache(workspace, tabBRemote);
+const offlineEdit = prepareCloudWrite(editCloudRecord(tabBRemote, { ...local, scratchpadText: 'Edit during quota failure' }));
+cacheQuotaExceeded = true;
+assert.equal(saveCloudCache(workspace, offlineEdit), false, 'Quota errors must report a failed offline save');
+assert.equal(readCloudCache(project, userId)?.data.scratchpadText, 'Tab B', 'The last durable snapshot remains available');
+assert(await writeCloudRecord(workspace, offlineEdit, offlineEdit.pendingRevision));
+const onlineCopy = await readCloudRecord(client, userId);
+assert.equal(onlineCopy?.data.scratchpadText, 'Edit during quota failure', 'The newest edit still reaches the cloud');
+const offlineAck = reconcileCloudRevision(offlineEdit, offlineEdit.pendingRevision, 'response');
+assert(offlineAck.action === 'synced');
+assert.equal(saveCloudCache(workspace, offlineAck.record), false, 'Remote acknowledgement does not imply a durable offline copy');
+cacheQuotaExceeded = false;
+assert.equal(saveCloudCache(workspace, offlineAck.record), true);
+assert.equal(readCloudCache(project, userId)?.data.scratchpadText, 'Edit during quota failure');
+console.log('Offline cache failure signals, online saves and cache recovery passed.');

@@ -158,11 +158,12 @@ export function readCloudCache(project: CloudProject, userId: string): CloudReco
   }
 }
 
-export function saveCloudCache(workspace: CloudWorkspace, record: CloudRecord) {
+export function saveCloudCache(workspace: CloudWorkspace, record: CloudRecord): boolean {
   try {
     localStorage.setItem(cacheKey(workspace.project, workspace.userId), JSON.stringify(record));
+    return true;
   } catch {
-    // Ignore in non-browser or quota-restricted environments
+    return false;
   }
 }
 
@@ -252,11 +253,9 @@ export async function clearCloudWorkspaceData(
     updatedRevision = data.revision;
   }
 
-  const record: CloudRecord = {
+  return {
     data: nextData,
     revision: updatedRevision ?? nextRevision,
     dirty: false,
   };
-  saveCloudCache(workspace, record);
-  return record;
 }
