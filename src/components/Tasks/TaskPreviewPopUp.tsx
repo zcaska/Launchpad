@@ -1,5 +1,4 @@
-import { useId, useLayoutEffect, useRef } from 'react';
-import { createPortal } from 'react-dom';
+import { useId, type RefObject } from 'react';
 import { CheckCircle, Circle, PencilSimple, X } from '@phosphor-icons/react';
 import type { QuickNote } from '../../types';
 import { formatElapsed } from '../../utils/focusTimer';
@@ -7,19 +6,23 @@ import { formatTaskCountdown, parseTaskDeadline } from '../../utils/taskUrgency'
 import { formatEventDuration, formatEventTime, isSafeUrl } from '../../utils/textFormatting';
 import { SafeDescription } from '../Common/SafeDescription';
 import { TaskLinks } from './TaskLinks';
+import { TaskDialog, type TaskDialogTrigger } from './TaskDialog';
 
 interface TaskPreviewPopUpProps {
   task: QuickNote;
   now: Date;
   clockFormat: '12h' | '24h';
+  returnFocus: TaskDialogTrigger | null;
+  fallbackFocus?: RefObject<HTMLElement | null>;
   onClose: () => void;
   onEdit: () => void;
 }
 
 const dateFormat = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' });
 
-export function TaskPreviewPopUp({ task, now, clockFormat, onClose, onEdit }: TaskPreviewPopUpProps) {
-  const dialogRef = useRef<HTMLDialogElement>(null);
+export function TaskPreviewPopUp({
+  task, now, clockFormat, returnFocus, fallbackFocus, onClose, onEdit,
+}: TaskPreviewPopUpProps) {
   const titleId = useId();
   const deadline = parseTaskDeadline(task.deadline, now);
   const dateOnly = /^\d{4}-\d{2}-\d{2}$/.test(task.deadline?.trim() ?? '');
@@ -29,24 +32,13 @@ export function TaskPreviewPopUp({ task, now, clockFormat, onClose, onEdit }: Ta
   const completedSubtasks = subtasks.filter((subtask) => subtask.isDone).length;
   const links = task.attachedUrls?.filter((link) => isSafeUrl(link.url));
 
-  useLayoutEffect(() => {
-    const dialog = dialogRef.current;
-    dialog?.showModal();
-    return () => dialog?.close();
-  }, []);
-
-  return createPortal(
-    <dialog
-      ref={dialogRef}
-      aria-labelledby={titleId}
-      onCancel={(event) => {
-        event.preventDefault();
-        onClose();
-      }}
-      onClick={(event) => {
-        if (event.target === event.currentTarget) onClose();
-      }}
-      className="task-details-dialog fixed inset-0 m-auto w-[calc(100%_-_1.5rem)] max-w-lg overflow-hidden rounded-2xl border border-serene-border-light bg-white text-serene-text-primary shadow-modal dark:border-serene-border-dark dark:bg-serene-surface-dark dark:text-serene-text-darkPrimary"
+  return (
+    <TaskDialog
+      titleId={titleId}
+      returnFocus={returnFocus}
+      fallbackFocus={fallbackFocus}
+      onClose={onClose}
+      className="fixed inset-0 m-auto w-[calc(100%_-_1.5rem)] max-w-lg overflow-hidden rounded-2xl border border-serene-border-light bg-white text-serene-text-primary shadow-modal dark:border-serene-border-dark dark:bg-serene-surface-dark dark:text-serene-text-darkPrimary"
     >
       <div className="flex max-h-[min(86dvh,48rem)] flex-col">
         <header className="flex shrink-0 items-center justify-between gap-3 border-b border-serene-border-light py-1.5 pl-4 pr-2 dark:border-serene-border-dark sm:pl-5">
@@ -141,7 +133,6 @@ export function TaskPreviewPopUp({ task, now, clockFormat, onClose, onEdit }: Ta
           </button>
         </footer>
       </div>
-    </dialog>,
-    document.body,
+    </TaskDialog>
   );
 }

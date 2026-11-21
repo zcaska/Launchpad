@@ -54,7 +54,7 @@
   }
 }
 
-.task-details-dialog::backdrop {
+.task-dialog::backdrop {
   background: rgb(0 0 0 / 55%);
   backdrop-filter: blur(3px);
 }

@@ -1,5 +1,5 @@
 import React, { useCallback, useState, useMemo, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion } from 'motion/react';
 import {
   CheckSquare,
   Square,
@@ -24,9 +24,11 @@ import { bufferTextColor, formatMinutesToHours } from '../../utils/timeBudget';
 import { taskPeriods, formatPeriodMinutes, addMonthsInclusive, type TaskPeriod } from '../../utils/taskPeriod';
 import type { TaskViewState } from './useTaskView';
 import { projectTaskList, selectTaskRows, taskDeadlineBadge, taskFilterTabs, taskTabCount, type FilterTab, type TaskRow } from './taskListProjection';
-import { modalBackdropVariants, modalContentVariants, staggerItemVariants, staggerContainerVariants } from '../../utils/motion';
+import { staggerItemVariants, staggerContainerVariants } from '../../utils/motion';
 import { SafeDescription } from '../Common/SafeDescription';
 import { TaskLinks } from './TaskLinks';
+import { TaskEditorDialog } from './TaskEditorDialog';
+import type { TaskDialogTrigger } from './TaskDialog';
 import type { TaskAction } from '../../utils/taskCompletion';
 
 export interface TaskManagementScreenProps {
@@ -34,11 +36,12 @@ export interface TaskManagementScreenProps {
   view: TaskViewState;
   now: Date;
   createTaskRequested: boolean;
+  requestedFormTrigger?: TaskDialogTrigger | null;
   onCreateTaskOpened: () => void;
   searchQuery: string;
   onSearchChange: (query: string) => void;
   onUpdateNotes: (notes: QuickNote[]) => void;
-  onViewTask: (taskId: string) => void;
+  onViewTask: (taskId: string, trigger: TaskDialogTrigger | null) => void;
   onBackToDashboard?: () => void;
   initialTaskId?: string | null;
   onInitialTaskOpened?: () => void;
@@ -50,6 +53,7 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
   view,
   now,
   createTaskRequested,
+  requestedFormTrigger = null,
   onCreateTaskOpened,
   searchQuery,
   onSearchChange: setSearchQuery,
@@ -69,6 +73,8 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
   // Modal / Form state for Add / Edit
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
+  const formTrigger = useRef<TaskDialogTrigger | null>(null);
+  const tasksHeading = useRef<HTMLHeadingElement>(null);
 
   // Form Fields
   const [formTitle, setFormTitle] = useState('');
@@ -189,7 +195,8 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
   };
 
   // Open Task Creation
-  const handleOpenCreateForm = useCallback(() => {
+  const handleOpenCreateForm = useCallback((trigger: TaskDialogTrigger | null) => {
+    formTrigger.current = trigger;
     setEditingTaskId(null);
     setFormTitle('');
     setFormDescription('');
@@ -207,12 +214,13 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
 
   useEffect(() => {
     if (!createTaskRequested) return;
-    handleOpenCreateForm();
+    handleOpenCreateForm(requestedFormTrigger);
     onCreateTaskOpened();
-  }, [createTaskRequested, handleOpenCreateForm, onCreateTaskOpened]);
+  }, [createTaskRequested, handleOpenCreateForm, onCreateTaskOpened, requestedFormTrigger]);
 
   // Open Task Edit
-  const handleOpenEditForm = (task: QuickNote) => {
+  const handleOpenEditForm = (task: QuickNote, trigger: TaskDialogTrigger | null) => {
+    formTrigger.current = trigger;
     setEditingTaskId(task.id);
     setFormTitle(task.text);
     setFormDescription(task.description || '');
@@ -235,13 +243,15 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
       const taskToEdit = notes.find((n) => n.id === initialTaskId);
       if (taskToEdit) {
         openedInitialTaskIdRef.current = initialTaskId;
-        handleOpenEditForm(taskToEdit);
-        onInitialTaskOpened?.();
+        handleOpenEditForm(taskToEdit, requestedFormTrigger);
+      } else {
+        tasksHeading.current?.focus();
       }
+      onInitialTaskOpened?.();
     } else if (!initialTaskId) {
       openedInitialTaskIdRef.current = null;
     }
-  }, [initialTaskId, notes, onInitialTaskOpened]);
+  }, [initialTaskId, notes, onInitialTaskOpened, requestedFormTrigger]);
 
   // Add Attached URL
   const handleAddUrl = () => {
@@ -399,7 +409,7 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
         onClick={(event) => {
           if (!(event.target instanceof Element) || event.target.closest("button, a, input, label")) return;
           if (window.getSelection()?.isCollapsed === false) return;
-          onViewTask(task.id);
+          onViewTask(task.id, event.currentTarget.querySelector<HTMLButtonElement>('h3 button'));
         }}
         className={`mobile-task-card group cursor-pointer rounded-xl md:rounded-2xl border p-3 sm:p-4 transition-all duration-200 flex flex-col justify-between ${getTaskCardBackground(task)}`}
       >
@@ -430,7 +440,7 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
                 >
                   <button
                     type="button"
-                    onClick={() => onViewTask(task.id)}
+                    onClick={(event) => onViewTask(task.id, event.currentTarget)}
                     className="max-w-full rounded text-left [overflow-wrap:anywhere] hover:text-serene-primary dark:hover:text-serene-primary-dark"
                   >
                     {task.text}
@@ -450,7 +460,7 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
             {/* Edit & Delete Actions: Always neatly pinned at top-right of card */}
             <div className="task-card-actions flex items-center gap-0.5 shrink-0 opacity-70 group-hover:opacity-100 transition-opacity">
               <button
-                onClick={() => handleOpenEditForm(task)}
+                onClick={(event) => handleOpenEditForm(task, event.currentTarget)}
                 className="p-1.5 rounded-lg text-serene-text-muted hover:text-serene-primary dark:hover:text-serene-primary-dark hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
                 title="Edit Task"
                 aria-label="Edit Task"
@@ -614,7 +624,7 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
               <div className="p-1.5 rounded-lg bg-serene-primary-soft dark:bg-serene-primary/20 text-serene-primary dark:text-serene-primary-dark shrink-0">
                 <ListTodo className="w-4 h-4 sm:w-5 sm:h-5" />
               </div>
-              <h1 className="text-base sm:text-lg lg:text-xl font-bold tracking-tight text-serene-text-primary dark:text-serene-text-darkPrimary truncate">
+              <h1 ref={tasksHeading} tabIndex={-1} className="text-base sm:text-lg lg:text-xl font-bold tracking-tight text-serene-text-primary dark:text-serene-text-darkPrimary truncate">
                 Tasks
               </h1>
             </div>
@@ -822,7 +832,7 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
                   : hasPeriodBudget ? 'No tasks are due in the selected dates.' : 'No tasks in this view.'}
               </p>
               <button
-                onClick={handleOpenCreateForm}
+                onClick={(event) => handleOpenCreateForm(event.currentTarget)}
                 className="mt-4 inline-flex items-center gap-1.5 px-3.5 py-2 bg-serene-primary hover:bg-serene-primary-hover text-white text-xs font-semibold rounded-xl shadow-xs transition-colors"
               >
                 <Plus className="w-3.5 h-3.5" />
@@ -912,64 +922,16 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
       </div>
 
       {/* 3. MODAL: TASK CREATION & EDITING */}
-      <AnimatePresence>
-        {isFormOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center sm:p-4">
-            <motion.div 
-              className="fixed inset-0 bg-black/40 backdrop-blur-xs"
-              variants={modalBackdropVariants}
-              initial="initial"
-              animate="animate"
-              exit="exit"
-              onClick={() => setIsFormOpen(false)}
-            />
-            <motion.div 
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby="task-form-title"
-              variants={modalContentVariants}
-              initial="initial"
-              animate="animate"
-              exit="exit"
-              className="relative z-10 bg-white dark:bg-serene-surface-dark border border-serene-border-light dark:border-serene-border-dark sm:rounded-2xl shadow-modal w-full sm:max-w-xl h-full sm:h-auto sm:max-h-[90dvh] flex flex-col overflow-hidden"
-            >
-            
-            {/* Modal Header */}
-            <div className="p-4 sm:p-5 border-b border-serene-border-light dark:border-serene-border-dark flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="p-1.5 rounded-lg bg-serene-primary-soft dark:bg-serene-primary/20 text-serene-primary dark:text-serene-primary-dark">
-                  {editingTaskId ? <Edit3 className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
-                </div>
-                <h2 id="task-form-title" className="text-base font-bold text-serene-text-primary dark:text-serene-text-darkPrimary">
-                  {editingTaskId ? 'Edit Task' : 'Create New Task'}
-                </h2>
-              </div>
-              <button
-                onClick={() => setIsFormOpen(false)}
-                className="p-1 rounded-lg text-serene-text-muted hover:text-serene-text-primary dark:hover:text-serene-text-darkPrimary hover:bg-black/5 dark:hover:bg-white/10"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            {/* Modal Scrollable Body */}
-            <form onSubmit={handleSaveTask} className="task-edit-form flex-1 overflow-y-auto p-4 sm:p-6 space-y-5">
-              
-              {/* Title input */}
-              <div>
-                <label className="block text-xs font-semibold text-serene-text-secondary dark:text-serene-text-darkSecondary mb-1.5">
-                  Task Title <span className="text-rose-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={formTitle}
-                  onChange={(e) => setFormTitle(e.target.value)}
-                  placeholder="e.g. Finalize architectural diagram or write unit tests"
-                  className="w-full px-3.5 py-2 bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark border border-serene-border-light dark:border-serene-border-dark rounded-xl text-sm text-serene-text-primary dark:text-serene-text-darkPrimary placeholder:text-serene-text-muted focus:outline-none focus:ring-2 focus:ring-serene-primary/40 focus:border-serene-primary"
-                />
-              </div>
-
+      {isFormOpen && (
+        <TaskEditorDialog
+          editing={editingTaskId !== null}
+          title={formTitle}
+          returnFocus={formTrigger.current}
+          fallbackFocus={tasksHeading}
+          onTitleChange={setFormTitle}
+          onClose={() => setIsFormOpen(false)}
+          onSubmit={handleSaveTask}
+        >
               {/* Description input */}
               <div>
                 <label className="block text-xs font-semibold text-serene-text-secondary dark:text-serene-text-darkSecondary mb-1.5">
@@ -1291,27 +1253,8 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
                 </div>
               </div>
 
-              {/* Form Footer Buttons */}
-              <div className="pt-2 flex items-center justify-end gap-2 border-t border-serene-border-light dark:border-serene-border-dark">
-                <button
-                  type="button"
-                  onClick={() => setIsFormOpen(false)}
-                  className="px-4 py-2 rounded-xl text-xs font-semibold text-serene-text-secondary dark:text-serene-text-darkSecondary hover:text-serene-text-primary hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2 rounded-xl text-xs font-semibold bg-serene-primary hover:bg-serene-primary-hover text-white shadow-xs transition-colors"
-                >
-                  {editingTaskId ? 'Save Changes' : 'Create Task'}
-                </button>
-              </div>
-            </form>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+        </TaskEditorDialog>
+      )}
     </div>
   );
 };

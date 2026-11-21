@@ -27,6 +27,7 @@ import { TaskClearReflection } from './components/Dashboard/TaskClearReflection'
 import { ConfettiOverlay } from './components/Dashboard/ConfettiOverlay';
 import { PrimaryFocusCard } from './components/Dashboard/PrimaryFocusCard';
 import { TaskPreviewPopUp } from './components/Tasks/TaskPreviewPopUp';
+import { isTaskDialogOpen, type TaskDialogTrigger } from './components/Tasks/TaskDialog';
 import { SmartSuggestionCard } from './components/Dashboard/SmartSuggestionCard';
 import LaunchpadPet from './components/Pet/LaunchpadPet';
 import { usePetController } from './components/Pet/usePetController';
@@ -105,9 +106,15 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
   };
   const closeSettings = () => setActiveView(previousView.current);
   const [createTaskRequested, setCreateTaskRequested] = useState(false);
-  const openNewTask = () => {
-    if (activeView === 'tasks') setCreateTaskRequested(true);
-    else setIsQuickAddTaskOpen(true);
+  const taskFormTrigger = useRef<TaskDialogTrigger | null>(null);
+  const newTaskButton = useRef<HTMLButtonElement>(null);
+  const openNewTask = (event: React.MouseEvent<HTMLButtonElement>) => {
+    if (activeView === 'tasks') {
+      taskFormTrigger.current = event.currentTarget;
+      setCreateTaskRequested(true);
+    } else {
+      setIsQuickAddTaskOpen(true);
+    }
   };
   const [isQuickAddTaskOpen, setIsQuickAddTaskOpen] = useState(false);
   const [isQuickNotesOpen, setIsQuickNotesOpen] = useState(false);
@@ -116,11 +123,15 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
   const [now, setNow] = useState<Date>(new Date());
   const [isBackupDismissed, setIsBackupDismissed] = useState(false);
   const [editingTaskIdForScreen, setEditingTaskIdForScreen] = useState<string | null>(null);
-  const [viewingTaskId, setViewingTaskId] = useState<string | null>(null);
-  const viewingTask = viewingTaskId === null ? undefined : appData.quickNotes.find((task) => task.id === viewingTaskId);
+  const [taskDetails, setTaskDetails] = useState<{ id: string; trigger: TaskDialogTrigger | null } | null>(null);
+  const viewingTask = taskDetails && appData.quickNotes.find((task) => task.id === taskDetails.id);
+  const openTaskDetails = useCallback((id: string, trigger: TaskDialogTrigger | null) => {
+    setTaskDetails({ id, trigger });
+  }, []);
 
-  const openTaskEdit = (taskId: string) => {
-    setViewingTaskId(null);
+  const openTaskEdit = (taskId: string, trigger: TaskDialogTrigger | null = null) => {
+    setTaskDetails(null);
+    taskFormTrigger.current = trigger;
     setEditingTaskIdForScreen(taskId);
     if (activeView !== "tasks") setSearchQuery("");
     setActiveView("tasks");
@@ -377,6 +388,7 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
   useEffect(() => {
     if (showReflection) return;
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (isTaskDialogOpen()) return;
       const target = e.target as HTMLElement;
       const isInput = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable;
 
@@ -519,6 +531,7 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
         theme={appData.settings.theme}
         onThemeChange={handleThemeChange}
         onNewTask={openNewTask}
+        newTaskButtonRef={newTaskButton}
         onOpenScratchpad={() => setIsQuickNotesOpen(true)}
       />
 
@@ -624,6 +637,7 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
               <Suspense fallback={<div className="p-8 text-center text-sm text-serene-text-muted">Loading Tasks...</div>}>
                 <TaskManagementScreen
                   createTaskRequested={createTaskRequested}
+                  requestedFormTrigger={taskFormTrigger.current}
                   onCreateTaskOpened={() => setCreateTaskRequested(false)}
                   searchQuery={searchQuery}
                   onSearchChange={setSearchQuery}
@@ -631,7 +645,7 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
                   view={taskView}
                   now={now}
                   onUpdateNotes={handleUpdateNotes}
-                  onViewTask={setViewingTaskId}
+                  onViewTask={openTaskDetails}
                   onBackToDashboard={() => {
                     setEditingTaskIdForScreen(null);
                     setActiveView('dashboard');
@@ -663,7 +677,7 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
                     now={now}
                     selectedTaskId={selectedFocusTaskId}
                     onSelectTask={setSelectedFocusTaskId}
-                    onPreviewTask={setViewingTaskId}
+                    onPreviewTask={openTaskDetails}
                     completedTask={dashboardTodayTasks.find((t) => t.id === completedFocusTask?.id) ?? null}
                     onCompleteTask={completeFocusTask}
                     onToggleSubtask={toggleFocusSubtask}
@@ -692,7 +706,7 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
                   <CommitmentRadarWidget
                     tasks={appData.quickNotes}
                     onSelectTask={setSelectedFocusTaskId}
-                    onPreviewTask={setViewingTaskId}
+                    onPreviewTask={openTaskDetails}
                     onOpenTasks={() => setActiveView('tasks')}
                   />
                 </div>
@@ -757,14 +771,16 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
         ))}
       </nav>
 
-      {viewingTask && (
+      {taskDetails && viewingTask && (
         <TaskPreviewPopUp
           key={viewingTask.id}
           task={viewingTask}
           now={now}
           clockFormat={appData.settings.clockFormat}
-          onClose={() => setViewingTaskId(null)}
-          onEdit={() => openTaskEdit(viewingTask.id)}
+          returnFocus={taskDetails.trigger}
+          fallbackFocus={newTaskButton}
+          onClose={() => setTaskDetails(null)}
+          onEdit={() => openTaskEdit(viewingTask.id, taskDetails.trigger)}
         />
       )}
 
@@ -826,6 +842,7 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
         onClose={() => setIsQuickAddTaskOpen(false)}
         onAddTask={handleAddQuickTask}
         onOpenFullTasksView={() => {
+          taskFormTrigger.current = null;
           setCreateTaskRequested(true);
           setActiveView('tasks');
         }}

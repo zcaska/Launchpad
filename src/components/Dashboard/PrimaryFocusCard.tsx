@@ -36,7 +36,7 @@ export interface PrimaryFocusCardProps {
   now?: Date;
   selectedTaskId?: string | null;
   onSelectTask?: (id: string) => void;
-  onPreviewTask?: (id: string) => void;
+  onPreviewTask?: (id: string, trigger: HTMLButtonElement) => void;
   completedTask?: QuickNote | null;
   onCompleteTask?: (task: QuickNote) => void;
   onToggleSubtask?: (taskId: string, subtaskId: string) => void;
@@ -490,7 +490,7 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
                   <h3 className="text-base sm:text-lg lg:text-xl font-bold text-serene-text-primary dark:text-white leading-snug min-w-0 flex-1">
                     <button
                       type="button"
-                      onClick={() => onPreviewTask?.(activeTask.id)}
+                      onClick={(event) => onPreviewTask?.(activeTask.id, event.currentTarget)}
                       className="break-words text-left hover:text-teal-600 dark:hover:text-teal-400 transition-colors rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-teal-600"
                       title="View task details"
                     >
@@ -730,7 +730,7 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
                     <div className="flex items-center gap-1 shrink-0 text-stone-400">
                       <button
                         type="button"
-                        onClick={() => onPreviewTask?.(activeTask.id)}
+                        onClick={(event) => onPreviewTask?.(activeTask.id, event.currentTarget)}
                         className="p-1 rounded-md hover:bg-stone-200 dark:hover:bg-stone-700 hover:text-stone-700 dark:hover:text-stone-200 transition-colors"
                         title="View subtask details"
                       >
@@ -942,7 +942,7 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
             <h3 className="text-xl font-bold text-serene-text-primary dark:text-serene-text-darkPrimary leading-snug break-words">
               <button
                 type="button"
-                onClick={() => onPreviewTask?.(activeTask.id)}
+                onClick={(event) => onPreviewTask?.(activeTask.id, event.currentTarget)}
                 className="text-left [overflow-wrap:anywhere] hover:text-teal-600 dark:hover:text-teal-400 transition-colors rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-teal-600"
                 title="View task details"
               >
@@ -971,7 +971,7 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
               ) : <span>No deadline</span>}
               <button
                 type="button"
-                onClick={() => onPreviewTask?.(activeTask.id)}
+                onClick={(event) => onPreviewTask?.(activeTask.id, event.currentTarget)}
                 aria-label={"View task details, estimated duration " + durationEstimate}
                 className="inline-flex min-h-8 items-center gap-1 text-purple-700 dark:text-purple-300"
               >
@@ -1128,7 +1128,7 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
                       <div className="flex items-center gap-1 shrink-0 text-stone-400">
                         <button
                           type="button"
-                          onClick={() => onPreviewTask?.(activeTask.id)}
+                          onClick={(event) => onPreviewTask?.(activeTask.id, event.currentTarget)}
                           className="grid h-9 w-8 place-items-center rounded-md hover:bg-stone-200 dark:hover:bg-stone-700 hover:text-stone-700 dark:hover:text-stone-200 transition-colors cursor-pointer"
                           title="View subtask details"
                         >

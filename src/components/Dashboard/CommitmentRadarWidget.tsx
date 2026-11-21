@@ -32,7 +32,7 @@ export { formatTaskCountdown };
 export interface CommitmentRadarWidgetProps {
   tasks: QuickNote[];
   onSelectTask?: (id: string) => void;
-  onPreviewTask?: (id: string) => void;
+  onPreviewTask?: (id: string, trigger: HTMLButtonElement | SVGGElement) => void;
   onOpenTasks?: () => void;
   className?: string;
 }
@@ -319,9 +319,9 @@ export const CommitmentRadarWidget: React.FC<CommitmentRadarWidgetProps> = React
     });
   }, [sortedNodes]);
 
-  function openTask(id: string) {
+  function openTask(id: string, trigger: HTMLButtonElement | SVGGElement) {
     setActiveTaskId(id);
-    onPreviewTask?.(id);
+    onPreviewTask?.(id, trigger);
     onSelectTask?.(id);
   }
 
@@ -759,7 +759,7 @@ export const CommitmentRadarWidget: React.FC<CommitmentRadarWidgetProps> = React
                   <g
                     key={node.task.id}
                     className="cursor-pointer group"
-                    onClick={() => openTask(node.task.id)}
+                    onClick={(event) => openTask(node.task.id, event.currentTarget)}
                     onMouseEnter={() => handleTaskMouseEnter(node.task.id)}
                     onMouseLeave={handleTaskMouseLeave}
                     tabIndex={0}
@@ -768,7 +768,7 @@ export const CommitmentRadarWidget: React.FC<CommitmentRadarWidgetProps> = React
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' || e.key === ' ') {
                         e.preventDefault();
-                        openTask(node.task.id);
+                        openTask(node.task.id, e.currentTarget);
                       }
                     }}
                   >
@@ -1026,9 +1026,7 @@ export const CommitmentRadarWidget: React.FC<CommitmentRadarWidgetProps> = React
                 {/* Footer Action: Click to Open in Tasks */}
                 <button
                   type="button"
-                  onClick={() => {
-                    openTask(activeNode.task.id);
-                  }}
+                  onClick={(event) => openTask(activeNode.task.id, event.currentTarget)}
                   className="w-full mt-1 py-1.5 px-2.5 rounded-lg text-[11px] font-semibold bg-serene-primary hover:bg-serene-primary-hover text-white shadow-sm transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
                 >
                   <span>View task details</span>
@@ -1061,7 +1059,7 @@ export const CommitmentRadarWidget: React.FC<CommitmentRadarWidgetProps> = React
                 <button
                   key={node.task.id}
                   type="button"
-                  onClick={() => openTask(node.task.id)}
+                  onClick={(event) => openTask(node.task.id, event.currentTarget)}
                   className="w-full p-2.5 text-left rounded-xl bg-serene-surfaceAlt-light/60 dark:bg-serene-surfaceAlt-dark/40 border border-serene-border-light/70 dark:border-serene-border-dark/70 hover:border-serene-primary/50 dark:hover:border-serene-primary-dark/50 transition-all flex items-center justify-between gap-3 cursor-pointer group"
                 >
                   <span className="flex items-center gap-2.5 min-w-0">
@@ -1118,7 +1116,7 @@ export const CommitmentRadarWidget: React.FC<CommitmentRadarWidgetProps> = React
             <ul className="radar-summary-list">
               {sortedNodes.map((node) => (
                 <li key={node.task.id}>
-                  <button type="button" onClick={() => openTask(node.task.id)}>
+                  <button type="button" onClick={(event) => openTask(node.task.id, event.currentTarget)}>
                     <span className="radar-task-dot" style={{ backgroundColor: TIER_PRESENTATION_MAP[node.tier].legendDotColor }} aria-hidden="true" />
                     <span className="radar-task-title">{node.task.text}</span>
                     <span className={"mobile-metadata " + (node.tier === "overdue" ? "text-rose-600 dark:text-rose-400" : "")}>

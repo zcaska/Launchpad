@@ -13,12 +13,14 @@ import {
   X
 } from '@phosphor-icons/react';
 import { ThemeMode } from '../../types';
+import { isTaskDialogOpen } from '../Tasks/TaskDialog';
 
 interface HeaderProps {
   searchQuery: string;
   onSearchChange: (query: string) => void;
   onOpenSparkIdea?: () => void;
-  onNewTask: () => void;
+  onNewTask: (event: React.MouseEvent<HTMLButtonElement>) => void;
+  newTaskButtonRef?: React.Ref<HTMLButtonElement>;
   onOpenScratchpad: () => void;
   onOpenSettings: () => void;
   theme: ThemeMode;
@@ -30,6 +32,7 @@ export const Header: React.FC<HeaderProps> = ({
   onSearchChange,
   onOpenSparkIdea,
   onNewTask,
+  newTaskButtonRef,
   onOpenScratchpad,
   onOpenSettings,
   theme,
@@ -47,6 +50,7 @@ export const Header: React.FC<HeaderProps> = ({
   useEffect(() => {
     const focusSearch = (event: KeyboardEvent) => {
       if (!(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== 'k') return;
+      if (isTaskDialogOpen()) return;
       event.preventDefault();
       if (searchTrigger.current?.getClientRects().length) {
         setMobileSearchOpen(true);
@@ -128,7 +132,7 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
 
           <div className="ml-auto flex shrink-0 items-center gap-1">
-            <button type="button" onClick={onNewTask} aria-label="New task" title="New task"
+            <button ref={newTaskButtonRef} type="button" onClick={onNewTask} aria-label="New task" title="New task"
               className="launchpad-new-task flex h-11 items-center justify-center gap-2 rounded-lg bg-serene-primary px-2.5 text-white sm:px-3">
               <Plus size={20} aria-hidden="true" />
               <span className="text-sm font-semibold">New task</span>
