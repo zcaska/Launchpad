@@ -1,0 +1,82 @@
+import assert from 'node:assert/strict';
+import { DEFAULT_SEED_DATA } from '../data/seedData';
+import { sanitizeAppData, loadAppData, saveAppData, StorageRecoveryError, restoreRollingBackup, getBackupStatus, subscribeBackupStatus, getPrimarySaveStatus, subscribePrimarySaveStatus, STORAGE_KEY, STORAGE_BACKUP_KEY } from './storage';
+import { cloudData } from '../services/cloudWorkspace';
+import { activateEconomy, commitTask, settlePastDays } from './castleEconomy';
+
+let economy = activateEconomy(5000, '2026-11-10');
+economy = commitTask(economy, { id: 'a', title: 'Draft', date: '2026-11-10', estimatedValueCents: 2000 });
+economy = settlePastDays(economy, '2026-11-11');
+const original = { ...DEFAULT_SEED_DATA, castleEconomy: economy, quickNotes: [{ id: 'a', text: 'Draft', isDone: false, createdAt: 1, actualMinutes: 45, partialMinutes: 20 }] };
+const restored = sanitizeAppData(JSON.parse(JSON.stringify(original)), false);
+assert.deepEqual(restored.castleEconomy, economy, 'local/import restore keeps the complete ledger and commitments');
+assert.equal(restored.quickNotes[0].actualMinutes, 45, 'manually reported task time survives restore');
+const cloud = cloudData(restored);
+assert.deepEqual(cloud.castleEconomy, economy, 'cloud projection keeps economy state');
+assert.deepEqual(sanitizeAppData(cloud, false).castleEconomy, economy, 'cloud decode preserves state');
+assert.equal(sanitizeAppData(DEFAULT_SEED_DATA, false).castleEconomy, undefined, 'legacy workspaces remain inactive');
+console.log('Castle persistence and cloud projection passed.');
+assert.throws(() => sanitizeAppData({ ...DEFAULT_SEED_DATA, castleEconomy: { ...economy, ledger: [{ id: 'bad', date: '2026-11-10', amountCents: 'oops', kind: 'earning' }] } }, false), /castle/i, 'malformed financial state is rejected rather than silently overwritten');
+
+assert.equal(restored.quickNotes[0].partialMinutes, 20, 'previously reported partial work survives restore');
+
+
+// Invalid primary economy data must recover from a valid rolling backup without silently resetting progress.
+const memory = new Map<string, string>();
+let rejectBackup = false;
+let rejectArchive = false;
+let rejectPrimary = false;
+const fakeStorage = { getItem: (key: string) => memory.get(key) ?? null, setItem: (key: string, value: string) => { if ((rejectBackup && key === STORAGE_BACKUP_KEY) || (rejectPrimary && key === STORAGE_KEY) || (rejectArchive && key.startsWith('launchpad_app_data_corrupt_'))) throw new DOMException('quota', 'QuotaExceededError'); memory.set(key, value); }, removeItem: (key: string) => { memory.delete(key); }, clear: () => memory.clear(), key: (index: number) => [...memory.keys()][index] ?? null, get length() { return memory.size; } };
+Object.defineProperty(globalThis, 'localStorage', { configurable: true, value: fakeStorage });
+const latest = { ...original, quickNotes: [], scratchpadText: 'latest saved ledger' };
+assert.equal(saveAppData(latest), true);
+memory.set(STORAGE_KEY, '{unreadable after saving');
+assert.throws(() => loadAppData(), (error: unknown) => error instanceof StorageRecoveryError && error.backup?.scratchpadText === 'latest saved ledger', 'valid backup requires explicit recovery');
+assert.equal(memory.get(STORAGE_KEY), '{unreadable after saving', 'damaged data is not automatically overwritten');
+rejectArchive = true;
+assert.throws(() => restoreRollingBackup(), /quota/, 'recovery refuses to overwrite damaged bytes when archiving fails');
+assert.equal(memory.get(STORAGE_KEY), '{unreadable after saving');
+rejectArchive = false;
+assert.equal(restoreRollingBackup(), true);
+assert.deepEqual(loadAppData().castleEconomy, economy, 'confirmed recovery restores latest ledger even with no tasks');
+assert.ok([...memory.values()].includes('{unreadable after saving'), 'confirmed recovery archives damaged bytes');
+memory.clear();
+saveAppData(original);
+const validBackup = memory.get(STORAGE_BACKUP_KEY);
+saveAppData({ ...original, castleEconomy: { broken: true } } as unknown as typeof original);
+assert.equal(memory.get(STORAGE_BACKUP_KEY), validBackup, 'invalid financial data cannot overwrite a valid recovery snapshot');
+saveAppData(original);
+rejectBackup = true;
+const statuses: string[] = [];
+const unsubscribe = subscribeBackupStatus(status => statuses.push(status));
+assert.equal(saveAppData(latest), true, 'a backup quota failure does not report a successful primary save as failed');
+assert.equal(getBackupStatus(), 'stale', 'backup-only failure is exposed to the UI');
+assert.equal(loadAppData().scratchpadText, 'latest saved ledger', 'the successful primary remains readable after backup quota failure');
+assert.equal(memory.get(STORAGE_BACKUP_KEY), validBackup, 'a failed backup write preserves the previous backup');
+rejectBackup = false;
+assert.equal(saveAppData(latest), true);
+assert.deepEqual(statuses, ['stale', 'current'], 'subscribers learn both backup failure and recovery');
+unsubscribe();
+const primaryStatuses: string[] = [];
+const unsubscribePrimary = subscribePrimarySaveStatus(status => primaryStatuses.push(status));
+rejectPrimary = true;
+assert.equal(saveAppData(original), false);
+assert.equal(getPrimarySaveStatus(), 'failed', 'primary write failure is exposed to the UI');
+rejectPrimary = false;
+assert.equal(saveAppData(original), true);
+assert.deepEqual(primaryStatuses, ['failed', 'saved'], 'UI is notified when saving fails and recovers');
+unsubscribePrimary();
+memory.clear();
+memory.set(STORAGE_KEY, JSON.stringify({ ...original, castleEconomy: { broken: true } }));
+memory.set(STORAGE_BACKUP_KEY, JSON.stringify(original));
+assert.throws(() => loadAppData(), (error: unknown) => error instanceof StorageRecoveryError && !!error.backup, 'valid backup is offered for explicit recovery');
+memory.delete(STORAGE_BACKUP_KEY);
+assert.throws(() => loadAppData(), StorageRecoveryError, 'invalid state without a backup must not reset financial history');
+assert.ok(memory.get(STORAGE_KEY)?.includes('broken'), 'primary data is left intact');
+memory.set(STORAGE_KEY, '{unreadable financial state');
+assert.throws(() => loadAppData(), StorageRecoveryError, 'unreadable primary without a valid backup fails safely instead of returning seed data');
+assert.equal(memory.get(STORAGE_KEY), '{unreadable financial state', 'unreadable primary bytes remain available for recovery');
+delete (globalThis as { localStorage?: Storage }).localStorage;
+
+
+assert.equal(sanitizeAppData({ ...DEFAULT_SEED_DATA, quickNotes: [{ id: 'bad-time', text: 'Task', isDone: true, createdAt: 0, actualMinutes: 525601 }] }, false).quickNotes[0].actualMinutes, undefined, 'out-of-range imported time requires a fresh entry');

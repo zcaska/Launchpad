@@ -7,6 +7,7 @@ import {
   X,
   Compass,
   Trophy,
+  CastleTurret,
   Lightbulb,
   Sparkle as Sparkles,
   ArrowClockwise as RotateCw,
@@ -36,6 +37,7 @@ export interface SidebarProps {
   onSelectView?: (view: 'dashboard' | 'tasks' | 'growth' | 'settings') => void;
   pendingTasksCount?: number;
   gamification?: GamificationState;
+  castleActive?: boolean;
   userEmail?: string;
   suggestionCandidate?: RecommendationCandidate | null;
   onApproveSuggestion?: (candidate: RecommendationCandidate) => void;
@@ -74,11 +76,13 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
   onSelectView,
   pendingTasksCount = 0,
   gamification,
+  castleActive = false,
   suggestionCandidate,
   onApproveSuggestion,
   onRejectSuggestion,
   onNextSuggestion,
 }) => {
+  const GrowthIcon = castleActive ? CastleTurret : Trophy;
   const activeHero = useMemo(() => {
     if (!gamification?.activeHeroId) return null;
     return getHeroById(gamification.activeHeroId);
@@ -244,7 +248,7 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
             <button
               type="button"
               onClick={() => onSelectView?.('growth')}
-              title={isCollapsed ? `Growth & Mastery (${heroLevelBadge})` : undefined}
+              title={isCollapsed ? (castleActive ? 'Your castle' : `Growth & Mastery (${heroLevelBadge})`) : undefined}
               className={`relative flex items-center transition-all cursor-pointer ${
                 isCollapsed
                   ? 'w-12 h-12 mx-auto justify-center rounded-xl'
@@ -258,7 +262,7 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
               {currentView === 'growth' && (
                 <ActivePill layoutId="navPillDesktop" tone="primary" transition={{ type: 'spring', bounce: 0.15, duration: 0.3 }} />
               )}
-              <Trophy
+              <GrowthIcon
                 className={`shrink-0 stroke-[2] ${
                   isCollapsed ? 'w-6 h-6' : 'w-5 h-5'
                 } ${
@@ -267,8 +271,8 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
               />
               {!isCollapsed && (
                 <>
-                  <span className="flex-1 text-left truncate">Growth & Mastery</span>
-                  <span
+                  <span className="flex-1 text-left truncate">{castleActive ? 'Your castle' : 'Growth & Mastery'}</span>
+                  {!castleActive && <span
                     className={`text-xs font-semibold px-2 py-0.5 rounded-md ${
                       currentView === 'growth'
                         ? 'bg-white/25 text-white'
@@ -276,7 +280,7 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                     }`}
                   >
                     {heroLevelBadge}
-                  </span>
+                  </span>}
                 </>
               )}
             </button>

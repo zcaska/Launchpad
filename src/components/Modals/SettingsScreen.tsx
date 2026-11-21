@@ -21,6 +21,8 @@ import { MascotShowcaseModal } from '../Pet/MascotShowcaseModal';
 import { CloudWorkspaceSettings } from './CloudWorkspaceSettings';
 import type { CloudWorkspace } from '../../services/cloudWorkspace';
 import type { useCloudSync } from '../../services/useCloudSync';
+import { activateEconomy, changeDailyGoal } from '../../utils/castleEconomy';
+import { formatDateKey } from '../../utils/gamification';
 
 interface SettingsScreenProps {
   onThemeChange: (theme: AppData['settings']['theme']) => void;
@@ -49,6 +51,8 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
   const [isMascotShowcaseOpen, setIsMascotShowcaseOpen] = useState(false);
   const [confettiPreview, setConfettiPreview] = useState<{ style: ConfettiStyle; key: number } | null>(null);
   const [isClearingData, setIsClearingData] = useState(false);
+  const [dailyGoal, setDailyGoal] = useState(() => String((appData.castleEconomy?.goalChanges.at(-1)?.amountCents ?? 5000) / 100));
+  const [goalError, setGoalError] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const currentAppUrl = window.location.href;
@@ -156,6 +160,26 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
         </div>
         {/* Content */}
         <div className="mobile-settings-content space-y-6 text-sm">
+          <section aria-labelledby="castle-settings-heading" className="space-y-3 rounded-xl border border-serene-border-light p-4 dark:border-serene-border-dark">
+            <h2 id="castle-settings-heading" className="font-bold">Castle and daily goal</h2>
+            <p className="text-serene-text-secondary dark:text-serene-text-darkSecondary">All dollars are virtual. Missed commitments and the daily earnings shortfall reduce your balance, which can become negative. You may exempt today up to three times per calendar month.</p>
+            <p className="text-serene-text-secondary dark:text-serene-text-darkSecondary">Initial rates: $10 per hour at low priority; medium, high and urgent multiply that by 1.5, 2 and 3. Work due today has a 25% premium, which falls 20% for each day late. A missed task costs its estimated value; the daily shortfall is deducted dollar for dollar.</p>
+            <label className="block font-semibold" htmlFor="castle-daily-goal">Daily earnings goal (virtual dollars)</label>
+            <div className="flex flex-wrap items-center gap-3"><input id="castle-daily-goal" type="number" min="1" max="100000" step="0.01" value={dailyGoal} onChange={event => setDailyGoal(event.target.value)} className="w-36 rounded-lg border border-serene-border-light bg-transparent px-3 py-2 dark:border-serene-border-dark" />
+              <button type="button" className="rounded-lg bg-serene-primary px-4 py-2 font-semibold text-white" onClick={() => {
+                try {
+                  const cents = Math.round(Number(dailyGoal) * 100);
+                  if (!Number.isFinite(cents) || cents < 100 || cents > 10000000) throw new Error('Enter a goal from $1 to $100,000.');
+                  const day = formatDateKey(new Date());
+                  const castleEconomy = appData.castleEconomy ? changeDailyGoal(appData.castleEconomy, cents, day) : activateEconomy(cents, day);
+                  onUpdateAppData({ ...appData, castleEconomy });
+                  setGoalError('');
+                } catch (error) { setGoalError(error instanceof Error ? error.message : 'Could not save the goal.'); }
+              }}>{appData.castleEconomy ? 'Set goal for tomorrow' : 'Activate accountability'}</button>
+            </div>
+            {appData.castleEconomy && <p className="text-xs text-serene-text-muted">Goal changes take effect tomorrow. Accountability began {appData.castleEconomy.activatedOn}.</p>}
+            {goalError && <p role="alert" className="text-rose-600">{goalError}</p>}
+          </section>
           <section aria-labelledby="appearance-heading" className="space-y-3 rounded-xl border border-serene-border-light p-3 sm:p-4 dark:border-serene-border-dark">
             <h2 id="appearance-heading" className="font-bold">Appearance</h2>
             <label className="flex flex-wrap items-center justify-between gap-3">

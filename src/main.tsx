@@ -3,6 +3,11 @@ import ReactDOM from 'react-dom/client'
 import { MotionConfig } from 'motion/react'
 import App from './App'
 import './index.css'
+import '@fontsource/poppins/400.css'
+import '@fontsource/poppins/600.css'
+import '@fontsource/poppins/700.css'
+import './components/Growth/CastleScene.css'
+import './components/Growth/CastlePanel.css'
 
 // reducedMotion="user" makes motion/react honour prefers-reduced-motion itself.
 // The blanket CSS override in index.css cannot do this: motion drives transforms

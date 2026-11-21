@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { createClient } from '@supabase/supabase-js';
 import { DEFAULT_SEED_DATA } from '../data/seedData';
+import { activateEconomy, commitTask, settlePastDays } from '../utils/castleEconomy';
 import {
   cloudData, DEFAULT_CLOUD_PROJECT, readCloudRecord, validateCloudProject, writeCloudRecord,
   clearCloudWorkspaceData, editCloudRecord, prepareCloudWrite, reconcileCloudRevision,
@@ -12,8 +13,12 @@ assert.deepEqual(validateCloudProject(project.name, project.url, project.key), p
 assert.throws(() => validateCloudProject('Project', 'https://supabase.co.attacker.test', project.key));
 assert.throws(() => validateCloudProject('Project', project.url, 'sb_secret_test'));
 
+let economy = activateEconomy(5000, '2026-11-10');
+economy = commitTask(economy, { id: 'castle-task', title: 'Draft', date: '2026-11-10', estimatedValueCents: 2000 });
+economy = settlePastDays(economy, '2026-11-11');
 const local = cloudData({
   ...DEFAULT_SEED_DATA,
+  castleEconomy: economy,
   scratchpadText: 'Fixture note',
   reflections: [{ date: '2026-11-09', questions: ['Question'], answers: ['Answer'], taskTitles: ['Task'] }],
   settings: {
@@ -26,6 +31,7 @@ assert.equal(local.reflections?.[0].answers[0], 'Answer');
 assert.equal(local.settings.openRouter.apiKey, undefined);
 assert.equal("googleCalendar" in local.settings, false);
 assert.equal("calendarEvents" in local, false);
+assert.deepEqual(local.castleEconomy, economy);
 
 let row: { revision: string; snapshot: typeof local } | undefined;
 const userId = '61000000-0000-4000-8000-000000000001';
@@ -73,6 +79,7 @@ const first = await readCloudRecord(client, userId);
 assert(first);
 assert.equal(first.data.scratchpadText, 'Fixture note');
 assert.equal(first.data.reflections?.[0].answers[0], 'Answer');
+assert.deepEqual(first.data.castleEconomy, economy, 'cloud write/read preserves castle ledger and commitments');
 assert.equal(await readCloudRecord(client, userId, 'first'), null);
 assert.equal(await writeCloudRecord(workspace, first, 'second'), true);
 assert.equal(await writeCloudRecord(workspace, first, 'stale'), false);

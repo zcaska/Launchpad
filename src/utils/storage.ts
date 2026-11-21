@@ -1,10 +1,72 @@
 import { AppData, QuickNote } from '../types';
 import { DEFAULT_SEED_DATA, DEFAULT_INITIAL_PREFERENCES } from '../data/seedData';
+import { validateCastleEconomy } from './castleEconomy';
 
 export const STORAGE_KEY = 'launchpad_app_data_v3';
 export const STORAGE_BACKUP_KEY = 'launchpad_app_data_backup_v3';
 const LEGACY_STORAGE_KEYS = ['launchpad_app_data_v2', 'launchpad_app_data_v1', 'launchpad_app_data_backup'];
 const MAX_IMPORT_SIZE_BYTES = 15 * 1024 * 1024; // 15MB ceiling for safety
+
+export class StorageRecoveryError extends Error {
+  constructor(public readonly backup: AppData | null) {
+    super('Saved data is damaged or missing. Recovery requires confirmation.');
+    this.name = 'StorageRecoveryError';
+  }
+}
+
+type BackupStatus = 'current' | 'stale';
+let backupStatus: BackupStatus = 'current';
+const backupListeners = new Set<(status: BackupStatus) => void>();
+type PrimarySaveStatus = 'saved' | 'failed';
+let primarySaveStatus: PrimarySaveStatus = 'saved';
+const primarySaveListeners = new Set<(status: PrimarySaveStatus) => void>();
+export const getPrimarySaveStatus = (): PrimarySaveStatus => primarySaveStatus;
+export function subscribePrimarySaveStatus(listener: (status: PrimarySaveStatus) => void): () => void {
+  primarySaveListeners.add(listener);
+  return () => { primarySaveListeners.delete(listener); };
+}
+function setPrimarySaveStatus(status: PrimarySaveStatus): void {
+  if (primarySaveStatus === status) return;
+  primarySaveStatus = status;
+  primarySaveListeners.forEach(listener => { try { listener(status); } catch { /* UI observers cannot prevent persistence */ } });
+}
+export const getBackupStatus = (): BackupStatus => backupStatus;
+export function subscribeBackupStatus(listener: (status: BackupStatus) => void): () => void {
+  backupListeners.add(listener);
+  return () => { backupListeners.delete(listener); };
+}
+function setBackupStatus(status: BackupStatus): void {
+  if (backupStatus === status) return;
+  backupStatus = status;
+  backupListeners.forEach(listener => { try { listener(status); } catch { /* a UI listener must not break persistence */ } });
+}
+
+function readRollingBackup(): AppData | null {
+  try {
+    const raw = localStorage.getItem(STORAGE_BACKUP_KEY);
+    return raw ? importDataFromJson(raw, false) : null;
+  } catch { return null; }
+}
+
+/** Explicitly restore a validated snapshot, preserving the damaged primary first. */
+export function restoreRollingBackup(): boolean {
+  const backup = readRollingBackup();
+  if (!backup) throw new Error('No valid rolling backup is available.');
+  return restoreImportedBackup(backup);
+}
+
+/** Preserve the damaged primary before restoring a user-selected snapshot. */
+export function restoreImportedBackup(backup: AppData): boolean {
+  const validated = sanitizeAppData(backup, false);
+  const damaged = localStorage.getItem(STORAGE_KEY);
+  if (damaged !== null) {
+    // Refuse to replace the only damaged copy when it cannot be archived.
+    let key = `launchpad_app_data_corrupt_${Date.now()}`;
+    while (localStorage.getItem(key) !== null) key += '_copy';
+    localStorage.setItem(key, damaged);
+  }
+  return saveAppData(validated);
+}
 
 export interface StorageMetrics {
   usedBytes: number;
@@ -79,7 +141,6 @@ export function loadAppData(): AppData {
 
   removeRetiredIntegrationCredentials();
   let raw: string | null = null;
-  let isFromBackup = false;
 
   try {
     raw = localStorage.getItem(STORAGE_KEY);
@@ -93,14 +154,12 @@ export function loadAppData(): AppData {
     console.error('Failed to read primary LaunchPad storage:', readErr);
   }
 
-  // If primary is missing, try reading backup snapshot
+  // A backup may be older than the primary; never silently resume from it.
   if (!raw) {
-    try {
-      raw = localStorage.getItem(STORAGE_BACKUP_KEY);
-      if (raw) isFromBackup = true;
-    } catch {
-      // ignore
-    }
+    const backup = readRollingBackup();
+    let hasBackup = false;
+    try { hasBackup = localStorage.getItem(STORAGE_BACKUP_KEY) !== null; } catch { /* handled by save failure */ }
+    if (hasBackup) throw new StorageRecoveryError(backup);
   }
 
   if (!raw) {
@@ -108,35 +167,14 @@ export function loadAppData(): AppData {
     return DEFAULT_SEED_DATA;
   }
 
-  let parsed: any;
   try {
-    parsed = JSON.parse(raw);
-  } catch (parseErr) {
-    console.error('Corruption detected in LaunchPad primary storage JSON:', parseErr);
-    // Preserve corrupt payload for emergency recovery before fallback
-    try {
-      localStorage.setItem(`launchpad_app_data_corrupt_${Date.now()}`, raw);
-    } catch {
-      // ignore
-    }
-
-    // Try fallback to backup
-    try {
-      const backupRaw = localStorage.getItem(STORAGE_BACKUP_KEY);
-      if (backupRaw) {
-        parsed = JSON.parse(backupRaw);
-        console.warn('Successfully recovered LaunchPad state from rolling backup.');
-      }
-    } catch {
-      // ignore
-    }
-
-    if (!parsed) {
-      return DEFAULT_SEED_DATA;
-    }
+    const data = sanitizeAppData(JSON.parse(raw), false);
+    try { setBackupStatus(localStorage.getItem(STORAGE_BACKUP_KEY) === raw ? 'current' : 'stale'); }
+    catch { setBackupStatus('stale'); }
+    return data;
+  } catch {
+    throw new StorageRecoveryError(readRollingBackup());
   }
-
-  return sanitizeAppData(parsed, isFromBackup);
 }
 
 /**
@@ -157,6 +195,8 @@ export function sanitizeAppData(parsed: any, saveRollingBackup: boolean = true):
         priority: ['urgent', 'high', 'medium', 'low'].includes(n.priority) ? n.priority : 'medium',
         deadline: typeof n.deadline === 'string' && n.deadline ? n.deadline : undefined,
         timeSpentSeconds: typeof n.timeSpentSeconds === 'number' ? n.timeSpentSeconds : undefined,
+        actualMinutes: Number.isFinite(n.actualMinutes) && n.actualMinutes > 0 && n.actualMinutes <= 525600 ? n.actualMinutes : undefined,
+        partialMinutes: Number.isFinite(n.partialMinutes) && n.partialMinutes > 0 ? n.partialMinutes : undefined,
         attachedUrls: Array.isArray(n.attachedUrls)
           ? n.attachedUrls.filter((u: any) => u && typeof u.url === 'string')
           : [],
@@ -203,6 +243,7 @@ export function sanitizeAppData(parsed: any, saveRollingBackup: boolean = true):
 
   const loadedData: AppData = {
     version: 3,
+    castleEconomy: parsed.castleEconomy == null ? undefined : validateCastleEconomy(parsed.castleEconomy),
     folders: [],
     links: [],
     quickNotes,
@@ -242,26 +283,47 @@ export function sanitizeAppData(parsed: any, saveRollingBackup: boolean = true):
  * and rolling backup creation.
  */
 export function saveAppData(data: AppData): boolean {
-  if (typeof localStorage === 'undefined') return false;
+  if (typeof localStorage === 'undefined') { setPrimarySaveStatus('failed'); return false; }
+
+  // The primary write is authoritative; a quota failure updating the backup
+  // must not turn an already successful primary save into a failed save.
+  const updateBackup = (serialized: string) => {
+    try {
+      const snapshot = JSON.parse(serialized);
+      if (snapshot.castleEconomy != null) validateCastleEconomy(snapshot.castleEconomy);
+      localStorage.setItem(STORAGE_BACKUP_KEY, serialized);
+      setBackupStatus('current');
+    } catch (error) {
+      setBackupStatus('stale');
+      console.warn('Could not update the rolling backup; it may contain older data.', error);
+    }
+  };
 
   try {
     const serialized = JSON.stringify(data);
     localStorage.setItem(STORAGE_KEY, serialized);
+    setPrimarySaveStatus('saved');
+    updateBackup(serialized);
     return true;
   } catch (error) {
     if (isQuotaExceededError(error)) {
       console.warn('Storage quota exceeded. Pruning ephemeral cache and retrying...');
       try {
         const pruned = pruneExpendableData(data);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(pruned));
+        const serialized = JSON.stringify(pruned);
+        localStorage.setItem(STORAGE_KEY, serialized);
+        setPrimarySaveStatus('saved');
+        updateBackup(serialized);
         console.info('Successfully saved after pruning ephemeral data.');
         return true;
       } catch (retryErr) {
         console.error('Critical: Storage quota still exceeded after pruning cache:', retryErr);
+        setPrimarySaveStatus('failed');
         return false;
       }
     }
     console.error('Failed to save LaunchPad data to localStorage:', error);
+    setPrimarySaveStatus('failed');
     return false;
   }
 }

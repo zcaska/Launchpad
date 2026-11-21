@@ -1,3 +1,5 @@
+import type { CastleEconomy } from '../utils/castleEconomy';
+
 export type FolderColor = 
   | 'forest'
   | 'emerald'
@@ -66,6 +68,8 @@ export interface QuickNote {
 
 
   timeSpentSeconds?: number; // Actual focused seconds logged by the focus timer
+  actualMinutes?: number; // User-reported time, separate from the focus timer
+  partialMinutes?: number; // Previously reflected partial work for this task
 
 
 
@@ -182,6 +186,7 @@ export interface ReflectionEntry {
 }
 
 export interface AppData {
+  castleEconomy?: CastleEconomy;
   reflections?: ReflectionEntry[];
   version: number;
   folders?: Folder[];

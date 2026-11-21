@@ -78,7 +78,7 @@ export const Header: React.FC<HeaderProps> = ({
 
   return (
     <header className="launchpad-header w-full bg-white/90 dark:bg-serene-surface-dark/90 backdrop-blur-md border-b border-serene-border-light dark:border-serene-border-dark sticky top-0 z-30 transition-colors">
-      <div className="launchpad-header-inner max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-2 sm:py-2.5">
+      <div className="launchpad-header-inner max-w-[1680px] mx-auto px-3 sm:px-6 lg:px-8 py-2 sm:py-3.5">
         <div className="flex items-center justify-between gap-2 sm:gap-4">
           
           {/* Logo and brand */}

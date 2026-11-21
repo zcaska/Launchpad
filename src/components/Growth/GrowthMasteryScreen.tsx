@@ -1,4 +1,4 @@
-import React, { useState, useRef, useMemo } from 'react';
+﻿import React, { useState, useRef, useMemo } from 'react';
 import {
   ArrowLeft,
   Trophy,
@@ -21,12 +21,14 @@ import {
   Clock,
   WarningCircle as AlertCircle,
 } from '@phosphor-icons/react';
-import { GamificationState, DailyGrowthRecord, HeroLevelDef } from '../../types';
+import { GamificationState, DailyGrowthRecord, HeroLevelDef, QuickNote, ReflectionEntry } from '../../types';
 import { HERO_ROSTER, getHeroById } from '../../data/heroRoster';
 import { getCurrentSubLevel, getHeroVisibilityState } from '../../utils/gamification';
 import { WeeklyFocusChart } from './WeeklyFocusChart';
 import { MonthlyHeatmap } from './MonthlyHeatmap';
 import { YearlyGrowthView } from './YearlyGrowthView';
+import { CastlePanel } from './CastlePanel';
+import type { CastleEconomy } from '../../utils/castleEconomy';
 
 /**
  * Resolves local badge image paths reliably with Vite base path and URL encoding.
@@ -46,6 +48,13 @@ export interface GrowthMasteryScreenProps {
   onExportBackup: () => void;
   onImportBackup: (json: string) => void;
   onBackToDashboard: () => void;
+  castleEconomy?: CastleEconomy;
+  today: string;
+  onCastleChange: (operation: (state: CastleEconomy) => CastleEconomy, onFailure: (message: string) => void) => void;
+  tasks: QuickNote[];
+  onPartialProgress: (taskId: string) => void;
+  onReflectCompleted?: (taskIds: string[]) => void;
+  reflections: ReflectionEntry[];
 }
 
 type HorizonTab = 'weekly' | 'monthly' | 'yearly';
@@ -57,8 +66,16 @@ export const GrowthMasteryScreen: React.FC<GrowthMasteryScreenProps> = ({
   onExportBackup,
   onImportBackup,
   onBackToDashboard,
+  castleEconomy,
+  today,
+  onCastleChange,
+  tasks,
+  onPartialProgress,
+  onReflectCompleted,
+  reflections,
 }) => {
   const [showMilestoneDetails, setShowMilestoneDetails] = useState(false);
+  const [showEarlierGrowth, setShowEarlierGrowth] = useState(false);
   const [activeTab, setActiveTab] = useState<HorizonTab>('weekly');
   const [importError, setImportError] = useState<string | null>(null);
   const [importSuccess, setImportSuccess] = useState<string | null>(null);
@@ -207,9 +224,18 @@ export const GrowthMasteryScreen: React.FC<GrowthMasteryScreenProps> = ({
     }
   };
 
+  if (castleEconomy && !showEarlierGrowth) return (
+    <div className="mobile-growth castle-workspace h-full w-full overflow-y-auto pb-8">
+      <div className="castle-workspace-content">
+        <CastlePanel economy={castleEconomy} today={today} tasks={tasks} reflections={reflections} currentStreak={gamification.currentStreak || 0} onBack={onBackToDashboard} onEarlierGrowth={() => setShowEarlierGrowth(true)} onChange={onCastleChange} onPartialProgress={onPartialProgress} onReflectCompleted={onReflectCompleted} />
+      </div>
+    </div>
+  );
+
   return (
     <div className="mobile-growth w-full h-full overflow-y-auto bg-serene-bg-light dark:bg-serene-bg-dark text-serene-text-primary dark:text-serene-text-darkPrimary pb-6 md:pb-12">
       <div className="growth-content max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 pt-4 space-y-6 md:pt-6 md:space-y-8">
+        {castleEconomy && <button type="button" onClick={() => setShowEarlierGrowth(false)} className="rounded-lg px-3 py-2 text-sm font-semibold underline">Back to your castle</button>}
         {/* ========================================================= */}
         {/* 1. Header Bar                                             */}
         {/* ========================================================= */}
@@ -820,7 +846,7 @@ export const GrowthMasteryScreen: React.FC<GrowthMasteryScreenProps> = ({
 
                       <div className="w-full py-2 px-3 rounded-xl bg-amber-500/10 text-amber-400 text-center text-xs font-semibold border border-amber-500/30 flex items-center justify-center gap-1.5 cursor-not-allowed">
                         <Lock className="w-3.5 h-3.5" />
-                        <span>Locked — Requires Discipline</span>
+                        <span>Locked â€” Requires Discipline</span>
                       </div>
                     </div>
                   </div>

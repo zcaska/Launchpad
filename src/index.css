@@ -41,7 +41,7 @@
   }
 
   body {
-    font-family: var(--font-launchpad);
+    font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
     letter-spacing: 0.015em;
     line-height: 1.5;
     text-rendering: optimizeLegibility;
@@ -53,6 +53,8 @@
     font-family: inherit;
   }
 }
+
+.launchpad-print-view { font-family: var(--font-launchpad); }
 
 .task-dialog::backdrop {
   background: rgb(0 0 0 / 55%);

@@ -1,0 +1,10 @@
+import assert from 'node:assert/strict';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { ActualTimeDialog } from './ActualTimeDialog';
+const markup = renderToStaticMarkup(<ActualTimeDialog tasks={[{ id: '1', text: 'Write draft', createdAt: 0, isDone: true }]} onSave={() => {}} onCancel={() => {}} />);
+assert.match(markup, /Write draft/);
+assert.match(markup, /Actual time/);
+assert.match(markup, /minutes/);
+console.log('Actual-time entry renders task-specific inputs.');
+const bounded = renderToStaticMarkup(<ActualTimeDialog tasks={[{ id: '1', text: 'Write draft', createdAt: 0, isDone: true }]} maxMinutes={20} onSave={() => {}} onCancel={() => {}} />);
+assert.match(bounded, /max="20"/, 'partial input is limited to the remaining supported total');

@@ -113,6 +113,7 @@ export function cloudData(data: AppData): AppData {
     activeMode, confettiStyle, pet } = data.settings;
   return {
     version: data.version,
+    castleEconomy: data.castleEconomy,
     quickNotes: data.quickNotes,
     scratchpadText: data.scratchpadText,
     dailyFocus: data.dailyFocus,

@@ -1,0 +1,14 @@
+import assert from 'node:assert/strict';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { StorageRecovery } from './StorageRecovery';
+const markup = renderToStaticMarkup(<StorageRecovery onRecovered={() => {}} />);
+assert.match(markup, /could not open your saved data/i);
+assert.match(markup, /Choose backup/i);
+assert.match(markup, /Download damaged data/i);
+const withBackup = renderToStaticMarkup(<StorageRecovery hasRollingBackup onRecovered={() => {}} />);
+assert.match(withBackup, /may be older than your latest changes/i);
+assert.match(withBackup, /Restore recovery copy/i);
+console.log('Storage recovery presents explicit recovery choices.');
+import { findDamagedData } from './StorageRecovery';
+const onlyBackup = new Map([['launchpad_app_data_backup_v3', '{broken']]);
+assert.equal(findDamagedData({ getItem: key => onlyBackup.get(key) ?? null }), '{broken', 'download can recover damaged rolling backup when primary is absent');

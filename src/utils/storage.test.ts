@@ -6,6 +6,8 @@ import {
   getStorageMetrics,
   STORAGE_KEY,
   STORAGE_BACKUP_KEY,
+  StorageRecoveryError,
+  restoreRollingBackup,
   clearAllLocalData,
 } from './storage';
 import { DEFAULT_SEED_DATA } from '../data/seedData';
@@ -99,6 +101,10 @@ const mockStorage = new MockLocalStorage();
   // Corrupt the primary storage key with invalid JSON
   mockStorage.setItem(STORAGE_KEY, '{"corrupted: true, broken json...');
 
+  let recoveryOffered = false;
+  try { loadAppData(); } catch (error) { recoveryOffered = error instanceof StorageRecoveryError && error.backup !== null; }
+  assert(recoveryOffered, 'damaged primary requires explicit backup recovery');
+  restoreRollingBackup();
   const recovered = loadAppData();
   assertEqual(recovered.scratchpadText, 'Crucial User Content', 'loadAppData recovers from rolling backup when primary JSON is corrupted');
 }

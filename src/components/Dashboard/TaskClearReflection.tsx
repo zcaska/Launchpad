@@ -16,8 +16,9 @@ const prompts = [
 ];
 const words = (value: string) => value.trim().split(/\s+/u).filter(Boolean).length;
 
-export function TaskClearReflection({ onClose, onSubmit }: {
+export function TaskClearReflection({ onClose, onSubmit, error }: {
   style?: ConfettiStyle;
+  error?: string;
   onClose: () => void;
   onSubmit: (questions: string[], answers: string[]) => void;
 }) {
@@ -111,6 +112,7 @@ export function TaskClearReflection({ onClose, onSubmit }: {
 
         </div>
         <footer className="shrink-0 border-t border-serene-border-light px-5 py-4 dark:border-serene-border-dark sm:px-7">
+          {error && <p role="alert" className="mb-3 rounded-lg bg-amber-50 p-3 text-sm text-amber-950 dark:bg-amber-950/30 dark:text-amber-100">{error}</p>}
           <div className="flex items-center justify-between gap-3">
             <button type="button" onClick={() => setActiveQuestion((index) => Math.max(index - 1, 0))} disabled={activeQuestion === 0}
               className="inline-flex items-center gap-1 rounded-lg px-3 py-2.5 text-sm font-semibold text-serene-text-secondary hover:bg-serene-surfaceAlt-light disabled:opacity-40 dark:text-serene-text-darkSecondary dark:hover:bg-serene-surfaceAlt-dark">

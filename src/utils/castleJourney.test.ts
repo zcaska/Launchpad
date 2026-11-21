@@ -1,0 +1,28 @@
+import assert from 'node:assert/strict';
+import { DEFAULT_SEED_DATA } from '../data/seedData';
+import type { AppData, QuickNote } from '../types';
+import { activateEconomy, balanceCents, commitTask, settlePastDays, useExemption } from './castleEconomy';
+import { applyCompletedTaskReflection } from './taskReflection';
+import { sanitizeAppData } from './storage';
+
+const day = '2026-11-10';
+const startedAt = new Date(2026, 10, 10, 12);
+const questions = Array.from({ length: 5 }, (_, index) => `Question ${index + 1}`);
+const answers = questions.map(() => Array(150).fill('work').join(' '));
+const completed: QuickNote = { id: 'done', text: 'Finished', createdAt: 0, isDone: true, pendingReflection: true, priority: 'low', actualMinutes: 60 };
+const missed: QuickNote = { id: 'missed', text: 'Unfinished', createdAt: 0, isDone: false };
+let economy = activateEconomy(5000, day);
+economy = commitTask(economy, { id: 'done', title: 'Finished', date: day, estimatedValueCents: 1000 });
+economy = commitTask(economy, { id: 'missed', title: 'Unfinished', date: day, estimatedValueCents: 2000 });
+let data: AppData = { ...DEFAULT_SEED_DATA, castleEconomy: economy, quickNotes: [completed, missed] };
+data = applyCompletedTaskReflection(data, startedAt, startedAt, questions, answers, [completed]);
+assert.equal(balanceCents(data.castleEconomy!), 1000, 'reflection releases the manually reported work reward');
+assert.deepEqual(data.quickNotes.map(task => task.id), ['missed'], 'unfinished work survives reflection');
+data = { ...data, castleEconomy: settlePastDays(data.castleEconomy!, '2026-11-11') };
+assert.equal(balanceCents(data.castleEconomy!), -5000, '$10 earned, $40 shortfall and $20 missed commitment');
+const restored = sanitizeAppData(JSON.parse(JSON.stringify(data)), false);
+assert.equal(balanceCents(restored.castleEconomy!), -5000, 'the balance survives storage restore');
+assert.equal(restored.reflections?.length, 1);
+const excused = settlePastDays(useExemption(economy, day, day), '2026-11-11');
+assert.equal(balanceCents(excused), 0, 'an exempt day waives goal and commitment penalties');
+console.log('Castle partial-day reflection, settlement and restore journey passed.');
