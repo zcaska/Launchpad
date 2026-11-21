@@ -372,10 +372,11 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
           <div className="flex items-start justify-between gap-2.5">
             <div className="flex items-start gap-2 sm:gap-2.5 flex-1 min-w-0">
               <button
+                type="button"
                 onClick={() => onTaskAction(task.id, { kind: 'toggleTask' })}
                 className="task-card-check mt-0.5 grid h-6 w-6 place-items-center rounded-md text-serene-text-muted hover:text-serene-primary dark:hover:text-serene-primary-dark transition-colors shrink-0"
                 title={task.isDone ? 'Mark as incomplete' : 'Mark as complete'}
-                aria-label={task.isDone ? 'Mark as incomplete' : 'Mark as complete'}
+                aria-label={task.isDone ? `Mark ${task.text} incomplete` : `Complete ${task.text}`}
               >
                 {task.isDone ? (
                   <CheckSquare className="w-5 h-5 text-serene-primary dark:text-serene-primary-dark" />
@@ -412,20 +413,22 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
             </div>
 
             {/* Edit & Delete Actions: Always neatly pinned at top-right of card */}
-            <div className="task-card-actions flex items-center gap-0.5 shrink-0 opacity-70 group-hover:opacity-100 transition-opacity">
+            <div className="task-card-actions flex items-center gap-0.5 shrink-0 opacity-70 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
               <button
+                type="button"
                 onClick={(event) => handleOpenEditForm(task, event.currentTarget)}
                 className="p-1.5 rounded-lg text-serene-text-muted hover:text-serene-primary dark:hover:text-serene-primary-dark hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
                 title="Edit Task"
-                aria-label="Edit Task"
+                aria-label={`Edit ${task.text}`}
               >
                 <Edit3 className="w-4 h-4" />
               </button>
               <button
+                type="button"
                 onClick={() => handleDeleteTask(task.id)}
                 className="p-1.5 rounded-lg text-serene-text-muted hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors"
                 title="Delete Task"
-                aria-label="Delete Task"
+                aria-label={`Delete ${task.text}`}
               >
                 <Trash2 className="w-4 h-4" />
               </button>

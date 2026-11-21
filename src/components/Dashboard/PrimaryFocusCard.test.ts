@@ -1,3 +1,5 @@
+import { createElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
 import { PrimaryFocusCard, PrimaryFocusCardProps } from './PrimaryFocusCard';
 import { QuickNote, Subtask } from '../../types';
 import { calculateTaskUrgency, computeSubtaskContainerState } from '../../utils/taskUrgency';
@@ -166,6 +168,30 @@ assertEqual(afterACompleted?.id, 'task-b', 'Completed selected task is ignored, 
 const allCompletedQueue = testQueue.map((t) => ({ ...t, isDone: true }));
 const afterAllCompleted = resolveActiveTask(allCompletedQueue, 'task-b');
 assertEqual(afterAllCompleted, null, 'Resolves to null (Clear Runway) when all tasks are complete');
+
+const focusMarkup = renderToStaticMarkup(createElement(PrimaryFocusCard, {
+  tasks: [pendingTaskA, { ...mockTask, subtasks: mockSubtasks.map((subtask, i) => ({ ...subtask, isDone: i === 1 })) }],
+  selectedTaskId: mockTask.id,
+  clockFormat: '24h',
+}));
+const buttons = focusMarkup.match(/<button\b[^>]*>/g) ?? [];
+for (const [label, state] of [
+  ['Toggle subtask: Prepare keynote material', 'false'],
+  ['Toggle subtask: Review meeting details', 'true'],
+]) {
+  const controls = buttons.filter(button => button.includes(`aria-label="${label}"`));
+  assertEqual(controls.length, 2, `Both layouts expose ${label}`);
+  assert(controls.every(button => button.includes(`aria-pressed="${state}"`) && !button.includes('focus:outline-none')),
+    `${label} exposes completion state and retains focus styling`);
+}
+const activeSelectors = buttons.filter(button => button.includes('aria-label="Focus on AI Summit Conference"'));
+assertEqual(activeSelectors.length, 2, 'Both switchers name the active task');
+assert(activeSelectors.every(button => button.includes('aria-current="true"')), 'Current task is announced');
+const navigation = buttons.filter(button => /aria-label="(?:Previous task|Next task|Focus on [^"]+)"/.test(button));
+assertEqual(navigation.length, 8, 'Both switchers still offer previous, next, and direct selection');
+assert(navigation.every(button => !button.includes('focus:outline-none')), 'Switcher controls retain focus styling');
+assert(!focusMarkup.includes('title="More options"'), 'There is no misleading second subtask toggle');
+assert(!focusMarkup.includes('title="View subtask details"'), 'Preview buttons describe the parent task details they open');
 
 console.log('\n=======================================');
 if (failures === 0) {

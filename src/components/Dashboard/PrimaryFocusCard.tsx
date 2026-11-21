@@ -4,7 +4,6 @@ import {
   CalendarBlank as Calendar,
   Clock,
   DotsThree as MoreHorizontal,
-  DotsThreeVertical as MoreVertical,
   FileText,
   CaretDown as ChevronDown,
   CaretUp as ChevronUp,
@@ -280,13 +279,13 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
         <button
           type="button"
           onClick={handlePrevTask}
-          className="w-5 h-5 rounded-full flex items-center justify-center text-stone-500 hover:text-stone-800 dark:text-stone-400 dark:hover:text-stone-100 hover:bg-white dark:hover:bg-stone-700 transition-all cursor-pointer focus:outline-none"
+          className="w-5 h-5 rounded-full flex items-center justify-center text-stone-500 hover:text-stone-800 dark:text-stone-400 dark:hover:text-stone-100 hover:bg-white dark:hover:bg-stone-700 transition-all cursor-pointer"
           aria-label="Previous task"
         >
           <ChevronLeft className="w-3.5 h-3.5" />
         </button>
 
-        <div className="focus-switcher-dots flex items-center gap-1 px-0.5">
+        <div className="focus-switcher-dots flex items-center gap-1 p-1">
           {effectiveTodayTasks.map((t, idx) => {
             const isActive = idx === currentTaskIndex;
             return (
@@ -294,12 +293,13 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
                 key={t.id}
                 type="button"
                 onClick={() => handleSelectTaskIndex(idx)}
-                className={`transition-all duration-200 cursor-pointer focus:outline-none rounded-full ${
+                className={`transition-all duration-200 cursor-pointer rounded-full ${
                   isActive
                     ? 'w-4 h-1.5 bg-teal-600 dark:bg-teal-400 shadow-2xs'
                     : 'w-1.5 h-1.5 bg-stone-300 dark:bg-stone-600 hover:bg-stone-400 dark:hover:bg-stone-500 hover:scale-125'
                 }`}
-                aria-label={`Task ${idx + 1}`}
+                aria-label={`Focus on ${t.text}`}
+                aria-current={isActive ? true : undefined}
               />
             );
           })}
@@ -308,7 +308,7 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
         <button
           type="button"
           onClick={handleNextTask}
-          className="w-5 h-5 rounded-full flex items-center justify-center text-stone-500 hover:text-stone-800 dark:text-stone-400 dark:hover:text-stone-100 hover:bg-white dark:hover:bg-stone-700 transition-all cursor-pointer focus:outline-none"
+          className="w-5 h-5 rounded-full flex items-center justify-center text-stone-500 hover:text-stone-800 dark:text-stone-400 dark:hover:text-stone-100 hover:bg-white dark:hover:bg-stone-700 transition-all cursor-pointer"
           aria-label="Next task"
         >
           <ChevronRight className="w-3.5 h-3.5" />
@@ -695,7 +695,9 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
                       <button
                         type="button"
                         onClick={() => onToggleSubtask?.(activeTask.id, subtask.id)}
-                        className="w-4.5 h-4.5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all cursor-pointer focus:outline-none"
+                        aria-pressed={subtask.isDone}
+                        aria-label={`Toggle subtask: ${title}`}
+                        className="w-4.5 h-4.5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all cursor-pointer"
                         style={{
                           borderColor: subtask.isDone ? '#0f4c4c' : 'currentColor',
                           backgroundColor: subtask.isDone ? '#0f4c4c' : 'transparent',
@@ -732,17 +734,10 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
                         type="button"
                         onClick={(event) => onPreviewTask?.(activeTask.id, event.currentTarget)}
                         className="p-1 rounded-md hover:bg-stone-200 dark:hover:bg-stone-700 hover:text-stone-700 dark:hover:text-stone-200 transition-colors"
-                        title="View subtask details"
+                        title="View task details"
+                        aria-label={`View details for ${activeTask.text}`}
                       >
                         <FileText className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => onToggleSubtask?.(activeTask.id, subtask.id)}
-                        className="p-1 rounded-md hover:bg-stone-200 dark:hover:bg-stone-700 hover:text-stone-700 dark:hover:text-stone-200 transition-colors"
-                        title="More options"
-                      >
-                        <MoreVertical className="w-3.5 h-3.5" />
                       </button>
                     </div>
                   </div>
@@ -799,6 +794,8 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
                 onClick={() => setIsOverflowMenuOpen((prev) => !prev)}
                 className="p-2.5 rounded-xl border border-serene-border-light dark:border-stone-800 bg-white dark:bg-[#13191c] hover:bg-stone-50 dark:hover:bg-stone-800 text-stone-600 dark:text-stone-300 shadow-2xs transition-all cursor-pointer flex items-center justify-center"
                 title="More actions"
+                aria-label={`More actions for ${activeTask.text}`}
+                aria-expanded={isOverflowMenuOpen}
               >
                 <MoreHorizontal className="w-4 h-4" />
               </button>
@@ -893,6 +890,7 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
                   className="focus-task-menu grid h-8 w-8 place-items-center rounded-lg bg-white/80 dark:bg-stone-900/60 border border-rose-200/60 dark:border-rose-900/40 text-stone-500 hover:text-stone-800 dark:hover:text-stone-200 hover:bg-white dark:hover:bg-stone-800 transition-all cursor-pointer shadow-2xs"
                   aria-expanded={isOverflowMenuOpen}
                   title="More actions"
+                  aria-label={`More actions for ${activeTask.text}`}
                 >
                   <MoreHorizontal className="w-4 h-4" />
                 </button>
@@ -1092,8 +1090,8 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
                           type="button"
                           onClick={() => onToggleSubtask?.(activeTask.id, subtask.id)}
                           aria-pressed={subtask.isDone}
-                          aria-label={"Toggle subtask: " + title}
-                          className="focus-subtask-check w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all cursor-pointer focus:outline-none"
+                          aria-label={`Toggle subtask: ${title}`}
+                          className="focus-subtask-check w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all cursor-pointer"
                           style={{
                             borderColor: subtask.isDone ? '#0f4c4c' : 'currentColor',
                             backgroundColor: subtask.isDone ? '#0f4c4c' : 'transparent',
@@ -1130,17 +1128,10 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
                           type="button"
                           onClick={(event) => onPreviewTask?.(activeTask.id, event.currentTarget)}
                           className="grid h-9 w-8 place-items-center rounded-md hover:bg-stone-200 dark:hover:bg-stone-700 hover:text-stone-700 dark:hover:text-stone-200 transition-colors cursor-pointer"
-                          title="View subtask details"
+                          title="View task details"
+                          aria-label={`View details for ${activeTask.text}`}
                         >
                           <FileText className="w-4 h-4" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => onToggleSubtask?.(activeTask.id, subtask.id)}
-                          className="grid h-9 w-8 place-items-center rounded-md hover:bg-stone-200 dark:hover:bg-stone-700 hover:text-stone-700 dark:hover:text-stone-200 transition-colors cursor-pointer"
-                          title="More options"
-                        >
-                          <MoreVertical className="w-4 h-4" />
                         </button>
                       </div>
                     </div>

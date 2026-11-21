@@ -25,11 +25,17 @@ function TaskScreenFixture({ tasks, now }: { tasks: QuickNote[]; now: Date }) {
 
 // The card and Due Soon badge both follow App's clock, even if system time differs.
 const markup = renderToStaticMarkup(createElement(TaskScreenFixture, {
-  tasks: [task('timed task', '2000-11-10 16:00')],
+  tasks: [task('timed task', '2000-11-10 16:00'), task('completed task', '2000-11-10 10:00', { isDone: true })],
   now: new Date(2000, 10, 10, 12),
 }));
 assert.ok(/>Due today /.test(markup), 'The task card uses App time');
 assert.match(markup, /Due Soon \(1\)/);
+assert.match(markup, /aria-label="Complete timed task"/);
+assert.match(markup, /aria-label="Mark completed task incomplete"/);
+assert.match(markup, /aria-label="Edit timed task"/);
+assert.match(markup, /aria-label="Delete timed task"/);
+assert.match(markup, /aria-label="Edit completed task"/);
+assert.match(markup, /aria-label="Delete completed task"/);
 
 const now = new Date(2026, 10, 10, 12);
 const mixedTasks = [
