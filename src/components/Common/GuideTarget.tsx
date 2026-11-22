@@ -52,6 +52,8 @@ export const GuideTarget: React.FC<GuideTargetProps> = ({
     right: 'left-full ml-1.5 top-1/2 -translate-y-1/2',
   }[hoverPosition];
 
+  const isFullWidth = className.includes('w-full');
+
   return (
     <div
       ref={targetRef}
@@ -62,7 +64,7 @@ export const GuideTarget: React.FC<GuideTargetProps> = ({
       onTouchMove={handleTouchEndOrMove}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      className={`relative inline-flex items-center ${className}`}
+      className={`relative ${isFullWidth ? 'flex w-full' : 'inline-flex items-center'} ${className}`}
     >
       {children}
       {hoverLabel && isHovered && (
