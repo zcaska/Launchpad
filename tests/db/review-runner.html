@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>LaunchPad Local Review Service Behavior Test Runner</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 20px; background: #0f172a; color: #f8fafc; }
+    h1 { color: #38bdf8; }
+    .suite { margin-bottom: 15px; padding: 12px; border-radius: 6px; background: #1e293b; border-left: 5px solid #22c55e; }
+    .suite.failed { border-left-color: #ef4444; }
+    .passed { color: #4ade80; }
+    .failed { color: #f87171; }
+    pre { white-space: pre-wrap; }
+  </style>
+</head>
+<body>
+  <h1>LaunchPad — Local Review Service Behavior Tests (Orca Built-in Browser)</h1>
+  <div id="status">Executing native IndexedDB review service tests in the Orca built-in browser...</div>
+  <div id="log"></div>
+
+  <script type="module">
+    // Forward console logs to the harness server
+    const origLog = console.log;
+    console.log = (...args) => {
+      origLog(...args);
+      fetch('/api/log', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(args.join(' '))
+      }).catch(() => {});
+    };
+
+    const origErr = console.error;
+    console.error = (...args) => {
+      origErr(...args);
+      fetch('/api/log', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify('[ERR] ' + args.join(' '))
+      }).catch(() => {});
+    };
+
+    import { runAllReviewBehaviorTests } from './reviewBehaviorSuite.ts';
+
+    async function execute() {
+      const statusEl = document.getElementById('status');
+      const logEl = document.getElementById('log');
+
+      try {
+        console.log('Review behavior test execution starting in Orca built-in browser...');
+        const report = await runAllReviewBehaviorTests();
+        console.log(`Test execution completed. Passed: ${report.passed}`);
+
+        statusEl.innerHTML = report.passed
+          ? `<h2 class="passed">✅ ALL ${report.totalSuites} SUITES PASSED (${report.passedAssertions}/${report.totalAssertions} assertions, ${report.durationMs.toFixed(1)}ms)</h2>`
+          : `<h2 class="failed">❌ ${report.totalSuites - report.passedSuites} SUITES FAILED</h2>`;
+
+        for (const suite of report.suites) {
+          const suiteEl = document.createElement('div');
+          suiteEl.className = `suite ${suite.passed ? 'passed' : 'failed'}`;
+          suiteEl.innerHTML = `<strong>${suite.passed ? '✓' : '✗'} ${suite.suite}</strong> (${suite.durationMs.toFixed(1)}ms) — ${suite.assertions.filter(a => a.passed).length}/${suite.assertions.length} assertions passed`;
+
+          for (const assertion of suite.assertions) {
+            if (!assertion.passed) {
+              const errEl = document.createElement('pre');
+              errEl.className = 'failed';
+              errEl.textContent = `${assertion.name}\n${assertion.error || 'Unknown failure'}`;
+              suiteEl.appendChild(errEl);
+            }
+          }
+          logEl.appendChild(suiteEl);
+        }
+
+        // Post test report back to the harness server
+        await fetch('/api/test-results', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(report),
+        });
+
+      } catch (fatalErr) {
+        console.error('Fatal runner error: ' + (fatalErr.stack || fatalErr));
+        statusEl.innerHTML = `<h2 class="failed">💥 FATAL RUNNER ERROR</h2><pre>${fatalErr.stack || fatalErr}</pre>`;
+        await fetch('/api/test-results', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            browser: 'Orca Built-in Browser Fatal Error',
+            userAgent: navigator.userAgent,
+            passed: false,
+            error: String(fatalErr),
+            stack: fatalErr.stack,
+            totalSuites: 0,
+            passedSuites: 0,
+            totalAssertions: 0,
+            passedAssertions: 0,
+            suites: []
+          }),
+        });
+      }
+    }
+
+    execute();
+  </script>
+</body>
+</html>

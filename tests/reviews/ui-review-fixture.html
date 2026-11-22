@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>LaunchPad Daily Review — Real-DOM UI Verification Fixture</title>
+  <style>
+    body { font-family: 'Segoe UI', sans-serif; padding: 16px; background: #0f172a; color: #f8fafc; }
+    h1 { color: #38bdf8; font-size: 18px; }
+    .holder { border: 1px dashed #334155; margin: 8px 0; padding: 8px; min-height: 60px; }
+    pre { white-space: pre-wrap; font-size: 11px; color: #94a3b8; }
+  </style>
+</head>
+<body>
+  <h1>Daily Review — real component + real IndexedDB UI verification (Orca built-in browser)</h1>
+  <p>Actual DailyReviewPanel and DailyGrowthReview mounts. Scenario results are posted to /api/test-results.</p>
+
+  <div class="holder" id="root-sim-a">[simultaneous panel A]</div>
+  <div class="holder" id="root-sim-b">[simultaneous panel B]</div>
+  <div class="holder" id="root-full">[full-flow panel]</div>
+  <div class="holder" id="root-direct">[direct DailyGrowthReview with injected onSaveDraft]</div>
+  <pre id="log"></pre>
+
+  <script type="module">
+    // Forward console output to the harness server
+    const origLog = console.log;
+    console.log = (...args) => {
+      origLog(...args);
+      const el = document.getElementById('log');
+      el.textContent += args.join(' ') + '\n';
+      fetch('/api/log', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(args.join(' ')),
+      }).catch(() => {});
+    };
+    const origErr = console.error;
+    console.error = (...args) => {
+      origErr(...args);
+      const el = document.getElementById('log');
+      el.textContent += '[ERR] ' + args.join(' ') + '\n';
+      fetch('/api/log', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify('[ERR] ' + args.join(' ')),
+      }).catch(() => {});
+    };
+
+    import('./uiReviewFixture.tsx')
+      .then((mod) => mod.runUiReviewVerification())
+      .then(async (report) => {
+        console.log(`UI verification completed. Passed: ${report.passed} (${report.passedScenarios}/${report.totalScenarios} scenarios, ${report.passedAssertions}/${report.totalAssertions} assertions)`);
+        await fetch('/api/test-results', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(report),
+        });
+      })
+      .catch(async (fatal) => {
+        console.error('Fatal fixture error: ' + (fatal && fatal.stack ? fatal.stack : String(fatal)));
+        await fetch('/api/test-results', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            browser: 'Orca Built-in Browser (fatal error)',
+            userAgent: navigator.userAgent,
+            passed: false,
+            fatal: String(fatal && fatal.stack ? fatal.stack : fatal),
+            totalScenarios: 0,
+            passedScenarios: 0,
+            totalAssertions: 0,
+            passedAssertions: 0,
+            scenarios: [],
+            durationMs: 0,
+          }),
+        });
+      });
+  </script>
+</body>
+</html>

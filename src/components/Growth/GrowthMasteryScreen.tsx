@@ -1,4 +1,4 @@
-﻿import React, { useState, useRef, useMemo } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import {
   ArrowLeft,
   Trophy,
@@ -28,6 +28,7 @@ import { WeeklyFocusChart } from './WeeklyFocusChart';
 import { MonthlyHeatmap } from './MonthlyHeatmap';
 import { YearlyGrowthView } from './YearlyGrowthView';
 import { CastlePanel } from './CastlePanel';
+import { DailyReviewPanel } from './DailyReviewPanel';
 import type { CastleEconomy } from '../../utils/castleEconomy';
 
 /**
@@ -74,6 +75,26 @@ export const GrowthMasteryScreen: React.FC<GrowthMasteryScreenProps> = ({
   onReflectCompleted,
   reflections,
 }) => {
+  const [showDailyReview, setShowDailyReview] = useState(false);
+  const completedReviewTasks = useMemo(
+    () => tasks.filter(task => task.isDone).map(task => ({
+      id: task.id,
+      title: task.text,
+      estimatedMinutes: task.durationMinutes,
+    })),
+    [tasks]
+  );
+  const dailyReview = (
+    <section aria-label="Daily review" className="rounded-xl border p-4 space-y-3">
+      <p>Reflect on your day. Reviews are saved on this device.</p>
+      <button type="button" onClick={() => setShowDailyReview(true)} className="rounded-lg border px-4 py-2 font-semibold">
+        Daily review
+      </button>
+      {showDailyReview && (
+        <DailyReviewPanel completedTasks={completedReviewTasks} onClose={() => setShowDailyReview(false)} />
+      )}
+    </section>
+  );
   const [showMilestoneDetails, setShowMilestoneDetails] = useState(false);
   const [showEarlierGrowth, setShowEarlierGrowth] = useState(false);
   const [activeTab, setActiveTab] = useState<HorizonTab>('weekly');
@@ -226,7 +247,7 @@ export const GrowthMasteryScreen: React.FC<GrowthMasteryScreenProps> = ({
 
   if (castleEconomy && !showEarlierGrowth) return (
     <div className="mobile-growth castle-workspace h-full w-full overflow-y-auto pb-8">
-      <div className="castle-workspace-content">
+      <div className="castle-workspace-content">{dailyReview}
         <CastlePanel economy={castleEconomy} today={today} tasks={tasks} reflections={reflections} currentStreak={gamification.currentStreak || 0} onBack={onBackToDashboard} onEarlierGrowth={() => setShowEarlierGrowth(true)} onChange={onCastleChange} onPartialProgress={onPartialProgress} onReflectCompleted={onReflectCompleted} />
       </div>
     </div>
@@ -235,7 +256,7 @@ export const GrowthMasteryScreen: React.FC<GrowthMasteryScreenProps> = ({
   return (
     <div className="mobile-growth w-full h-full overflow-y-auto bg-serene-bg-light dark:bg-serene-bg-dark text-serene-text-primary dark:text-serene-text-darkPrimary pb-6 md:pb-12">
       <div className="growth-content max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 pt-4 space-y-6 md:pt-6 md:space-y-8">
-        {castleEconomy && <button type="button" onClick={() => setShowEarlierGrowth(false)} className="rounded-lg px-3 py-2 text-sm font-semibold underline">Back to your castle</button>}
+        {dailyReview}{!castleEconomy && <p>Build your castle by activating accountability in Settings → Castle and daily goal.</p>}{castleEconomy && <button type="button" onClick={() => setShowEarlierGrowth(false)} className="rounded-lg px-3 py-2 text-sm font-semibold underline">Back to your castle</button>}
         {/* ========================================================= */}
         {/* 1. Header Bar                                             */}
         {/* ========================================================= */}

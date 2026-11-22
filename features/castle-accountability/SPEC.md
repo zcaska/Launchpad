@@ -19,7 +19,6 @@ Status: local implementation and verification are recorded in YEAR-LONG-3D-VERIF
 - Preserve existing data, XP, heroes, reflection, import/export, offline behavior and account isolation. Existing timer data is not a substitute for manual time entry. Never impose penalties on existing users before activation.
 - Exact valuation rates, proportional penalty multiplier, partial-progress accounting, mission frequency and values, asset catalog, and replacement workflow remain unspecified. Record chosen defaults as assumptions, not user-approved decisions.
 - Inspect current implementation before editing. Verify ledger invariants, date boundaries, offline catch-up, exemption limits, reflection interactions and migration with meaningful tests.
-- Only Orca's embedded browser is permitted for previews and browser checks; read `.agents/rules/browser-testing.md` before browser actions. Never bypass Cold Turkey. Use isolated test data.
 
 ## Provisional economy defaults (builder choices, not user-approved constants)
 - Low-priority work is valued at $10 per hour, with medium/high/urgent multipliers of 1.5/2/3. A task due today gets a 1.25 multiplier; that multiplier decays by 20% for each day overdue. Value rounds to the nearest cent. Estimated minutes are used at commitment; manually reported actual minutes are used for completed or partial work.

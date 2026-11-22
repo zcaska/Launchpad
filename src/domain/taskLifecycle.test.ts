@@ -1,0 +1,46 @@
+import assert from 'node:assert/strict';
+import { completeTask, reviewCleanupIntent, settleCompletion, undoCompletion } from './taskLifecycle';
+import type { EvidenceRecord, TaskRecord } from './types';
+
+const startedAt = '2026-01-01T00:00:00.000Z';
+const base: TaskRecord = { id: 'task-1', owner_id: 'owner-1', revision: 1, title: 'Write tests', duration_minutes: 30, priority: 'high', subtasks: [{ id: 'sub-1', text: 'Draft cases', is_done: false }], attached_urls: [], lifecycle: 'active', created_at: startedAt, updated_at: startedAt };
+const now = '2026-01-01T01:00:00.000Z';
+const completed = completeTask(base, now, '2026-01-01', 'cycle-1', 1);
+
+assert.equal(completed.event, 'completed');
+assert.equal(completed.task.undo_until, '2026-01-01T01:10:00.000Z');
+assert.equal(completeTask(completed.task, now, '2026-01-01', 'cycle-1', 2).event, undefined, 'same request is a retry');
+assert.equal(completeTask(completed.task, now, '2026-01-01', 'cycle-2', 2).conflict, 'already_completed');
+assert.equal(completeTask(base, now, '2026-01-01', ' ', 1).conflict, 'invalid_transition_timestamp_or_input');
+assert.equal(completeTask(base, now, '2026-02-30', 'cycle', 1).conflict, 'invalid_transition_timestamp_or_input');
+assert.equal(completeTask(base, '2025-12-31T23:59:59.999Z', '2025-12-31', 'cycle', 1).conflict, 'invalid_transition_timestamp_or_input');
+assert.equal(completeTask(base, now, '2026-01-01', 'cycle', 0).conflict, 'stale_revision');
+assert.equal(completeTask({ ...base, deleted_at: now }, now, '2026-01-01', 'cycle', 1).conflict, 'deleted_or_archived');
+assert.equal(undoCompletion(completed.task, '2026-01-01T01:09:59.999Z', 2).event, 'undone');
+assert.equal(undoCompletion(completed.task, '2026-01-01T01:10:00.000Z', 2).conflict, 'undo_expired');
+assert.equal(undoCompletion(completed.task, '2026-01-01T00:59:59.999Z', 2).conflict, 'before_completion');
+assert.equal(undoCompletion(completed.task, now, 1).conflict, 'stale_revision');
+assert.equal(undoCompletion({ ...completed.task, deleted_at: now }, now, 2).conflict, 'deleted');
+const undone = undoCompletion(completed.task, '2026-01-01T01:09:59.999Z', 2);
+assert.equal(undone.task.lifecycle, 'active');
+assert.equal(undone.task.completion_id, undefined);
+const recompleted = completeTask(undone.task, '2026-01-01T01:09:59.999Z', '2026-01-01', 'cycle-2', 3);
+assert.equal(recompleted.event, 'completed', 'a recompletion is a distinct caller-supplied cycle');
+assert.equal(settleCompletion(completed.task, '2026-01-01T01:09:59.999Z', 2).conflict, 'not_due');
+const settled = settleCompletion(completed.task, '2026-01-02T08:00:00.000Z', 2);
+assert.equal(settled.event, 'settled', 'refreshing much later settles deterministically');
+assert.equal(settled.evidenceIntent?.occurred_at, now, 'settling never fabricates occurrence time');
+assert.equal(settled.evidenceIntent?.verified, false);
+assert.equal(Object.isFrozen(settled.evidenceIntent?.task_snapshot), true);
+assert.equal(Object.isFrozen(settled.evidenceIntent?.task_snapshot.subtasks), true);
+assert.notEqual(settled.evidenceIntent?.task_snapshot.subtasks[0], base.subtasks[0], 'snapshot is cloned');
+assert.equal(settleCompletion(settled.task, '2026-01-02T08:00:00.000Z', 3).event, undefined, 'settle retry emits no duplicate intent');
+assert.equal(settleCompletion({ ...completed.task, completion_id: undefined }, '2026-01-02T08:00:00.000Z', 2).conflict, 'invalid_lifecycle_state');
+
+const evidence: EvidenceRecord = { event_id: 'event-1', owner_id: 'owner-1', semantic_key: 'task_completion:task-1:cycle-1', kind: 'task_completion', source: 'self_reported', local_day: '2026-01-01', timezone: 'UTC', rule_version: 'v1', occurred_at: now, created_at: '2026-01-02T08:00:00.000Z' };
+const proof = { owner_id: 'owner-1', day_key: '2026-01-01', finalized: true as const, completion_semantic_keys: [evidence.semantic_key] };
+assert.equal(reviewCleanupIntent([evidence], proof, 'task-1', 'cycle-1')?.purge_redundant_task_payload, true);
+assert.equal(reviewCleanupIntent([evidence], { ...proof, owner_id: 'other' }, 'task-1', 'cycle-1'), undefined, 'owner must match');
+assert.equal(reviewCleanupIntent([evidence], { ...proof, day_key: '2026-01-02' }, 'task-1', 'cycle-1'), undefined, 'day must match');
+assert.equal(reviewCleanupIntent([{ ...evidence, kind: 'correction' }], proof, 'task-1', 'cycle-1'), undefined, 'corrections are not permanent task completion evidence');
+assert.equal(reviewCleanupIntent([evidence], { ...proof, completion_semantic_keys: [] }, 'task-1', 'cycle-1'), undefined, 'review must reference exact completion');
