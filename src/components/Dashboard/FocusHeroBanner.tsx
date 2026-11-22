@@ -17,6 +17,7 @@ import { TimeRadarWidget } from './TimeRadarWidget';
 import { DayTimeRemaining, TaskLoadSummary, BufferSummary } from '../../utils/timeBudget';
 import { fadeScaleVariants } from '../../utils/motion';
 import { SafeDescription } from '../Common/SafeDescription';
+import { GuideTarget } from '../Common/GuideTarget';
 
 interface FocusHeroBannerProps {
   dailyFocus?: DailyFocus;
@@ -116,14 +117,16 @@ export const FocusHeroBanner: React.FC<FocusHeroBannerProps> = ({
           
           {/* Top meta row */}
           <div className="flex items-center justify-between gap-3 mb-2.5">
-            <div className="flex items-center gap-2">
-              <span className="p-1.5 rounded-lg bg-serene-primary-soft dark:bg-serene-primary/20 text-serene-primary dark:text-serene-primary-dark shrink-0">
-                <Target className="w-4 h-4" />
-              </span>
-              <span className="text-[11px] font-bold uppercase tracking-wider text-serene-primary dark:text-serene-primary-dark">
-                Primary Focus
-              </span>
-            </div>
+            <GuideTarget id="dashboard.focus" hoverLabel="Primary focus guide">
+              <div className="flex items-center gap-2">
+                <span className="p-1.5 rounded-lg bg-serene-primary-soft dark:bg-serene-primary/20 text-serene-primary dark:text-serene-primary-dark shrink-0">
+                  <Target className="w-4 h-4" />
+                </span>
+                <span className="text-[11px] font-bold uppercase tracking-wider text-serene-primary dark:text-serene-primary-dark">
+                  Primary Focus
+                </span>
+              </div>
+            </GuideTarget>
 
             <div className="flex items-center gap-2">
               {pendingTasks.length > 0 ? (
@@ -286,13 +289,15 @@ export const FocusHeroBanner: React.FC<FocusHeroBannerProps> = ({
         {/* Time Radar Widget in former quote space (5 cols on @3xl) */}
         {hasTimeRadar && timeRemaining && taskLoad && buffer && endHour !== undefined && (
           <div className="@3xl:col-span-5 flex flex-col min-w-0">
-            <TimeRadarWidget
-              timeRemaining={timeRemaining}
-              taskLoad={taskLoad}
-              buffer={buffer}
-              endHour={endHour}
-              onOpenTasks={onOpenTasksScreen || (() => {})}
-            />
+            <GuideTarget id="dashboard.timeRadar" hoverLabel="Time budget radar" className="w-full">
+              <TimeRadarWidget
+                timeRemaining={timeRemaining}
+                taskLoad={taskLoad}
+                buffer={buffer}
+                endHour={endHour}
+                onOpenTasks={onOpenTasksScreen || (() => {})}
+              />
+            </GuideTarget>
           </div>
         )}
       </div>

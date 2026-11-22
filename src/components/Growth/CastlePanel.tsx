@@ -8,6 +8,7 @@ import { BLUEPRINT_PARTS, getBlueprintPrice, getBlueprintProgress, getBlueprintL
 import { balanceCents, claimMission, commitTask, netWorthCents, substituteCommitment, taskValueCents, useExemption, type CastleEconomy } from '../../utils/castleEconomy';
 import type { QuickNote, ReflectionEntry } from '../../types';
 import { formatDateKey } from '../../utils/gamification';
+import { GuideTarget } from '../Common/GuideTarget';
 
 const money = (cents: number) => `${cents < 0 ? '−' : ''}$${(Math.abs(cents) / 100).toFixed(2)}`;
 
@@ -25,7 +26,7 @@ function ledgerDescription(economy: CastleEconomy, entry: CastleEconomy['ledger'
 type StoreTab = 'store' | 'built' | 'upgrades';
 
 
-export function CastlePanel({ economy, today, tasks = [], reflections = [], currentStreak = 0, onBack, onEarlierGrowth, onChange, onPartialProgress, onReflectCompleted }: { economy: CastleEconomy; today: string; tasks?: QuickNote[]; reflections?: ReflectionEntry[]; currentStreak?: number; onBack?: () => void; onEarlierGrowth?: () => void; onChange: (operation: (current: CastleEconomy) => CastleEconomy, onFailure: (message: string) => void) => void; onPartialProgress?: (taskId: string) => void; onReflectCompleted?: (taskIds: string[]) => void }) {
+export function CastlePanel({ economy, today, tasks = [], reflections = [], currentStreak = 0, onBack, onEarlierGrowth, onChange, onPartialProgress, onReflectCompleted, onDailyReview }: { economy: CastleEconomy; today: string; tasks?: QuickNote[]; reflections?: ReflectionEntry[]; currentStreak?: number; onBack?: () => void; onEarlierGrowth?: () => void; onChange: (operation: (current: CastleEconomy) => CastleEconomy, onFailure: (message: string) => void) => void; onPartialProgress?: (taskId: string) => void; onReflectCompleted?: (taskIds: string[]) => void; onDailyReview?: () => void }) {
   const [error, setError] = useState('');
   const [selected, setSelected] = useState<string[]>([]);
   const [replaceId, setReplaceId] = useState('');
@@ -132,17 +133,16 @@ export function CastlePanel({ economy, today, tasks = [], reflections = [], curr
           })}
         </ul>
       ) : <p className="cp-muted">No commitments selected yet.</p>}
-      <details className="cp-commit-controls"><summary>Manage today’s commitments</summary>
+      <details className="cp-commit-controls" open><summary>Manage today’s commitments</summary>
       {options.length > 0 ? (
         <fieldset style={{ marginTop: 12, border: 'none', padding: 0 }}>
-          <legend className="cp-muted" style={{ marginBottom: 6 }}>Choose tasks</legend>
           <div className="cp-checklist">
             {options.map(task => <label key={task.id} style={{ display: 'flex', gap: 8, alignItems: 'center' }}><input type="checkbox" checked={selected.includes(task.id)} onChange={event => setSelected(current => event.target.checked ? [...current, task.id] : current.filter(id => id !== task.id))} /><span>{task.text} · estimated {money(describe(task).estimatedValueCents)}</span></label>)}
           </div>
         </fieldset>
       ) : <p className="cp-muted" style={{ marginTop: 10 }}>Add unfinished tasks to choose commitments.</p>}
       <div style={{ marginTop: 12, display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'end' }}>
-        <label style={{ flex: '1 1 220px' }}><span className="cp-muted">Replace a commitment (optional)</span><select value={replaceId} onChange={event => setReplaceId(event.target.value)} className="cp-select" style={{ marginTop: 4 }}><option value="">Add new commitments</option>{todayCommitments.filter(item => !item.completed && !item.replacementIds && !todayCommitments.some(parent => parent.replacementIds?.includes(item.id))).map(item => <option key={item.id} value={item.id}>{item.title} · {money(item.estimatedValueCents)}</option>)}</select></label>
+        <label style={{ flex: '1 1 220px' }}><select value={replaceId} onChange={event => setReplaceId(event.target.value)} className="cp-select" style={{ marginTop: 4 }}><option value="">Add new commitments</option>{todayCommitments.filter(item => !item.completed && !item.replacementIds && !todayCommitments.some(parent => parent.replacementIds?.includes(item.id))).map(item => <option key={item.id} value={item.id}>{item.title} · {money(item.estimatedValueCents)}</option>)}</select></label>
         <button type="button" disabled={!selectedTasks.length} onClick={() => { const items = selectedTasks.map(describe); if (act(current => replaceId ? substituteCommitment(current, replaceId, today, items) : items.reduce((state, item) => commitTask(state, item), current))) { setSelected([]); setReplaceId(''); } }} className="cp-btn cp-btn-emerald">{replaceId ? 'Replace commitment' : 'Commit selected tasks'}</button>
       </div>
       <div style={{ marginTop: 12, display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
@@ -156,12 +156,10 @@ export function CastlePanel({ economy, today, tasks = [], reflections = [], curr
   const ReflectCard = (
     <section className="cp-card cp-reflect-card" aria-labelledby="cp-reflect-heading">
       <h3 id="cp-reflect-heading" className="cp-section-title">Reflection & Reward</h3>
-      <p className="cp-muted">Complete your reflection to claim today’s earnings.</p>
       <ol className="cp-reward-steps">
         {[{ label: 'Report actual time', done: completedWork.length > 0 && completedWork.every(task => (task.actualMinutes || 0) > 0) }, { label: 'Answer reflection questions', done: false }, { label: 'Claim earnings', done: false }].map(step => <li key={step.label}><span className={`cp-step-check ${step.done ? 'cp-step-check--done' : ''}`}>{step.done && <Check size={16} weight="bold" />}</span>{step.label}</li>)}
       </ol>
       <button type="button" disabled={!completedWork.length || !onReflectCompleted} onClick={() => onReflectCompleted?.(completedWork.map(task => task.id))} className="cp-btn cp-btn-primary cp-continue-reflection">Continue Reflection <ArrowRight size={21} /></button>
-      {!completedWork.length && <p className="cp-muted cp-empty-reflection">Complete a task to begin.</p>}
       {mission && <div style={{ marginTop: 14 }} className="cp-divider"><h4 style={{ margin: '10px 0 4px' }}>Mission</h4><p className="cp-muted">Complete {mission.requiredTasks} commitments worth {money(mission.targetCents)} today to earn {money(mission.bonusCents)} extra.</p><button type="button" disabled={mission.claimed} onClick={() => act(current => claimMission(current, mission.id, today))} className="cp-btn" style={{ marginTop: 8 }}>{mission.claimed ? 'Reward claimed' : 'Claim mission reward'}</button></div>}
     </section>
   );
@@ -226,27 +224,105 @@ export function CastlePanel({ economy, today, tasks = [], reflections = [], curr
   return (
     <section className={`castle-panel ${isComplete ? 'castle-panel--complete' : ''}`} aria-label="Your castle">
       <header className="cp-header">
-        <div className="cp-title-row">
-          {onBack && <button type="button" className={`cp-back ${isComplete ? 'cp-back--icon' : ''}`} onClick={onBack} aria-label="Back to dashboard"><ArrowLeft size={24} />{!isComplete && <span>Dashboard</span>}</button>}
-          <CastleTurret className="cp-castle-icon" size={38} weight="fill" aria-hidden="true" />
-          <div>
-            <h1 className="cp-title">My Castle {!isComplete && <span className="cp-on-pill"><i /> Accountability Mode: On</span>}</h1>
-            <p className="cp-subtitle">{isComplete ? 'Your personal stronghold — built through consistent action.' : 'Build · Grow · Stay Accountable'}</p>
+        <div className="cp-header-top">
+          <div className="cp-title-row">
+            {onBack && (
+              <GuideTarget id="header.brand" hoverLabel="Dashboard">
+                <button
+                  type="button"
+                  className={`cp-back ${isComplete ? 'cp-back--icon' : ''}`}
+                  onClick={onBack}
+                  aria-label="Back to dashboard"
+                >
+                  <ArrowLeft size={24} />
+                  {!isComplete && <span>Dashboard</span>}
+                </button>
+              </GuideTarget>
+            )}
+            <CastleTurret className="cp-castle-icon" size={38} weight="fill" aria-hidden="true" />
+            <GuideTarget id="castle.hero" hoverLabel="My Castle guide">
+              <h1 className="cp-title">
+                My Castle {!isComplete && <span className="cp-on-pill"><i /> Accountability Mode: On</span>}
+              </h1>
+            </GuideTarget>
           </div>
+          {isComplete ? (
+            <nav className="cp-overview-nav" aria-label="Castle sections">
+              {([{ label: 'Overview', icon: House }, { label: 'Build', icon: Hammer }, { label: 'Inventory', icon: Cube }, { label: 'Ledger', icon: BookOpen }, { label: 'Missions', icon: Flag }]).map(({ label, icon: Icon }) => (
+                <button
+                  type="button"
+                  key={label}
+                  aria-current={activeSection === label ? 'page' : undefined}
+                  onClick={() => navigate(label)}
+                >
+                  <Icon size={23} />
+                  {label}
+                </button>
+              ))}
+              {onDailyReview && (
+                <GuideTarget id="castle.reflection" hoverLabel="Daily review">
+                  <button type="button" onClick={onDailyReview} className="cp-overview-review-btn">
+                    <BookOpen size={23} />
+                    Daily review
+                  </button>
+                </GuideTarget>
+              )}
+            </nav>
+          ) : (
+            onDailyReview && (
+              <GuideTarget id="castle.reflection" hoverLabel="Daily review">
+                <button
+                  type="button"
+                  onClick={onDailyReview}
+                  className="cp-btn cp-daily-review-btn"
+                  aria-label="Daily review"
+                >
+                  <BookOpen size={18} />
+                  <span>Daily review</span>
+                </button>
+              </GuideTarget>
+            )
+          )}
         </div>
-        {isComplete ? <nav className="cp-overview-nav" aria-label="Castle sections">{([{ label: 'Overview', icon: House }, { label: 'Build', icon: Hammer }, { label: 'Inventory', icon: Cube }, { label: 'Ledger', icon: BookOpen }, { label: 'Missions', icon: Flag }]).map(({ label, icon: Icon }) => <button type="button" key={label} aria-current={activeSection === label ? 'page' : undefined} onClick={() => navigate(label)}><Icon size={23} />{label}</button>)}</nav> : <div className="cp-financial" aria-label="Financial summary">
-          <div className="cp-fin-item"><span className="cp-fin-label">Cash</span><span className="cp-fin-value cp-money-cash">{money(balance)}</span></div>
-          <div className="cp-fin-item"><span className="cp-fin-label">Castle</span><span className="cp-fin-value cp-money-castle">{money(castleValue)}</span></div>
-          <div className="cp-fin-item"><span className="cp-fin-label">Net worth</span><span className="cp-fin-value cp-money-net"><Crown aria-hidden="true" size={22} /> {money(netWorth)}</span></div>
-        </div>}
+
+        <div className="cp-header-sub">
+          {!isComplete && (
+            <GuideTarget id="castle.finances" hoverLabel="Castle Treasury">
+              <div className="cp-financial" aria-label="Financial summary">
+                <div className="cp-fin-item"><span className="cp-fin-label">Cash</span><span className="cp-fin-value cp-money-cash">{money(balance)}</span></div>
+                <div className="cp-fin-item"><span className="cp-fin-label">Castle</span><span className="cp-fin-value cp-money-castle">{money(castleValue)}</span></div>
+                <div className="cp-fin-item"><span className="cp-fin-label">Net worth</span><span className="cp-fin-value cp-money-net">{money(netWorth)}</span></div>
+              </div>
+            </GuideTarget>
+          )}
+        </div>
       </header>
 
       {!isComplete ? (
         <div className="cp-main-grid">
-          <div className="cp-main-hero">{Hero}</div>
-          <div className="cp-main-store">{StorePanel}</div>
-          <div className="cp-main-daily">{DailyStrip}</div>
-          <div className="cp-work-row cp-main-work">{WorkCard}{ReflectCard}</div>
+          <div className="cp-main-hero">
+            <GuideTarget id="castle.hero" hoverLabel="3D Stronghold" className="w-full">
+              {Hero}
+            </GuideTarget>
+          </div>
+          <div className="cp-main-store">
+            <GuideTarget id="castle.store" hoverLabel="Construction store" className="w-full">
+              {StorePanel}
+            </GuideTarget>
+          </div>
+          <div className="cp-main-daily">
+            <GuideTarget id="castle.dailyStrip" hoverLabel="Daily momentum" className="w-full">
+              {DailyStrip}
+            </GuideTarget>
+          </div>
+          <div className="cp-work-row cp-main-work">
+            <GuideTarget id="castle.commitments" hoverLabel="Today's commitments" className="w-full">
+              {WorkCard}
+            </GuideTarget>
+            <GuideTarget id="castle.reflection" hoverLabel="Reflection gate" className="w-full">
+              {ReflectCard}
+            </GuideTarget>
+          </div>
         </div>
       ) : (
         <>

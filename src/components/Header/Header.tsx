@@ -14,6 +14,7 @@ import {
 } from '@phosphor-icons/react';
 import { ThemeMode } from '../../types';
 import { isTaskDialogOpen } from '../Tasks/TaskDialog';
+import { GuideTarget } from '../Common/GuideTarget';
 
 interface HeaderProps {
   searchQuery: string;
@@ -82,24 +83,23 @@ export const Header: React.FC<HeaderProps> = ({
         <div className="flex items-center justify-between gap-2 sm:gap-4">
           
           {/* Logo and brand */}
-          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-            <div className="hidden min-[360px]:flex w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-serene-primary-soft dark:bg-serene-primary/20 text-serene-primary dark:text-serene-primary-dark border border-serene-primary/25 dark:border-serene-primary/30 items-center justify-center shadow-xs shrink-0 transition-transform hover:scale-105">
-              <Rocket className="w-4 h-4 sm:w-5 sm:h-5 stroke-[2.2]" />
-            </div>
-            <div className="min-w-0">
-              <div className="flex items-center gap-1.5 sm:gap-2">
-                <h1 className="launchpad-wordmark text-sm sm:text-base font-bold tracking-tight text-serene-text-primary dark:text-serene-text-darkPrimary truncate">
-                  LaunchPad
-                </h1>
-                <span className="hidden sm:inline-block text-[10px] uppercase font-semibold tracking-wider px-1.5 py-0.5 rounded bg-serene-primary-soft dark:bg-serene-primary/20 text-serene-primary dark:text-serene-primary-dark border border-serene-primary/20 dark:border-transparent shrink-0">
-                  Focus Hub
-                </span>
+          <GuideTarget id="header.brand" hoverLabel="Focus Hub">
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0 cursor-default">
+              <div className="hidden min-[360px]:flex w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-serene-primary-soft dark:bg-serene-primary/20 text-serene-primary dark:text-serene-primary-dark border border-serene-primary/25 dark:border-serene-primary/30 items-center justify-center shadow-xs shrink-0 transition-transform hover:scale-105">
+                <Rocket className="w-4 h-4 sm:w-5 sm:h-5 stroke-[2.2]" />
               </div>
-              <p className="hidden md:block text-[11px] text-serene-text-muted">
-                Your intentional landing dashboard
-              </p>
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5 sm:gap-2">
+                  <h1 className="launchpad-wordmark text-sm sm:text-base font-bold tracking-tight text-serene-text-primary dark:text-serene-text-darkPrimary truncate">
+                    LaunchPad
+                  </h1>
+                  <span className="hidden sm:inline-block text-[10px] uppercase font-semibold tracking-wider px-1.5 py-0.5 rounded bg-serene-primary-soft dark:bg-serene-primary/20 text-serene-primary dark:text-serene-primary-dark border border-serene-primary/20 dark:border-transparent shrink-0">
+                    Focus Hub
+                  </span>
+                </div>
+              </div>
             </div>
-          </div>
+          </GuideTarget>
 
           {/* Desktop Search Filter Box */}
           <div className="hidden md:block flex-1 max-w-xs md:max-w-md lg:max-w-lg relative">
@@ -112,7 +112,7 @@ export const Header: React.FC<HeaderProps> = ({
                 value={searchQuery}
                 onChange={(e) => onSearchChange(e.target.value)}
                 placeholder="Search tasks (Ctrl+K)"
-                className="w-full pl-9 pr-14 py-1.5 sm:py-2 bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark rounded-lg text-xs sm:text-sm text-serene-text-primary dark:text-serene-text-darkPrimary border border-serene-border-light dark:border-serene-border-dark placeholder:text-serene-text-muted focus:outline-none focus:ring-2 focus:ring-serene-primary/40 focus:border-serene-primary transition-all"
+                className="w-full pl-9 pr-14 py-1.5 sm:py-2 bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark rounded-xl text-xs sm:text-sm text-serene-text-primary dark:text-serene-text-darkPrimary border border-serene-border-light dark:border-serene-border-dark placeholder:text-serene-text-muted focus:outline-none focus:ring-2 focus:ring-serene-primary/40 focus:border-serene-primary transition-all"
               />
               <div className="absolute right-2.5 flex items-center gap-1">
                 {searchQuery ? (
@@ -131,16 +131,71 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
           </div>
 
-          <div className="ml-auto flex shrink-0 items-center gap-1">
-            <button ref={newTaskButtonRef} type="button" onClick={onNewTask} aria-label="New task" title="New task"
-              className="launchpad-new-task flex h-11 items-center justify-center gap-2 rounded-lg bg-serene-primary px-2.5 text-white sm:px-3">
-              <Plus size={20} aria-hidden="true" />
-              <span className="text-sm font-semibold">New task</span>
-            </button>
-            <button type="button" onClick={onOpenScratchpad} aria-label="Scratchpad" title="Scratchpad"
-              className="grid h-11 w-11 place-items-center rounded-lg hover:bg-serene-primary/10">
-              <NotePencil size={22} aria-hidden="true" />
-            </button>
+          <div className="ml-auto flex shrink-0 items-center gap-2">
+            {/* New Task - Icon First */}
+            <GuideTarget id="header.newTask" hoverLabel="New task (Ctrl+N)">
+              <button
+                ref={newTaskButtonRef}
+                type="button"
+                onClick={onNewTask}
+                aria-label="New task"
+                className="launchpad-new-task flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-serene-primary hover:bg-serene-primary-hover text-white shadow-xs hover:scale-105 active:scale-95 transition-all"
+              >
+                <Plus size={19} weight="bold" aria-hidden="true" />
+              </button>
+            </GuideTarget>
+
+            {/* Spark Focus Idea - Icon First */}
+            {onOpenSparkIdea && (
+              <GuideTarget id="header.sparkIdea" hoverLabel="Spark idea">
+                <button
+                  type="button"
+                  onClick={onOpenSparkIdea}
+                  aria-label="Spark idea"
+                  className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-600 dark:text-amber-400 shadow-xs hover:scale-105 active:scale-95 transition-all"
+                >
+                  <Lightbulb size={19} weight="fill" />
+                </button>
+              </GuideTarget>
+            )}
+
+            {/* Scratchpad - Icon First */}
+            <GuideTarget id="header.scratchpad" hoverLabel="Quick scratchpad">
+              <button
+                type="button"
+                onClick={onOpenScratchpad}
+                aria-label="Scratchpad"
+                className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-xl border border-serene-border-light dark:border-serene-border-dark bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark text-serene-text-secondary hover:text-serene-text-primary dark:text-serene-text-darkSecondary hover:scale-105 active:scale-95 transition-all"
+              >
+                <NotePencil size={19} aria-hidden="true" />
+              </button>
+            </GuideTarget>
+
+            {/* Theme Toggle - Icon First */}
+            <GuideTarget id="header.theme" hoverLabel={`Theme: ${theme}`}>
+              <button
+                type="button"
+                onClick={toggleTheme}
+                aria-label={`Current theme: ${theme}. Click to change.`}
+                className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark border border-serene-border-light dark:border-serene-border-dark text-serene-text-secondary hover:text-serene-text-primary dark:text-serene-text-darkSecondary dark:hover:text-serene-text-darkPrimary rounded-xl hover:scale-105 active:scale-95 transition-all"
+              >
+                {theme === 'light' && <Sun size={19} className="text-amber-500" />}
+                {theme === 'dark' && <Moon size={19} className="text-sky-400" />}
+                {theme === 'system' && <Laptop size={19} className="text-serene-text-muted" />}
+              </button>
+            </GuideTarget>
+
+            {/* Settings Modal Trigger - Icon First */}
+            <GuideTarget id="header.settings" hoverLabel="Settings">
+              <button
+                type="button"
+                onClick={onOpenSettings}
+                aria-label="Settings"
+                className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark border border-serene-border-light dark:border-serene-border-dark text-serene-text-secondary hover:text-serene-text-primary dark:text-serene-text-darkSecondary dark:hover:text-serene-text-darkPrimary rounded-xl hover:scale-105 active:scale-95 transition-all"
+              >
+                <Settings size={19} />
+              </button>
+            </GuideTarget>
           </div>
 
           <button
@@ -153,45 +208,10 @@ export const Header: React.FC<HeaderProps> = ({
               setMobileSearchOpen(true);
               mobileSearch.current?.focus();
             }}
-            className="grid h-11 w-11 shrink-0 place-items-center rounded-lg md:hidden"
+            className="grid h-9 w-9 shrink-0 place-items-center rounded-xl md:hidden"
           >
-            <Search size={22} />
+            <Search size={20} />
           </button>
-
-          {/* Desktop utilities */}
-          <div className="hidden items-center gap-2 shrink-0 md:flex">
-            {/* Spark Focus Idea Button */}
-            {onOpenSparkIdea && (
-              <button
-                onClick={onOpenSparkIdea}
-                title="Spark a smart focus idea or curated reading"
-                className="inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 bg-amber-500 hover:bg-amber-600 text-white text-xs font-semibold rounded-lg shadow-sm hover:shadow transition-all"
-              >
-                <Lightbulb className="w-4 h-4 shrink-0" />
-                <span className="hidden sm:inline">Spark Idea</span>
-              </button>
-            )}
-
-            {/* Theme Toggle */}
-            <button
-              onClick={toggleTheme}
-              title={`Current theme: ${theme}. Click to change.`}
-              className="p-1.5 sm:p-2 bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark border border-serene-border-light dark:border-serene-border-dark text-serene-text-secondary hover:text-serene-text-primary dark:text-serene-text-darkSecondary dark:hover:text-serene-text-darkPrimary rounded-lg transition-colors"
-            >
-              {theme === 'light' && <Sun className="w-4 h-4 text-amber-500" />}
-              {theme === 'dark' && <Moon className="w-4 h-4 text-sky-400" />}
-              {theme === 'system' && <Laptop className="w-4 h-4 text-serene-text-muted" />}
-            </button>
-
-            {/* Settings Modal Trigger */}
-            <button
-              onClick={onOpenSettings}
-              title="Settings, Backup & Help"
-              className="p-1.5 sm:p-2 bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark border border-serene-border-light dark:border-serene-border-dark text-serene-text-secondary hover:text-serene-text-primary dark:text-serene-text-darkSecondary dark:hover:text-serene-text-darkPrimary rounded-lg transition-colors"
-            >
-              <Settings className="w-4 h-4" />
-            </button>
-          </div>
         </div>
 
         <div id="mobile-task-search" className={mobileSearchOpen || searchQuery ? "pt-2 md:hidden" : "hidden"}>

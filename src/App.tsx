@@ -45,6 +45,7 @@ import {
 import { QuickNotesWidget } from './components/QuickNotes/QuickNotesWidget';
 import { QuickAddTaskModal } from './components/Modals/QuickAddTaskModal';
 import { StorageRecovery } from './components/Modals/StorageRecovery';
+import { FeatureGuideProvider } from './components/Common/FeatureGuideContext';
 
 // Code-split heavy screens and modals into on-demand bundles for 0ms initial load
 const GrowthMasteryScreen = lazy(() =>
@@ -575,9 +576,10 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
   );
 
   return (
-    <MotionConfig reducedMotion="user">
-    <IconContext.Provider value={{ size: 20, weight: 'regular', mirrored: false }}>
-      <div className="launchpad-shell h-dvh flex flex-col overflow-hidden bg-serene-bg-light dark:bg-serene-bg-dark text-serene-text-primary dark:text-serene-text-darkPrimary">
+    <FeatureGuideProvider>
+      <MotionConfig reducedMotion="user">
+      <IconContext.Provider value={{ size: 20, weight: 'regular', mirrored: false }}>
+        <div className="launchpad-shell h-dvh flex flex-col overflow-hidden bg-serene-bg-light dark:bg-serene-bg-dark text-serene-text-primary dark:text-serene-text-darkPrimary">
       {/* Streamlined Header */}
       <Header
         searchQuery={searchQuery}
@@ -1011,6 +1013,7 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
     </div>
     </IconContext.Provider>
     </MotionConfig>
+    </FeatureGuideProvider>
   );
 }
 

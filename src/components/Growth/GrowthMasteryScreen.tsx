@@ -30,6 +30,7 @@ import { YearlyGrowthView } from './YearlyGrowthView';
 import { CastlePanel } from './CastlePanel';
 import { DailyReviewPanel } from './DailyReviewPanel';
 import type { CastleEconomy } from '../../utils/castleEconomy';
+import { GuideTarget } from '../Common/GuideTarget';
 
 /**
  * Resolves local badge image paths reliably with Vite base path and URL encoding.
@@ -83,17 +84,6 @@ export const GrowthMasteryScreen: React.FC<GrowthMasteryScreenProps> = ({
       estimatedMinutes: task.durationMinutes,
     })),
     [tasks]
-  );
-  const dailyReview = (
-    <section aria-label="Daily review" className="rounded-xl border p-4 space-y-3">
-      <p>Reflect on your day. Reviews are saved on this device.</p>
-      <button type="button" onClick={() => setShowDailyReview(true)} className="rounded-lg border px-4 py-2 font-semibold">
-        Daily review
-      </button>
-      {showDailyReview && (
-        <DailyReviewPanel completedTasks={completedReviewTasks} onClose={() => setShowDailyReview(false)} />
-      )}
-    </section>
   );
   const [showMilestoneDetails, setShowMilestoneDetails] = useState(false);
   const [showEarlierGrowth, setShowEarlierGrowth] = useState(false);
@@ -247,8 +237,23 @@ export const GrowthMasteryScreen: React.FC<GrowthMasteryScreenProps> = ({
 
   if (castleEconomy && !showEarlierGrowth) return (
     <div className="mobile-growth castle-workspace h-full w-full overflow-y-auto pb-8">
-      <div className="castle-workspace-content">{dailyReview}
-        <CastlePanel economy={castleEconomy} today={today} tasks={tasks} reflections={reflections} currentStreak={gamification.currentStreak || 0} onBack={onBackToDashboard} onEarlierGrowth={() => setShowEarlierGrowth(true)} onChange={onCastleChange} onPartialProgress={onPartialProgress} onReflectCompleted={onReflectCompleted} />
+      <div className="castle-workspace-content">
+        <CastlePanel
+          economy={castleEconomy}
+          today={today}
+          tasks={tasks}
+          reflections={reflections}
+          currentStreak={gamification.currentStreak || 0}
+          onBack={onBackToDashboard}
+          onEarlierGrowth={() => setShowEarlierGrowth(true)}
+          onChange={onCastleChange}
+          onPartialProgress={onPartialProgress}
+          onReflectCompleted={onReflectCompleted}
+          onDailyReview={() => setShowDailyReview(true)}
+        />
+        {showDailyReview && (
+          <DailyReviewPanel completedTasks={completedReviewTasks} onClose={() => setShowDailyReview(false)} />
+        )}
       </div>
     </div>
   );
@@ -256,53 +261,72 @@ export const GrowthMasteryScreen: React.FC<GrowthMasteryScreenProps> = ({
   return (
     <div className="mobile-growth w-full h-full overflow-y-auto bg-serene-bg-light dark:bg-serene-bg-dark text-serene-text-primary dark:text-serene-text-darkPrimary pb-6 md:pb-12">
       <div className="growth-content max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 pt-4 space-y-6 md:pt-6 md:space-y-8">
-        {dailyReview}{!castleEconomy && <p>Build your castle by activating accountability in Settings → Castle and daily goal.</p>}{castleEconomy && <button type="button" onClick={() => setShowEarlierGrowth(false)} className="rounded-lg px-3 py-2 text-sm font-semibold underline">Back to your castle</button>}
+        {castleEconomy && <button type="button" onClick={() => setShowEarlierGrowth(false)} className="rounded-lg px-3 py-2 text-sm font-semibold underline">Back to your castle</button>}
+        {showDailyReview && (
+          <DailyReviewPanel completedTasks={completedReviewTasks} onClose={() => setShowDailyReview(false)} />
+        )}
         {/* ========================================================= */}
         {/* 1. Header Bar                                             */}
         {/* ========================================================= */}
         <header className="growth-heading flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-serene-border-light dark:border-serene-border-dark">
           <div className="flex items-center gap-3">
-            <button
-              onClick={onBackToDashboard}
-              aria-label="Back to Dashboard"
-              className="growth-back group flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-xl text-serene-text-secondary dark:text-serene-text-darkSecondary hover:text-serene-text-primary dark:hover:text-serene-text-darkPrimary bg-white dark:bg-serene-surface-dark border border-serene-border-light dark:border-serene-border-dark hover:border-serene-primary/40 shadow-subtle transition-all duration-150"
-            >
-              <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-0.5" />
-              <span className="hidden md:inline">Dashboard</span>
-            </button>
+            <GuideTarget id="header.brand" hoverLabel="Dashboard">
+              <button
+                onClick={onBackToDashboard}
+                aria-label="Back to Dashboard"
+                className="growth-back group flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-xl text-serene-text-secondary dark:text-serene-text-darkSecondary hover:text-serene-text-primary dark:hover:text-serene-text-darkPrimary bg-white dark:bg-serene-surface-dark border border-serene-border-light dark:border-serene-border-dark hover:border-serene-primary/40 shadow-subtle transition-all duration-150"
+              >
+                <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-0.5" />
+                <span className="hidden md:inline">Dashboard</span>
+              </button>
+            </GuideTarget>
 
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 text-white flex items-center justify-center shadow-card shrink-0">
                 <Trophy className="w-5 h-5" />
               </div>
               <div>
-                <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-serene-text-primary dark:text-serene-text-darkPrimary flex items-center gap-2">
-                  Growth & Mastery
-                  <Flame className="w-5 h-5 text-orange-500 fill-orange-500/20 animate-pulse" />
-                </h1>
-                <p className="text-xs text-serene-text-secondary dark:text-serene-text-darkSecondary">
-                  Momentum analytics, psychological milestones & hero progression
-                </p>
+                <GuideTarget id="growth.analytics" hoverLabel="Growth & Mastery guide">
+                  <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-serene-text-primary dark:text-serene-text-darkPrimary flex items-center gap-2">
+                    Growth & Mastery
+                    <Flame className="w-5 h-5 text-orange-500 fill-orange-500/20 animate-pulse" />
+                  </h1>
+                </GuideTarget>
               </div>
             </div>
           </div>
 
           {/* Quick Stats Pills */}
           <div className="growth-stats flex flex-wrap items-center gap-2 sm:gap-3">
+            {/* Daily Review Button */}
+            <GuideTarget id="castle.reflection" hoverLabel="Daily review">
+              <button
+                type="button"
+                onClick={() => setShowDailyReview(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-500/10 dark:bg-purple-500/15 text-purple-600 dark:text-purple-400 border border-purple-500/20 text-xs font-semibold hover:bg-purple-500/20 transition-colors shadow-subtle"
+              >
+                <Calendar className="w-4 h-4" />
+                <span>Daily review</span>
+              </button>
+            </GuideTarget>
             {/* Streak Pill */}
-            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-orange-500/10 dark:bg-orange-500/15 text-orange-600 dark:text-orange-400 border border-orange-500/20 text-xs font-semibold shadow-subtle">
-              <Flame className="w-4 h-4 text-orange-500" />
-              <span>{gamification.currentStreak} Day Streak</span>
-              <span className="text-orange-400 dark:text-orange-500 text-[10px] font-normal ml-0.5">
-                (Best: {gamification.longestStreak || gamification.currentStreak}d)
-              </span>
-            </div>
+            <GuideTarget id="growth.streak" hoverLabel="Daily streak record">
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-orange-500/10 dark:bg-orange-500/15 text-orange-600 dark:text-orange-400 border border-orange-500/20 text-xs font-semibold shadow-subtle">
+                <Flame className="w-4 h-4 text-orange-500" />
+                <span>{gamification.currentStreak} Day Streak</span>
+                <span className="text-orange-400 dark:text-orange-500 text-[10px] font-normal ml-0.5">
+                  (Best: {gamification.longestStreak || gamification.currentStreak}d)
+                </span>
+              </div>
+            </GuideTarget>
 
             {/* Lifetime XP Pill */}
-            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-serene-primary/10 dark:bg-serene-primary-dark/15 text-serene-primary dark:text-serene-primary-dark border border-serene-primary/25 text-xs font-semibold shadow-subtle">
-              <Sparkles className="w-4 h-4" />
-              <span>{(gamification.currentXp || 0).toLocaleString()} XP</span>
-            </div>
+            <GuideTarget id="growth.xp" hoverLabel="Lifetime XP">
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-serene-primary/10 dark:bg-serene-primary-dark/15 text-serene-primary dark:text-serene-primary-dark border border-serene-primary/25 text-xs font-semibold shadow-subtle">
+                <Sparkles className="w-4 h-4" />
+                <span>{(gamification.currentXp || 0).toLocaleString()} XP</span>
+              </div>
+            </GuideTarget>
 
             {/* Unlocked Heroes Pill */}
             <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-500/10 dark:bg-purple-500/15 text-purple-600 dark:text-purple-400 border border-purple-500/20 text-xs font-semibold shadow-subtle">
