@@ -1,6 +1,6 @@
 # LaunchPAD cloud workspaces
 
-Open **Settings** and find **Supabase cloud workspaces**. Select **LaunchPAD** to sign in to an existing shared account. Use the same project and account on each device. Select **Copy my local workspace** during sign-in to seed a new cloud workspace with this device’s existing tasks and progress. An existing cloud workspace opens with its saved data.
+Open **Settings** and find **Supabase cloud workspaces**. Select **LaunchPAD** to sign in to an existing shared account. Use the same project and account on each device. Select **Copy my local workspace** during sign-in to seed a new cloud workspace with this device’s tasks, castle state, and growth progress. An existing cloud workspace opens with its saved data.
 
 ## Enable public registration for the shared project
 
@@ -15,7 +15,7 @@ Account creation in the shared project is hidden by default. Configure [custom S
 
 ## Sync behavior
 
-LaunchPAD syncs tasks, checklists, scratchpad, preferences, and growth progress. OpenRouter is available in the local workspace. Its credentials stay on the device. Running timers also stay on the device, and logged time syncs with the task.
+LaunchPAD syncs tasks, checklists, castle accountability (state, purchases, and ledger), and growth records. Each browser keeps appearance (light/dark mode), device preferences, scratchpad notes, and OpenRouter credentials in its account-specific cache. Older cloud workspaces retain their previously saved history for first-time recovery on a device. Running timers also stay on the device, and logged time syncs with the task.
 
 An opened workspace keeps an offline copy in this browser and retries on reconnection. Other devices’ changes are checked while the app is visible and when it regains focus. If both copies have unsynced edits, LaunchPAD pauses sync and asks which to keep. Export the device copy through **Data Backup & Storage Health** if you want to preserve both versions.
 

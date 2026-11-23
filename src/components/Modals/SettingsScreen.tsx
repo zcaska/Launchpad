@@ -77,7 +77,10 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
     reader.onload = async (event) => {
       try {
         const text = event.target?.result as string;
-        if (!window.confirm('Replace the open workspace with this backup? Export the current workspace first if you want to keep a copy.')) return;
+        const message = workspace
+          ? 'Replace this browser’s workspace with the backup and sync its tasks? OpenRouter credentials stay in the local workspace.'
+          : 'Replace the open workspace with this backup? Export the current workspace first if you want to keep a copy.';
+        if (!window.confirm(message)) return;
         await onImportBackup(text);
         alert('Data successfully imported and restored!');
       } catch (err: any) {
@@ -91,7 +94,9 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
 
   const handleClearAllDataConfirm = async () => {
     const scope = workspace ? 'this cloud workspace' : 'this browser’s local workspace';
-    const confirmed = window.confirm(`Permanently clear tasks, notes, reflections, and progress from ${scope}?`);
+    const confirmed = window.confirm(workspace
+      ? 'Permanently clear tasks, castle progress, and growth records across synced devices, and this browser’s notes and settings? Other devices keep their own local notes and preferences.'
+      : `Permanently clear tasks, notes, reflections, and progress from ${scope}?`);
     if (!confirmed) return;
 
     try {
@@ -681,7 +686,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
                 <span>Clear All Data</span>
               </div>
               <div className="text-[10px] text-rose-600 dark:text-rose-400 mt-0.5">
-                Permanently delete all tasks, bookmarks, reflections, and history from local storage and cloud. Account stays signed in.
+                {workspace ? 'Clear synced tasks, castle progress, and growth records across devices, and this browser’s workspace data. Your account stays signed in.' : 'Clear tasks, notes, reflections, and progress from this browser’s local workspace.'}
               </div>
             </div>
             <button

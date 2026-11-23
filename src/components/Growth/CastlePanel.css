@@ -31,6 +31,7 @@
 }
 .cp-title-row, .cp-actions { display: flex; align-items: center; gap: 8px; }
 .cp-actions { flex-wrap: wrap; }
+.cp-title-row > .cp-store-mobile { display: none; }
 .cp-title { margin: 0; font-weight: 600; font-size: clamp(1.12rem, 2vw, 1.5rem); }
 .cp-btn, .cp-tab {
   border: 1px solid var(--cp-border);
@@ -160,8 +161,12 @@ html:not(.dark) .cp-dialog {
 html:not(.dark) .cp-item-icon { background: #e8eee8; }
 
 @media (max-width: 520px) {
-  .cp-header { gap: 6px; }
-  .cp-actions { gap: 5px; }
-  .cp-actions .cp-btn { min-height: 34px; padding: 5px 7px; font-size: 12px; }
+  .cp-header { flex-direction: column; align-items: stretch; gap: 6px; }
+  .cp-title-row > .cp-store-mobile { display: inline-flex; margin-inline-start: auto; }
+  .cp-actions > .cp-store-desktop { display: none; }
+  .cp-actions { gap: 6px; }
+  .cp-actions > * { flex: 1 0 auto; }
+  .cp-actions > [data-guide-id] > .cp-btn { flex: 1; }
+  .cp-header .cp-btn { min-height: 44px; padding: 5px 7px; font-size: 12px; }
   .cp-daily-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }

@@ -113,7 +113,7 @@ export function CloudWorkspaceSettings({ workspace, onSwitch, sync }: {
   return (
     <section aria-labelledby="cloud-sync-title" className="space-y-3 rounded-xl border border-stone-300 p-4 dark:border-stone-700">
       <h3 id="cloud-sync-title" className="font-bold">Supabase cloud workspaces</h3>
-      <p className="text-sm">Open the same project with the same account on each device to sync tasks, notes, preferences, and progress.</p>
+      <p className="text-sm">Open the same project with the same account on each device to sync tasks, castle state, purchases, ledger, and growth progress. Appearance (light/dark mode), device settings, and scratchpad stay on this device.</p>
       {message && (projectForm || workspace?.project.url === project.url) && <p role="alert" className="break-words rounded-lg border border-amber-400/40 bg-amber-500/10 p-3 text-sm">{message}</p>}
       {workspace && (
         <div className="space-y-2 rounded-lg bg-teal-500/10 p-3 text-sm">
@@ -123,7 +123,7 @@ export function CloudWorkspaceSettings({ workspace, onSwitch, sync }: {
             <>
               <p>Export a backup if you want to keep both versions. Choose which copy to continue with.</p>
               <div className="flex flex-wrap gap-2">
-                <button className={button} type="button" onClick={() => sync.resolve(true)}>Upload this device’s copy</button>
+                <button className={button} type="button" onClick={() => sync.resolve(true)}>Keep this device’s copy</button>
                 <button className={button} type="button" onClick={() => sync.resolve(false)}>Use the cloud copy</button>
               </div>
             </>
@@ -170,7 +170,7 @@ export function CloudWorkspaceSettings({ workspace, onSwitch, sync }: {
           <label className="text-sm">Password<input className={field} type="password" autoComplete="current-password" required value={password} onChange={(event) => setPassword(event.target.value)} disabled={busy} /></label>
           <label className="flex items-start gap-2 text-sm">
             <input className="mt-1" type="checkbox" checked={copyLocal} onChange={(event) => setCopyLocal(event.target.checked)} disabled={busy} />
-            Copy my local workspace into this cloud account if it has no workspace yet
+            Copy my local tasks, castle, and growth progress if this account has no cloud workspace yet
           </label>
           {message && <p role="alert" className="break-words rounded-lg border border-amber-400/40 bg-amber-500/10 p-3 text-sm">{message}</p>}
           <div className="flex flex-wrap gap-2">

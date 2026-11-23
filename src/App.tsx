@@ -18,7 +18,7 @@ import {
 } from './types';
 import { loadAppData, saveAppDataWithLock, saveAppDataDebounced, flushAppDataSaveWithLock, preserveAppDataOnLeave, exportDataAsJson, importDataFromJson, clearAllLocalData, clearAllLocalDataWithLock, removeRetiredIntegrationCredentials, StorageRecoveryError, getBackupStatus, subscribeBackupStatus, getPrimarySaveStatus, subscribePrimarySaveStatus } from './utils/storage';
 import { WorkspaceRecoveryNotice } from './components/Modals/WorkspaceRecoveryNotice';
-import { ACTIVE_CLOUD_KEY, cloudData, openCloudWorkspace, readCloudProjects, type CloudWorkspace } from './services/cloudWorkspace';
+import { ACTIVE_CLOUD_KEY, openCloudWorkspace, readCloudProjects, type CloudWorkspace } from './services/cloudWorkspace';
 import { useCloudSync } from './services/useCloudSync';
 import { formatDateKey } from './utils/gamification';
 import { findReflectionCommitment, offerMission, partialProgressLedgerId, settlePastDays } from './utils/castleEconomy';
@@ -453,17 +453,20 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
       return castleEconomy === previous.castleEconomy ? previous : { ...previous, castleEconomy };
     });
   }, [dayKey, appData.castleEconomy, showReflection, reflectionReady, !!partialEntry, pendingTaskCompletion]);
-  const applyCloudDownload = useCallback((next: AppData) => {
-    setShowReflection(false);
-    setShowDailyReflection(false);
-    setReflectionStartedAt(null);
-    setPartialEntry(null);
-    setManualReflectionIds(null);
+  const applyCloudDownload = useCallback((next: AppData, tasksChanged: boolean) => {
+    if (tasksChanged) {
+      setShowReflection(false);
+      setShowDailyReflection(false);
+      setReflectionStartedAt(null);
+      setPartialEntry(null);
+      setManualReflectionIds(null);
+    }
     setSession(prev => ({
-      ...prev, appData: next,
+      ...prev,
+      appData: next,
       focusTimer: next.quickNotes.some(task => task.id === prev.focusTimer?.taskId && !task.isDone) ? prev.focusTimer : null,
-      pendingTaskCompletion: null,
-      completionNotice: prev.pendingTaskCompletion ? interruptedCompletionMessage : prev.completionNotice,
+      pendingTaskCompletion: tasksChanged ? null : prev.pendingTaskCompletion,
+      completionNotice: tasksChanged && prev.pendingTaskCompletion ? interruptedCompletionMessage : prev.completionNotice,
     }));
   }, []);
   const cloudSync = useCloudSync(workspace, appData, applyCloudDownload);
@@ -615,15 +618,18 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
       settings: preservedSettings,
     };
 
-    if (workspace) await cloudSync.clearCloud(cloudData(nextAppData));
+    if (workspace) await cloudSync.clearCloud(nextAppData);
     else await clearAllLocalDataWithLock(nextAppData);
-    setSession({ appData: workspace ? cloudData(nextAppData) : nextAppData, focusTimer: null, selectedFocusTaskId: null, completedFocusTask: null, pendingTaskCompletion: null, completionNotice: null });
+    setSession({ appData: nextAppData, focusTimer: null, selectedFocusTaskId: null, completedFocusTask: null, pendingTaskCompletion: null, completionNotice: null });
   }, [appData.settings, cloudSync, workspace]);
 
   const handleImportBackup = async (text: string) => {
     const imported = importDataFromJson(text, false);
     if (workspace) {
-      setAppData(cloudData(imported));
+      setAppData(previous => ({
+        ...imported,
+        settings: { ...imported.settings, openRouter: previous.settings.openRouter },
+      }));
       return;
     }
     if (!await flushAppDataSaveWithLock() || !await saveAppDataWithLock(imported)) {
@@ -763,7 +769,7 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
                   onThemeChange={handleThemeChange}
                   onOpenSparkIdea={() => setIsSparkIdeaModalOpen(true)}
                   appData={appData}
-                  onUpdateAppData={(next) => setAppData(workspace ? cloudData(next) : next)}
+                  onUpdateAppData={setAppData}
                   onImportBackup={handleImportBackup}
                   onClearAllData={handleClearAllData}
                   workspace={workspace}

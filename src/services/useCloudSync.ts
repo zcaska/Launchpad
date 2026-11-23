@@ -1,19 +1,19 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { AppData } from '../types';
 import {
-  editCloudRecord, prepareCloudWrite, reconcileCloudRevision,
+  applyRemoteData, archiveCloudCopy, editCloudRecord, migrateCloudScope, prepareCloudWrite, reconcileCloudRevision, sameSharedData, sameValue,
   readCloudRecord, createCloudCacheWriter, writeCloudRecord, clearCloudWorkspaceData,
-  type CloudAcknowledgement, type CloudRecord, type CloudWorkspace,
+  type CloudAcknowledgement, type CloudRecord, type CloudWorkspace, type RemoteRecord,
 } from './cloudWorkspace';
 
-export function useCloudSync(workspace: CloudWorkspace | null, data: AppData, onDownload: (data: AppData) => void) {
+export function useCloudSync(workspace: CloudWorkspace | null, data: AppData, onDownload: (data: AppData, tasksChanged: boolean) => void) {
   const current = useRef(workspace?.initial);
   const lastAppData = useRef(data);
   const active = useRef(false);
   const inFlight = useRef(false);
   const syncRequested = useRef(false);
-  const conflictRef = useRef<CloudRecord | null>(null);
-  const [conflict, setConflict] = useState<CloudRecord | null>(null);
+  const conflictRef = useRef<RemoteRecord | null>(null);
+  const [conflict, setConflict] = useState<RemoteRecord | null>(null);
   const [status, setStatus] = useState('Checking cloud workspace…');
   const [cacheError, setCacheError] = useState(false);
   const [cacheConflict, setCacheConflict] = useState(false);
@@ -40,7 +40,7 @@ export function useCloudSync(workspace: CloudWorkspace | null, data: AppData, on
     if (!cacheWriter) return;
     const flush = () => {
       const pending = cachePending.current;
-      if (pending?.dirty) cacheWriter.save(pending);
+      if (pending) cacheWriter.save(pending);
     };
     window.addEventListener('pagehide', flush);
     return () => {
@@ -49,16 +49,24 @@ export function useCloudSync(workspace: CloudWorkspace | null, data: AppData, on
     };
   }, [cacheWriter]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!workspace || !current.current) return;
     if (data !== lastAppData.current) {
       lastAppData.current = data;
-      persist(editCloudRecord(current.current, data));
-      if (!conflictRef.current) setStatus('Device changes queued.');
+      const next = editCloudRecord(current.current, data);
+      persist(next);
+      if (next.dirty && !conflictRef.current) setStatus('Device changes queued.');
     } else {
       persist(current.current);
     }
   }, [data, persist, workspace]);
+
+  const acceptRecord = useCallback((record: CloudRecord, local: CloudRecord) => {
+    persist(record);
+    if (!sameSharedData(local.data, record.data)) {
+      onDownload(record.data, !sameValue(local.data.quickNotes, record.data.quickNotes));
+    }
+  }, [onDownload, persist]);
 
   const sync = useCallback(async () => {
     if (!workspace || !active.current || !current.current) return;
@@ -84,27 +92,41 @@ export function useCloudSync(workspace: CloudWorkspace | null, data: AppData, on
     };
     try {
       const starting = current.current;
-      const unchangedRevision = starting.dirty ? undefined : starting.revision ?? undefined;
+      const unchangedRevision = starting.dirty || starting.reviewLegacyScope ? undefined : starting.revision ?? undefined;
       const remote = await readCloudRecord(workspace.client, workspace.userId, unchangedRevision);
       if (!active.current) return;
       const local = current.current;
       if (!local) return;
+      if (local.revision !== starting.revision) {
+        syncRequested.current = true;
+        return;
+      }
       if (remote) {
-        const decision = reconcileCloudRevision(local, remote.revision);
+        const migrated = local.reviewLegacyScope ? migrateCloudScope(local, remote) : undefined;
+        if (migrated && migrated !== 'conflict') {
+          acceptRecord(migrated, local);
+          syncRequested.current = migrated.dirty;
+          setStatus(migrated.dirty ? 'Device changes queued.' : 'Synced with Supabase');
+          return;
+        }
+        const decision = migrated === 'conflict' ? { action: 'conflict' as const } : reconcileCloudRevision(local, remote.revision);
         if ('record' in decision) {
           finishSave(decision);
           return;
         }
         if (decision.action === 'conflict') {
+          const downloaded = applyRemoteData(local.data, remote);
+          if (!migrated && sameSharedData(local.data, downloaded.data) && remote.snapshot.syncFormat === 2) {
+            finishSave({ action: 'synced', record: downloaded });
+            return;
+          }
           conflictRef.current = remote;
           setConflict(remote);
           setStatus('Cloud and device both have changes.');
           return;
         }
         if (decision.action === 'download') {
-          lastAppData.current = remote.data;
-          persist(remote);
-          onDownload(remote.data);
+          acceptRecord(applyRemoteData(local.data, remote), local);
         }
       } else if (local.revision && !unchangedRevision) {
         throw new Error('The cloud workspace is missing. Your device copy is available for export.');
@@ -114,11 +136,12 @@ export function useCloudSync(workspace: CloudWorkspace | null, data: AppData, on
         const pending = prepareCloudWrite(local);
         await persist(pending);
         if (!active.current) return;
-        const written = await writeCloudRecord(workspace, pending, pending.pendingRevision);
+        const written = await writeCloudRecord(workspace, pending, pending.pendingRevision, remote ?? undefined);
         if (!active.current || !current.current) return;
         const decision = reconcileCloudRevision(current.current, pending.pendingRevision, 'response');
         if (decision.action === 'superseded') return;
         if (!written) {
+          syncRequested.current = true;
           setStatus('Cloud changed during this save. Checking again…');
           return;
         }
@@ -138,7 +161,7 @@ export function useCloudSync(workspace: CloudWorkspace | null, data: AppData, on
         queueMicrotask(() => void sync());
       }
     }
-  }, [workspace, persist, onDownload]);
+  }, [workspace, persist, acceptRecord]);
 
   useEffect(() => {
     if (!workspace) return;
@@ -178,16 +201,19 @@ export function useCloudSync(workspace: CloudWorkspace | null, data: AppData, on
   const resolve = (keepDevice: boolean) => {
     const remote = conflictRef.current;
     const local = current.current;
-    if (!remote || !local) return;
+    if (!remote || !local || !workspace) return;
+    const cloud = applyRemoteData(local.data, remote);
+    if (!archiveCloudCopy(workspace, keepDevice ? cloud.data : local.data)) {
+      setStatus('Could not save the other copy for recovery. Free device storage and try again.');
+      return;
+    }
     conflictRef.current = null;
     setConflict(null);
     if (keepDevice) {
       persist({ data: local.data, revision: remote.revision, dirty: true });
       void sync();
     } else {
-      lastAppData.current = remote.data;
-      persist(remote);
-      onDownload(remote.data);
+      acceptRecord(cloud, local);
       setStatus('Using the cloud copy');
     }
   };
@@ -210,12 +236,13 @@ export function useCloudSync(workspace: CloudWorkspace | null, data: AppData, on
   const clearCloud = useCallback(async (cleared: AppData) => {
     if (!workspace) return;
     const record = await clearCloudWorkspaceData(workspace, cleared, current.current?.revision);
+    cacheWriter?.beginReplacement();
     persist(record);
     lastAppData.current = cleared;
     conflictRef.current = null;
     setConflict(null);
     setStatus('Cloud workspace data cleared');
-  }, [persist, workspace]);
+  }, [cacheWriter, persist, workspace]);
 
   return { status, cacheError, cacheConflict, conflict: Boolean(conflict), resolve, sync, saveOnLeave, resumeAfterLeave, clearCloud };
 }

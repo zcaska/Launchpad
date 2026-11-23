@@ -3,7 +3,8 @@ import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { NoColorSpace, SRGBColorSpace } from 'three';
 import { BLUEPRINT_PARTS } from '../../utils/castleBlueprint';
-import { CastlePartPreview, getCastlePreview } from './CastlePartPreview';
+import { CastlePartPreview } from './CastlePartPreview';
+import { getCastlePreview } from './castlePartPreviewRenderer';
 import { CASTLE_ELEMENTS, castleElements, getCastleElement, getCastleElementBounds } from './castleModel';
 import { CASTLE_PATTERN_KEYS, createCastleMaterials } from './castleTextures';
 

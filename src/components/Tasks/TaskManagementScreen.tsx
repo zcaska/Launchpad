@@ -690,10 +690,17 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
         {hasPeriodBudget ? (
           <div className="tasks-budget mt-2 text-xs sm:text-sm" aria-live="polite">
             <div className="flex flex-wrap items-baseline gap-x-3 sm:gap-x-4 gap-y-1">
-              <span><strong>{formatPeriodMinutes(range.availableMinutes)}</strong> available</span>
-              <span><strong>{formatPeriodMinutes(periodLoad.pendingMinutes)}</strong> pending</span>
+              <span>
+                <strong>{formatPeriodMinutes(range.availableMinutes)}</strong>{' '}
+                <span>available</span>
+              </span>
+              <span>
+                <strong>{formatPeriodMinutes(periodLoad.pendingMinutes)}</strong>{' '}
+                <span>pending</span>
+              </span>
               <strong className={bufferTextColor[periodBuffer.status]}>
-                {formatPeriodMinutes(Math.abs(periodBuffer.bufferMinutes))} {periodBuffer.bufferMinutes < 0 ? 'over capacity' : periodBuffer.status === 'tight' ? 'left · tight' : 'to spare'}
+                <span>{formatPeriodMinutes(Math.abs(periodBuffer.bufferMinutes))}</span>{' '}
+                <span>{periodBuffer.bufferMinutes < 0 ? 'over capacity' : periodBuffer.status === 'tight' ? 'left · tight' : 'to spare'}</span>
               </strong>
             </div>
           </div>
@@ -705,8 +712,8 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
 
         {/* 2. SUB-BAR: Filter Tabs & Search Bar Toolbar */}
         <div className="tasks-filter w-full min-w-0 flex flex-col sm:flex-row sm:items-center justify-between gap-3 mt-3.5 pt-3 border-t border-serene-border-light/60 dark:border-serene-border-dark/60">
-          <label className="flex w-full items-center gap-2 text-sm font-semibold md:hidden">
-            <FunnelSimple size={16} aria-hidden="true" /> Filters
+          <label className="tasks-filter-picker flex w-full items-center gap-2 text-sm font-semibold md:hidden">
+            <span className="flex items-center gap-2"><FunnelSimple size={16} aria-hidden="true" /> Filters</span>
             <select
               value={activeTab}
               onChange={(event) => setActiveTab(event.target.value as FilterTab)}

@@ -80,10 +80,10 @@ export const Header: React.FC<HeaderProps> = ({
   return (
     <header className="launchpad-header w-full bg-white/90 dark:bg-serene-surface-dark/90 backdrop-blur-md border-b border-serene-border-light dark:border-serene-border-dark sticky top-0 z-30 transition-colors">
       <div className="launchpad-header-inner max-w-[1680px] mx-auto px-3 sm:px-6 lg:px-8 py-2 sm:py-3.5">
-        <div className="flex items-center justify-between gap-2 sm:gap-4">
+        <div className="flex items-center justify-between gap-2 sm:gap-4 md:grid md:grid-cols-[minmax(max-content,1fr)_minmax(0,32rem)_minmax(max-content,1fr)]">
           
           {/* Logo and brand */}
-          <GuideTarget id="header.brand" hoverLabel="Focus Hub">
+          <GuideTarget id="header.brand" hoverLabel="Focus Hub" className="min-w-0">
             <div className="flex items-center gap-2 sm:gap-3 min-w-0 cursor-default">
               <div className="hidden min-[360px]:flex w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-serene-primary-soft dark:bg-serene-primary/20 text-serene-primary dark:text-serene-primary-dark border border-serene-primary/25 dark:border-serene-primary/30 items-center justify-center shadow-xs shrink-0 transition-transform hover:scale-105">
                 <Rocket className="w-4 h-4 sm:w-5 sm:h-5 stroke-[2.2]" />
@@ -102,7 +102,7 @@ export const Header: React.FC<HeaderProps> = ({
           </GuideTarget>
 
           {/* Desktop Search Filter Box */}
-          <div className="hidden md:block flex-1 max-w-xs md:max-w-md lg:max-w-lg relative">
+          <div className="relative hidden min-w-0 md:block">
             <div className="relative flex items-center">
               <Search className="w-4 h-4 absolute left-3 text-serene-text-muted pointer-events-none" />
               <input
@@ -131,7 +131,7 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
           </div>
 
-          <div className="ml-auto flex shrink-0 items-center gap-2">
+          <div className="ml-auto flex shrink-0 items-center gap-1 sm:gap-2 md:justify-self-end">
             {/* New Task - Icon First */}
             <GuideTarget id="header.newTask" hoverLabel="New task (Ctrl+N)">
               <button
@@ -186,7 +186,7 @@ export const Header: React.FC<HeaderProps> = ({
             </GuideTarget>
 
             {/* Settings Modal Trigger - Icon First */}
-            <GuideTarget id="header.settings" hoverLabel="Settings">
+            <GuideTarget id="header.settings" hoverLabel="Settings" className="hidden md:inline-flex">
               <button
                 type="button"
                 onClick={onOpenSettings}

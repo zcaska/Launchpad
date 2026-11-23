@@ -90,6 +90,14 @@
 
 
 @media (max-width: 767px) {
+  * {
+    scrollbar-width: none;
+  }
+
+  *::-webkit-scrollbar {
+    display: none;
+  }
+
   .launchpad-shell {
     padding-inline: env(safe-area-inset-left) env(safe-area-inset-right);
   }
@@ -104,8 +112,6 @@
 
   .launchpad-wordmark {
     font-size: clamp(0.875rem, 4vw, 1.0625rem);
-    overflow: visible;
-    text-overflow: clip;
   }
 
   .launchpad-header-inner > div:first-child {
@@ -429,13 +435,13 @@
   }
 
   .tasks-toolbar {
-    padding: 8px 12px 6px;
+    padding: 10px 12px;
   }
 
   .tasks-toolbar-heading {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
-    gap: 6px;
+    gap: 8px 12px;
   }
 
   .tasks-toolbar-heading h1 {
@@ -449,6 +455,11 @@
     height: 40px;
     place-items: center;
     padding: 0;
+  }
+
+  .tasks-back {
+    width: 44px;
+    height: 44px;
   }
 
   .tasks-period {
@@ -467,12 +478,13 @@
   }
 
   .tasks-dates {
+    display: grid;
     grid-column: 1 / -1;
     grid-row: 2;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .tasks-toolbar-heading[data-date-range] .tasks-dates {
-    display: grid;
     grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   }
 
@@ -488,25 +500,55 @@
   }
 
   .tasks-budget {
-    margin-top: 5px;
-    line-height: 1.4;
+    margin-top: 8px;
   }
 
   .tasks-budget > div {
-    column-gap: 10px;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    align-items: stretch;
+    gap: 0;
+    border: 1px solid var(--color-border-subtle);
+    border-radius: 8px;
+  }
+
+  .tasks-budget > div > * {
+    display: grid;
+    align-content: start;
+    gap: 2px;
+    padding: 7px 4px;
+    text-align: center;
+    overflow-wrap: anywhere;
+  }
+
+  .tasks-budget > div > * + * {
+    border-inline-start: 1px solid var(--color-border-subtle);
+  }
+
+  .tasks-budget > div > * > :first-child {
+    font-size: 0.875rem;
+    font-weight: 700;
+  }
+
+  .tasks-budget > div > * > :last-child {
+    font-size: 0.6875rem;
   }
 
   .tasks-filter {
-    margin-top: 7px;
-    padding: 0 5px 0 8px;
-    border: 1px solid var(--color-border-subtle);
-    border-radius: 10px;
+    margin-top: 8px;
+    padding: 0;
+    border: 0;
+  }
+
+  .tasks-filter-picker {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 12px;
+    font-size: 0.875rem;
   }
 
   .tasks-filter select {
-    min-height: 40px;
-    border-color: transparent;
-    font-size: 0.875rem;
+    width: 100%;
   }
 
   .tasks-list {

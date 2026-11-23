@@ -197,6 +197,12 @@ export function CastlePanel({
     }
   };
 
+  const storeButton = (
+    <button type="button" className="cp-btn cp-store-trigger" aria-haspopup="dialog" onClick={() => openDialog('store')}>
+      <ShoppingBag size={18} aria-hidden="true" /> Store
+    </button>
+  );
+
   return (
     <section className="castle-panel" aria-label="Your castle">
       <header className="cp-header">
@@ -209,6 +215,9 @@ export function CastlePanel({
             </GuideTarget>
           )}
           <h1 className="cp-title">My Castle</h1>
+          <GuideTarget id="castle.store" className="cp-store-mobile" hoverLabel="Construction store">
+            {storeButton}
+          </GuideTarget>
         </div>
         <nav className="cp-actions" aria-label="Castle actions">
           <button type="button" className="cp-btn" aria-haspopup="dialog" onClick={() => openDialog('accountability')}>
@@ -222,10 +231,8 @@ export function CastlePanel({
               <button type="button" className="cp-btn" aria-haspopup="dialog" onClick={onDailyReview}>Daily review</button>
             </GuideTarget>
           )}
-          <GuideTarget id="castle.store" hoverLabel="Construction store">
-            <button type="button" className="cp-btn cp-store-trigger" aria-haspopup="dialog" onClick={() => openDialog('store')}>
-              <ShoppingBag size={18} aria-hidden="true" /> Store
-            </button>
+          <GuideTarget id="castle.store" className="cp-store-desktop" hoverLabel="Construction store">
+            {storeButton}
           </GuideTarget>
         </nav>
       </header>

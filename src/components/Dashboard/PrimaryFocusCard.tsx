@@ -451,10 +451,10 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
         </div>
 
         {/* 2. COMPACT TWO-COLUMN TASK CARD */}
-        <div className="bg-[#fff5f5] dark:bg-[#1a0e13] border border-rose-100 dark:border-rose-950/60 rounded-2xl p-4 lg:p-5 transition-colors">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 lg:gap-6 items-stretch">
+        <div className="bg-[#fff5f5] dark:bg-[#1a0e13] border border-rose-100 dark:border-rose-950/60 rounded-2xl px-4 py-3 lg:px-5 transition-colors">
+          <div className="grid grid-cols-2 gap-5 lg:gap-6">
             {/* Left Column: Badges, Title with Elevated Icon, Duration, Subtask count */}
-            <div className="flex flex-col justify-between space-y-3 min-w-0 md:pr-4 lg:pr-5 md:border-r md:border-rose-200/50 dark:md:border-rose-950/80">
+            <div className="flex flex-col gap-2 min-w-0 pr-4 lg:pr-5 border-r border-rose-200/50 dark:border-rose-950/80">
               <div className="space-y-2">
                 {/* Priority & Urgency Badges Row */}
                 <div className="flex items-center gap-2 flex-wrap">
@@ -537,7 +537,7 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
 
             {/* Right Column: Deadline info with large typography and progress bar */}
             <div
-              className="flex flex-col justify-between min-w-0 md:pl-2 lg:pl-3 h-full"
+              className="flex flex-col justify-center gap-2 min-w-0 pl-2 lg:pl-3"
               data-testid="focus-deadline-desktop"
             >
               <div className="w-full">
@@ -566,7 +566,7 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
               </div>
 
               {/* Countdown text and progress bar tightly coupled */}
-              <div className="w-full space-y-1.5 pt-3 mt-auto">
+              <div className="w-full space-y-1">
                 {/* Remaining Time / Countdown - Increased font size and placed directly above progress bar */}
                 <div className="flex items-baseline justify-between">
                   <span className="text-sm sm:text-base font-bold text-rose-600 dark:text-rose-400">
