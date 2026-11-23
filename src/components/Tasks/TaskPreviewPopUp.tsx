@@ -68,7 +68,13 @@ export function TaskPreviewPopUp({
               <dt className="text-xs text-serene-text-secondary dark:text-serene-text-darkSecondary">Estimate</dt>
               <dd className="font-semibold tabular-nums">{task.durationMinutes == null ? 'Unspecified' : formatEventDuration(task.durationMinutes)}</dd>
             </div>
-            {task.timeSpentSeconds != null && (
+            {task.actualMinutes != null && (
+              <div>
+                <dt className="text-xs text-serene-text-secondary dark:text-serene-text-darkSecondary">Actual time</dt>
+                <dd className="font-semibold tabular-nums">{formatEventDuration(task.actualMinutes)}</dd>
+              </div>
+            )}
+            {task.timeSpentSeconds != null && task.actualMinutes == null && (
               <div>
                 <dt className="text-xs text-serene-text-secondary dark:text-serene-text-darkSecondary">Time logged</dt>
                 <dd className="font-semibold tabular-nums">{formatElapsed(task.timeSpentSeconds)}</dd>

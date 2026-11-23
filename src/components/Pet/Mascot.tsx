@@ -10,6 +10,10 @@ import {
 } from './mascotManifest';
 import { petAccessories } from '../../utils/petEvolution';
 
+const BODY_PATH = 'M 60 23.5 C 74 23.8, 86 28.5, 92 38 C 97 45.8, 96 57.5, 92 65.5 C 87.5 73, 76 76.5, 60 76.5 C 44 76.5, 32.5 73, 28 65.5 C 24 57.5, 23 45.8, 28 38 C 34 28.5, 46 23.8, 60 23.5 Z';
+const LEFT_FIN_PATH = 'M 26 49 C 16 46, 7 51, 6 60 C 5 67, 13 70, 26 59 Z';
+const RIGHT_FIN_PATH = 'M 94 49 C 104 46, 113 51, 114 60 C 115 67, 107 70, 94 59 Z';
+
 export interface MascotProps {
   /** Earned companion level; accessories are cosmetic and never alter rewards. */
   evolutionLevel?: number;
@@ -356,6 +360,8 @@ function MascotComponent({
     leftFinGrad: `fin-l-grad-${uid}`,
     rightFinGrad: `fin-r-grad-${uid}`,
     ambientGlow: `glow-${uid}`,
+    clayGrain: `clay-grain-${uid}`,
+    blush: `blush-${uid}`,
   };
 
   return (
@@ -378,11 +384,23 @@ function MascotComponent({
     >
       <defs>
         {/* Soft matte body fill with warm coral-orange and gentle diffuse depth */}
-        <linearGradient id={ids.bodyGrad} x1="28%" y1="12%" x2="72%" y2="88%">
-          <stop offset="0%" stopColor="#FF8F56" />
-          <stop offset="42%" stopColor={P.baseOrange} />
-          <stop offset="100%" stopColor={P.shadow} />
-        </linearGradient>
+        <radialGradient id={ids.bodyGrad} cx="36%" cy="24%" r="82%">
+          <stop offset="0%" stopColor="#ffc08b" />
+          <stop offset="48%" stopColor="#f6905c" />
+          <stop offset="82%" stopColor="#dc6139" />
+          <stop offset="100%" stopColor="#ad412c" />
+        </radialGradient>
+
+        {/* Painted flecks are clipped by each shape and move with it. */}
+        <pattern id={ids.clayGrain} width="17" height="19" patternUnits="userSpaceOnUse" patternTransform="rotate(17)">
+          <path d="M2 2h.2 M9 5h.3 M15 3h.2 M5 10h.2 M13 13h.3 M3 16h.2 M8 18h.1" stroke="#8b392b" strokeWidth="1.15" strokeLinecap="round" opacity=".31" />
+          <path d="M5 4h.3 M13 8h.2 M1 11h.2 M8 13h.4 M16 17h.2" stroke="#ffe3ba" strokeWidth="1.25" strokeLinecap="round" opacity=".53" />
+        </pattern>
+
+        <radialGradient id={ids.blush}>
+          <stop offset="0%" stopColor="#ac3939" stopOpacity=".52" />
+          <stop offset="100%" stopColor="#ac3939" stopOpacity="0" />
+        </radialGradient>
 
         {/* Diffused upper highlight gradient (warm light #FFD6B3) */}
         <linearGradient id={ids.highlightGrad} x1="35%" y1="15%" x2="55%" y2="50%">
@@ -534,14 +552,15 @@ function MascotComponent({
               style={{ transformOrigin: '26px 54px' }}
             >
               <path
-                d="M 26 49 C 16 46, 7 51, 6 60 C 5 67, 13 70, 26 59 Z"
+                d={LEFT_FIN_PATH}
                 fill={`url(#${ids.leftFinGrad})`}
               />
+              <path d={LEFT_FIN_PATH} fill={`url(#${ids.clayGrain})`} />
               {/* Soft inner texture highlight on fin */}
               <path
                 d="M 24 51 C 18 49, 11 53, 10 59 C 14 57, 19 55, 25 54 Z"
                 fill={P.highlight}
-                opacity={0.55}
+                opacity={0.3}
               />
             </g>
           </g>
@@ -564,14 +583,15 @@ function MascotComponent({
               style={{ transformOrigin: '94px 54px' }}
             >
               <path
-                d="M 94 49 C 104 46, 113 51, 114 60 C 115 67, 107 70, 94 59 Z"
+                d={RIGHT_FIN_PATH}
                 fill={`url(#${ids.rightFinGrad})`}
               />
+              <path d={RIGHT_FIN_PATH} fill={`url(#${ids.clayGrain})`} />
               {/* Soft inner texture highlight on fin */}
               <path
                 d="M 96 51 C 102 49, 109 53, 110 59 C 106 57, 101 55, 95 54 Z"
                 fill={P.highlight}
-                opacity={0.55}
+                opacity={0.3}
               />
             </g>
           </g>
@@ -587,7 +607,7 @@ function MascotComponent({
           <g data-part="body">
             {/* Base body geometry */}
             <path
-              d="M 60 23.5 C 74 23.8, 86 28.5, 92 38 C 97 45.8, 96 57.5, 92 65.5 C 87.5 73, 76 76.5, 60 76.5 C 44 76.5, 32.5 73, 28 65.5 C 24 57.5, 23 45.8, 28 38 C 34 28.5, 46 23.8, 60 23.5 Z"
+              d={BODY_PATH}
               fill={`url(#${ids.bodyGrad})`}
             />
 
@@ -605,7 +625,7 @@ function MascotComponent({
               strokeWidth={1.5}
               strokeLinecap="round"
               fill="none"
-              opacity={0.5}
+              opacity={0.32}
             />
 
             {/* Soft bottom diffuse ambient shadow */}
@@ -614,15 +634,28 @@ function MascotComponent({
               d="M 28 65.5 C 32.5 73, 44 76.5, 60 76.5 C 76 76.5, 87.5 73, 92 65.5 C 84 69.5, 73 72, 60 72 C 47 72, 36 69.5, 28 65.5 Z"
               fill={`url(#${ids.shadowGrad})`}
             />
+            <path d={BODY_PATH} fill={`url(#${ids.clayGrain})`} />
+            <ellipse cx="38" cy="58" rx="9" ry="5.5" fill={`url(#${ids.blush})`} />
+            <ellipse cx="82" cy="58" rx="9" ry="5.5" fill={`url(#${ids.blush})`} />
+            <g fill="#8d3327" opacity=".72">
+              <circle cx="34.5" cy="57" r="1" />
+              <circle cx="39" cy="58.5" r="1.25" />
+              <circle cx="42" cy="56" r=".85" />
+              <circle cx="78.5" cy="57.5" r="1" />
+              <circle cx="82" cy="59" r="1.15" />
+              <circle cx="86" cy="56.5" r=".9" />
+            </g>
           </g>
 
           {/*
             Face: Adaptive Minimal Eyes and Tiny Expressive Mouth
             - Wide-set eye spacing: Left (47, 49), Right (73, 49)
             - Mouth: Center (60, 56.5)
-            - No nose, no cheeks blush circles, no belly markings
           */}
           <g data-part="face" className={!reducedMotion && effectiveExpressionId !== 'sleepy' ? 'mascot-gaze' : undefined}>
+            {effectiveExpressionId === 'curious' && (
+              <path d="M 42 38 Q 46 34 51 37" stroke="#753b2f" strokeWidth="1.7" strokeLinecap="round" />
+            )}
             {/* Left Eye */}
             <g data-part="eye-left">
               <Eye

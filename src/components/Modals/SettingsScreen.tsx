@@ -14,7 +14,7 @@ import {
 } from '@phosphor-icons/react';
 import { AppData, type ConfettiStyle } from '../../types';
 import { ConfettiOverlay } from '../Dashboard/ConfettiOverlay';
-import { exportDataAsJson, importDataFromJson, getStorageMetrics } from '../../utils/storage';
+import { exportDataAsJson, getStorageMetrics } from '../../utils/storage';
 import { DEFAULT_INITIAL_PREFERENCES } from '../../data/seedData';
 import { Mascot } from '../Pet/Mascot';
 import { MascotShowcaseModal } from '../Pet/MascotShowcaseModal';
@@ -30,6 +30,7 @@ interface SettingsScreenProps {
   onClose: () => void;
   appData: AppData;
   onUpdateAppData: (data: AppData) => void;
+  onImportBackup: (text: string) => Promise<void>;
   onClearAllData: () => Promise<void> | void;
   workspace?: CloudWorkspace | null;
   onSwitchWorkspace?: (workspace: CloudWorkspace | null) => void;
@@ -42,6 +43,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
   onClose,
   appData,
   onUpdateAppData,
+  onImportBackup,
   onClearAllData,
   workspace = null,
   onSwitchWorkspace,
@@ -72,29 +74,30 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = (event) => {
+    reader.onload = async (event) => {
       try {
         const text = event.target?.result as string;
-        const imported = importDataFromJson(text, !workspace);
-        onUpdateAppData(imported);
+        if (!window.confirm('Replace the open workspace with this backup? Export the current workspace first if you want to keep a copy.')) return;
+        await onImportBackup(text);
         alert('Data successfully imported and restored!');
       } catch (err: any) {
         alert('Failed to import backup file: ' + err.message);
+      } finally {
+        e.target.value = '';
       }
     };
     reader.readAsText(file);
   };
 
   const handleClearAllDataConfirm = async () => {
-    const confirmed = window.confirm(
-      'Are you sure you want to clear all data?\n\nThis will permanently delete all tasks, notes, bookmarks, reflections, and progress from both local storage and the cloud.\n\nYour account will NOT be deleted and you will NOT be signed out.'
-    );
+    const scope = workspace ? 'this cloud workspace' : 'this browser’s local workspace';
+    const confirmed = window.confirm(`Permanently clear tasks, notes, reflections, and progress from ${scope}?`);
     if (!confirmed) return;
 
     try {
       setIsClearingData(true);
       await onClearAllData();
-      alert('All data has been successfully cleared from local and cloud storage.');
+      alert(`Data cleared from ${scope}.`);
       onClose();
     } catch (err: any) {
       alert('Failed to clear data: ' + (err?.message || 'Unknown error'));
@@ -200,7 +203,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
               <h3 className="font-bold text-sm">Reflection journal</h3>
               {[...(appData.reflections || [])].reverse().map((entry, index) => (
                 <details key={`${entry.date}-${index}`} className="rounded-lg border border-serene-border-light dark:border-serene-border-dark p-3">
-                  <summary className="cursor-pointer font-semibold">{new Date(entry.date).toLocaleString()} · {entry.taskTitles.join(', ')}</summary>
+                  <summary className="cursor-pointer font-semibold">{new Date(entry.date).toLocaleString()} · {entry.taskTitles.length ? entry.taskTitles.join(', ') : 'Daily reflection'}</summary>
                   {entry.questions.map((question, i) => (
                     <div key={i} className="mt-3 space-y-1">
                       <p className="font-semibold">{question}</p>

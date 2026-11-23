@@ -2,6 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { AppData } from '../types';
 import { DEFAULT_SEED_DATA } from '../data/seedData';
 import { sanitizeAppData } from '../utils/storage';
+import { createStorageDraftKey, readStorageDrafts, removeStorageDraft, withStorageLock, writeStorageDraft } from '../utils/storageConflict';
 
 export interface CloudProject {
   name: string;
@@ -24,6 +25,7 @@ export interface CloudWorkspace {
   userId: string;
   email?: string;
   initial: CloudRecord;
+  cacheBaseline?: string | null;
 }
 
 export function editCloudRecord(local: CloudRecord, data: AppData): CloudRecord {
@@ -144,8 +146,15 @@ function cacheKey(project: CloudProject, userId: string) {
 
 export function readCloudCache(project: CloudProject, userId: string): CloudRecord | null {
   try {
-    const raw = localStorage.getItem(cacheKey(project, userId));
-    if (!raw) return null;
+    return decodeCloudCache(localStorage.getItem(cacheKey(project, userId)));
+  } catch {
+    return null;
+  }
+}
+
+function decodeCloudCache(raw: string | null): CloudRecord | null {
+  if (!raw) return null;
+  try {
     const record: CloudRecord = JSON.parse(raw);
     const data = decodeSnapshot(record.data);
     // Loading can repair older snapshots. A retry of the repaired payload
@@ -157,6 +166,52 @@ export function readCloudCache(project: CloudProject, userId: string): CloudReco
   } catch {
     return null;
   }
+}
+
+const cloudDraftPrefix = (workspace: CloudWorkspace) => `${cacheKey(workspace.project, workspace.userId)}:conflict:`;
+export const readCloudConflictDrafts = (workspace: CloudWorkspace) => readStorageDrafts(cloudDraftPrefix(workspace), decodeSnapshot);
+export const removeCloudConflictDraft = (workspace: CloudWorkspace, key: string) => removeStorageDraft(cloudDraftPrefix(workspace), key);
+
+/** Each mounted workspace compares against exactly the cache it opened. */
+export function createCloudCacheWriter(workspace: CloudWorkspace) {
+  const key = cacheKey(workspace.project, workspace.userId);
+  const draftKey = createStorageDraftKey(cloudDraftPrefix(workspace));
+  let baseline = workspace.cacheBaseline;
+  if (baseline === undefined) {
+    try { baseline = localStorage.getItem(key); } catch { /* Online use can continue. */ }
+  }
+  let hasDraft = false;
+  const preserve = (record: CloudRecord): 'conflict' | 'failed' => {
+    const saved = writeStorageDraft(draftKey, record.data);
+    hasDraft ||= saved;
+    return saved ? 'conflict' : 'failed';
+  };
+  const save = (record: CloudRecord): 'saved' | 'conflict' | 'failed' => {
+    try {
+      const latest = localStorage.getItem(key);
+      const serialized = JSON.stringify(record);
+      if (baseline === undefined) baseline = latest;
+      if (latest === serialized || latest === baseline) {
+        if (latest !== serialized) localStorage.setItem(key, serialized);
+        baseline = serialized;
+        if (hasDraft) {
+          removeCloudConflictDraft(workspace, draftKey);
+          hasDraft = false;
+        }
+        return 'saved';
+      }
+      // A stale clean tab or a tab that only opened an existing shared
+      // pending record has no edits of its own to archive.
+      if (!record.dirty || record === workspace.initial) return 'saved';
+      return preserve(record);
+    } catch {
+      return 'failed';
+    }
+  };
+  const saveLocked = (record: CloudRecord, isCurrent = () => true) =>
+    withStorageLock(key, () => isCurrent() ? save(record) : undefined)
+      .catch(() => isCurrent() ? preserve(record) : undefined);
+  return { save, saveLocked };
 }
 
 export function saveCloudCache(workspace: CloudWorkspace, record: CloudRecord): boolean {
@@ -182,11 +237,13 @@ export async function openCloudWorkspace(project: CloudProject, copyLocal?: AppD
   if (error) throw error;
   if (!session) return null;
   const userId = session.user.id;
-  const cached = readCloudCache(project, userId);
+  let cacheBaseline: string | null = null;
+  try { cacheBaseline = localStorage.getItem(cacheKey(project, userId)); } catch { /* Online use can continue. */ }
+  const cached = decodeCloudCache(cacheBaseline);
   const initial = cached ?? await readCloudRecord(client, userId) ?? {
     data: cloudData(copyLocal ?? DEFAULT_SEED_DATA), revision: null, dirty: true,
   };
-  return { project, client, userId, email: session.user.email, initial };
+  return { project, client, userId, email: session.user.email, initial, cacheBaseline };
 }
 
 // Compare-and-swap prevents stale devices from overwriting newer edits.

@@ -16,11 +16,12 @@ import {
   PetSettings,
   QuickNote,
 } from './types';
-import { loadAppData, saveAppData, saveAppDataDebounced, flushAppDataSave, exportDataAsJson, importDataFromJson, clearAllLocalData, removeRetiredIntegrationCredentials, StorageRecoveryError, getBackupStatus, subscribeBackupStatus, getPrimarySaveStatus, subscribePrimarySaveStatus } from './utils/storage';
+import { loadAppData, saveAppDataWithLock, saveAppDataDebounced, flushAppDataSaveWithLock, preserveAppDataOnLeave, exportDataAsJson, importDataFromJson, clearAllLocalData, clearAllLocalDataWithLock, removeRetiredIntegrationCredentials, StorageRecoveryError, getBackupStatus, subscribeBackupStatus, getPrimarySaveStatus, subscribePrimarySaveStatus } from './utils/storage';
+import { WorkspaceRecoveryNotice } from './components/Modals/WorkspaceRecoveryNotice';
 import { ACTIVE_CLOUD_KEY, cloudData, openCloudWorkspace, readCloudProjects, type CloudWorkspace } from './services/cloudWorkspace';
 import { useCloudSync } from './services/useCloudSync';
 import { formatDateKey } from './utils/gamification';
-import { offerMission, settlePastDays } from './utils/castleEconomy';
+import { findReflectionCommitment, offerMission, partialProgressLedgerId, settlePastDays } from './utils/castleEconomy';
 import { Header } from './components/Header/Header';
 import { BackupReminderToast } from './components/Layout/BackupReminderToast';
 import { Sidebar } from './components/Sidebar/Sidebar';
@@ -65,7 +66,7 @@ import {
   calculateBuffer
 } from './utils/timeBudget';
 import { tasksDueToday } from './utils/taskPeriod';
-import { applyCompletedTaskReflection, applyPartialTaskReflection, getReflectionTasks, resetReflectionTasks } from './utils/taskReflection';
+import { applyCompletedTaskReflection, applyPartialTaskReflection, getDailyReviewTasks, getReflectionTasks, resetReflectionTasks } from './utils/taskReflection';
 import { useTaskView } from './components/Tasks/useTaskView';
 import { 
   generateCandidatePool, 
@@ -77,6 +78,16 @@ import {
   pageTransitionVariants, 
   drawerVariants 
 } from './utils/motion';
+
+interface PendingTaskCompletion {
+  originalTask: QuickNote;
+  previewTask: QuickNote;
+  action: TaskAction;
+  requestedAt: number;
+  fromFocus: boolean;
+}
+
+const interruptedCompletionMessage = 'The task list changed while you were entering time. Your time was not saved. If the task is still open, mark it done again to enter its time.';
 
 export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
   workspace?: CloudWorkspace | null;
@@ -94,12 +105,22 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
     focusTimer: loadFocusTimer(workspaceScope),
     selectedFocusTaskId: null as string | null,
     completedFocusTask: null as QuickNote | null,
+    pendingTaskCompletion: null as PendingTaskCompletion | null,
+    completionNotice: null as string | null,
   }));
-  const { appData, focusTimer, selectedFocusTaskId, completedFocusTask } = session;
+  const { appData, focusTimer, selectedFocusTaskId, completedFocusTask, pendingTaskCompletion, completionNotice } = session;
   const setAppData = useCallback((update: React.SetStateAction<AppData>) => {
     setSession(prev => {
       const next = typeof update === 'function' ? update(prev.appData) : update;
-      return next === prev.appData ? prev : { ...prev, appData: next };
+      if (next === prev.appData) return prev;
+      const pending = prev.pendingTaskCompletion;
+      const interrupted = pending !== null && !next.quickNotes.includes(pending.originalTask);
+      return {
+        ...prev,
+        appData: next,
+        pendingTaskCompletion: interrupted ? null : pending,
+        completionNotice: interrupted ? interruptedCompletionMessage : prev.completionNotice,
+      };
     });
   }, []);
   const setSelectedFocusTaskId = useCallback((id: string) => {
@@ -192,17 +213,53 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
   const handleTaskAction = useCallback((id: string, action: TaskAction, fromFocus = false) => {
     const nowMs = Date.now();
     setSession(prev => {
-      if (fromFocus && prev.completedFocusTask) return prev;
+      if (prev.pendingTaskCompletion || (fromFocus && prev.completedFocusTask)) return prev;
+      const originalTask = prev.appData.quickNotes.find(task => task.id === id);
+      if (!originalTask) return prev;
       const result = transitionTask(prev.appData.quickNotes, prev.focusTimer, id, action, nowMs);
       if (result.notes === prev.appData.quickNotes) return prev;
+      if (result.completedTask) {
+        return {
+          ...prev,
+          completionNotice: null,
+          pendingTaskCompletion: {
+            originalTask, previewTask: { ...result.completedTask, actualMinutes: undefined }, action, requestedAt: nowMs, fromFocus,
+          },
+        };
+      }
       return {
+        ...prev,
         appData: { ...prev.appData, quickNotes: result.notes },
         focusTimer: result.timer,
-        selectedFocusTaskId: result.completedTask && prev.selectedFocusTaskId === id ? null : prev.selectedFocusTaskId,
-        completedFocusTask: (fromFocus && result.completedTask) || prev.completedFocusTask,
       };
     });
   }, []);
+
+  const confirmTaskCompletion = (pending: PendingTaskCompletion, actualMinutes: number) => {
+    setSession(prev => {
+      if (prev.pendingTaskCompletion !== pending) return prev;
+      if (!prev.appData.quickNotes.includes(pending.originalTask)) {
+        return { ...prev, pendingTaskCompletion: null, completionNotice: interruptedCompletionMessage };
+      }
+      const { id } = pending.originalTask;
+      const result = transitionTask(prev.appData.quickNotes, prev.focusTimer, id, pending.action, pending.requestedAt, actualMinutes);
+      if (!result.completedTask) {
+        return { ...prev, pendingTaskCompletion: null, completionNotice: 'This time could not be saved. Mark the task done again to enter its time.' };
+      }
+      return {
+        ...prev,
+        appData: { ...prev.appData, quickNotes: result.notes },
+        focusTimer: result.timer,
+        selectedFocusTaskId: prev.selectedFocusTaskId === id ? null : prev.selectedFocusTaskId,
+        completedFocusTask: pending.fromFocus ? result.completedTask : prev.completedFocusTask,
+        pendingTaskCompletion: null,
+      };
+    });
+  };
+
+  const cancelTaskCompletion = (pending: PendingTaskCompletion) => {
+    setSession(prev => prev.pendingTaskCompletion === pending ? { ...prev, pendingTaskCompletion: null } : prev);
+  };
 
   // --- Launchpad Pet Controller ----------------------------------------
   const petEnabled = appData.settings.pet?.enabled ?? true;
@@ -322,19 +379,20 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
   }, [appData.learnedPreferences, timeOfDay]);
 
   const [showReflection, setShowReflection] = useState(false);
+  const [showDailyReflection, setShowDailyReflection] = useState(false);
   const [reflectionStartedAt, setReflectionStartedAt] = useState<Date | null>(null);
   const [partialEntry, setPartialEntry] = useState<{ taskId: string; date: string; id: string; minutes?: number } | null>(null);
   const [partialSubmission, setPartialSubmission] = useState<string | null>(null);
   const [partialError, setPartialError] = useState<string>();
   useEffect(() => {
     if (!partialSubmission) return;
-    const recorded = appData.castleEconomy?.ledger.some(item => item.id.startsWith('earning:progress:') && item.id.endsWith(partialSubmission));
+    const recorded = appData.castleEconomy?.ledger.some(item => item.id === partialSubmission);
     setPartialSubmission(null);
     if (recorded) {
       setPartialError(undefined);
       setPartialEntry(null);
     } else {
-      setPartialError('This progress could not be recorded. Your answers are still here. Check your device date; to retry on another day, copy your answers before closing, then commit the task for that day and start a new reflection.');
+      setPartialError('This progress could not be recorded. Your answers are still here. Check that the task is open and that an open date is available.');
     }
   }, [partialSubmission, appData.castleEconomy]);
   const [manualReflectionIds, setManualReflectionIds] = useState<string[] | null>(null);
@@ -346,7 +404,7 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
     const stillPending = appData.quickNotes.some(task => reflectionSubmission.includes(task.id) && task.isDone && task.pendingReflection);
     setReflectionSubmission(null);
     if (stillPending) {
-      setReflectionError('This day has already settled. Your work and answers are still here. Check your device date and try again when an open day is available.');
+      setReflectionError('This reflection could not be recorded. Your work and answers are still here. Confirm the reported time and check that an open date is available.');
       return;
     }
     setReflectionError(undefined);
@@ -367,9 +425,26 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
   const reflectionKey = JSON.stringify(reflectionTasks.map(task => task.id).sort());
   const reflectionReady = reflectionTasks.length > 0;
   const dayKey = formatDateKey(now);
-  const needsActualTime = !!appData.castleEconomy && reflectionTasks.some(task => !task.actualMinutes);
+  const reflectionDay = reflectionStartedAt ? formatDateKey(reflectionStartedAt) : dayKey;
+  const reflectionEconomy = appData.castleEconomy;
+  const timedReflectionTasks = reflectionEconomy
+    ? reflectionTasks.filter(task => !task.actualMinutes && findReflectionCommitment(reflectionEconomy, task, reflectionDay)) : [];
+  const needsActualTime = timedReflectionTasks.length > 0;
+  const openCompletedTaskReflection = (taskIds: string[]) => {
+    setManualReflectionIds(taskIds);
+    setReflectionStartedAt(new Date());
+    setShowReflection(true);
+  };
+  const openDailyReflection = () => {
+    const taskIds = getDailyReviewTasks(appData.quickNotes).map(task => task.id);
+    if (taskIds.length) {
+      openCompletedTaskReflection(taskIds);
+    } else {
+      setShowDailyReflection(true);
+    }
+  };
   useEffect(() => {
-    if (!appData.castleEconomy || showReflection || reflectionReady || partialEntry || dayKey < appData.castleEconomy.activatedOn) return;
+    if (!appData.castleEconomy || showReflection || reflectionReady || partialEntry || pendingTaskCompletion || dayKey < appData.castleEconomy.activatedOn) return;
     const draw = Math.random();
     setAppData(previous => {
       if (!previous.castleEconomy) return previous;
@@ -377,15 +452,18 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
       const castleEconomy = offerMission(settled, dayKey, draw);
       return castleEconomy === previous.castleEconomy ? previous : { ...previous, castleEconomy };
     });
-  }, [dayKey, appData.castleEconomy, showReflection, reflectionReady, !!partialEntry]);
+  }, [dayKey, appData.castleEconomy, showReflection, reflectionReady, !!partialEntry, pendingTaskCompletion]);
   const applyCloudDownload = useCallback((next: AppData) => {
     setShowReflection(false);
+    setShowDailyReflection(false);
     setReflectionStartedAt(null);
     setPartialEntry(null);
     setManualReflectionIds(null);
     setSession(prev => ({
       ...prev, appData: next,
       focusTimer: next.quickNotes.some(task => task.id === prev.focusTimer?.taskId && !task.isDone) ? prev.focusTimer : null,
+      pendingTaskCompletion: null,
+      completionNotice: prev.pendingTaskCompletion ? interruptedCompletionMessage : prev.completionNotice,
     }));
   }, []);
   const cloudSync = useCloudSync(workspace, appData, applyCloudDownload);
@@ -400,10 +478,7 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
       if (reset === current.quickNotes) return;
       resetAfterLeave = { ...current, quickNotes: reset };
       if (activeWorkspace) saveOnLeave(resetAfterLeave);
-      else {
-        flushAppDataSave();
-        saveAppData(resetAfterLeave);
-      }
+      else preserveAppDataOnLeave(resetAfterLeave);
     };
     const onReturn = (event: PageTransitionEvent) => {
       if (event.persisted && resetAfterLeave) {
@@ -520,7 +595,7 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
   };
 
   const handleClearAllData = useCallback(async () => {
-    const baseCleared = clearAllLocalData();
+    const baseCleared = clearAllLocalData(false);
     const preservedSettings = {
       ...baseCleared.settings,
       theme: appData.settings.theme,
@@ -540,13 +615,22 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
       settings: preservedSettings,
     };
 
-    saveAppData(nextAppData);
-    setSession({ appData: nextAppData, focusTimer: null, selectedFocusTaskId: null, completedFocusTask: null });
-
-    if (workspace && cloudSync) {
-      await cloudSync.clearCloud(nextAppData);
-    }
+    if (workspace) await cloudSync.clearCloud(cloudData(nextAppData));
+    else await clearAllLocalDataWithLock(nextAppData);
+    setSession({ appData: workspace ? cloudData(nextAppData) : nextAppData, focusTimer: null, selectedFocusTaskId: null, completedFocusTask: null, pendingTaskCompletion: null, completionNotice: null });
   }, [appData.settings, cloudSync, workspace]);
+
+  const handleImportBackup = async (text: string) => {
+    const imported = importDataFromJson(text, false);
+    if (workspace) {
+      setAppData(cloudData(imported));
+      return;
+    }
+    if (!await flushAppDataSaveWithLock() || !await saveAppDataWithLock(imported)) {
+      throw new Error('The workspace could not be replaced safely. Keep your backup file and reload LaunchPAD before trying again.');
+    }
+    setAppData(imported);
+  };
 
   const handleThemeChange = (theme: ThemeMode) => {
     setAppData((prev) => ({
@@ -565,7 +649,6 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
           lastBackupTimestamp: Date.now(),
         },
       };
-      if (!workspace) saveAppData(updated);
       return updated;
     });
     setIsBackupDismissed(true);
@@ -598,6 +681,15 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
         onOpenScratchpad={() => setIsQuickNotesOpen(true)}
       />
 
+      {completionNotice && (
+        <div className="flex shrink-0 items-center justify-between gap-3 border-b border-amber-400/40 bg-amber-500/10 px-4 py-2 text-sm">
+          <p role="alert">{completionNotice}</p>
+          <button type="button" className="min-h-10 shrink-0 rounded px-2 font-semibold underline underline-offset-2" onClick={() => setSession(prev => ({ ...prev, completionNotice: null }))}>
+            Dismiss
+          </button>
+        </div>
+      )}
+
       {!workspace && cloudNotice && (
         <button type="button" onClick={openSettings}
           className="hidden md:block shrink-0 truncate border-b border-teal-700/20 bg-teal-500/10 px-4 py-1.5 text-left text-xs">
@@ -614,6 +706,11 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
           </button>
         </div>
       )}
+      <WorkspaceRecoveryNotice
+        workspace={workspace}
+        conflict={workspace ? cloudSync.cacheConflict : primarySaveStatus === 'conflict'}
+        data={appData}
+      />
       {!workspace && primarySaveStatus === 'failed' && (
         <p role="alert" className="shrink-0 border-b border-rose-300 bg-rose-50 px-4 py-2 text-sm text-rose-950">
           Your latest changes could not be saved on this device. Export a backup from Settings before closing LaunchPAD.
@@ -667,6 +764,7 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
                   onOpenSparkIdea={() => setIsSparkIdeaModalOpen(true)}
                   appData={appData}
                   onUpdateAppData={(next) => setAppData(workspace ? cloudData(next) : next)}
+                  onImportBackup={handleImportBackup}
                   onClearAllData={handleClearAllData}
                   workspace={workspace}
                   onSwitchWorkspace={onSwitchWorkspace}
@@ -689,16 +787,13 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
                   tasks={appData.quickNotes}
                   reflections={appData.reflections || []}
                   onPartialProgress={taskId => setPartialEntry({ taskId, date: formatDateKey(new Date()), id: crypto.randomUUID() })}
-                  onReflectCompleted={taskIds => {
-                    setManualReflectionIds(taskIds);
-                    setReflectionStartedAt(new Date());
-                    setShowReflection(true);
-                  }}
+                  onReflectCompleted={openCompletedTaskReflection}
+                  onDailyReview={openDailyReflection}
                   today={dayKey}
                   onCastleChange={(operation, onFailure) => setAppData(prev => {
                     try {
                       if (!prev.castleEconomy) throw new Error('Accountability is no longer active.');
-                      const castleEconomy = operation(prev.castleEconomy);
+                      const castleEconomy = operation(prev.castleEconomy, prev.quickNotes);
                       return castleEconomy === prev.castleEconomy ? prev : { ...prev, castleEconomy };
                     } catch (error) {
                       const message = error instanceof Error ? error.message : 'Could not complete this action.';
@@ -711,21 +806,11 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
                   onSelectHero={(id) => {
                     setAppData((prev) => {
                       const updated = { ...prev, gamification: { ...prev.gamification, activeHeroId: id } };
-                      if (!workspace) saveAppData(updated);
                       return updated;
                     });
                   }}
                   onExportBackup={handleQuickBackup}
-                  onImportBackup={(jsonStr) => {
-                    try {
-                      const imported = importDataFromJson(jsonStr, !workspace);
-                      setAppData(workspace ? cloudData(imported) : imported);
-                      if (!workspace) saveAppData(imported);
-                      alert("Progress and data imported successfully!");
-                    } catch (err: any) {
-                      alert("Import failed: " + (err.message || "Invalid backup file"));
-                    }
-                  }}
+                  onImportBackup={handleImportBackup}
                   onBackToDashboard={() => setActiveView("dashboard")}
                 />
               </Suspense>
@@ -953,35 +1038,57 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
         }}
       />
 
+      {pendingTaskCompletion && (
+        <ActualTimeDialog
+          tasks={[pendingTaskCompletion.previewTask]}
+          description="Enter the total time spent on this task, including any previously recorded work."
+          submitLabel="Mark complete"
+          onCancel={() => cancelTaskCompletion(pendingTaskCompletion)}
+          onSave={minutes => confirmTaskCompletion(pendingTaskCompletion, minutes[pendingTaskCompletion.originalTask.id])}
+        />
+      )}
       {partialEntry && partialEntry.minutes === undefined && appData.quickNotes.some(task => task.id === partialEntry.taskId) && (
         <ActualTimeDialog tasks={appData.quickNotes.filter(task => task.id === partialEntry.taskId).map(task => ({ ...task, actualMinutes: undefined, partialMinutes: undefined }))} maxMinutes={525600 - (appData.quickNotes.find(task => task.id === partialEntry.taskId)?.partialMinutes || 0)} description="Enter only the additional minutes worked since your last progress entry. Your reflection comes next." onCancel={() => setPartialEntry(null)} onSave={values => setPartialEntry(entry => entry ? { ...entry, minutes: values[entry.taskId] } : null)} />
       )}
       {partialEntry && partialEntry.minutes !== undefined && (
         <TaskClearReflection error={partialError} onClose={() => { setPartialError(undefined); setPartialEntry(null); }} onSubmit={(questions, answers) => {
           if (questions.length !== 5 || answers.length !== 5 || answers.some(answer => answer.trim().split(/\s+/u).filter(Boolean).length < 150)) return;
-          const entry = { ...partialEntry, date: partialError ? formatDateKey(new Date()) : partialEntry.date };
-          const entrySuffix = `:${entry.taskId}:${entry.id}`;
+          const entry = partialEntry;
+          const submittedAt = new Date();
           setPartialError(undefined);
-          setPartialSubmission(entrySuffix);
+          setPartialSubmission(partialProgressLedgerId(entry.taskId, entry.date, entry.id));
           setAppData(prev => {
             try {
-              if (prev.castleEconomy?.ledger.some(item => item.id.startsWith('earning:progress:') && item.id.endsWith(entrySuffix))) return prev;
-              return entry.minutes === undefined ? prev : applyPartialTaskReflection(prev, { ...entry, minutes: entry.minutes }, new Date(), questions, answers);
+              return entry.minutes === undefined ? prev : applyPartialTaskReflection(prev, { ...entry, minutes: entry.minutes }, submittedAt, questions, answers);
             } catch {
               return prev;
             }
           });
         }} />
       )}
-      {showReflection && reflectionReady && !partialEntry && needsActualTime && (
-        <ActualTimeDialog tasks={reflectionTasks} description="Enter the total time spent on each task, including any previously recorded partial work. Your reflection comes next." onSave={minutes => setAppData(prev => ({ ...prev, quickNotes: prev.quickNotes.map(task => minutes[task.id] ? { ...task, actualMinutes: minutes[task.id] } : task) }))} onCancel={() => {
+      {showDailyReflection && (
+        <TaskClearReflection
+          mode="daily"
+          onClose={() => setShowDailyReflection(false)}
+          onSubmit={(questions, answers) => {
+            const date = new Date().toISOString();
+            setAppData(prev => ({
+              ...prev,
+              reflections: [...(prev.reflections || []), { date, questions, answers, taskTitles: [] }],
+            }));
+            setShowDailyReflection(false);
+          }}
+        />
+      )}
+      {showReflection && reflectionReady && !showDailyReflection && !partialEntry && !pendingTaskCompletion && needsActualTime && (
+        <ActualTimeDialog tasks={timedReflectionTasks} description="Enter the total time spent on each task, including any previously recorded partial work. Your reflection comes next." onSave={minutes => setAppData(prev => ({ ...prev, quickNotes: prev.quickNotes.map(task => typeof minutes[task.id] === 'number' ? { ...task, actualMinutes: minutes[task.id] } : task) }))} onCancel={() => {
           setShowReflection(false);
           setAppData(prev => ({ ...prev, quickNotes: resetReflectionTasks(prev.quickNotes, reflectionStartedAt ?? new Date(), prev.castleEconomy, manualReflectionIds ?? undefined) }));
           setReflectionStartedAt(null);
           setManualReflectionIds(null);
         }} />
       )}
-      {showReflection && reflectionReady && !partialEntry && !needsActualTime && (
+      {showReflection && reflectionReady && !showDailyReflection && !partialEntry && !pendingTaskCompletion && !needsActualTime && (
         <TaskClearReflection
           style={appData.settings.confettiStyle}
           error={reflectionError}
@@ -995,6 +1102,7 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
             if (questions.length !== 5 || answers.length !== 5
               || answers.some((answer) => answer.trim().split(/\s+/u).filter(Boolean).length < 150)) return;
             const reflectionDate = reflectionStartedAt ?? new Date();
+            const submittedAt = new Date();
             const completedTasks = reflectionTasks;
             if (!completedTasks.length) return;
             const completedIds = new Set(completedTasks.map(task => task.id));
@@ -1003,8 +1111,11 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
             setAppData((prev) => {
               const completed = prev.quickNotes.filter(task => completedIds.has(task.id) && task.isDone && task.pendingReflection);
               if (!completed.length) return prev;
-              const updated = applyCompletedTaskReflection(prev, reflectionDate, new Date(), questions, answers, completed);
-              return updated;
+              try {
+                return applyCompletedTaskReflection(prev, reflectionDate, submittedAt, questions, answers, completed);
+              } catch {
+                return prev;
+              }
             });
           }}
         />
@@ -1022,8 +1133,8 @@ export default function WorkspaceApp() {
   const [restoring, setRestoring] = useState(true);
   const [recoveryAttempt, setRecoveryAttempt] = useState(0);
   const [cloudNotice, setCloudNotice] = useState<string>();
-  const switchWorkspace = useCallback((next: CloudWorkspace | null) => {
-    flushAppDataSave();
+  const switchWorkspace = useCallback(async (next: CloudWorkspace | null) => {
+    await flushAppDataSaveWithLock();
     try {
       if (next) localStorage.setItem(ACTIVE_CLOUD_KEY, next.project.url);
       else localStorage.removeItem(ACTIVE_CLOUD_KEY);

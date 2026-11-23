@@ -6,6 +6,7 @@ import {
   cloudData, DEFAULT_CLOUD_PROJECT, readCloudRecord, validateCloudProject, writeCloudRecord,
   clearCloudWorkspaceData, editCloudRecord, prepareCloudWrite, reconcileCloudRevision,
   readCloudCache, saveCloudCache, type CloudWorkspace,
+  createCloudCacheWriter, readCloudConflictDrafts, removeCloudConflictDraft,
 } from './cloudWorkspace';
 
 const project = DEFAULT_CLOUD_PROJECT;
@@ -67,6 +68,9 @@ const cache = new Map<string, string>();
 let cacheQuotaExceeded = false;
 Object.defineProperty(globalThis, 'localStorage', { configurable: true, value: {
   getItem: (key: string) => cache.get(key) ?? null,
+  get length() { return cache.size; },
+  key: (index: number) => [...cache.keys()][index] ?? null,
+  removeItem: (key: string) => { cache.delete(key); },
   setItem: (key: string, value: string) => {
     if (cacheQuotaExceeded) throw new DOMException('Fixture storage quota exceeded', 'QuotaExceededError');
     cache.set(key, value);
@@ -212,3 +216,20 @@ cacheQuotaExceeded = false;
 assert.equal(saveCloudCache(workspace, offlineAck.record), true);
 assert.equal(readCloudCache(project, userId)?.data.scratchpadText, 'Edit during quota failure');
 console.log('Offline cache failure signals, online saves and cache recovery passed.');
+
+// Offline tabs can close before their writes reach the server. The older
+// cache writer's edited branch must live in its own recovery slot.
+const offlineWorkspace = { ...workspace, initial: offlineAck.record };
+const offlineTabA = createCloudCacheWriter(offlineWorkspace);
+const offlineTabB = createCloudCacheWriter(offlineWorkspace);
+const offlineA = editCloudRecord(offlineAck.record, { ...local, scratchpadText: 'Offline tab A only' });
+const offlineB = editCloudRecord(offlineAck.record, { ...local, scratchpadText: 'Offline tab B only' });
+assert.equal(await offlineTabA.saveLocked(offlineA), 'saved');
+assert.equal(await offlineTabB.saveLocked(offlineB), 'conflict');
+assert.equal(readCloudCache(project, userId)?.data.scratchpadText, 'Offline tab A only');
+const [offlineDraft] = readCloudConflictDrafts(offlineWorkspace);
+assert.equal(offlineDraft?.data.scratchpadText, 'Offline tab B only');
+assert.deepEqual(readCloudConflictDrafts({ ...offlineWorkspace, userId: 'other-user' }), []);
+removeCloudConflictDraft(offlineWorkspace, offlineDraft.key);
+assert.deepEqual(readCloudConflictDrafts(offlineWorkspace), []);
+console.log('Offline tabs preserve separate conflicting edits on the same device.');

@@ -37,6 +37,8 @@ jobs:
 
       - name: Build project
         run: npm run build
+        env:
+          VITE_LAUNCHPAD_CLOUD_SIGNUP: ${{ vars.LAUNCHPAD_CLOUD_SIGNUP }}
 
       - name: Upload GitHub Pages artifact
         uses: actions/upload-pages-artifact@v3

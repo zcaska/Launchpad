@@ -54,6 +54,7 @@ export interface Subtask {
 
 export interface QuickNote {
   pendingReflection?: boolean;
+  completedOn?: string; // Local calendar date of the completion transition.
   rewardAlreadyGranted?: boolean;
   id: string;
   text: string;

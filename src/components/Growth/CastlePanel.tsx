@@ -1,31 +1,111 @@
-﻿import { useMemo, useState } from 'react';
-import { CastleScene } from './CastleScene';
-import { CastlePartPreview as StoreThumb } from './CastlePartPreview';
-import { useId, useRef } from 'react';
-import { ArrowLeft, ArrowRight, BookOpen, CastleTurret, Check, Coins, Crown, Cube, Flag, Hammer, House, Sparkle } from '@phosphor-icons/react';
-import { CASTLE_PHASES } from './castleCatalog';
-import { BLUEPRINT_PARTS, getBlueprintPrice, getBlueprintProgress, getBlueprintLockReason, purchaseBlueprintPart } from '../../utils/castleBlueprint';
-import { balanceCents, netWorthCents, type CastleEconomy } from '../../utils/castleEconomy';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import { ArrowLeft, BookOpen, ShoppingBag, Wallet, X } from '@phosphor-icons/react';
+import { CastleScene, type CastleInspection } from './CastleScene';
+import { CastlePartPreview } from './CastlePartPreview';
+import {
+  BLUEPRINT_PARTS, CASTLE_DISTRICTS, getBlueprintPrice, getBlueprintProgress,
+  getBlueprintLockReason, getOwnedBlueprintIds, purchaseBlueprintPart, resolveBlueprintId, type BlueprintPart,
+} from '../../utils/castleBlueprint';
+import {
+  balanceCents, claimMission, commitOpenTask, getMissionProgress, netWorthCents, previewOpenCommitment,
+  remainingMonthlyExemptions, substituteWithOpenTasks, useExemption, type CastleEconomy,
+} from '../../utils/castleEconomy';
 import type { QuickNote, ReflectionEntry } from '../../types';
 import { formatDateKey } from '../../utils/gamification';
 import { GuideTarget } from '../Common/GuideTarget';
 
 const money = (cents: number) => `${cents < 0 ? '−' : ''}$${(Math.abs(cents) / 100).toFixed(2)}`;
+type District = BlueprintPart['district'];
+type Category = BlueprintPart['category'] | 'all';
+type CastleDialog = 'store' | 'accountability' | 'ledger';
+export type CastleOperation = (current: CastleEconomy, currentTasks: QuickNote[]) => CastleEconomy;
+const categories: { id: Category; label: string }[] = [
+  { id: 'all', label: 'All' }, { id: 'monument', label: 'Monuments' },
+  { id: 'fortification', label: 'Fortifications' }, { id: 'decoration', label: 'Decorations' },
+  { id: 'companion', label: 'Companions' },
+];
+const penaltyKinds = new Set(['goal-shortfall', 'missed-commitment', 'replacement-shortfall']);
+const ledgerLabels = {
+  'goal-shortfall': 'Daily goal shortfall',
+  'earning': 'Earnings',
+  'missed-commitment': 'Missed commitment',
+  'replacement-shortfall': 'Replacement shortfall',
+  'asset-purchase': 'Castle purchase',
+};
 
-type StoreTab = 'store' | 'built' | 'upgrades';
+export function CastleStore({ economy, today, onBuy, onSelect }: {
+  economy: CastleEconomy;
+  today: string;
+  onBuy: (assetId: string) => void;
+  onSelect: (assetId: string) => void;
+}) {
+  const [district, setDistrict] = useState<District>(1);
+  const [category, setCategory] = useState<Category>('all');
+  const storeId = useId();
+  const owned = getOwnedBlueprintIds(economy);
+  const balance = balanceCents(economy);
+  const catalog = BLUEPRINT_PARTS.map(asset => {
+    const built = owned.has(asset.id);
+    const lock = getBlueprintLockReason(economy, asset, today);
+    const price = getBlueprintPrice(asset, economy);
+    const state = built ? 'owned' : lock ? 'locked' : balance >= price ? 'available' : 'unaffordable';
+    return { asset, built, lock, price, state };
+  });
+  const districtCounts = CASTLE_DISTRICTS.map(({ number }) => catalog.filter(item => item.asset.district === number && item.built).length);
+  const items = catalog.filter(({ asset }) => asset.district === district && (category === 'all' || asset.category === category));
+
+  return (
+    <section aria-label="Castle materials">
+      <div className="cp-store-tabs" role="tablist" aria-label="Castle districts">
+        {CASTLE_DISTRICTS.map(({ number, label }, index) => (
+          <button key={number} id={`${storeId}-district-${number}`} role="tab" type="button"
+            aria-selected={district === number} aria-controls={`${storeId}-panel`} tabIndex={district === number ? 0 : -1}
+            className="cp-tab" onClick={() => setDistrict(number)} onKeyDown={event => {
+              const count = CASTLE_DISTRICTS.length;
+              const target = event.key === 'ArrowRight' ? (index + 1) % count
+                : event.key === 'ArrowLeft' ? (index + count - 1) % count
+                : event.key === 'Home' ? 0 : event.key === 'End' ? count - 1 : undefined;
+              if (target === undefined) return;
+              event.preventDefault();
+              setDistrict(CASTLE_DISTRICTS[target].number);
+              event.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>('[role="tab"]')[target]?.focus();
+            }}>
+            <span>{label}</span><small>{districtCounts[index]}/30</small>
+          </button>
+        ))}
+      </div>
+      <div className="cp-category-filter" role="group" aria-label="Asset categories">
+        {categories.map(item => (
+          <button key={item.id} type="button" className="cp-tab" aria-pressed={category === item.id} onClick={() => setCategory(item.id)}>{item.label}</button>
+        ))}
+      </div>
+      <div className="cp-store-grid" id={`${storeId}-panel`} role="tabpanel" aria-labelledby={`${storeId}-district-${district}`}>
+        {items.map(({ asset, built, lock, price, state }) => {
+          const companion = asset.category === 'companion';
+          const action = built ? 'Select' : lock ? 'Locked'
+            : state === 'unaffordable' ? `Need ${money(price - balance)}` : companion ? 'Adopt' : 'Buy';
+          return (
+            <article key={asset.id} data-state={state} data-asset={asset.id} className="cp-item-card">
+              <div className="cp-item-icon"><CastlePartPreview assetId={asset.id} label={asset.label} /></div>
+              <h3 className="cp-item-name">{asset.label}</h3>
+              {!built && <div className="cp-item-price">{money(price)}</div>}
+              {!built && lock && <p className="cp-item-requirement">{lock}</p>}
+              <div className="cp-item-actions">
+                <button type="button" className="cp-btn cp-btn-emerald" disabled={!built && state !== 'available'}
+                  aria-label={`${action} · ${asset.label}`} onClick={() => built ? onSelect(asset.id) : onBuy(asset.id)}>{action}</button>
+              </div>
+            </article>
+          );
+        })}
+        {!items.length && <p className="cp-muted">No assets in this category.</p>}
+      </div>
+    </section>
+  );
+}
 
 export function CastlePanel({
-  economy,
-  today,
-  tasks: _tasks = [],
-  reflections: _reflections = [],
-  currentStreak = 0,
-  onBack,
-  onEarlierGrowth,
-  onChange,
-  onPartialProgress: _onPartialProgress,
-  onReflectCompleted: _onReflectCompleted,
-  onDailyReview,
+  economy, today, tasks = [], currentStreak = 0, onBack, onEarlierGrowth, onChange,
+  onPartialProgress, onReflectCompleted, onDailyReview,
 }: {
   economy: CastleEconomy;
   today: string;
@@ -34,263 +114,260 @@ export function CastlePanel({
   currentStreak?: number;
   onBack?: () => void;
   onEarlierGrowth?: () => void;
-  onChange: (operation: (current: CastleEconomy) => CastleEconomy, onFailure: (message: string) => void) => void;
+  onChange: (operation: CastleOperation, onFailure: (message: string) => void) => void;
   onPartialProgress?: (taskId: string) => void;
   onReflectCompleted?: (taskIds: string[]) => void;
   onDailyReview?: () => void;
 }) {
   const [error, setError] = useState('');
-  const [storeTab, setStoreTab] = useState<StoreTab>('store');
-  const [activePhase, setActivePhase] = useState(1);
-  const storeId = useId();
-  const [activeSection, setActiveSection] = useState('Overview');
-  const overviewRef = useRef<HTMLDivElement>(null);
-  const inventoryRef = useRef<HTMLDivElement>(null);
-  const ledgerRef = useRef<HTMLDetailsElement>(null);
-  const buildRef = useRef<HTMLDetailsElement>(null);
-  const navigate = (section: string) => {
-    setActiveSection(section);
-    const target = section === 'Overview' ? overviewRef.current : section === 'Inventory' ? inventoryRef.current : section === 'Ledger' ? ledgerRef.current : buildRef.current;
-    if (target instanceof HTMLDetailsElement) target.open = true;
-    target?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
-  };
+  const [inspection, setInspection] = useState<CastleInspection>();
+  const [selectedTask, setSelectedTask] = useState('');
+  const [activeDialog, setActiveDialog] = useState<CastleDialog | null>(null);
+  const [exemptionDay, setExemptionDay] = useState<string>();
+  const [replacement, setReplacement] = useState<{ day: string; id: string; taskIds: string[] }>();
+  const dialog = useRef<HTMLDialogElement>(null);
+  const dialogTitleId = useId();
+  const tasksId = useId();
+  const sceneRef = useRef<HTMLDivElement>(null);
 
-  const ownedAssetIds = new Set(economy.assets.map(asset => asset.id));
-  const knownOwnedIds = useMemo(() => BLUEPRINT_PARTS.map(asset => asset.id).filter(id => ownedAssetIds.has(id)), [economy.assets]);
-  const balance = balanceCents(economy);
-  const netWorth = netWorthCents(economy);
-  const castleValue = economy.assets.reduce((sum, asset) => sum + asset.priceCents, 0);
-  const unknownOwnedCount = economy.assets.filter(asset => !BLUEPRINT_PARTS.some(part => part.id === asset.id)).length;
+  const owned = useMemo(() => getOwnedBlueprintIds(economy), [economy]);
+  const ownedIds = useMemo(() => [...owned], [owned]);
   const progress = getBlueprintProgress(economy, today);
-  const builtKnownCount = progress.ownedCount;
-  const constructionProgress = Math.round((builtKnownCount / 120) * 100);
-  const isComplete = progress.complete;
-
+  const total = BLUEPRINT_PARTS.length;
+  const completion = Math.round(progress.ownedCount / total * 100);
+  const balance = balanceCents(economy);
+  const castleValue = economy.assets.reduce((sum, asset) => sum + asset.priceCents, 0);
+  const netWorth = netWorthCents(economy);
+  const historicalAssets = economy.assets.filter(asset => resolveBlueprintId(asset.id) !== asset.id);
   const goal = economy.goalChanges.filter(change => change.effectiveOn <= today).at(-1)?.amountCents ?? economy.goalCents;
-  const earnedToday = economy.ledger.filter(entry => entry.date === today && entry.kind === 'earning').reduce((sum, entry) => sum + entry.amountCents, 0);
-  const penaltiesToday = economy.ledger.filter(entry => entry.date === today && (entry.kind === 'goal-shortfall' || entry.kind === 'missed-commitment' || entry.kind === 'replacement-shortfall')).reduce((sum, entry) => sum + Math.abs(entry.amountCents), 0);
+  const todayEntries = economy.ledger.filter(entry => entry.date === today);
+  const earned = todayEntries.filter(entry => entry.kind === 'earning').reduce((sum, entry) => sum + entry.amountCents, 0);
+  const penalties = todayEntries.filter(entry => penaltyKinds.has(entry.kind)).reduce((sum, entry) => sum - entry.amountCents, 0);
+  const commitments = economy.commitments.filter(item => item.date === today);
+  const candidates = tasks.filter(task => !task.isDone && !task.pendingReflection && !commitments.some(item => item.id === task.id))
+    .map(task => ({ task, preview: previewOpenCommitment(economy, task, today) }));
+  const candidate = candidates.find(({ task }) => task.id === selectedTask)
+    ?? candidates.find(({ preview }) => preview.commitment) ?? candidates[0];
+  const commitmentToAdd = candidate?.preview.commitment;
+  const pending = tasks.filter(task => task.isDone && task.pendingReflection);
+  const todayIsOpen = today >= economy.activatedOn && !todayEntries.some(entry => entry.kind === 'goal-shortfall');
+  const exempt = economy.exemptDays.includes(today);
+  const exemptions = remainingMonthlyExemptions(economy, today);
+  const mission = economy.missions.find(item => item.date === today);
+  const missionProgress = mission && getMissionProgress(economy, mission);
+  const replacementTasks = candidates.flatMap(({ preview }) => preview.commitment ? [preview.commitment] : []);
+  const replacing = todayIsOpen && replacement?.day === today
+    ? commitments.find(item => item.id === replacement.id && !item.completed && !item.replacementIds) : undefined;
+  const selectedReplacements = replacementTasks.filter(task => replacement?.taskIds.includes(task.id));
+  const replacementTotal = selectedReplacements.reduce((sum, task) => sum + task.estimatedValueCents, 0);
+  const unavailableReplacement = replacement && replacement.taskIds.length !== selectedReplacements.length;
 
-  const act = (operation: (current: CastleEconomy) => CastleEconomy): boolean => {
-    try {
-      if (today !== formatDateKey(new Date())) throw new Error('The day has changed. Please wait for today’s view to update.');
-      operation(economy); // Validate before queuing; the parent reapplies to the latest state.
-      onChange(operation, setError); setError('');
-      return true;
-    }
-    catch (reason) { setError(reason instanceof Error ? reason.message : 'Could not complete this action.'); return false; }
+  useEffect(() => {
+    if (activeDialog && dialog.current && !dialog.current.open) dialog.current.showModal();
+  }, [activeDialog]);
+
+  const openDialog = (next: CastleDialog) => {
+    setError('');
+    setActiveDialog(next);
   };
-
-  const nextConstruction = progress.nextPart;
-  const catalogItems = BLUEPRINT_PARTS.filter(part => part.phase === activePhase).map(asset => {
-    const owned = ownedAssetIds.has(asset.id);
-    const lockReason = getBlueprintLockReason(economy, asset, today);
-    const priceCents = getBlueprintPrice(asset, economy);
-    const affordable = balance >= priceCents;
-    const state = owned ? 'owned' : lockReason ? 'locked' : affordable ? 'available' : 'unaffordable';
-    return { asset, owned, lockReason, priceCents, affordable, state };
-  });
-  const storeItems = storeTab === 'built' ? catalogItems.filter(i => i.owned) : storeTab === 'upgrades' ? catalogItems.filter(i => !i.owned) : catalogItems;
-  const tabLabel = storeTab === 'store' ? 'Store' : storeTab === 'built' ? 'Built' : 'Upgrades';
-  const Hero = <div className={`cp-card cp-hero ${isComplete ? 'cp-hero-complete' : ''}`}>
-    <div className="cp-hero-scene"><CastleScene ownedIds={knownOwnedIds} /></div>
-    <div className="cp-blueprint-progress"><h2>Castle Progress{isComplete ? ' / Castle Complete' : ''}</h2>
-    <div className="cp-journey-counts"><strong>{progress.qualifyingDays}/365 discipline days</strong><strong>{builtKnownCount}/120 elements</strong></div>
-    <div className="cp-progress-bar" role="progressbar" aria-label="Castle progress" aria-valuemin={0} aria-valuemax={120} aria-valuenow={builtKnownCount}><span style={{width: `${constructionProgress}%`}} /></div>
-    <details className="cp-progress-details"><summary>How progress works</summary><p>Meet your daily goal through reflected work on 365 days. The final piece also requires a year since activation. Missions and exemptions alone do not count.</p><p>Total blueprint: {money(economy.goalCents * 365)}, based on your starting daily goal of {money(economy.goalCents)}.</p>{unknownOwnedCount > 0 && <p>{unknownOwnedCount} historical assets retain their value and do not count toward this blueprint.</p>}</details></div>
-  </div>;
-
-  const DailyStrip = (
-    <div className="cp-daily-strip" aria-label="Daily summary">
-      <div className="cp-strip-item">
-        <div className="cp-strip-label">Daily Goal</div>
-        <div className="cp-strip-value">{money(Math.min(goal, earnedToday))} / {money(goal)}</div>
-        <div className="cp-strip-sub">{earnedToday >= goal ? 'Goal reached' : `${money(goal - earnedToday)} to go`}</div>
-      </div>
-      <div className="cp-strip-item"><div className="cp-strip-label">Streak</div><div className="cp-strip-value">{currentStreak}</div><div className="cp-strip-sub">{currentStreak === 1 ? 'day' : 'days'}</div></div>
-      <div className="cp-strip-item"><div className="cp-strip-label">Today’s Earnings</div><div className="cp-strip-value cp-green">{money(earnedToday)}</div><div className="cp-strip-sub">Credited today</div></div>
-      <div className="cp-strip-item"><div className="cp-strip-label">Penalties</div><div className="cp-strip-value cp-red">{money(penaltiesToday)}</div><div className="cp-strip-sub">Deductions today</div></div>
-      <div className="cp-strip-item"><div className="cp-strip-label">Debt</div><div className="cp-strip-value">{balance < 0 ? money(Math.abs(balance)) : '$0.00'}</div><div className="cp-strip-sub">{balance < 0 ? 'Negative balance' : 'No debt'}</div></div>
-    </div>
-  );
-
-  const StorePanel = (
-    <section className="cp-card cp-store" aria-label="Castle store panel">
-      <div className="cp-store-tabs" role="tablist" aria-label="Store tabs">
-        {(['store', 'built', 'upgrades'] as StoreTab[]).map(tab => (
-          <button key={tab} id={`${storeId}-${tab}`} role="tab" type="button" aria-selected={storeTab === tab} aria-controls={`${storeId}-panel`} tabIndex={storeTab === tab ? 0 : -1} className="cp-tab" onClick={() => setStoreTab(tab)} onKeyDown={event => {
-            const tabs: StoreTab[] = ['store', 'built', 'upgrades'];
-            const current = tabs.indexOf(tab);
-            const index = event.key === 'ArrowRight' ? (current + 1) % 3 : event.key === 'ArrowLeft' ? (current + 2) % 3 : event.key === 'Home' ? 0 : event.key === 'End' ? 2 : -1;
-            if (index < 0) return;
-            event.preventDefault(); setStoreTab(tabs[index]);
-            (event.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>('[role="tab"]')[index])?.focus();
-          }}>{tab === 'store' ? 'Store' : tab === 'built' ? 'Built' : 'Upgrades'}</button>
-        ))}
-      </div>
-      <div className="cp-store-head">
-        <div><h3 style={{ margin: 0, fontSize: 28 }}>Castle {tabLabel}</h3><div className="cp-muted" style={{ fontSize: 13 }}>Phase {activePhase} / 12</div></div>
-      </div>
-      <label className="cp-phase-filter">Construction phase<select className="cp-select" value={activePhase} onChange={event => setActivePhase(Number(event.target.value))}>{CASTLE_PHASES.map(phase => <option key={phase.number} value={phase.number}>{phase.number}. {phase.label} / days {phase.firstDay}-{phase.lastDay}</option>)}</select></label>
-      <div className="cp-store-grid" id={`${storeId}-panel`} role="tabpanel" aria-labelledby={`${storeId}-${storeTab}`}>
-        {storeItems.length > 0 ? storeItems.map(({ asset, owned, lockReason, priceCents, affordable, state }) => {
-          const buttonLabel = owned ? 'Built' : lockReason ? 'Locked' : affordable ? 'Build' : 'Need more cash';
-          return (
-            <div key={asset.id} data-state={state} data-asset={asset.id} className="cp-item-card">
-              <div className="cp-item-icon"><StoreThumb assetId={asset.id} label={asset.label} /></div>
-              <div className="cp-item-name">{asset.label}</div>
-              <div className="cp-item-price">{money(priceCents)}</div>
-              {owned ? <div className="cp-item-badge cp-item-badge--owned"><Check size={14} weight="bold" /> Built</div> : <details className="cp-item-details"><summary className="cp-item-badge" aria-label={`${asset.label}: ${lockReason || (affordable ? 'Ready to build' : `${money(priceCents - balance)} more cash needed`)}. Show details`}>{lockReason ? `Day ${asset.requiredDays}` : affordable ? 'Ready' : 'Need cash'}</summary><p>{lockReason || 'Unlocked'}{!affordable ? ` · ${money(priceCents - balance)} more needed` : ''}</p></details>}
-              <button type="button" disabled={owned || !!lockReason || !affordable} aria-label={buttonLabel === 'Build' ? `Build ${asset.label}` : buttonLabel} onClick={() => act(current => purchaseBlueprintPart(current, asset.id, today))} className="cp-btn cp-btn-emerald" style={{ width: '100%' }}>{buttonLabel}</button>
-            </div>
-          );
-        }) : <p className="cp-muted">No items in this tab.</p>}
-      </div>
-      {nextConstruction && <div className="cp-next-guidance"><span>Next: <strong>{nextConstruction.label}</strong></span><button type="button" className="cp-btn" onClick={() => { setActivePhase(nextConstruction.phase); setStoreTab('store'); }}>View</button></div>}
-
-    </section>
-  );
-
-  const PortfolioSidebar = (
-    <aside className="cp-right-col cp-portfolio-sidebar">
-      <section className="cp-card cp-side-card cp-portfolio-card">
-        <h3 className="cp-section-title"><Crown className="cp-gold" size={26} /> Castle Portfolio</h3>
-        <div className="cp-side-list">
-          <div className="cp-row"><span><Coins size={23} /> Cash Balance</span><strong className="cp-money-cash">{money(balance)}</strong></div>
-          <div className="cp-row"><span><Cube size={23} /> Castle Value</span><strong className="cp-money-castle">{money(castleValue)}</strong></div>
-          <div className="cp-row"><span><Crown size={23} className="cp-gold" /> Net worth</span><strong>{money(netWorth)}</strong></div>
-        </div>
-      </section>
-      <section className="cp-card cp-side-card cp-completion-card">
-        <div className="cp-row"><h3 className="cp-section-title"><Check size={25} className="cp-green" /> Castle Progress</h3><strong className="cp-green">{constructionProgress}%</strong></div>
-        <div className="cp-completion-track" role="progressbar" aria-label="Castle completion" aria-valuemin={0} aria-valuemax={100} aria-valuenow={constructionProgress}><span style={{ width: `${constructionProgress}%` }} /></div>
-        <p>All structures built <Check size={20} className="cp-green" /><span className="cp-sr-only">{builtKnownCount}/{BLUEPRINT_PARTS.length} built ({constructionProgress}%)</span></p>
-      </section>
-      <button type="button" className="cp-card cp-side-card cp-next-chapter" onClick={() => navigate('Build')}><Sparkle size={28} className="cp-green" /><span><strong>Next Chapter</strong><small>Expand · Upgrade · Personalize</small></span><ArrowRight size={24} /></button>
-      <span className="cp-sr-only">Your stronghold is complete.</span>
-    </aside>
-  );
+  const closeDialog = () => dialog.current?.close();
+  const changeToday = (operation: CastleOperation) => {
+    setError('');
+    onChange((current, currentTasks) => {
+      if (today !== formatDateKey(new Date())) throw new Error('The day has changed. Please wait for today’s view to update.');
+      return operation(current, currentTasks);
+    }, setError);
+  };
+  const inspect = (assetId: string) => {
+    setInspection(previous => ({ assetId, request: (previous?.request ?? 0) + 1 }));
+    closeDialog();
+    sceneRef.current?.focus({ preventScroll: true });
+  };
+  const buy = (id: string) => {
+    const operation = (current: CastleEconomy) => {
+      if (today !== formatDateKey(new Date())) throw new Error('The day has changed. Please wait for today’s view to update.');
+      return purchaseBlueprintPart(current, id, today);
+    };
+    try {
+      operation(economy);
+      setError('');
+      onChange(operation, setError);
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'Could not complete this purchase.');
+    }
+  };
 
   return (
-    <section className={`castle-panel ${isComplete ? 'castle-panel--complete' : ''}`} aria-label="Your castle">
+    <section className="castle-panel" aria-label="Your castle">
       <header className="cp-header">
-        <div className="cp-header-top">
-          <div className="cp-title-row">
-            {onBack && (
-              <GuideTarget id="header.brand" hoverLabel="Dashboard">
-                <button
-                  type="button"
-                  className={`cp-back ${isComplete ? 'cp-back--icon' : ''}`}
-                  onClick={onBack}
-                  aria-label="Back to dashboard"
-                >
-                  <ArrowLeft size={24} />
-                  {!isComplete && <span>Dashboard</span>}
-                </button>
-              </GuideTarget>
-            )}
-            <CastleTurret className="cp-castle-icon" size={38} weight="fill" aria-hidden="true" />
-            <GuideTarget id="castle.hero" hoverLabel="My Castle guide">
-              <h1 className="cp-title">
-                My Castle {!isComplete && <span className="cp-on-pill"><i /> Accountability Mode: On</span>}
-              </h1>
+        <div className="cp-title-row">
+          {onBack && (
+            <GuideTarget id="header.brand" hoverLabel="Dashboard">
+              <button type="button" className="cp-btn" onClick={onBack} aria-label="Back to dashboard">
+                <ArrowLeft size={20} aria-hidden="true" />
+              </button>
             </GuideTarget>
-          </div>
-          {isComplete ? (
-            <nav className="cp-overview-nav" aria-label="Castle sections">
-              {([{ label: 'Overview', icon: House }, { label: 'Build', icon: Hammer }, { label: 'Inventory', icon: Cube }, { label: 'Ledger', icon: BookOpen }, { label: 'Missions', icon: Flag }]).map(({ label, icon: Icon }) => (
-                <button
-                  type="button"
-                  key={label}
-                  aria-current={activeSection === label ? 'page' : undefined}
-                  onClick={() => navigate(label)}
-                >
-                  <Icon size={23} />
-                  {label}
-                </button>
-              ))}
-              {onDailyReview && (
-                <GuideTarget id="castle.reflection" hoverLabel="Daily review">
-                  <button type="button" onClick={onDailyReview} className="cp-overview-review-btn">
-                    <BookOpen size={23} />
-                    Daily review
-                  </button>
-                </GuideTarget>
-              )}
-            </nav>
-          ) : (
-            onDailyReview && (
-              <div className="cp-header-right">
-                <GuideTarget id="castle.reflection" hoverLabel="Daily review">
-                  <button
-                    type="button"
-                    onClick={onDailyReview}
-                    className="cp-btn cp-daily-review-btn"
-                    aria-label="Daily review"
-                  >
-                    <BookOpen size={18} />
-                    <span>Daily review</span>
-                  </button>
-                </GuideTarget>
-              </div>
-            )
           )}
+          <h1 className="cp-title">My Castle</h1>
         </div>
-
-        {!isComplete && (
-          <div className="cp-metrics-bar">
-            <GuideTarget id="castle.finances" hoverLabel="Castle Treasury" className="cp-metrics-treasury-target">
-              <div className="cp-financial" aria-label="Financial summary">
-                <div className="cp-fin-item"><span className="cp-fin-label">Cash</span><span className="cp-fin-value cp-money-cash">{money(balance)}</span></div>
-                <div className="cp-fin-item"><span className="cp-fin-label">Castle</span><span className="cp-fin-value cp-money-castle">{money(castleValue)}</span></div>
-                <div className="cp-fin-item"><span className="cp-fin-label">Net worth</span><span className="cp-fin-value cp-money-net">{money(netWorth)}</span></div>
-              </div>
+        <nav className="cp-actions" aria-label="Castle actions">
+          <button type="button" className="cp-btn" aria-haspopup="dialog" onClick={() => openDialog('accountability')}>
+            <Wallet size={18} aria-hidden="true" /> Accountability
+          </button>
+          <button type="button" className="cp-btn" aria-haspopup="dialog" onClick={() => openDialog('ledger')}>
+            <BookOpen size={18} aria-hidden="true" /> Ledger
+          </button>
+          {onDailyReview && (
+            <GuideTarget id="castle.reflection" hoverLabel="Daily review">
+              <button type="button" className="cp-btn" aria-haspopup="dialog" onClick={onDailyReview}>Daily review</button>
             </GuideTarget>
-
-            <GuideTarget id="castle.dailyStrip" hoverLabel="Daily momentum" className="cp-metrics-strip-target">
-              {DailyStrip}
-            </GuideTarget>
-          </div>
-        )}
+          )}
+          <GuideTarget id="castle.store" hoverLabel="Construction store">
+            <button type="button" className="cp-btn cp-store-trigger" aria-haspopup="dialog" onClick={() => openDialog('store')}>
+              <ShoppingBag size={18} aria-hidden="true" /> Store
+            </button>
+          </GuideTarget>
+        </nav>
       </header>
 
-      {!isComplete ? (
-        <div className="cp-main-grid">
-          <div className="cp-main-hero">
-            <GuideTarget id="castle.hero" hoverLabel="3D Stronghold" className="w-full">
-              {Hero}
-            </GuideTarget>
-          </div>
-          <div className="cp-main-store">
-            <GuideTarget id="castle.store" hoverLabel="Construction store" className="w-full">
-              {StorePanel}
-            </GuideTarget>
-          </div>
-        </div>
-      ) : (
-        <>
-          <div className="cp-complete-grid" ref={overviewRef}>
-            <div className="cp-left-col">{Hero}</div>
-            {PortfolioSidebar}
-          </div>
-          <div className="cp-stronghold-row">
-            <section className="cp-card cp-stronghold-description"><Sparkle size={27} className="cp-green" /><div><h3>The Stronghold</h3><p>A complete fortress — a reflection of your discipline, focus, and persistence.</p><span><Crown size={16} /> Final Form</span></div></section>
-            <section className="cp-card cp-structure-counts" aria-label="Built structures">{CASTLE_PHASES.map(phase => <div key={phase.number}><Cube size={28}/><span>{phase.label}</span><strong>{BLUEPRINT_PARTS.filter(part => part.phase === phase.number && ownedAssetIds.has(part.id)).length} / 10</strong></div>)}</section>
-          </div>
-          <div className="cp-card cp-generic cp-inventory" ref={inventoryRef}>
-            <h3 className="cp-section-title"><Cube size={25} className="cp-green" /> Owned Elements ({builtKnownCount})</h3>
-            <div className="cp-owned-grid">
-              <p>All 120 elements are owned. Browse each phase in the construction store Built view.</p>
+      <div className="cp-hero-scene" ref={sceneRef} tabIndex={-1} role="region" aria-label="Castle view">
+        <GuideTarget id="castle.hero" className="cp-scene-target">
+          <CastleScene ownedIds={ownedIds} inspection={inspection} />
+        </GuideTarget>
+      </div>
+
+      {activeDialog && (
+        <dialog ref={dialog} className="cp-dialog" data-panel={activeDialog} aria-labelledby={dialogTitleId}
+          onClose={() => { setActiveDialog(null); setExemptionDay(undefined); setReplacement(undefined); }}>
+          <header className="cp-dialog-header">
+            <div>
+              <h2 id={dialogTitleId}>{activeDialog === 'store' ? 'Construction store' : activeDialog === 'ledger' ? 'Ledger' : 'Accountability'}</h2>
+              {activeDialog === 'store' && <p className="cp-muted">Cash <strong className="cp-money-cash">{money(balance)}</strong></p>}
             </div>
+            <button type="button" className="cp-btn cp-close" onClick={closeDialog} aria-label="Close window"><X size={20} /></button>
+          </header>
+          {error && <p role="alert" className="cp-error">{error}</p>}
+          <div className="cp-dialog-body">
+            {activeDialog === 'store' && (
+              <CastleStore economy={economy} today={today} onBuy={buy} onSelect={inspect} />
+            )}
+            {activeDialog === 'accountability' && <>
+              <div className="cp-metrics-bar">
+                <GuideTarget id="castle.finances" hoverLabel="Castle Treasury" className="w-full">
+                  <div className="cp-financial" aria-label={progress.complete ? 'Castle Portfolio' : 'Financial summary'}>
+                    <div className="cp-fin-item"><span className="cp-fin-label">Cash</span><span className="cp-fin-value cp-money-cash">{money(balance)}</span></div>
+                    <div className="cp-fin-item"><span className="cp-fin-label">Castle</span><span className="cp-fin-value cp-money-castle">{money(castleValue)}</span></div>
+                    <div className="cp-fin-item"><span className="cp-fin-label">Net worth</span><span className="cp-fin-value cp-money-net">{money(netWorth)}</span></div>
+                  </div>
+                </GuideTarget>
+                <GuideTarget id="castle.dailyStrip" hoverLabel="Daily momentum" className="w-full">
+                  <div className="cp-daily-strip" aria-label="Daily summary">
+                    <div className="cp-strip-item"><div className="cp-strip-label">Daily Goal</div><div className="cp-strip-value">{money(Math.min(goal, earned))} / {money(goal)}</div><div className="cp-strip-sub">{earned >= goal ? 'Goal reached' : `${money(goal - earned)} to go`}</div></div>
+                    <div className="cp-strip-item"><div className="cp-strip-label">Streak</div><div className="cp-strip-value">{currentStreak}</div><div className="cp-strip-sub">{currentStreak === 1 ? 'day' : 'days'}</div></div>
+                    <div className="cp-strip-item"><div className="cp-strip-label">Today’s Earnings</div><div className="cp-strip-value cp-green">{money(earned)}</div><div className="cp-strip-sub">Credited today</div></div>
+                    <div className="cp-strip-item"><div className="cp-strip-label">Penalties</div><div className="cp-strip-value cp-red">{money(penalties)}</div><div className="cp-strip-sub">Deductions today</div></div>
+                    <div className="cp-strip-item"><div className="cp-strip-label">Debt</div><div className="cp-strip-value">{money(Math.max(0, -balance))}</div><div className="cp-strip-sub">{balance < 0 ? 'Negative balance' : 'No debt'}</div></div>
+                  </div>
+                </GuideTarget>
+              </div>
+              <section className="cp-card cp-blueprint-progress" aria-label="Castle progress details">
+                <h3>{progress.complete ? 'Castle Complete' : 'Castle Progress'}</h3>
+                <div className="cp-journey-counts"><strong>{progress.qualifyingDays} discipline days</strong><strong>{progress.ownedCount}/{total} elements</strong></div>
+                <div className="cp-progress-bar" role="progressbar" aria-label="Castle progress" aria-valuemax={total} aria-valuenow={progress.ownedCount}><span style={{ width: `${completion}%` }} /></div>
+                <details className="cp-progress-details">
+                  <summary>How progress works</summary>
+                  <p>Build in any order within an open district. Owning 18 assets in a district opens the next one.</p>
+                  <p>The full blueprint costs {money(economy.goalCents * 365)}, or 365 times your starting daily goal of {money(economy.goalCents)}.</p>
+                </details>
+              </section>
+              <section className="cp-card cp-work" aria-label="Daily exemptions">
+                <h3>Daily exemptions</h3>
+                <p className="cp-muted" aria-live="polite">{exempt ? 'Today is exempt. Today’s penalties are waived, and you can still earn.' : 'An exemption waives today’s missed commitments and goal shortfall.'} {exemptions} of 3 left this month.</p>
+                {!exempt && todayIsOpen && exemptions > 0 && (exemptionDay === today ? (
+                  <div className="cp-commit-controls" role="group" aria-label="Confirm today's exemption">
+                    <button type="button" className="cp-btn cp-btn-emerald" onClick={() => changeToday(current => useExemption(current, today, today))}>Use one exemption today</button>
+                    <button type="button" className="cp-btn" onClick={() => setExemptionDay(undefined)}>Cancel</button>
+                  </div>
+                ) : <button type="button" className="cp-btn cp-work-action" onClick={() => setExemptionDay(today)}>Exempt today</button>)}
+              </section>
+              {mission && missionProgress && (
+                <section className="cp-card cp-work" aria-label="Optional mission">
+                  <h3>Optional mission</h3>
+                  <p className="cp-muted">Reflect on at least {mission.requiredTasks} commitments earning {money(mission.targetCents)} total today to unlock a {money(mission.bonusCents)} bonus.</p>
+                  <p aria-live="polite">{mission.claimed ? `Claimed ${money(mission.bonusCents)}` : `${missionProgress.taskCount} of ${mission.requiredTasks} commitments · ${money(missionProgress.valueCents)} of ${money(mission.targetCents)}`}</p>
+                  {!mission.claimed && <button type="button" className="cp-btn cp-btn-emerald cp-work-action" disabled={!todayIsOpen || !missionProgress.ready} onClick={() => changeToday(current => claimMission(current, mission.id, today))}>Claim {money(mission.bonusCents)}</button>}
+                </section>
+              )}
+                <section className="cp-card cp-work" aria-labelledby={tasksId}>
+                  <h2 id={tasksId}>Today’s commitments</h2>
+                  <p className="cp-muted">Commit before finishing. Reflected work earns castle dollars when the estimate and actual time each reach 30 minutes.</p>
+                  {candidates.length ? (
+                    <><div className="cp-commit-controls">
+                      <label>Task <select className="cp-select" value={candidate?.task.id ?? ''} onChange={event => setSelectedTask(event.target.value)}>
+                        {candidates.map(({ task, preview }) => <option key={task.id} value={task.id}>{task.text}{preview.commitment ? ` · ${preview.commitment.estimatedMinutes} min` : ' · Ineligible'}</option>)}
+                      </select></label>
+                      <button type="button" className="cp-btn cp-btn-emerald" disabled={!commitmentToAdd || !todayIsOpen} onClick={() => {
+                        if (!commitmentToAdd) return;
+                        changeToday((current, currentTasks) => {
+                          const task = currentTasks.find(item => item.id === commitmentToAdd.id);
+                          if (!task) throw new Error('This task is no longer available.');
+                          return commitOpenTask(current, task, today, commitmentToAdd.estimatedValueCents);
+                        });
+                      }}>Commit for today</button>
+                    </div>
+                    <p className="cp-muted" aria-live="polite">{commitmentToAdd ? exempt ? 'Your exemption waives today’s missed commitment penalties.' : `If missed, this commitment costs ${money(commitmentToAdd.estimatedValueCents)}. Any daily goal shortfall is charged separately.` : candidate?.preview.reason}</p></>
+                  ) : <p className="cp-muted">Open tasks will appear here.</p>}
+                  {commitments.length > 0 && <ul className="cp-work-list">{commitments.map(item => {
+                    const task = tasks.find(candidate => candidate.id === item.id);
+                    const canReplace = todayIsOpen && !item.completed && !item.replacementIds && !task?.isDone && !task?.pendingReflection
+                      && !commitments.some(parent => parent.replacementIds?.includes(item.id)) && replacementTasks.length > 0;
+                    return (
+                      <li key={item.id}><span>{item.title}</span>
+                        {item.completed ? <span>Reflected</span> : item.replacementIds ? <span>Replaced</span>
+                          : task?.isDone ? <span>Awaiting reflection</span>
+                          : task && onPartialProgress && <button type="button" className="cp-btn" onClick={() => { closeDialog(); onPartialProgress(task.id); }}>Reflect on progress</button>}
+                        {canReplace && <button type="button" className="cp-btn" aria-label={`Replace commitment: ${item.title}`} onClick={() => setReplacement({ day: today, id: item.id, taskIds: [] })}>Replace</button>}
+                      </li>
+                    );
+                  })}</ul>}
+                  {replacing && <fieldset className="cp-replacement">
+                    <legend>Replace {replacing.title}</legend>
+                    <p className="cp-muted">Choose tasks with a combined estimate of at least {money(replacing.estimatedValueCents)}. Any remaining shortfall is assessed after reflection unless today is exempt.</p>
+                    {replacementTasks.map(task => <label key={task.id}>
+                      <input type="checkbox" checked={replacement?.taskIds.includes(task.id) ?? false} onChange={event => {
+                        const checked = event.target.checked;
+                        setReplacement(current => current && ({ ...current, taskIds: checked ? [...current.taskIds, task.id] : current.taskIds.filter(id => id !== task.id) }));
+                      }} /> {task.title} · {money(task.estimatedValueCents)}
+                    </label>)}
+                    <p aria-live="polite">{unavailableReplacement ? 'A selected task is no longer available. Cancel and choose again.' : `Selected value ${money(replacementTotal)}`}</p>
+                    <div className="cp-commit-controls">
+                      <button type="button" className="cp-btn cp-btn-emerald" disabled={unavailableReplacement || replacementTotal < replacing.estimatedValueCents} onClick={() => changeToday((current, currentTasks) => substituteWithOpenTasks(current, replacing.id, today, currentTasks, selectedReplacements))}>Confirm replacement</button>
+                      <button type="button" className="cp-btn" onClick={() => setReplacement(undefined)}>Cancel</button>
+                    </div>
+                  </fieldset>}
+                  {pending.length > 0 && onReflectCompleted && (
+                    <button type="button" className="cp-btn" onClick={() => { closeDialog(); onReflectCompleted(pending.map(task => task.id)); }}>Reflect on completed tasks</button>
+                  )}
+                </section>
+
+              {onEarlierGrowth && <button type="button" className="cp-btn" onClick={onEarlierGrowth}>View earlier XP progress</button>}
+            </>}
+            {activeDialog === 'ledger' && <>
+              {economy.ledger.length ? <ul className="cp-work-list">
+                {[...economy.ledger].reverse().map(entry => <li key={entry.id}><time dateTime={entry.date}>{entry.date}</time><span>{ledgerLabels[entry.kind]}</span><strong>{money(entry.amountCents)}</strong></li>)}
+              </ul> : <p className="cp-muted">No entries yet.</p>}
+              {historicalAssets.length > 0 && (
+                <details><summary>Historical assets ({historicalAssets.length})</summary>
+                  <ul className="cp-work-list">{historicalAssets.map(asset => {
+                    const current = BLUEPRINT_PARTS.find(part => part.id === resolveBlueprintId(asset.id));
+                    return <li key={asset.id}><span>{asset.label}{current && <small className="cp-historical-match">{current.label} in the current castle</small>}</span><strong>{money(asset.priceCents)}</strong></li>;
+                  })}</ul>
+                </details>
+              )}
+            </>}
           </div>
-          <details className="cp-card cp-generic" style={{ marginTop: 18 }} ref={buildRef}><summary>Construction store</summary><div className="cp-accordion-body">{StorePanel}</div></details>
-        </>
+        </dialog>
       )}
-
-      {unknownOwnedCount > 0 && <details className="cp-card cp-generic"><summary>Historical assets ({unknownOwnedCount})</summary><ul>{economy.assets.filter(asset => !BLUEPRINT_PARTS.some(part => part.id === asset.id)).map(asset => <li key={asset.id}>{asset.label} / {money(asset.priceCents)}</li>)}</ul><p>Original purchase values and ledger entries are preserved.</p></details>}
-
-      {onEarlierGrowth && <button type="button" className="cp-earlier-growth" onClick={onEarlierGrowth}>View earlier XP progress <ArrowRight size={16} /></button>}
-
-      {error && <p role="alert" className="cp-error" style={{ marginTop: 12 }}>{error}</p>}
     </section>
   );
 }

@@ -1,8 +1,8 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { AppData } from '../types';
 import {
   editCloudRecord, prepareCloudWrite, reconcileCloudRevision,
-  readCloudRecord, saveCloudCache, writeCloudRecord, clearCloudWorkspaceData,
+  readCloudRecord, createCloudCacheWriter, writeCloudRecord, clearCloudWorkspaceData,
   type CloudAcknowledgement, type CloudRecord, type CloudWorkspace,
 } from './cloudWorkspace';
 
@@ -16,15 +16,38 @@ export function useCloudSync(workspace: CloudWorkspace | null, data: AppData, on
   const [conflict, setConflict] = useState<CloudRecord | null>(null);
   const [status, setStatus] = useState('Checking cloud workspace…');
   const [cacheError, setCacheError] = useState(false);
+  const [cacheConflict, setCacheConflict] = useState(false);
   const cacheWriteFailed = useRef(false);
+  const cachePending = useRef<CloudRecord | undefined>(undefined);
+  const cacheWriter = useMemo(() => workspace ? createCloudCacheWriter(workspace) : null, [workspace]);
 
   const persist = useCallback((record: CloudRecord) => {
     current.current = record;
-    if (!workspace) return;
-    const failed = !saveCloudCache(workspace, record);
-    cacheWriteFailed.current = failed;
-    setCacheError(failed);
-  }, [workspace]);
+    if (!cacheWriter) return;
+    cachePending.current = record;
+    return cacheWriter.saveLocked(record, () => current.current === record).then(result => {
+      if (!result) return;
+      if (record !== current.current) return;
+      cachePending.current = result === 'failed' ? record : undefined;
+      const failed = result === 'failed';
+      cacheWriteFailed.current = failed;
+      setCacheError(failed);
+      setCacheConflict(result === 'conflict');
+    });
+  }, [cacheWriter]);
+
+  useEffect(() => {
+    if (!cacheWriter) return;
+    const flush = () => {
+      const pending = cachePending.current;
+      if (pending?.dirty) cacheWriter.save(pending);
+    };
+    window.addEventListener('pagehide', flush);
+    return () => {
+      flush();
+      window.removeEventListener('pagehide', flush);
+    };
+  }, [cacheWriter]);
 
   useEffect(() => {
     if (!workspace || !current.current) return;
@@ -89,7 +112,8 @@ export function useCloudSync(workspace: CloudWorkspace | null, data: AppData, on
       if (local.dirty) {
         setStatus('Saving to Supabase…');
         const pending = prepareCloudWrite(local);
-        persist(pending);
+        await persist(pending);
+        if (!active.current) return;
         const written = await writeCloudRecord(workspace, pending, pending.pendingRevision);
         if (!active.current || !current.current) return;
         const decision = reconcileCloudRevision(current.current, pending.pendingRevision, 'response');
@@ -171,7 +195,11 @@ export function useCloudSync(workspace: CloudWorkspace | null, data: AppData, on
   const saveOnLeave = (next: AppData) => {
     if (!workspace || !current.current) return;
     active.current = false;
-    persist(editCloudRecord(current.current, next));
+    const record = editCloudRecord(current.current, next);
+    current.current = record;
+    // Exiting can interrupt an asynchronous lock request, so compare the
+    // current baseline synchronously and archive a conflicting branch.
+    cacheWriter?.save(record);
   };
 
   const resumeAfterLeave = () => {
@@ -189,5 +217,5 @@ export function useCloudSync(workspace: CloudWorkspace | null, data: AppData, on
     setStatus('Cloud workspace data cleared');
   }, [persist, workspace]);
 
-  return { status, cacheError, conflict: Boolean(conflict), resolve, sync, saveOnLeave, resumeAfterLeave, clearCloud };
+  return { status, cacheError, cacheConflict, conflict: Boolean(conflict), resolve, sync, saveOnLeave, resumeAfterLeave, clearCloud };
 }

@@ -1,28 +1,88 @@
-﻿import assert from 'node:assert/strict';
-import { castleElements } from './castleModel';
+import assert from 'node:assert/strict';
+import { createElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { NoColorSpace, SRGBColorSpace } from 'three';
 import { BLUEPRINT_PARTS } from '../../utils/castleBlueprint';
-assert.deepEqual(castleElements([]),[]);
-assert.deepEqual(castleElements(['foundation','brick-left','brick-center','brick-right','walls','tower','crown','unknown']),[],'Legacy art is not blueprint construction');
-const all=castleElements(BLUEPRINT_PARTS.map(p=>p.id));
-assert.equal(all.length,120);
-assert.equal(new Set(all.map(p=>p.id)).size,120);
-for(const part of BLUEPRINT_PARTS){const one=castleElements([part.id,part.id]);assert.equal(one.length,1);assert.ok(one[0].primitives.length>0,`${part.id} has physical geometry`);assert.deepEqual(one[0],all.find(p=>p.id===part.id));for(const primitive of one[0].primitives){assert.ok(primitive.position.every(Number.isFinite));assert.ok(primitive.size.every(n=>Number.isFinite(n)&&n>0));}}
-assert.ok(all.flatMap(p=>p.primitives).some(p=>p.shape==='cone'));
-assert.ok(all.flatMap(p=>p.primitives).some(p=>p.material==='gold'));
-console.log('120 deterministic physical castle elements, legacy isolation and geometry bounds passed.');
-// The gate remains physically open through both south-wall courses.
-const south=BLUEPRINT_PARTS.filter(p=>p.kind==='south-wall');
-for(const part of castleElements(south.map(p=>p.id))) for(const p of part.primitives) {
-  const overlapsDoorX=Math.abs(p.position[0])-p.size[0]/2<1.1;
-  const overlapsDoorY=p.position[1]-p.size[1]/2<2.5;
-  assert.ok(!(overlapsDoorX&&overlapsDoorY),'South masonry must leave the central doorway unobstructed');
-}
-// Crown ornaments sit above the central keep roofs they decorate; distant higher
-// turret roofs do not occlude them and must not force five-metre antenna poles.
-const roofs=castleElements(BLUEPRINT_PARTS.filter(p=>p.kind==='roofs' && (p.slot===6 || p.slot===7)).map(p=>p.id)).flatMap(p=>p.primitives);
-const highestRoof=Math.max(...roofs.map(p=>p.position[1]+p.size[1]/2));
-for(const crown of castleElements(BLUEPRINT_PARTS.filter(p=>p.kind==='crown').map(p=>p.id))) {
-  assert.ok(crown.primitives.some(p=>p.position[1]-p.size[1]/2>highestRoof),'Every crown purchase is exposed above the roofs');
-}
-assert.ok(all.flatMap(p=>p.primitives).some(p=>p.material==='wood'),'Completed gateway has distinct recessed doors');
+import { CastlePartPreview, getCastlePreview } from './CastlePartPreview';
+import { CASTLE_ELEMENTS, castleElements, getCastleElement, getCastleElementBounds } from './castleModel';
+import { CASTLE_PATTERN_KEYS, createCastleMaterials } from './castleTextures';
 
+assert.deepEqual(castleElements([]), []);
+assert.deepEqual(castleElements(['foundation', 'brick-left', 'unknown']), []);
+assert.equal(CASTLE_ELEMENTS.length, 120);
+assert.equal(new Set(CASTLE_ELEMENTS.map(element => element.id)).size, 120);
+for (const part of BLUEPRINT_PARTS) {
+  const element = getCastleElement(part.id)!;
+  assert.ok(element, `${part.id} is modeled`);
+  assert.deepEqual(castleElements([part.id, part.id]), [element]);
+  assert.ok(element.anchor.every(Number.isFinite), part.id);
+  assert.ok(element.primitives.length > 0, part.id);
+  for (const primitive of element.primitives) {
+    assert.ok(primitive.position.every(Number.isFinite), part.id);
+    assert.ok(primitive.size.every(value => Number.isFinite(value) && value > 0), part.id);
+    if (primitive.joint) assert.ok(primitive.joint.pivot.every(Number.isFinite), part.id);
+  }
+  const bounds = getCastleElementBounds(element);
+  for (const axis of ['x', 'y', 'z'] as const) {
+    assert.ok(Number.isFinite(bounds.min[axis]) && Number.isFinite(bounds.max[axis]));
+    assert.ok(bounds.max[axis] > bounds.min[axis], part.id);
+  }
+}
+
+const model = (modelKey: string) => getCastleElement(BLUEPRINT_PARTS.find(part => part.modelKey === modelKey)!.id)!;
+assert.ok(model('mastiff').primitives.some(part => part.shape === 'torus' && part.joint?.kind === 'head'));
+assert.ok(model('cat').primitives.filter(part => part.joint?.kind === 'tail').length >= 2);
+assert.ok(model('stallion').primitives.some(part => part.shape === 'wedge' && part.joint?.kind === 'head'));
+assert.ok(model('falcon').primitives.some(part => part.shape === 'teardrop'));
+assert.ok(model('falcon').primitives.some(part => part.shape === 'wedge' && part.joint?.kind === 'wing'));
+assert.ok(model('wyvern').primitives.some(part => part.joint?.kind === 'ember'));
+assert.ok(model('wyvern').primitives.filter(part => part.joint?.kind === 'wing').length >= 2);
+assert.ok(getCastleElementBounds(model('imperial-crown')).max.y > getCastleElementBounds(model('cathedral-spire')).max.y,
+  'The crown sits above the central cathedral spire');
+assert.ok(getCastleElementBounds(model('moat-excavation')).max.y < .13, 'Moat water remains at ground level');
+assert.ok(getCastleElementBounds(model('heavy-drawbridge')).min.y < .2, 'The drawbridge approaches at ground level');
+
+const arch = BLUEPRINT_PARTS.find(part => part.label.includes('Gatehouse'))!;
+const cat = model('cat');
+const catFaces = getCastlePreview(cat.id);
+const archFaces = getCastlePreview(arch.id);
+assert.ok(catFaces.some(face => face.material === 'catPelt') && archFaces.some(face => face.material === 'stone'));
+assert.ok(catFaces.length > 0 && archFaces.length > 0);
+assert.notDeepEqual(catFaces.map(face => face.points), archFaces.map(face => face.points));
+assert.match(renderToStaticMarkup(createElement(CastlePartPreview, { assetId: cat.id, label: 'Courtyard Calico Cat' })),
+  /role="img" aria-label="Construction preview: Courtyard Calico Cat"/);
+
+let canvasCount = 0;
+const fakeContext = new Proxy({ createLinearGradient: () => ({ addColorStop() {} }) },
+  { get: (target, key) => Reflect.get(target, key) ?? (() => {}) });
+const resources = createCastleMaterials(() => {
+  canvasCount++;
+  return { getContext: () => fakeContext } as unknown as HTMLCanvasElement;
+});
+assert.equal(CASTLE_PATTERN_KEYS.length, 10);
+assert.equal(canvasCount, 17, 'Ten color patterns and seven surface data maps');
+const { stone, timber, slate, water, gold, wyvernScale } = resources.materials;
+for (const masonry of [stone, timber]) {
+  assert.equal(masonry.map?.colorSpace, SRGBColorSpace);
+  for (const map of [masonry.bumpMap, 'roughnessMap' in masonry && masonry.roughnessMap]) {
+    assert.ok(map && map.colorSpace === NoColorSpace);
+  }
+}
+assert.ok('specularMap' in slate && slate.specularMap?.colorSpace === NoColorSpace);
+assert.equal(slate.bumpMap?.colorSpace, NoColorSpace);
+assert.equal(water.map, resources.waterTexture);
+assert.equal(wyvernScale.bumpMap?.colorSpace, NoColorSpace);
+assert.ok('metalness' in gold && gold.metalness === .85);
+const releases = new Map<object, number>();
+for (const material of Object.values(resources.materials)) {
+  for (const resource of [material, material.map, material.bumpMap,
+    'roughnessMap' in material && material.roughnessMap, 'specularMap' in material && material.specularMap]) {
+    if (!resource || releases.has(resource)) continue;
+    releases.set(resource, 0);
+    resource.addEventListener('dispose', () => releases.set(resource, releases.get(resource)! + 1));
+  }
+}
+resources.dispose();
+resources.dispose();
+assert.ok([...releases.values()].every(count => count === 1), 'Each owned texture and material is released exactly once');
+console.log('120 castle models, companion silhouettes and pivots, procedural maps and disposal passed.');

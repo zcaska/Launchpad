@@ -7,4 +7,7 @@
 .castle-3d button:focus-visible{outline:2px solid #f5d781;outline-offset:3px}
 .castle-3d__status{position:absolute;inset:20% 12% auto;padding:16px;color:#e8e2d4;background:#0b1423ed;border:1px solid #64748b;border-radius:8px;text-align:center;font-size:14px}
 .castle-3d__status button{display:block;margin:12px auto 0}
+.castle-3d__selection{position:absolute;top:12px;left:12px;display:grid;gap:1px;max-width:calc(100% - 24px);padding:7px 11px;background:#172436e8;border:1px solid #718096;border-radius:8px;color:#f3e3be;pointer-events:none;font-size:13px}
+.castle-3d__selection span{font-size:11px;color:#bbc8d8}
+.castle-3d button:disabled{opacity:.5;cursor:default}
 @media(max-width:640px){.castle-artwork{min-height:280px;aspect-ratio:1.2/1}.castle-3d__controls{bottom:8px;right:8px}}

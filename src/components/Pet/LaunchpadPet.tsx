@@ -130,27 +130,27 @@ function LaunchpadPetComponent({
     if (paused) return 'Ema: taking a pause (double-click to resume)';
     switch (state) {
       case 'happy':
-        return 'Ema: Massive W! Task crushed 🎉';
+        return 'Ema: One more done. Tiny drumroll!';
       case 'celebration-streak':
-        return 'Ema: Legendary streak! Pure aura 👑';
+        return 'Ema: A whole streak! Time for a victory wiggle.';
       case 'thinking':
-        return 'Ema: Cooking up the next move... 🤔';
+        return 'Ema: Pondering from my corner.';
       case 'overwhelmed':
-        return 'Ema: Whoa, task overload! Let’s take them one by one 📋';
+        return 'Ema: One small piece at a time.';
       case 'coffee-break':
-        return 'Ema: Coffee break hit different ☕';
+        return 'Ema: Taking a quiet mug break.';
       case 'sleeping':
-        return 'Ema: Recharging batteries... catch you later 😴';
+        return 'Ema: I found a warm spot for a nap.';
       case 'sad':
-        return 'Ema: It’s a little quiet... time to lock back in?';
+        return 'Ema: I’ll keep you company.';
       case 'curious':
-        return 'Ema: Ooh, new task just dropped 👀';
+        return 'Ema: Ooh, what are we working on?';
       case 'welcome-back':
-        return 'Ema: You’re back! Let’s get cooking ✨';
+        return 'Ema: Welcome back. I’ve been minding the pencils.';
       case 'roaming':
-        return 'Ema: Just pacing around, vibe check passed 🐾';
+        return 'Ema: Taking the scenic route.';
       default:
-        return 'Ema: Vibe check passed ✨ (click to pet, drag to move, double-click to pause)';
+        return 'Ema: Keeping you company (click to pet, drag to move, double-click to pause)';
     }
   }, [paused, state]);
 

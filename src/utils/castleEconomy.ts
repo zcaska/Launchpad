@@ -14,8 +14,10 @@ export interface Commitment {
   title: string;
   date: string;
   estimatedValueCents: number;
+  estimatedMinutes?: number;
   completed: boolean;
   actualValueCents?: number;
+  earnedValueCents?: number;
   replacementIds?: string[];
 }
 export interface CastleEconomy {
@@ -44,6 +46,17 @@ function dayIsSettled(state: CastleEconomy, day: string): boolean {
 function taskWasCompleted(state: CastleEconomy, taskId: string): boolean {
   return state.commitments.some(item => item.id === taskId && item.completed)
     || state.ledger.some(entry => entry.kind === 'earning' && entry.id === `earning:task:${entry.date}:${taskId}`);
+}
+
+export function findReflectionCommitment(state: CastleEconomy, task: Pick<QuickNote, 'id' | 'completedOn'>, throughDay: string): Commitment | undefined {
+  const today = dateNumber(throughDay);
+  // Older pending notes had no completion date. Recover the immediate rollover case only.
+  const earliest = task.completedOn ?? new Date(today - 86400000).toISOString().slice(0, 10);
+  const latestDay = task.completedOn ?? throughDay;
+  if (latestDay > throughDay) return undefined;
+  const latest = state.commitments.filter(item => item.id === task.id && earliest <= item.date && item.date <= latestDay)
+    .sort((a, b) => b.date.localeCompare(a.date))[0];
+  return latest && !latest.completed && !latest.replacementIds ? latest : undefined;
 }
 
 /** Initial policy: $10/hour at low priority, with a deadline premium that decays after the due date. */
@@ -103,6 +116,8 @@ export function validateCastleEconomy(value: unknown): CastleEconomy {
       if (!item.id || !item.title || commitments.has(key) || !Number.isSafeInteger(item.estimatedValueCents)
         || item.estimatedValueCents <= 0 || typeof item.completed !== 'boolean') return fail();
       if (item.actualValueCents !== undefined && (!Number.isSafeInteger(item.actualValueCents) || item.actualValueCents < 0)) return fail();
+      if (item.earnedValueCents !== undefined && (!Number.isSafeInteger(item.earnedValueCents) || item.earnedValueCents < 0)) return fail();
+      if (item.estimatedMinutes !== undefined && !validTaskMinutes(item.estimatedMinutes)) return fail();
       if (item.replacementIds !== undefined && (!Array.isArray(item.replacementIds) || item.completed
         || !item.replacementIds.length || !item.replacementIds.every(id => typeof id === 'string' && !!id))) return fail();
       commitments.set(key, item);
@@ -169,10 +184,17 @@ export function claimMission(state: CastleEconomy, missionId: string, day: strin
   const mission = state.missions.find(item => item.id === missionId);
   if (!mission || mission.date !== day) throw new Error('Mission is unavailable');
   if (mission.claimed) return state;
-  const completed = state.commitments.filter(item => item.date === day && item.completed && item.actualValueCents !== undefined);
-  if (completed.length < mission.requiredTasks || completed.reduce((sum, item) => sum + (item.actualValueCents ?? 0), 0) < mission.targetCents) throw new Error('Mission requirements are not met');
+  if (!getMissionProgress(state, mission).ready) throw new Error('Mission requirements are not met');
   const credited = recordEarning(state, mission.id, day, mission.bonusCents);
   return { ...credited, missions: credited.missions.map(item => item.id === missionId ? { ...item, claimed: true } : item) };
+}
+
+export function getMissionProgress(state: CastleEconomy, mission: CastleMission) {
+  const workValues = state.commitments.filter(item => item.date === mission.date && item.completed)
+    .map(item => item.earnedValueCents ?? item.actualValueCents ?? 0).filter(value => value > 0);
+  const taskCount = workValues.length;
+  const valueCents = workValues.reduce((sum, value) => sum + value, 0);
+  return { taskCount, valueCents, ready: taskCount >= mission.requiredTasks && valueCents >= mission.targetCents };
 }
 
 export function settlePastDays(state: CastleEconomy, today: string): CastleEconomy {
@@ -214,10 +236,13 @@ export function useExemption(state: CastleEconomy, day: string, today: string): 
   if (day !== today) throw new Error('Exemptions apply only to the current day');
   if (day < state.activatedOn || state.ledger.some(entry => entry.id === `shortfall:${day}`)) throw new Error('Day has already settled');
   if (state.exemptDays.includes(day)) throw new Error('Day is already exempt');
-  if (state.exemptDays.filter(value => value.slice(0, 7) === day.slice(0, 7)).length >= 3) throw new Error('No exemptions remain this month');
+  if (remainingMonthlyExemptions(state, day) === 0) throw new Error('No exemptions remain this month');
   return { ...state, exemptDays: [...state.exemptDays, day] };
 }
 
+export function remainingMonthlyExemptions(state: CastleEconomy, day: string): number {
+  return Math.max(0, 3 - state.exemptDays.filter(value => value.slice(0, 7) === day.slice(0, 7)).length);
+}
 
 export function changeDailyGoal(state: CastleEconomy, amountCents: number, today: string): CastleEconomy {
   const stamp = dateNumber(today);
@@ -242,13 +267,69 @@ function appendEarning(state: CastleEconomy, sourceId: string, day: string, amou
   return { ...state, ledger: [...state.ledger, { id, date: day, amountCents, kind: 'earning' }] };
 }
 
-export function commitTask(state: CastleEconomy, task: Omit<Commitment, 'completed' | 'actualValueCents' | 'replacementIds'>): CastleEconomy {
+type NewCommitment = Omit<Commitment, 'completed' | 'actualValueCents' | 'earnedValueCents' | 'replacementIds'>;
+
+function validTaskMinutes(minutes: number | undefined): minutes is number {
+  return minutes !== undefined && Number.isFinite(minutes) && minutes > 0 && minutes <= 525600;
+}
+
+function describeOpenCommitment(state: CastleEconomy, task: QuickNote, day: string): NewCommitment {
+  if (task.isDone || task.pendingReflection) throw new Error('Only open tasks can be committed.');
+  if (state.commitments.some(item => item.id === task.id && item.date === day && item.replacementIds)) throw new Error('This commitment has been replaced.');
+  const estimatedMinutes = task.durationMinutes;
+  if (!validTaskMinutes(estimatedMinutes)) throw new Error('Set a valid time estimate before committing this task.');
+  if (estimatedMinutes < 30) throw new Error('Castle commitments need an estimate of at least 30 minutes.');
+  const commitment = {
+    id: task.id, title: task.text, date: day, estimatedMinutes,
+    estimatedValueCents: taskValueCents(estimatedMinutes, task.priority ?? 'medium', task.deadline, day),
+  };
+  validateNewCommitment(state, commitment);
+  return commitment;
+}
+
+export function previewOpenCommitment(state: CastleEconomy, task: QuickNote, day: string) {
+  try {
+    return { commitment: describeOpenCommitment(state, task, day) } as const;
+  } catch (error) {
+    return { reason: error instanceof Error ? error.message : 'This task cannot be committed.' } as const;
+  }
+}
+
+export function commitOpenTask(state: CastleEconomy, task: QuickNote, day: string, expectedValueCents?: number): CastleEconomy {
+  const commitment = describeOpenCommitment(state, task, day);
+  if (expectedValueCents !== undefined && commitment.estimatedValueCents !== expectedValueCents) throw new Error('This task changed. Review its updated penalty and try again.');
+  return appendCommitment(state, commitment);
+}
+
+function validateNewCommitment(state: CastleEconomy, task: NewCommitment): void {
   dateNumber(task.date);
   if (!task.id || !task.title.trim() || !Number.isSafeInteger(task.estimatedValueCents) || task.estimatedValueCents <= 0 || task.date < state.activatedOn) throw new Error('Invalid commitment');
+  if (task.estimatedMinutes !== undefined && !validTaskMinutes(task.estimatedMinutes)) throw new Error('Invalid time estimate');
   if (state.ledger.some(entry => entry.id === `shortfall:${task.date}`)) throw new Error('Day has already settled');
   if (taskWasCompleted(state, task.id)) throw new Error('Task is already complete');
   if (state.commitments.some(item => item.id === task.id && item.date === task.date)) throw new Error('Task already committed');
+}
+
+function appendCommitment(state: CastleEconomy, task: NewCommitment): CastleEconomy {
   return { ...state, commitments: [...state.commitments, { ...task, completed: false }] };
+}
+
+export function commitTask(state: CastleEconomy, task: NewCommitment): CastleEconomy {
+  validateNewCommitment(state, task);
+  return appendCommitment(state, task);
+}
+
+export function substituteWithOpenTasks(state: CastleEconomy, taskId: string, day: string, tasks: QuickNote[], replacements: { id: string; estimatedValueCents: number }[]): CastleEconomy {
+  const original = tasks.find(task => task.id === taskId);
+  if (original?.isDone || original?.pendingReflection) throw new Error('Reflect on the finished task instead of replacing it.');
+  const commitments = replacements.map(replacement => {
+    const task = tasks.find(item => item.id === replacement.id);
+    if (!task) throw new Error('A replacement task is no longer available.');
+    const commitment = describeOpenCommitment(state, task, day);
+    if (commitment.estimatedValueCents !== replacement.estimatedValueCents) throw new Error('A replacement task changed. Review its updated value and try again.');
+    return commitment;
+  });
+  return substituteCommitment(state, taskId, day, commitments);
 }
 
 export function completeCommitment(state: CastleEconomy, taskId: string, day: string, actualValueCents: number): CastleEconomy {
@@ -265,7 +346,7 @@ export function completeCommitment(state: CastleEconomy, taskId: string, day: st
 }
 
 /** A replacement may consist of several new commitments; nested replacements are not allowed. */
-export function substituteCommitment(state: CastleEconomy, taskId: string, day: string, replacements: Array<Omit<Commitment, 'completed' | 'replacementIds' | 'actualValueCents'>>): CastleEconomy {
+export function substituteCommitment(state: CastleEconomy, taskId: string, day: string, replacements: NewCommitment[]): CastleEconomy {
   const original = state.commitments.find(item => item.id === taskId && item.date === day);
   if (!original || original.completed || original.replacementIds) throw new Error('An unfinished commitment is required');
   if (state.ledger.some(entry => entry.id === `shortfall:${day}`)) throw new Error('Day has already settled');
@@ -277,28 +358,67 @@ export function substituteCommitment(state: CastleEconomy, taskId: string, day: 
 }
 
 /** The caller supplies a stable progress ID so retries cannot pay the same work twice. */
-export function recordPartialProgress(state: CastleEconomy, taskId: string, day: string, progressId: string, actualValueCents: number): CastleEconomy {
+export function partialProgressLedgerId(taskId: string, day: string, progressId: string): string {
+  return `earning:progress:${day}:${taskId}:${progressId}`;
+}
+
+export function recordPartialProgress(state: CastleEconomy, taskId: string, day: string, progressId: string, actualValueCents: number, postingDay = day): CastleEconomy {
   const commitment = state.commitments.find(item => item.id === taskId && item.date === day);
   if (!commitment || commitment.completed || commitment.replacementIds) throw new Error('An unfinished commitment is required');
   if (!progressId) throw new Error('A progress ID is required');
-  return recordEarning(state, `progress:${day}:${taskId}:${progressId}`, day, actualValueCents);
+  dateNumber(postingDay);
+  if (postingDay < day || postingDay < state.activatedOn || !Number.isSafeInteger(actualValueCents) || actualValueCents < 0) throw new Error('Invalid earning');
+  return appendEarning(state, `progress:${day}:${taskId}:${progressId}`, postingDay, actualValueCents);
 }
 
-/** Called only as part of a successful reflection submission. */
-export function registerReflectedTasks(state: CastleEconomy, tasks: QuickNote[], day: string): CastleEconomy {
+function reflectedValueCents(task: QuickNote, commitment: Commitment, minutes: number, day: string): number {
+  const estimate = commitment.estimatedMinutes ?? task.durationMinutes;
+  if (!validTaskMinutes(estimate) || estimate < 30 || minutes < 30) return 0;
+  return taskValueCents(Math.min(minutes, 240), task.priority ?? 'medium', task.deadline, day);
+}
+
+function priorProgressCents(state: CastleEconomy, taskId: string): number {
+  return state.ledger.reduce((sum, entry) => {
+    if (entry.kind !== 'earning') return sum;
+    const progressKey = /^earning:progress:\d{4}-\d{2}-\d{2}:(.*):[^:]+$/.exec(entry.id);
+    return progressKey?.[1] === taskId ? sum + entry.amountCents : sum;
+  }, 0);
+}
+
+function uncreditedReflectionCents(state: CastleEconomy, task: QuickNote, commitment: Commitment, totalMinutes: number, day: string): number {
+  const eligible = reflectedValueCents(task, commitment, totalMinutes, day);
+  const priorEligible = reflectedValueCents(task, commitment, task.partialMinutes ?? 0, day);
+  return Math.max(0, eligible - Math.max(priorEligible, priorProgressCents(state, task.id)));
+}
+
+export function recordReflectedProgress(state: CastleEconomy, task: QuickNote, day: string, progressId: string, totalMinutes: number, postingDay: string): CastleEconomy {
+  const commitment = state.commitments.find(item => item.id === task.id && item.date === day);
+  if (!commitment || commitment.completed || commitment.replacementIds || taskWasCompleted(state, task.id)) throw new Error('An unfinished commitment is required');
+  const increment = uncreditedReflectionCents(state, task, commitment, totalMinutes, postingDay);
+  return recordPartialProgress(state, task.id, day, progressId, increment, postingDay);
+}
+
+/** Keep the commitment date for identity and penalty coverage, even when payment posts later. */
+export function registerReflectedTasks(state: CastleEconomy, tasks: QuickNote[], day: string, commitmentDay: string | null = day): CastleEconomy {
   dateNumber(day);
-  if (day < state.activatedOn) throw new Error('Date precedes activation');
   return tasks.reduce((economy, task) => {
     if (taskWasCompleted(economy, task.id)) return economy;
+    const commitment = economy.commitments.find(item => item.id === task.id && item.date === commitmentDay && !item.replacementIds);
+    if (!commitment) {
+      if (day < economy.activatedOn || dayIsSettled(economy, day)) return economy;
+      // A zero-dollar receipt prevents restored uncommitted work from being credited later.
+      return appendEarning(economy, `task:${day}:${task.id}`, day, 0);
+    }
     const { actualMinutes, partialMinutes = 0 } = task;
-    if (!actualMinutes || !Number.isFinite(actualMinutes) || actualMinutes <= 0 || actualMinutes < partialMinutes) throw new Error('Enter actual time for each completed task, including previously recorded work');
-    const newMinutes = actualMinutes - partialMinutes;
-    const newValue = newMinutes > 0 ? taskValueCents(newMinutes, task.priority ?? 'medium', task.deadline, day) : 0;
-    const priorToday = economy.ledger.filter(entry => entry.id.startsWith(`earning:progress:${day}:${task.id}:`)).reduce((sum, entry) => sum + entry.amountCents, 0);
-    const commitment = economy.commitments.find(item => item.id === task.id && item.date === day);
-    if (commitment && !commitment.replacementIds) return completeCommitment(economy, task.id, day, priorToday + newValue);
-    // Keep a zero-value receipt when all of the work was already credited as progress.
-    return appendEarning(economy, `task:${day}:${task.id}`, day, newValue);
+    if (!validTaskMinutes(actualMinutes) || actualMinutes < partialMinutes) throw new Error('Enter actual time for each completed task, including previously recorded work');
+    if (day < commitment.date || day < economy.activatedOn) throw new Error('Invalid earning date');
+    const actualValueCents = taskValueCents(actualMinutes, task.priority ?? 'medium', task.deadline, commitment.date);
+    const earnedValueCents = reflectedValueCents(task, commitment, actualMinutes, day);
+    const increment = uncreditedReflectionCents(economy, task, commitment, actualMinutes, day);
+    const credited = appendEarning(economy, `commitment:${commitment.date}:${task.id}`, day, increment);
+    return { ...credited, commitments: credited.commitments.map(item => item === commitment ? {
+      ...item, completed: true, actualValueCents, earnedValueCents,
+    } : item) };
   }, state);
 }
 

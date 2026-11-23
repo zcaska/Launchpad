@@ -1,47 +1,60 @@
-﻿import assert from 'node:assert/strict';
+import assert from 'node:assert/strict';
+import { test } from 'node:test';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { CastlePanel } from './CastlePanel';
-import { CASTLE_CATALOG, CASTLE_PHASES } from './castleCatalog';
-import { BLUEPRINT_PARTS, getBlueprintPrice, purchaseBlueprintPart } from '../../utils/castleBlueprint';
-import { activateEconomy, type CastleEconomy } from '../../utils/castleEconomy';
+import { CastlePanel, CastleStore } from './CastlePanel';
+import { CASTLE_CATALOG } from './castleCatalog';
+import { BLUEPRINT_PARTS, purchaseBlueprintPart } from '../../utils/castleBlueprint';
+import { activateEconomy, recordEarning, type CastleEconomy } from '../../utils/castleEconomy';
 
 const day = '2026-11-10';
-const render = (economy: CastleEconomy, today = day) => renderToStaticMarkup(<CastlePanel economy={economy} today={today} currentStreak={7} onChange={() => {}} />);
 const base = activateEconomy(5000, day);
-const empty = render(base);
-assert.equal(CASTLE_PHASES.length, 12);
-for (const phase of CASTLE_PHASES) assert.equal(BLUEPRINT_PARTS.filter(part => part.phase === phase.number).length, 10);
-assert.equal(CASTLE_PHASES.at(-1)?.lastDay, 365);
-assert.equal((empty.match(/data-asset="blueprint-v2-/g) || []).length, 10, 'only active phase mounts cards');
-assert.equal((empty.match(/<option value="\d+"/g) || []).length, 12, 'all phases navigable');
-for (const text of ['0/365 discipline days', '0/120 elements', 'How progress works', 'Castle Store', 'Construction phase', 'Daily Goal', 'Next:', 'Foundation 1', 'Requires 1 qualifying work days', 'Day 28']) assert.ok(empty.includes(text), text);
-assert.equal(BLUEPRINT_PARTS.reduce((sum, part) => sum + getBlueprintPrice(part, base), 0), base.goalCents * 365);
-assert.doesNotMatch(empty, /store-atlas|Castle Complete/);
-assert.match(empty, /role="tab"[^>]*>Built/);
-assert.match(empty, /<div class="cp-strip-label">Streak<\/div><div class="cp-strip-value">7<\/div>/);
-const rich = {...base, ledger: [{id:'earning:mission:seed',date:day,kind:'earning' as const,amountCents:100000000}]};
-const richHtml=render(rich);
-assert.match(richHtml,/0\/365 discipline days/);
-assert.doesNotMatch(richHtml,/Castle Complete|data-state="available"/,'money cannot bypass discipline');
-assert.throws(()=>purchaseBlueprintPart(rich,BLUEPRINT_PARTS[0].id,day),/qualifying work days/);
-const earned:CastleEconomy={...base,ledger:[{id:`earning:task:${day}:task`,date:day,kind:'earning',amountCents:5000}]};
-assert.match(render(earned),/data-state="available"/,'work goal unlocks affordable first part');
-const bought=purchaseBlueprintPart(earned,BLUEPRINT_PARTS[0].id,day);
-assert.match(render(bought),/1\/120 elements/);
-assert.match(render(bought),/data-state="owned"/);
-const legacy:CastleEconomy={...base,assets:[...CASTLE_CATALOG]};
-const legacyHtml=render(legacy);
-assert.match(legacyHtml,/Historical assets \(7\)/);
-assert.match(legacyHtml,/0\/120 elements/);
-assert.match(legacyHtml,/Original purchase values and ledger entries are preserved/);
-assert.doesNotMatch(legacyHtml,/Castle Complete/);
-assert.match(legacyHtml,/\$250\.00/,'historical portfolio value retained');
-const days=Array.from({length:365},(_,i)=>new Date(Date.UTC(2025,0,1+i)).toISOString().slice(0,10));
-const year:CastleEconomy={...activateEconomy(5000,days[0]),assets:BLUEPRINT_PARTS.map(part=>({id:part.id,label:part.label,priceCents:5000*part.goalUnits})),ledger:days.map(date=>({id:`earning:task:${date}:work`,date,kind:'earning',amountCents:5000}))};
-const full=render(year,days[364]);
-for(const text of ['365/365 discipline days','120/120 elements','Castle Complete','Castle Portfolio','Construction store']) assert.ok(full.includes(text),text);
-assert.equal((full.match(/data-asset="blueprint-v2-/g)||[]).length,10,'complete inventory also bounded');
-const penalties=render({...base,ledger:[{id:'asset:foundation',date:day,amountCents:-2000,kind:'asset-purchase'},{id:'penalty:missed',date:day,amountCents:-500,kind:'missed-commitment'}]});
-assert.match(penalties,/<div class="cp-strip-label">Penalties<\/div><div class="cp-strip-value cp-red">\$5\.00<\/div>/);
-console.log('Castle panel 120-element phased store, discipline, legacy value and financial controls passed.');
+const render = (economy: CastleEconomy) => renderToStaticMarkup(
+  <CastlePanel economy={economy} today={day} currentStreak={7} onChange={() => {}} />,
+);
+const renderStore = (economy: CastleEconomy) => renderToStaticMarkup(
+  <CastleStore economy={economy} today={day} onBuy={() => {}} onSelect={() => {}} />,
+);
 
+test('opens with a castle view and a Store button, with the catalog closed', () => {
+  const view = render(base);
+  assert.match(view, /aria-label="Castle view"/);
+  assert.match(view, /aria-haspopup="dialog"[^>]*>.*? Store<\/button>/);
+  assert.doesNotMatch(view, /<dialog|data-asset=|Financial summary|Daily summary/);
+});
+
+test('browses four districts and filters the first district by category', () => {
+  const empty = renderStore(base);
+  assert.equal((empty.match(/data-asset="blueprint-v2-/g) ?? []).length, 30);
+  assert.equal((empty.match(/role="tab"/g) ?? []).length, 4);
+  for (const label of ['Monuments', 'Fortifications', 'Decorations', 'Companions', 'Construction preview']) {
+    assert.ok(empty.includes(label), label);
+  }
+  assert.match(empty, /Need \$\d+\.\d{2}/);
+  assert.doesNotMatch(empty, /cp-item-lore|aria-label="Inspect/);
+});
+
+test('funded players can build in the first district, and ownership projects into the scene', () => {
+  const funded = recordEarning(base, 'grant', day, 1_000_000);
+  const asset = BLUEPRINT_PARTS[1];
+  assert.match(renderStore(funded), /data-state="available"/);
+  const bought = purchaseBlueprintPart(funded, asset.id, day);
+  assert.match(render(bought), /data-built-count="1"/);
+  assert.match(renderStore(bought), /data-state="owned"/);
+  assert.ok(renderStore(bought).includes(`aria-label="Select · ${asset.label}"`));
+});
+
+test('legacy investments represent owned castle pieces', () => {
+  const legacy = render({ ...base, assets: [...CASTLE_CATALOG] });
+  assert.match(legacy, /data-built-count="7"/);
+});
+
+test('completed castles keep the full scene and the Store entry point', () => {
+  const economy = {
+    ...base,
+    assets: BLUEPRINT_PARTS.map(part => ({ id: part.id, label: part.label, priceCents: 5000 * part.goalUnits })),
+  };
+  const full = render(economy);
+  assert.match(full, /data-built-count="120"/);
+  assert.match(full, / Store<\/button>/);
+  assert.equal((renderStore(economy).match(/30\/30/g) ?? []).length, 4);
+});

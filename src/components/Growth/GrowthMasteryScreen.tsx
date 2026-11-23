@@ -27,7 +27,7 @@ import { getCurrentSubLevel, getHeroVisibilityState } from '../../utils/gamifica
 import { WeeklyFocusChart } from './WeeklyFocusChart';
 import { MonthlyHeatmap } from './MonthlyHeatmap';
 import { YearlyGrowthView } from './YearlyGrowthView';
-import { CastlePanel } from './CastlePanel';
+import { CastlePanel, type CastleOperation } from './CastlePanel';
 import { DailyReviewPanel } from './DailyReviewPanel';
 import type { CastleEconomy } from '../../utils/castleEconomy';
 import { GuideTarget } from '../Common/GuideTarget';
@@ -48,14 +48,15 @@ export interface GrowthMasteryScreenProps {
   growthHistory: Record<string, DailyGrowthRecord>;
   onSelectHero: (id: string) => void;
   onExportBackup: () => void;
-  onImportBackup: (json: string) => void;
+  onImportBackup: (json: string) => Promise<void>;
   onBackToDashboard: () => void;
   castleEconomy?: CastleEconomy;
   today: string;
-  onCastleChange: (operation: (state: CastleEconomy) => CastleEconomy, onFailure: (message: string) => void) => void;
+  onCastleChange: (operation: CastleOperation, onFailure: (message: string) => void) => void;
   tasks: QuickNote[];
   onPartialProgress: (taskId: string) => void;
   onReflectCompleted?: (taskIds: string[]) => void;
+  onDailyReview: () => void;
   reflections: ReflectionEntry[];
 }
 
@@ -74,9 +75,10 @@ export const GrowthMasteryScreen: React.FC<GrowthMasteryScreenProps> = ({
   tasks,
   onPartialProgress,
   onReflectCompleted,
+  onDailyReview,
   reflections,
 }) => {
-  const [showDailyReview, setShowDailyReview] = useState(false);
+  const [showEarlierDailyReviews, setShowEarlierDailyReviews] = useState(false);
   const completedReviewTasks = useMemo(
     () => tasks.filter(task => task.isDone).map(task => ({
       id: task.id,
@@ -159,7 +161,7 @@ export const GrowthMasteryScreen: React.FC<GrowthMasteryScreenProps> = ({
     setImportSuccess(null);
 
     const reader = new FileReader();
-    reader.onload = (event) => {
+    reader.onload = async (event) => {
       try {
         const text = event.target?.result as string;
         if (!text || typeof text !== 'string') {
@@ -167,7 +169,8 @@ export const GrowthMasteryScreen: React.FC<GrowthMasteryScreenProps> = ({
         }
         // Validate JSON format
         JSON.parse(text);
-        onImportBackup(text);
+        if (!window.confirm('Replace the open workspace with this backup? Export the current workspace first if you want to keep a copy.')) return;
+        await onImportBackup(text);
         setImportSuccess('Backup restored successfully!');
       } catch (err: any) {
         setImportError(
@@ -236,25 +239,20 @@ export const GrowthMasteryScreen: React.FC<GrowthMasteryScreenProps> = ({
   };
 
   if (castleEconomy && !showEarlierGrowth) return (
-    <div className="mobile-growth castle-workspace h-full w-full overflow-y-auto pb-8">
-      <div className="castle-workspace-content">
-        <CastlePanel
-          economy={castleEconomy}
-          today={today}
-          tasks={tasks}
-          reflections={reflections}
-          currentStreak={gamification.currentStreak || 0}
-          onBack={onBackToDashboard}
-          onEarlierGrowth={() => setShowEarlierGrowth(true)}
-          onChange={onCastleChange}
-          onPartialProgress={onPartialProgress}
-          onReflectCompleted={onReflectCompleted}
-          onDailyReview={() => setShowDailyReview(true)}
-        />
-        {showDailyReview && (
-          <DailyReviewPanel completedTasks={completedReviewTasks} onClose={() => setShowDailyReview(false)} />
-        )}
-      </div>
+    <div className="castle-workspace">
+      <CastlePanel
+        economy={castleEconomy}
+        today={today}
+        tasks={tasks}
+        reflections={reflections}
+        currentStreak={gamification.currentStreak || 0}
+        onBack={onBackToDashboard}
+        onEarlierGrowth={() => setShowEarlierGrowth(true)}
+        onChange={onCastleChange}
+        onPartialProgress={onPartialProgress}
+        onReflectCompleted={onReflectCompleted}
+        onDailyReview={onDailyReview}
+      />
     </div>
   );
 
@@ -262,8 +260,8 @@ export const GrowthMasteryScreen: React.FC<GrowthMasteryScreenProps> = ({
     <div className="mobile-growth w-full h-full overflow-y-auto bg-serene-bg-light dark:bg-serene-bg-dark text-serene-text-primary dark:text-serene-text-darkPrimary pb-6 md:pb-12">
       <div className="growth-content max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 pt-4 space-y-6 md:pt-6 md:space-y-8">
         {castleEconomy && <button type="button" onClick={() => setShowEarlierGrowth(false)} className="rounded-lg px-3 py-2 text-sm font-semibold underline">Back to your castle</button>}
-        {showDailyReview && (
-          <DailyReviewPanel completedTasks={completedReviewTasks} onClose={() => setShowDailyReview(false)} />
+        {showEarlierDailyReviews && (
+          <DailyReviewPanel completedTasks={completedReviewTasks} onClose={() => setShowEarlierDailyReviews(false)} />
         )}
         {/* ========================================================= */}
         {/* 1. Header Bar                                             */}
@@ -302,13 +300,22 @@ export const GrowthMasteryScreen: React.FC<GrowthMasteryScreenProps> = ({
             <GuideTarget id="castle.reflection" hoverLabel="Daily review">
               <button
                 type="button"
-                onClick={() => setShowDailyReview(true)}
+                aria-haspopup="dialog"
+                onClick={onDailyReview}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-500/10 dark:bg-purple-500/15 text-purple-600 dark:text-purple-400 border border-purple-500/20 text-xs font-semibold hover:bg-purple-500/20 transition-colors shadow-subtle"
               >
                 <Calendar className="w-4 h-4" />
                 <span>Daily review</span>
               </button>
             </GuideTarget>
+            <button
+              type="button"
+              aria-haspopup="dialog"
+              onClick={() => setShowEarlierDailyReviews(true)}
+              className="rounded-xl border border-serene-border-light px-3 py-1.5 text-xs font-semibold text-serene-text-secondary transition-colors hover:bg-serene-surfaceAlt-light dark:border-serene-border-dark dark:text-serene-text-darkSecondary dark:hover:bg-serene-surfaceAlt-dark"
+            >
+              Earlier review today
+            </button>
             {/* Streak Pill */}
             <GuideTarget id="growth.streak" hoverLabel="Daily streak record">
               <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-orange-500/10 dark:bg-orange-500/15 text-orange-600 dark:text-orange-400 border border-orange-500/20 text-xs font-semibold shadow-subtle">

@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { activateEconomy, settlePastDays, balanceCents, useExemption, changeDailyGoal, recordEarning, commitTask, completeCommitment, taskValueCents, recordPartialProgress, substituteCommitment, purchaseAsset, netWorthCents, offerMission, claimMission, registerReflectedTasks, validateCastleEconomy } from './castleEconomy';
+import { getMissionProgress, previewOpenCommitment, remainingMonthlyExemptions, substituteWithOpenTasks } from './castleEconomy';
+import { activateEconomy, settlePastDays, balanceCents, useExemption, changeDailyGoal, recordEarning, commitOpenTask, commitTask, completeCommitment, taskValueCents, recordPartialProgress, substituteCommitment, purchaseAsset, netWorthCents, offerMission, claimMission, registerReflectedTasks, validateCastleEconomy } from './castleEconomy';
 
 const initial = activateEconomy(5000, '2026-11-10');
 assert.equal(balanceCents(initial), 0, 'activation never charges historic days');
@@ -151,7 +152,8 @@ reflectionEconomy = commitTask(reflectionEconomy, { id: 'reflected', title: 'Wri
 const reflectedTask = { id: 'reflected', text: 'Writing', isDone: true, createdAt: 0, durationMinutes: 60, timeSpentSeconds: 9000, actualMinutes: 30, priority: 'low' as const };
 reflectionEconomy = registerReflectedTasks(reflectionEconomy, [reflectedTask], '2026-11-10');
 assert.equal(balanceCents(reflectionEconomy), 500, 'manually recorded 30 minutes earns $5, regardless of estimate or timer');
-assert.throws(() => registerReflectedTasks(activateEconomy(1000, '2026-11-10'), [{ ...reflectedTask, actualMinutes: undefined }], '2026-11-10'), /actual time/i);
+const unfinishedReflection = commitTask(activateEconomy(1000, '2026-11-10'), { id: reflectedTask.id, title: reflectedTask.text, date: '2026-11-10', estimatedValueCents: 1000 });
+assert.throws(() => registerReflectedTasks(unfinishedReflection, [{ ...reflectedTask, actualMinutes: undefined }], '2026-11-10'), /actual time/i);
 
 
 // Previously reflected work from another day is not paid again at final completion.
@@ -160,7 +162,7 @@ multiDay = commitTask(multiDay, { id: 'multi', title: 'Long task', date: '2026-1
 multiDay = recordPartialProgress(multiDay, 'multi', '2026-11-10', 'part', 1000);
 multiDay = settlePastDays(multiDay, '2026-11-11');
 multiDay = commitTask(multiDay, { id: 'multi', title: 'Long task', date: '2026-11-11', estimatedValueCents: 1000 });
-multiDay = registerReflectedTasks(multiDay, [{ id: 'multi', text: 'Long task', isDone: true, createdAt: 0, priority: 'low', actualMinutes: 120, partialMinutes: 60 }], '2026-11-11');
+multiDay = registerReflectedTasks(multiDay, [{ id: 'multi', text: 'Long task', isDone: true, createdAt: 0, priority: 'low', durationMinutes: 60, actualMinutes: 120, partialMinutes: 60 }], '2026-11-11');
 assert.equal(balanceCents(multiDay), 0, '$10 earlier earning, $20 task penalty, then only $10 for new work');
 assert.equal(taskValueCents(60, 'low', '15:00', '2026-11-10'), 1250, 'time-only deadline is due today');
 assert.equal(taskValueCents(1800, 'low', undefined, '2026-11-10'), 30000, 'a task spanning days can report more than 24 hours total');
@@ -169,7 +171,7 @@ assert.ok(taskValueCents(60, 'low', '2026-11-09', '2026-11-11') < taskValueCents
 let sameDayPartial = activateEconomy(1000, '2026-11-10');
 sameDayPartial = commitTask(sameDayPartial, { id: 'same', title: 'Long task', date: '2026-11-10', estimatedValueCents: 2000 });
 sameDayPartial = recordPartialProgress(sameDayPartial, 'same', '2026-11-10', 'part', 1000);
-sameDayPartial = registerReflectedTasks(sameDayPartial, [{ id: 'same', text: 'Long task', isDone: true, createdAt: 0, priority: 'low', actualMinutes: 120, partialMinutes: 60 }], '2026-11-10');
+sameDayPartial = registerReflectedTasks(sameDayPartial, [{ id: 'same', text: 'Long task', isDone: true, createdAt: 0, priority: 'low', durationMinutes: 60, actualMinutes: 120, partialMinutes: 60 }], '2026-11-10');
 assert.equal(balanceCents(sameDayPartial), 2000, 'same-day partial and completion together pay only for the total actual time');
 let retired = activateEconomy(1000, '2026-11-10');
 retired = commitTask(retired, { id: 'old', title: 'Old', date: '2026-11-10', estimatedValueCents: 1000 });
@@ -189,6 +191,61 @@ test('a restored task cannot earn final reflection credit again on another day',
     assert.equal(registerReflectedTasks(economy, [task], tomorrow), economy);
     assert.throws(() => commitTask(economy, { id: task.id, title: task.text, date: tomorrow, estimatedValueCents: 1000 }), /complete/i);
   }
+});
+
+test('committing an open task snapshots the current estimate and penalty value', () => {
+  const day = '2026-11-30';
+  const active = activateEconomy(1000, day);
+  const task = { ...reflectedTask, isDone: false, durationMinutes: 30, deadline: day };
+  const preview = previewOpenCommitment(active, task, day);
+  assert.equal(preview.commitment?.estimatedValueCents, 625);
+  const committed = commitOpenTask(active, task, day);
+  assert.equal(committed.commitments[0].estimatedMinutes, 30);
+  assert.equal(committed.commitments[0].estimatedValueCents, 625);
+  assert.throws(() => commitOpenTask(active, task, day, 604), /updated penalty/i);
+  const legacyShortTask = { ...task, durationMinutes: 29 };
+  assert.match(previewOpenCommitment(active, legacyShortTask, day).reason ?? '', /30 minutes/i);
+  assert.throws(() => commitOpenTask(active, legacyShortTask, day), /30 minutes/i);
+  assert.equal(commitTask(active, { ...committed.commitments[0], estimatedMinutes: 29 }).commitments[0].estimatedMinutes, 29);
+  assert.throws(() => commitOpenTask(committed, task, day), /already committed/i);
+  assert.throws(() => commitOpenTask(active, { ...task, isDone: true }, day), /only open/i);
+  assert.throws(() => commitOpenTask(active, { ...task, pendingReflection: true }, day), /only open/i);
+  assert.throws(() => commitOpenTask(active, { ...task, durationMinutes: undefined }, day), /time estimate/i);
+  const replaced = substituteCommitment(committed, task.id, day, [{ id: 'other', title: 'Other', date: day, estimatedValueCents: 1000 }]);
+  assert.throws(() => commitOpenTask(replaced, task, day), /replaced/i);
+});
+
+test('same-day exemption availability refreshes at the month boundary', () => {
+  let active = activateEconomy(1000, '2026-11-28');
+  for (const day of ['2026-11-28', '2026-11-29', '2026-11-30']) active = useExemption(active, day, day);
+  assert.equal(remainingMonthlyExemptions(active, '2026-11-30'), 0);
+  assert.equal(remainingMonthlyExemptions(active, '2026-12-01'), 3);
+});
+
+test('replacement choices use live task eligibility and preserve their quoted penalties', () => {
+  const day = '2026-11-30';
+  const original = { ...reflectedTask, id: 'original', isDone: false, durationMinutes: 60 };
+  const replacements = ['a', 'b'].map(id => ({ ...original, id, durationMinutes: 30 }));
+  const active = commitOpenTask(activateEconomy(1000, day), original, day);
+  const selections = replacements.map(task => ({ id: task.id, estimatedValueCents: taskValueCents(30, task.priority, undefined, day) }));
+  const liveTasks = [original, ...replacements];
+  assert.throws(() => substituteWithOpenTasks(active, original.id, day, liveTasks, selections.slice(0, 1)), /original value/i);
+  assert.throws(() => substituteWithOpenTasks(active, original.id, day, [original, replacements[0]], selections), /no longer available/i);
+  assert.throws(() => substituteWithOpenTasks(active, original.id, day, [original, { ...replacements[0], durationMinutes: 45 }, replacements[1]], selections), /updated value/i);
+  const swapped = substituteWithOpenTasks(active, original.id, day, liveTasks, selections);
+  assert.deepEqual(swapped.commitments[0].replacementIds, ['a', 'b']);
+});
+
+test('mission displays the same progress used to enforce claim eligibility', () => {
+  const day = '2026-11-30';
+  let active = offerMission(activateEconomy(1000, day), day, 0);
+  const mission = active.missions[0];
+  for (const id of ['one', 'two']) {
+    active = commitTask(active, { id, title: id, date: day, estimatedValueCents: 3000 });
+    active = completeCommitment(active, id, day, 3000);
+  }
+  assert.deepEqual(getMissionProgress(active, mission), { taskCount: 2, valueCents: 6000, ready: true });
+  assert.equal(claimMission(active, mission.id, day).missions[0].claimed, true);
 });
 
 test('an uncommitted task finalized using only earlier progress remains finalized after restore', () => {
@@ -252,7 +309,8 @@ test('offline catch-up preserves a closed day even when an import contains a sta
 
 test('reflections ignore malformed deadlines preserved in existing tasks', () => {
   const day = '2026-11-30';
-  const economy = registerReflectedTasks(activateEconomy(1000, day), [{ ...reflectedTask, deadline: '2026-02-30', actualMinutes: 60 }], day);
+  const initial = commitTask(activateEconomy(1000, day), { id: reflectedTask.id, title: reflectedTask.text, date: day, estimatedValueCents: 1000 });
+  const economy = registerReflectedTasks(initial, [{ ...reflectedTask, deadline: '2026-02-30', actualMinutes: 60 }], day);
   assert.equal(balanceCents(economy), 1000);
 });
 

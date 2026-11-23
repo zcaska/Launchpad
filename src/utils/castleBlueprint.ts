@@ -1,30 +1,34 @@
 import { purchaseAsset, validateCastleEconomy, type CastleEconomy } from './castleEconomy';
+import { BLUEPRINT_PARTS, CASTLE_DISTRICTS, type BlueprintPart, type CastleDistrict } from './castleBlueprintCatalog';
 
-export interface BlueprintPart {
-  readonly id: string;
-  readonly label: string;
-  readonly phase: number;
-  readonly kind: string;
-  readonly slot: number;
-  readonly requiredDays: number;
-  readonly goalUnits: number;
+export { BLUEPRINT_PARTS, CASTLE_DISTRICTS };
+export type { BlueprintCategory, BlueprintPart, CastleDistrict } from './castleBlueprintCatalog';
+
+const partsById = new Map(BLUEPRINT_PARTS.map(part => [part.id, part]));
+const legacyBlueprintIds = new Map([
+  ['foundation', 'blueprint-v2-001'],
+  ['brick-left', 'blueprint-v2-008'],
+  ['brick-center', 'blueprint-v2-009'],
+  ['brick-right', 'blueprint-v2-010'],
+  ['walls', 'blueprint-v2-021'],
+  ['tower', 'blueprint-v2-077'],
+  ['crown', 'blueprint-v2-120'],
+]);
+
+export function resolveBlueprintId(assetId: string): string | undefined {
+  const id = legacyBlueprintIds.get(assetId) ?? assetId;
+  return partsById.has(id) ? id : undefined;
 }
 
-const kinds = ['foundation', 'west-wall', 'east-wall', 'north-wall', 'south-wall', 'gatehouse', 'west-tower', 'east-tower', 'keep', 'roofs', 'banners', 'crown'] as const;
-
-/** Stable construction metadata shared by the domain, store and genuine 3D model. */
-export const BLUEPRINT_PARTS: readonly BlueprintPart[] = Object.freeze(Array.from({ length: 120 }, (_, index) => {
-  const kind = kinds[Math.floor(index / 10)];
-  return Object.freeze({
-    id: `blueprint-v2-${String(index + 1).padStart(3, '0')}`,
-    label: `${kind.replace(/-/g, ' ').replace(/^./, letter => letter.toUpperCase())} ${index % 10 + 1}`,
-    phase: Math.floor(index / 10) + 1,
-    kind,
-    slot: index % 10,
-    requiredDays: 1 + Math.floor(index * 364 / 119),
-    goalUnits: index === 0 ? 1 : index === 119 ? 10 : 3,
-  });
-}));
+/** Project historical ownership without changing any paid asset or ledger record. */
+export function getOwnedBlueprintIds(economy: CastleEconomy): Set<string> {
+  const owned = new Set<string>();
+  for (const asset of economy.assets) {
+    const id = resolveBlueprintId(asset.id);
+    if (id) owned.add(id);
+  }
+  return owned;
+}
 
 function checkDate(day: string): void {
   const stamp = /^\d{4}-\d{2}-\d{2}$/.test(day) ? Date.parse(`${day}T00:00:00Z`) : NaN;
@@ -32,7 +36,7 @@ function checkDate(day: string): void {
 }
 
 function canonicalPart(part: BlueprintPart): BlueprintPart {
-  const canonical = BLUEPRINT_PARTS.find(item => item.id === part.id);
+  const canonical = partsById.get(part.id);
   if (!canonical) throw new Error('Unknown blueprint part');
   return canonical;
 }
@@ -68,32 +72,32 @@ export function getBlueprintPrice(part: BlueprintPart, economy: CastleEconomy): 
 }
 
 export function getBlueprintProgress(economy: CastleEconomy, today: string) {
-  const owned = new Set(economy.assets.map(asset => asset.id));
-  const ownedCount = BLUEPRINT_PARTS.filter(part => owned.has(part.id)).length;
+  const owned = getOwnedBlueprintIds(economy);
+  const ownedCount = owned.size;
   return {
     ownedCount,
     total: 120 as const,
     qualifyingDays: getDisciplineDays(economy, today),
     complete: ownedCount === 120,
-    nextPart: BLUEPRINT_PARTS.find(part => !owned.has(part.id)),
+    nextPart: BLUEPRINT_PARTS.find(part => !owned.has(part.id) && missingDistrictPieces(part.district, owned) === 0),
   };
+}
+
+function missingDistrictPieces(district: CastleDistrict, owned: ReadonlySet<string>): number {
+  if (district === 1) return 0;
+  const ownedInPrevious = BLUEPRINT_PARTS.filter(part => part.district === district - 1 && owned.has(part.id)).length;
+  return Math.max(0, 18 - ownedInPrevious);
 }
 
 export function getBlueprintLockReason(economy: CastleEconomy, part: BlueprintPart, today: string): string | undefined {
   checkDate(today);
   const canonical = canonicalPart(part);
-  const owned = new Set(economy.assets.map(asset => asset.id));
+  const owned = getOwnedBlueprintIds(economy);
   if (owned.has(canonical.id)) return undefined;
-  const days = getDisciplineDays(economy, today);
-  if (canonical.id === BLUEPRINT_PARTS[119].id) {
-    checkDate(economy.activatedOn);
-    const elapsed = (Date.parse(`${today}T00:00:00Z`) - Date.parse(`${economy.activatedOn}T00:00:00Z`)) / 86400000;
-    if (elapsed < 365 || days < 365) return `Requires 365 qualifying work days (${days} earned) and 365 calendar days since activation (${elapsed} elapsed).`;
-  }
-  if (days < canonical.requiredDays) return `Requires ${canonical.requiredDays} qualifying work days (${days} earned).`;
-  if (BLUEPRINT_PARTS.slice(0, BLUEPRINT_PARTS.indexOf(canonical)).some(earlier => !owned.has(earlier.id))) {
-    return 'Purchase the earlier blueprint elements first.';
-  }
+  if (today < economy.activatedOn) return 'Date precedes activation.';
+  if (economy.ledger.some(entry => entry.id === `shortfall:${today}`)) return 'Day has already settled.';
+  const missing = missingDistrictPieces(canonical.district, owned);
+  if (missing > 0) return `Own ${missing} more ${missing === 1 ? 'asset' : 'assets'} in ${CASTLE_DISTRICTS[canonical.district - 2].label}.`;
   return undefined;
 }
 
@@ -101,9 +105,9 @@ export function getBlueprintLockReason(economy: CastleEconomy, part: BlueprintPa
 export function purchaseBlueprintPart(state: CastleEconomy, id: string, day: string): CastleEconomy {
   validateCastleEconomy(state);
   checkDate(day);
-  const part = BLUEPRINT_PARTS.find(item => item.id === id);
+  const part = partsById.get(id);
   if (!part) throw new Error('Unknown blueprint part');
-  if (state.assets.some(asset => asset.id === id)) return state;
+  if (getOwnedBlueprintIds(state).has(id)) return state;
   if (day < state.activatedOn) throw new Error('Date precedes activation');
   const locked = getBlueprintLockReason(state, part, day);
   if (locked) throw new Error(locked);

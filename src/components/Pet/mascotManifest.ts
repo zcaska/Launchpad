@@ -3,9 +3,9 @@
  *
  * Grounded in the official Mascot Reference Sheet:
  * - Character: Tiny, friendly alien companion with an original floating-pebble silhouette.
- * - Body: Warm coral-orange (#FF7A3C), clean surface, soft matte finish, diffused lighting, gentle shadows, restrained highlights.
+ * - Body: Warm coral-orange with a speckled matte clay finish, diffused lighting, and gentle shadows.
  * - Fins: Two rounded side fins in lighter coral-orange (#FF9A6B / approx #F28B68). Controllable pose.
- * - Face: Adaptive minimal eyes (#1A1A1A) with glossy highlights (#FFFFFF); tiny expressive mouth.
+ * - Face: Adaptive eyes, a tiny expressive mouth, and freckled cheeks.
  * - Limbs: No arms, hands, legs, or feet.
  * - Base form stays unadorned; earned companion levels add cosmetic accessories.
  */

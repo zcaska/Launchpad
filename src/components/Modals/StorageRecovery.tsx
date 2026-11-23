@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { importDataFromJson, restoreImportedBackup, restoreRollingBackup, STORAGE_BACKUP_KEY, STORAGE_KEY } from '../../utils/storage';
+import { importDataFromJson, restoreImportedBackupWithLock, restoreRollingBackupWithLock, STORAGE_BACKUP_KEY, STORAGE_KEY } from '../../utils/storage';
 
 export function findDamagedData(storage: Pick<Storage, 'getItem'>): string | null {
   for (const key of [STORAGE_KEY, 'launchpad_app_data_v2', 'launchpad_app_data_v1', STORAGE_BACKUP_KEY, 'launchpad_app_data_backup']) {
@@ -16,13 +16,13 @@ export function StorageRecovery({ onRecovered, hasRollingBackup = false }: { onR
     if (!file) return;
     try {
       const restored = importDataFromJson(await file.text(), false);
-      if (!restoreImportedBackup(restored)) throw new Error('The backup could not be saved on this device.');
+      if (!await restoreImportedBackupWithLock(restored)) throw new Error('The backup could not be saved on this device.');
       onRecovered();
     } catch (reason) { setError(reason instanceof Error ? reason.message : 'Could not read this backup.'); }
   };
-  const restoreLocal = () => {
+  const restoreLocal = async () => {
     try {
-      if (!restoreRollingBackup()) throw new Error('The recovery copy could not be saved on this device.');
+      if (!await restoreRollingBackupWithLock()) throw new Error('The recovery copy could not be saved on this device.');
       onRecovered();
     } catch (reason) { setError(reason instanceof Error ? reason.message : 'Could not restore the recovery copy.'); }
   };

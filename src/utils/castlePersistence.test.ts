@@ -2,7 +2,8 @@ import assert from 'node:assert/strict';
 import { DEFAULT_SEED_DATA } from '../data/seedData';
 import { sanitizeAppData, loadAppData, saveAppData, StorageRecoveryError, restoreRollingBackup, getBackupStatus, subscribeBackupStatus, getPrimarySaveStatus, subscribePrimarySaveStatus, STORAGE_KEY, STORAGE_BACKUP_KEY } from './storage';
 import { cloudData } from '../services/cloudWorkspace';
-import { activateEconomy, commitTask, settlePastDays } from './castleEconomy';
+import { activateEconomy, balanceCents, commitTask, netWorthCents, purchaseAsset, recordEarning, settlePastDays } from './castleEconomy';
+import { getOwnedBlueprintIds } from './castleBlueprint';
 
 let economy = activateEconomy(5000, '2026-11-10');
 economy = commitTask(economy, { id: 'a', title: 'Draft', date: '2026-11-10', estimatedValueCents: 2000 });
@@ -41,6 +42,7 @@ assert.equal(restoreRollingBackup(), true);
 assert.deepEqual(loadAppData().castleEconomy, economy, 'confirmed recovery restores latest ledger even with no tasks');
 assert.ok([...memory.values()].includes('{unreadable after saving'), 'confirmed recovery archives damaged bytes');
 memory.clear();
+loadAppData();
 saveAppData(original);
 const validBackup = memory.get(STORAGE_BACKUP_KEY);
 saveAppData({ ...original, castleEconomy: { broken: true } } as unknown as typeof original);
@@ -76,6 +78,27 @@ assert.ok(memory.get(STORAGE_KEY)?.includes('broken'), 'primary data is left int
 memory.set(STORAGE_KEY, '{unreadable financial state');
 assert.throws(() => loadAppData(), StorageRecoveryError, 'unreadable primary without a valid backup fails safely instead of returning seed data');
 assert.equal(memory.get(STORAGE_KEY), '{unreadable financial state', 'unreadable primary bytes remain available for recovery');
+
+const purchaseDay = '2026-11-10';
+let mixed = recordEarning(activateEconomy(5000, purchaseDay), 'grant', purchaseDay, 50_000);
+mixed = purchaseAsset(mixed, { id: 'foundation', label: 'Foundation', priceCents: 2000 }, purchaseDay);
+mixed = purchaseAsset(mixed, { id: 'blueprint-v2-001', label: 'Foundation 1', priceCents: 5000 }, purchaseDay);
+mixed = purchaseAsset(mixed, { id: 'crown', label: 'Crown spire', priceCents: 10_000 }, purchaseDay);
+mixed = purchaseAsset(mixed, { id: 'historic-keep', label: 'Historic keep', priceCents: 700 }, purchaseDay);
+const mixedApp = { ...DEFAULT_SEED_DATA, castleEconomy: mixed };
+memory.clear();
+loadAppData();
+assert.equal(saveAppData(mixedApp), true);
+const storedMixed = loadAppData().castleEconomy;
+const importedMixed = sanitizeAppData(JSON.parse(JSON.stringify(mixedApp)), false).castleEconomy;
+for (const copy of [storedMixed, importedMixed]) {
+  assert.ok(copy);
+  assert.deepEqual([...getOwnedBlueprintIds(copy)], ['blueprint-v2-001', 'blueprint-v2-120']);
+  assert.deepEqual(copy.ledger, mixed.ledger);
+  assert.deepEqual(copy.assets, mixed.assets);
+  assert.equal(balanceCents(copy), 32_300);
+  assert.equal(netWorthCents(copy), 50_000);
+}
 delete (globalThis as { localStorage?: Storage }).localStorage;
 
 

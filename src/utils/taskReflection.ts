@@ -1,5 +1,5 @@
 import type { AppData, QuickNote } from '../types';
-import { registerReflectedTasks, recordPartialProgress, taskValueCents, type CastleEconomy } from './castleEconomy';
+import { findReflectionCommitment, partialProgressLedgerId, recordReflectedProgress, registerReflectedTasks, type CastleEconomy } from './castleEconomy';
 import { formatDateKey, recordTaskCompletion } from './gamification';
 import { tasksDueToday } from './taskPeriod';
 
@@ -22,7 +22,8 @@ function getCommittedReflectionTasks(notes: QuickNote[], now: Date, economy: Cas
     if (day === today && tasks.some(task => !task || !task.isDone)) continue;
     // Yesterday's finished work can still be reflected after rollover, even if
     // other commitments from that day remain unfinished and will be penalized.
-    const pending = tasks.filter((task): task is QuickNote => !!task?.isDone && !!task.pendingReflection);
+    const pending = tasks.filter((task): task is QuickNote => !!task?.isDone && !!task.pendingReflection
+      && findReflectionCommitment(economy, task, today)?.date === day);
     if (pending.length) return pending;
   }
   if (hasCurrentCommitments) return [];
@@ -44,6 +45,11 @@ export function getCompletedCommittedReflectionTasks(notes: QuickNote[], now: Da
   return notes.filter(task => ids.has(task.id) && task.isDone && task.pendingReflection);
 }
 
+/** An explicit Daily Review can reflect completed work while other tasks are still open. */
+export function getDailyReviewTasks(notes: QuickNote[]): QuickNote[] {
+  return notes.filter(task => task.isDone && task.pendingReflection);
+}
+
 /** Today's completed work is ready only after all of today's commitments are complete. */
 export function getReflectionTasks(notes: QuickNote[], now: Date, economy?: CastleEconomy): QuickNote[] {
   if (economy) return getCommittedReflectionTasks(notes, now, economy);
@@ -62,7 +68,7 @@ export function resetReflectionTasks(notes: QuickNote[], now: Date, economy?: Ca
   const ids = new Set(taskIds ?? getReflectionTasks(notes, now, economy).map(task => task.id));
   if (ids.size === 0) return notes;
   return notes.map(task => ids.has(task.id) ? {
-    ...task, isDone: false, pendingReflection: false, actualMinutes: undefined,
+    ...task, isDone: false, pendingReflection: false, completedOn: undefined, actualMinutes: undefined,
     subtasks: task.subtasks?.map(subtask => ({ ...subtask, isDone: false })),
   } : task);
 }
@@ -72,12 +78,12 @@ function validReflection(questions: string[], answers: string[]): boolean {
     && answers.every(answer => answer.trim().split(/\s+/u).filter(Boolean).length >= 150);
 }
 
-function reflectionCreditDay(economy: CastleEconomy, task: QuickNote, startedDay: string, submittedDay: string): string {
-  const commitment = economy.commitments
-    .filter(item => item.id === task.id && !item.completed && !item.replacementIds && item.date <= startedDay)
-    .sort((a, b) => b.date.localeCompare(a.date))[0];
-  const taskDay = commitment?.date ?? startedDay;
-  return economy.ledger.some(item => item.id === `shortfall:${taskDay}`) ? submittedDay : taskDay;
+function isOpenDay(economy: CastleEconomy, day: string): boolean {
+  return day >= economy.activatedOn && !economy.ledger.some(item => item.id === `shortfall:${day}`);
+}
+
+function reflectionCreditDay(economy: CastleEconomy, originalDay: string, submittedDay: string): string {
+  return isOpenDay(economy, originalDay) ? originalDay : submittedDay;
 }
 
 /** A closed submission day cannot accept work whose original day is also closed. */
@@ -85,16 +91,19 @@ export function canRegisterReflectionTasks(economy: CastleEconomy, tasks: QuickN
   const startedDay = formatDateKey(startedAt);
   const submittedDay = formatDateKey(submittedAt);
   return tasks.every(task => {
-    const day = reflectionCreditDay(economy, task, startedDay, submittedDay);
-    return day >= economy.activatedOn && !economy.ledger.some(item => item.id === `shortfall:${day}`);
+    const commitment = findReflectionCommitment(economy, task, startedDay);
+    if (!commitment) return true;
+    const day = reflectionCreditDay(economy, commitment.date, submittedDay);
+    return commitment.date <= day && day <= submittedDay && isOpenDay(economy, day);
   });
 }
 
 /** Apply the final daily reflection as one idempotent app-data update. */
 export function applyCompletedTaskReflection(data: AppData, startedAt: Date, submittedAt: Date, questions: string[], answers: string[], selectedTasks?: QuickNote[]): AppData {
   if (!validReflection(questions, answers)) return data;
-  const tasks = selectedTasks
-    ? selectedTasks.filter(task => task.isDone && task.pendingReflection && data.quickNotes.some(current => current.id === task.id && current.isDone && current.pendingReflection))
+  const selection = selectedTasks && new Set(selectedTasks.filter(task => task.isDone && task.pendingReflection).map(task => task.id));
+  const tasks = selection
+    ? data.quickNotes.filter(task => selection.has(task.id) && task.isDone && task.pendingReflection)
     : getReflectionTasks(data.quickNotes, startedAt, data.castleEconomy);
   if (tasks.length === 0) return data;
   const ids = new Set(tasks.map(task => task.id));
@@ -105,8 +114,9 @@ export function applyCompletedTaskReflection(data: AppData, startedAt: Date, sub
       // A manual reflection may contain commitments from different days.
       // Attribute each task independently, preserving the original day when
       // it is still open and falling back to submission day after settlement.
-      const day = reflectionCreditDay(economy, task, startedDay, formatDateKey(submittedAt));
-      return registerReflectedTasks(economy, [task], day);
+      const commitment = findReflectionCommitment(economy, task, startedDay);
+      const day = reflectionCreditDay(economy, commitment?.date ?? startedDay, formatDateKey(submittedAt));
+      return registerReflectedTasks(economy, [task], day, commitment?.date ?? null);
     }, data.castleEconomy)
     : undefined;
   let gamification = data.gamification;
@@ -133,17 +143,20 @@ export function applyCompletedTaskReflection(data: AppData, startedAt: Date, sub
 export function applyPartialTaskReflection(data: AppData, entry: { taskId: string; date: string; id: string; minutes: number }, submittedAt: Date, questions: string[], answers: string[]): AppData {
   if (!validReflection(questions, answers)) return data;
   const task = data.quickNotes.find(item => item.id === entry.taskId);
-  if (!task || !data.castleEconomy || !Number.isSafeInteger(entry.minutes) || entry.minutes <= 0) return data;
-  if ((task.partialMinutes || 0) + entry.minutes > 525600) throw new Error('Partial time exceeds the remaining supported final total');
-  const ledgerId = `earning:progress:${entry.date}:${entry.taskId}:${entry.id}`;
+  if (!task || task.isDone || task.pendingReflection || !data.castleEconomy || !Number.isSafeInteger(entry.minutes) || entry.minutes <= 0) return data;
+  const ledgerId = partialProgressLedgerId(entry.taskId, entry.date, entry.id);
   if (data.castleEconomy.ledger.some(item => item.id === ledgerId)) return data;
-  const value = taskValueCents(entry.minutes, task.priority ?? 'medium', task.deadline, entry.date);
-  const castleEconomy = recordPartialProgress(data.castleEconomy, task.id, entry.date, entry.id, value);
+  const totalMinutes = (task.partialMinutes || 0) + entry.minutes;
+  if (totalMinutes > 525600) throw new Error('Partial time exceeds the remaining supported final total');
+  const submittedDay = formatDateKey(submittedAt);
+  if (entry.date > submittedDay) return data;
+  const postingDay = reflectionCreditDay(data.castleEconomy, entry.date, submittedDay);
+  const castleEconomy = recordReflectedProgress(data.castleEconomy, task, entry.date, entry.id, totalMinutes, postingDay);
   return {
     ...data,
     castleEconomy,
     quickNotes: data.quickNotes.map(item => item.id === task.id
-      ? { ...item, partialMinutes: (item.partialMinutes || 0) + entry.minutes }
+      ? { ...item, partialMinutes: totalMinutes }
       : item),
     reflections: [...(data.reflections || []), {
       date: submittedAt.toISOString(), questions: [...questions], answers: [...answers], taskTitles: [task.text],

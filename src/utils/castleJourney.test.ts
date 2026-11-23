@@ -9,7 +9,7 @@ const day = '2026-11-10';
 const startedAt = new Date(2026, 10, 10, 12);
 const questions = Array.from({ length: 5 }, (_, index) => `Question ${index + 1}`);
 const answers = questions.map(() => Array(150).fill('work').join(' '));
-const completed: QuickNote = { id: 'done', text: 'Finished', createdAt: 0, isDone: true, pendingReflection: true, priority: 'low', actualMinutes: 60 };
+const completed: QuickNote = { id: 'done', text: 'Finished', createdAt: 0, isDone: true, pendingReflection: true, priority: 'low', durationMinutes: 60, actualMinutes: 60 };
 const missed: QuickNote = { id: 'missed', text: 'Unfinished', createdAt: 0, isDone: false };
 let economy = activateEconomy(5000, day);
 economy = commitTask(economy, { id: 'done', title: 'Finished', date: day, estimatedValueCents: 1000 });

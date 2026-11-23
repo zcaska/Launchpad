@@ -19,10 +19,3 @@ export function assertCastleBuildPrerequisite(economy: CastleEconomy, assetId: s
   if (index > 0 && !owned.has(CASTLE_CATALOG[index - 1].id)) throw new Error('Build previous addition first');
 }
 
-// Legacy catalog above preserves historical IDs and prices.
-import { BLUEPRINT_PARTS } from '../../utils/castleBlueprint';
-export const CASTLE_PHASES = Array.from({ length: 12 }, (_, index) => {
- const parts = BLUEPRINT_PARTS.filter(part => part.phase === index + 1);
- return { number: index + 1, label: parts[0].kind.replace(/-/g, ' ').replace(/^./, (letter: string) => letter.toUpperCase()), firstDay: parts[0].requiredDays, lastDay: parts[9].requiredDays };
-});
-

@@ -1,10 +1,11 @@
+/// <reference types="vite/client" />
 import { useState, type FormEvent } from 'react';
 import {
   CLOUD_PROJECTS_KEY, DEFAULT_CLOUD_PROJECT, getCloudClient, openCloudWorkspace, readCloudProjects,
   validateCloudProject, type CloudWorkspace,
 } from '../../services/cloudWorkspace';
 import type { useCloudSync } from '../../services/useCloudSync';
-import { flushAppDataSave, loadAppData } from '../../utils/storage';
+import { flushAppDataSaveWithLock, loadAppData } from '../../utils/storage';
 
 const field = 'w-full rounded-lg border border-stone-300 bg-transparent px-3 py-2 text-sm dark:border-stone-700';
 const button = 'rounded-lg border border-stone-300 px-3 py-2 text-xs font-semibold hover:bg-stone-100 dark:border-stone-700 dark:hover:bg-stone-800 disabled:opacity-50';
@@ -24,6 +25,8 @@ export function CloudWorkspaceSettings({ workspace, onSwitch, sync }: {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
   const project = projects.find((item) => item.url === selected) ?? DEFAULT_CLOUD_PROJECT;
+  const canCreateAccount = project.url !== DEFAULT_CLOUD_PROJECT.url
+    || import.meta.env?.VITE_LAUNCHPAD_CLOUD_SIGNUP === 'true';
 
   const addProject = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -48,6 +51,7 @@ export function CloudWorkspaceSettings({ workspace, onSwitch, sync }: {
   };
 
   const connect = async (action: 'resume' | 'sign-in' | 'sign-up') => {
+    if (action === 'sign-up' && !canCreateAccount) return;
     setBusy(true);
     setMessage('');
     let authenticated = false;
@@ -67,8 +71,10 @@ export function CloudWorkspaceSettings({ workspace, onSwitch, sync }: {
         if (error) throw error;
         authenticated = true;
       }
-      flushAppDataSave();
-      const next = await openCloudWorkspace(project, copyLocal ? loadAppData() : undefined);
+      if (!await flushAppDataSaveWithLock() && copyLocal) {
+        throw new Error('This tab’s local changes could not be saved. Export a backup and reload before copying the local workspace.');
+      }
+      const next = await openCloudWorkspace(project, copyLocal ? loadAppData(false) : undefined);
       if (!next) {
         setMessage(authenticated
           ? 'Signed in, but this browser could not restore the session. Check that site storage is enabled and try again.'
@@ -169,13 +175,13 @@ export function CloudWorkspaceSettings({ workspace, onSwitch, sync }: {
           {message && <p role="alert" className="break-words rounded-lg border border-amber-400/40 bg-amber-500/10 p-3 text-sm">{message}</p>}
           <div className="flex flex-wrap gap-2">
             <button className={primary} type="submit" disabled={busy}>{busy ? 'Connecting…' : 'Sign in'}</button>
-            <button className={button} type="submit" disabled={busy} onClick={(event) => {
+            {canCreateAccount && <button className={button} type="button" disabled={busy} onClick={(event) => {
               if (!event.currentTarget.form?.reportValidity()) return;
-              event.preventDefault();
               void connect('sign-up');
-            }}>Create account</button>
+            }}>Create account</button>}
             <button className={button} type="button" disabled={busy} onClick={() => void connect('resume')}>Resume saved session</button>
           </div>
+          {!canCreateAccount && <p className="text-sm">New accounts are currently closed for the shared project. Use LaunchPAD on this device or connect your own project.</p>}
         </form>
       )}
     </section>

@@ -1,6 +1,10 @@
 # LaunchPAD cloud workspaces
 
-Open **Settings, Backup & Help** and find **Supabase cloud workspaces**. Select **LaunchPAD**, create an account if needed, confirm your email, and sign in. Use the same project and account on each device. Select **Copy my local workspace** during sign-in to seed a new cloud workspace with this device’s existing tasks and progress. An existing cloud workspace opens with its saved data. For the built-in project, use your Supabase organization email when creating an account. Supabase’s default email sender only delivers to organization team addresses unless custom SMTP is configured.
+Open **Settings** and find **Supabase cloud workspaces**. Select **LaunchPAD** to sign in to an existing shared account. Use the same project and account on each device. Select **Copy my local workspace** during sign-in to seed a new cloud workspace with this device’s existing tasks and progress. An existing cloud workspace opens with its saved data.
+
+## Enable public registration for the shared project
+
+Account creation in the shared project is hidden by default. Configure [custom SMTP](https://supabase.com/docs/guides/auth/auth-smtp), set the production Auth Site URL and allowed redirects, and verify that a non-team email can register, confirm, and sign in. The built-in Supabase mail provider is restricted to team addresses. After verifying delivery, set the GitHub Actions repository variable `LAUNCHPAD_CLOUD_SIGNUP` to `true`, or set `VITE_LAUNCHPAD_CLOUD_SIGNUP=true` at build time on other hosts. This flag controls the LaunchPAD UI. Use the Supabase Auth settings to control registration at the service.
 
 ## Add another project
 

@@ -9,6 +9,10 @@ import {
   StorageRecoveryError,
   restoreRollingBackup,
   clearAllLocalData,
+  getPrimarySaveStatus,
+  readLocalConflictDrafts,
+  removeLocalConflictDraft,
+  saveAppDataWithLock,
 } from './storage';
 import { DEFAULT_SEED_DATA } from '../data/seedData';
 import { AppData } from '../types';
@@ -90,6 +94,7 @@ const mockStorage = new MockLocalStorage();
 // 2. Test rolling backup and corruption recovery
 {
   mockStorage.clear();
+  loadAppData();
   const validData: AppData = {
     ...DEFAULT_SEED_DATA,
     scratchpadText: 'Crucial User Content',
@@ -104,6 +109,13 @@ const mockStorage = new MockLocalStorage();
   let recoveryOffered = false;
   try { loadAppData(); } catch (error) { recoveryOffered = error instanceof StorageRecoveryError && error.backup !== null; }
   assert(recoveryOffered, 'damaged primary requires explicit backup recovery');
+  const repairedByOtherTab = JSON.stringify({ ...validData, scratchpadText: 'Restored in the other tab' });
+  mockStorage.setItem(STORAGE_KEY, repairedByOtherTab);
+  let staleRestoreRejected = false;
+  try { restoreRollingBackup(); } catch { staleRestoreRejected = true; }
+  assert(staleRestoreRejected, 'recovery from a stale dialog cannot replace another tab’s repair');
+  assertEqual(mockStorage.getItem(STORAGE_KEY), repairedByOtherTab, 'the other tab repair remains intact');
+  mockStorage.setItem(STORAGE_KEY, '{"corrupted: true, broken json...');
   restoreRollingBackup();
   const recovered = loadAppData();
   assertEqual(recovered.scratchpadText, 'Crucial User Content', 'loadAppData recovers from rolling backup when primary JSON is corrupted');
@@ -135,6 +147,7 @@ const mockStorage = new MockLocalStorage();
 // 3. Test QuotaExceededError detection and self-healing
 {
   mockStorage.clear();
+  loadAppData();
   const dummyData: AppData = {
     ...DEFAULT_SEED_DATA,
     growthHistory: {
@@ -207,6 +220,7 @@ const mockStorage = new MockLocalStorage();
 // 6. Existing imported tasks survive without retired integration metadata or credentials.
 {
   mockStorage.clear();
+  loadAppData();
   mockStorage.setItem('launchpad_ticktick_settings_v1', 'legacy token');
   mockStorage.setItem('launchpad_gcal_token_v1', 'legacy token');
   const linkedTask = {
@@ -233,7 +247,9 @@ const mockStorage = new MockLocalStorage();
   mockStorage.setItem(STORAGE_BACKUP_KEY, JSON.stringify({ ...DEFAULT_SEED_DATA, quickNotes: [{ id: '1', text: 'Task', isDone: false, createdAt: Date.now() }] }));
   mockStorage.setItem('launchpad_app_data_v2', '{"old": true}');
   mockStorage.setItem('launchpad_focus_timer_v1', '{"timer": true}');
+  mockStorage.setItem('launchpad_focus_timer_v1:cloud-scope', '{"cloud": true}');
   mockStorage.setItem('launchpad_app_data_corrupt_123', 'bad json');
+  loadAppData();
 
   const cleared = clearAllLocalData();
   assertEqual(cleared.quickNotes.length, 0, 'clearAllLocalData returns empty quickNotes');
@@ -241,7 +257,31 @@ const mockStorage = new MockLocalStorage();
   assertEqual(loadAppData().quickNotes.length, 0, 'loadAppData reads empty quickNotes after clear');
   assertEqual(mockStorage.getItem('launchpad_app_data_v2'), null, 'clears legacy v2 storage');
   assertEqual(mockStorage.getItem('launchpad_focus_timer_v1'), null, 'clears timer storage');
+  assertEqual(mockStorage.getItem('launchpad_focus_timer_v1:cloud-scope'), '{"cloud": true}', 'local clear preserves scoped cloud timer');
   assertEqual(mockStorage.getItem('launchpad_app_data_corrupt_123'), null, 'clears corrupt backup storage');
+}
+
+// Each tab starts with its own base. A stale edit must not replace the
+// other tab's workspace or backup and must survive a later reload.
+{
+  mockStorage.clear();
+  const base = loadAppData();
+  assert(await saveAppDataWithLock(base), 'initial snapshot saves');
+  const tabA = { ...base, scratchpadText: 'Latest tab A note' };
+  mockStorage.setItem(STORAGE_KEY, JSON.stringify(tabA));
+  mockStorage.setItem(STORAGE_BACKUP_KEY, JSON.stringify(tabA));
+  const tabB = { ...base, scratchpadText: 'Stale tab B note' };
+  assertEqual(await saveAppDataWithLock(tabB), false, 'stale tab cannot replace primary');
+  assertEqual(getPrimarySaveStatus(), 'conflict', 'stale save reports a conflict');
+  assertEqual(mockStorage.getItem(STORAGE_BACKUP_KEY), JSON.stringify(tabA), 'other tab backup stays intact');
+  let staleClearRejected = false;
+  try { clearAllLocalData(); } catch { staleClearRejected = true; }
+  assert(staleClearRejected, 'stale clear does not delete another tab workspace');
+  assertEqual(loadAppData().scratchpadText, tabA.scratchpadText, 'reloading opens the winning snapshot');
+  const [draft] = readLocalConflictDrafts();
+  assertEqual(draft?.data.scratchpadText, tabB.scratchpadText, 'reloading preserves the other tab in an exportable draft');
+  if (draft) removeLocalConflictDraft(draft.key);
+  assertEqual(readLocalConflictDrafts().length, 0, 'resolved draft can be removed explicitly');
 }
 
 console.log('------------------------------------');

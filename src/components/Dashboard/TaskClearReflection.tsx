@@ -16,9 +16,10 @@ const prompts = [
 ];
 const words = (value: string) => value.trim().split(/\s+/u).filter(Boolean).length;
 
-export function TaskClearReflection({ onClose, onSubmit, error }: {
+export function TaskClearReflection({ onClose, onSubmit, error, mode = 'task' }: {
   style?: ConfettiStyle;
   error?: string;
+  mode?: 'task' | 'daily';
   onClose: () => void;
   onSubmit: (questions: string[], answers: string[]) => void;
 }) {
@@ -55,7 +56,7 @@ export function TaskClearReflection({ onClose, onSubmit, error }: {
               <div>
                 <h2 id="task-clear-title" className="text-lg font-bold tracking-tight sm:text-xl">Reflect on your work</h2>
                 <p id="reflection-description" className="mt-1 text-sm leading-relaxed text-serene-text-secondary dark:text-serene-text-darkSecondary">
-                  Take a moment to look back before recording your progress.
+                  {mode === 'daily' ? 'Reflect on your day. Your answers are saved when you finish.' : 'Take a moment to look back before recording your progress.'}
                 </p>
               </div>
             </div>
@@ -80,10 +81,10 @@ export function TaskClearReflection({ onClose, onSubmit, error }: {
           {confirmClose && (
             <div role="alert" className="mt-5 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950 dark:border-amber-800/60 dark:bg-amber-950/30 dark:text-amber-100">
               <p className="font-semibold">Leave this reflection?</p>
-              <p className="mt-1 leading-relaxed">Your answers will be discarded and completed tasks will return to your queue.</p>
+              <p className="mt-1 leading-relaxed">{mode === 'daily' ? 'Your answers will be discarded.' : 'Your answers will be discarded and completed tasks will return to your queue.'}</p>
               <div className="mt-3 flex flex-wrap gap-2">
                 <button type="button" onClick={() => setConfirmClose(false)} className="rounded-lg bg-amber-100 px-3 py-2 text-xs font-semibold text-amber-950 hover:bg-amber-200 dark:bg-amber-800/50 dark:text-amber-50 dark:hover:bg-amber-800">Keep writing</button>
-                <button type="button" onClick={onClose} className="rounded-lg px-3 py-2 text-xs font-semibold underline underline-offset-2">Leave and reset tasks</button>
+                <button type="button" onClick={onClose} className="rounded-lg px-3 py-2 text-xs font-semibold underline underline-offset-2">{mode === 'daily' ? 'Leave reflection' : 'Leave and reset tasks'}</button>
               </div>
             </div>
           )}

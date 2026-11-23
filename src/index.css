@@ -3,22 +3,6 @@
 @tailwind utilities;
 
 @font-face {
-  font-family: 'Segoe Print';
-  src: url('./assets/fonts/segoe-print.ttf') format('truetype');
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'Segoe Print';
-  src: url('./assets/fonts/segoe-print-bold.ttf') format('truetype');
-  font-weight: 700;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
   font-family: 'LaunchPad Numerals';
   src: url('./assets/fonts/montserrat-numbers.woff2') format('woff2');
   font-weight: 100 900;
@@ -28,7 +12,7 @@
 
 @layer base {
   :root {
-    --font-launchpad: 'LaunchPad Numerals', 'Segoe Print', system-ui, sans-serif;
+    --font-launchpad: 'Poppins', 'LaunchPad Numerals', system-ui, sans-serif;
     --color-bg-primary: #faf9fb;
     --color-surface-primary: #ffffff;
     --color-border-subtle: #e5e3e8;
@@ -41,8 +25,8 @@
   }
 
   body {
-    font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
-    letter-spacing: 0.015em;
+    font-family: var(--font-launchpad);
+    letter-spacing: 0.005em;
     line-height: 1.5;
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;

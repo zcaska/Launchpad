@@ -1,45 +1,138 @@
-import { castleElements, type ModelPrimitive } from './castleModel';
+import { useEffect, useRef } from 'react';
+import { Euler, Vector3 } from 'three';
+import { createCastleGeometry, getCastleElement, type CastleShape, type CastleVector } from './castleModel';
+import {
+  CASTLE_MATERIAL_COLORS, CASTLE_PATTERN_KEYS, drawCastleTile, type CastleMaterial, type CastlePattern,
+} from './castleTextures';
 
-type Point = [number, number, number];
-const colors: Record<ModelPrimitive['material'], [string, string, string]> = {
-  stone: ['#ddd3be', '#b3a890', '#807a6e'], gold: ['#ffe5a0', '#ce9d36', '#856724'],
-  roof: ['#657b94', '#2c435d', '#182b42'], flag: ['#ca80b5', '#91456e', '#5e304e'],
-  dark: ['#657868', '#3c5145', '#263a31'], wood: ['#936b43', '#624229', '#3e2b1d'],
+type Point = [number, number];
+type PreviewFace = {
+  points: [Point, Point, Point];
+  material: CastleMaterial;
+  depth: number;
+  light: number;
+  support: boolean;
 };
-const project = ([x, y, z]: Point): [number, number] => [(x - z) * .866, (x + z) * .4 - y];
+const project = (point: Vector3): Point => [(point.x - point.z) * .866, (point.x + point.z) * .4 - point.y];
+const previewMeshes = new Map<CastleShape, CastleVector[]>();
+const previews = new Map<string, PreviewFace[]>();
+const tilesByDocument = new WeakMap<Document, Map<CastlePattern, HTMLCanvasElement>>();
+const patternKeys = new Set<CastleMaterial>(CASTLE_PATTERN_KEYS);
+const WIDTH = 240;
+const HEIGHT = 144;
 
-/** Lightweight thumbnails of the same geometry that gets placed in the WebGL model. */
-export function CastlePartPreview({ assetId, label }: { assetId: string; label: string }) {
-  const primitives = castleElements([assetId])[0]?.primitives || [];
-  const faces: { points: [number, number][]; fill: string; depth: number }[] = [];
-  for (const primitive of primitives) {
-    const [width, height, depth] = primitive.size;
-    const [cx, cy, cz] = primitive.position;
-    const a = primitive.rotation || 0;
-    const world = (x: number, y: number, z: number): Point => [cx + x * Math.cos(a) - y * Math.sin(a), cy + x * Math.sin(a) + y * Math.cos(a), cz + z];
-    const palette = colors[primitive.material];
-    const add = (points: Point[], color: number) => faces.push({ points: points.map(project), fill: palette[color], depth: points.reduce((sum, [x, y, z]) => sum + x + z + y * .01, 0) / points.length });
-    if (primitive.shape === 'box') {
-      const x = width / 2, y = height / 2, z = depth / 2;
-      add([world(-x,y,-z),world(x,y,-z),world(x,y,z),world(-x,y,z)],0);
-      add([world(-x,-y,z),world(x,-y,z),world(x,y,z),world(-x,y,z)],1);
-      add([world(x,-y,-z),world(x,-y,z),world(x,y,z),world(x,y,-z)],2);
-    } else {
-      const ring = (angle: number, y: number) => world(Math.cos(angle) * width, y, Math.sin(angle) * depth);
-      for (let i = 0; i < 12; i++) {
-        const angle = i * Math.PI / 6, next = (i + 1) * Math.PI / 6;
-        add(primitive.shape === 'cone'
-          ? [ring(angle,-height/2),ring(next,-height/2),world(0,height/2,0)]
-          : [ring(angle,-height/2),ring(next,-height/2),ring(next,height/2),ring(angle,height/2)],i < 6 ? 1 : 2);
-      }
-      if (primitive.shape === 'cylinder') add(Array.from({length:12},(_,i)=>ring(i*Math.PI/6,height/2)),0);
+function meshTriangles(shape: CastleShape) {
+  let triangles = previewMeshes.get(shape);
+  if (!triangles) {
+    const geometry = createCastleGeometry(shape);
+    const vertices = geometry.getAttribute('position');
+    const index = geometry.getIndex();
+    triangles = Array.from({ length: index?.count ?? vertices.count }, (_, offset): CastleVector => {
+      const i = index?.getX(offset) ?? offset;
+      return [vertices.getX(i), vertices.getY(i), vertices.getZ(i)];
+    });
+    previewMeshes.set(shape, triangles);
+    geometry.dispose();
+  }
+  return triangles;
+}
+
+/** Project the scene's own unit meshes in a fixed isometric view. */
+export function getCastlePreview(assetId: string): PreviewFace[] {
+  const cached = previews.get(assetId);
+  if (cached) return cached;
+  const element = getCastleElement(assetId);
+  if (!element) return [];
+  const faces: PreviewFace[] = [];
+  const toCamera = new Vector3(1, .8, 1);
+  const toKeyLight = new Vector3(-.38, .67, .63).normalize();
+  const normal = new Vector3(), edge = new Vector3();
+  for (const piece of element.primitives) {
+    const rotation = new Euler(...(piece.rotation ?? [0, 0, 0]));
+    const scale = new Vector3(...piece.size);
+    const position = new Vector3(...piece.position);
+    const vertices = meshTriangles(piece.shape).map(vertex =>
+      new Vector3(...vertex).multiply(scale).applyEuler(rotation).add(position));
+    for (let i = 0; i < vertices.length; i += 3) {
+      const [a, b, c] = [vertices[i], vertices[i + 1], vertices[i + 2]];
+      normal.subVectors(b, a).cross(edge.subVectors(c, a));
+      if (normal.dot(toCamera) <= 1e-7) continue;
+      faces.push({
+        points: [project(a), project(b), project(c)],
+        material: piece.material,
+        depth: (toCamera.dot(a) + toCamera.dot(b) + toCamera.dot(c)) / 3,
+        light: .18 - .35 * normal.normalize().dot(toKeyLight),
+        support: piece.material === 'stone' && piece.position[1] + piece.size[1] / 2 <= .05,
+      });
     }
   }
-  const points = faces.flatMap(face => face.points);
-  const left = Math.min(...points.map(([x])=>x)), right = Math.max(...points.map(([x])=>x));
-  const top = Math.min(...points.map(([,y])=>y)), bottom = Math.max(...points.map(([,y])=>y));
-  const extent = Math.max(right-left,bottom-top,.1), padding = extent * .13;
-  return <svg className="cp-thumb cp-geometry-preview" role="img" aria-label={`Construction preview: ${label}`} viewBox={points.length ? `${left-padding} ${top-padding} ${right-left+padding*2} ${bottom-top+padding*2}` : '0 0 1 1'}>
-    {faces.sort((a,b)=>a.depth-b.depth).map((face,index)=><polygon key={index} points={face.points.map(p=>p.join(',')).join(' ')} fill={face.fill} stroke="#e9d8b9" strokeOpacity=".16" strokeWidth={extent*.007} strokeLinejoin="round" />)}
-  </svg>;
+  faces.sort((first, second) => first.depth - second.depth);
+  previews.set(assetId, faces);
+  return faces;
+}
+
+function getPattern(context: CanvasRenderingContext2D, material: CastleMaterial) {
+  const key = material === 'stallionPelt' ? 'mastiffPelt' : material;
+  if (!patternKeys.has(key)) return null;
+  const patternKey = key as CastlePattern;
+  const owner = context.canvas.ownerDocument;
+  let tiles = tilesByDocument.get(owner);
+  if (!tiles) {
+    tiles = new Map();
+    tilesByDocument.set(owner, tiles);
+  }
+  let tile = tiles.get(patternKey);
+  if (!tile) {
+    tile = drawCastleTile(owner.createElement('canvas'), patternKey);
+    tiles.set(patternKey, tile);
+  }
+  const pattern = context.createPattern(tile, 'repeat');
+  if (typeof DOMMatrix !== 'undefined') pattern?.setTransform(new DOMMatrix().scale(.31));
+  return pattern;
+}
+
+function drawPreview(context: CanvasRenderingContext2D, faces: PreviewFace[]) {
+  context.clearRect(0, 0, WIDTH, HEIGHT);
+  if (faces.length === 0) return;
+  const subjects = faces.filter(face => !face.support);
+  const points = (subjects.length > 0 ? subjects : faces).flatMap(face => face.points);
+  const left = Math.min(...points.map(point => point[0]));
+  const right = Math.max(...points.map(point => point[0]));
+  const top = Math.min(...points.map(point => point[1]));
+  const bottom = Math.max(...points.map(point => point[1]));
+  const scale = Math.min((WIDTH - 28) / Math.max(right - left, .1), (HEIGHT - 32) / Math.max(bottom - top, .1));
+  const offsetX = WIDTH / 2 - (left + right) * scale / 2;
+  const offsetY = HEIGHT / 2 - (top + bottom) * scale / 2;
+  const fills = new Map<CastleMaterial, CanvasPattern | string>();
+  for (const face of faces) {
+    let fill = fills.get(face.material);
+    if (!fill) {
+      fill = getPattern(context, face.material) ?? CASTLE_MATERIAL_COLORS[face.material];
+      fills.set(face.material, fill);
+    }
+    const [[ax, ay], [bx, by], [cx, cy]] = face.points;
+    context.beginPath();
+    context.moveTo(ax * scale + offsetX, ay * scale + offsetY);
+    context.lineTo(bx * scale + offsetX, by * scale + offsetY);
+    context.lineTo(cx * scale + offsetX, cy * scale + offsetY);
+    context.closePath();
+    context.fillStyle = fill;
+    context.fill();
+    if (face.material === 'flame' || face.material === 'ember') continue;
+    context.fillStyle = face.light > 0 ? '#101727' : '#fff1db';
+    context.globalAlpha = Math.abs(face.light);
+    context.fill();
+    context.globalAlpha = 1;
+  }
+}
+
+/** Renders the individual asset without starting another WebGL renderer. */
+export function CastlePartPreview({ assetId, label }: { assetId: string; label: string }) {
+  const canvas = useRef<HTMLCanvasElement>(null);
+  useEffect(() => {
+    const context = canvas.current?.getContext('2d');
+    if (context) drawPreview(context, getCastlePreview(assetId));
+  }, [assetId]);
+  return <canvas ref={canvas} width={WIDTH} height={HEIGHT}
+    className="cp-thumb cp-geometry-preview" role="img" aria-label={`Construction preview: ${label}`} />;
 }

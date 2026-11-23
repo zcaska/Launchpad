@@ -1,75 +1,36 @@
-# 🚀 LaunchPad — Focus Dashboard & Redirect Hub
+# LaunchPAD
 
-A minimalist, high-productivity personal dashboard designed as the intentional landing destination when redirected by site-blocking extensions like **Time Snatch**.
+LaunchPAD is a personal focus dashboard. Use it to choose your next task, see how much time is left in your day, and reflect on what you finished. It can also be the landing page for a site blocker such as Time Snatch.
 
----
+## Get started
 
-## 🎯 Purpose
+1. Open **New task** and add a title. Add a time estimate, deadline, priority, or checklist when useful.
+2. Use **Primary Focus** to work on one task, or open **Tasks** to review your list. The dashboard shows the time available and upcoming commitments.
+3. When you mark a task done, use the clock to report the actual time you spent. You can copy the duration from your own time tracker.
+4. Open **Daily review** to reflect on completed work. LaunchPAD records reflections and progress in your workspace.
 
-When you get blocked from opening distracting websites (YouTube, Reddit, Twitter, Instagram), Time Snatch redirects you here instead of a blank screen or a single website.
+The scratchpad holds quick notes. Ema, the companion, can be paused from Settings. Use **Ctrl+K** or **Cmd+K** to search tasks.
 
-**LaunchPad** surfaces all your active classes, work repositories, reading list articles, daily tools, and quick notes in one calm, beautifully organized command center.
+## Castle accountability
 
----
+The Castle is optional. When activated, it uses virtual dollars earned through reflected work. The **Accountability** window shows goals, commitments, exemptions, and available missions. Check commitment eligibility and the potential deduction before committing. Open **Store** to buy materials and select an owned piece to see where it fits.
 
-## ✨ Features
+## Workspaces and backups
 
-- 📂 **Grouped Folder System**: Clean collapsible category sections with custom Lucide icons, color badges, and resource counters.
-- ⚡ **One-Click Launch**: Instant navigation in new tabs with automatic high-res favicons and clean domain tags.
-- 🧠 **Daily Focus Intention**: Live top-level priority prompt (*"What is your primary focus right now?"*) persisted for the day with a completion toggle.
-- 📝 **Dual-Mode Quick Scratchpad**: Built-in action items checklist and freeform note pad with auto-save to browser storage.
-- 🔍 **Instant Search & Filter (`Ctrl+K` / `Cmd+K`)**: Rapid keyword filtering across resource titles, domains, descriptions, tags, and folders.
-- ⭐ **Favorites Filter**: Pin high-priority daily links to access them with a single click.
-- 🛠️ **Full In-App Resource & Folder Management**:
-  - Add, edit, delete, star, and move links between folders.
-  - Create and customize folders with colors and icons.
-- 💾 **Safe LocalStorage + JSON Backup/Restore**:
-  - Zero-config client persistence.
-  - One-click `.json` Export and Import in Settings to easily migrate across devices.
-- 🌙 **Serene Hearth & Evening Flow Themes**: Hand-crafted light mode and dark mode with system theme detection and manual toggle.
-- ⌨️ **Keyboard Shortcuts**:
-  - `Ctrl + K` / `Cmd + K`: Focus search box
-  - `N`: Quick Add Link modal
-  - `Q`: Toggle Quick Scratchpad & Tasks drawer
-  - `Esc`: Close open modals
+Start with a local workspace. Your data is saved in the browser on the current device. Use **Settings → Data Backup & Storage Health** to export a JSON backup, and keep an export before clearing browser data or changing devices. Follow the recovery notice if another tab saves first.
 
----
+Cloud workspaces are optional. Existing accounts can sign in to the shared project, and you can also connect a project you manage. See [cloud setup and sync behavior](supabase/README.md).
 
-## 🛠️ How to Configure with Time Snatch Extension
+## Development and release
 
-1. **Start LaunchPad** (locally via `npm run dev` or deployed on GitHub Pages / Vercel).
-2. Copy your LaunchPad URL (e.g. `http://localhost:5173` or `https://your-username.github.io/launchpad/`).
-3. Open your browser's **Time Snatch** extension settings:
-   - For every blocked domain (e.g. `*://*.youtube.com/*`, `*://*.reddit.com/*`, `*://*.twitter.com/*`), set the **Redirect Target URL** to your LaunchPad URL.
-4. Whenever you reflexively try to visit a distracting website, you will land directly on LaunchPad!
-
----
-
-## 💻 Local Development
-
-```bash
-# Install dependencies
-npm install
-
-# Start local development server
+```sh
+npm ci
 npm run dev
-
-# Build production bundle
+npm test
 npm run build
-
-# Preview production build
 npm run preview
 ```
 
----
+The GitHub Pages workflow runs the test suite, builds the application, and publishes `dist/` on pushes to the configured release branch. For another static host, build with `npm run build` and serve `dist/` over HTTPS. Use the published dashboard URL as the redirect target in a site blocker.
 
-## 🚀 Deployment
-
-### GitHub Pages
-1. Push this repository to GitHub.
-2. Under **Repository Settings** > **Pages**, set the source branch to `gh-pages` or configure GitHub Actions with Vite static build (`dist/`).
-
-### Vercel / Netlify
-1. Connect your GitHub repository to Vercel or Netlify.
-2. Build command: `npm run build`
-3. Output directory: `dist`
+Before publishing a release candidate, test task completion and reflection, concurrent local and offline edits, backup and restore, and Castle purchase and placement with isolated data. Check the desktop and mobile layouts and keyboard navigation. Keep shared-project account creation disabled unless email confirmation has been verified in production.

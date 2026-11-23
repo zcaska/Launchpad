@@ -1,5 +1,6 @@
 import type { QuickNote } from '../types';
 import { elapsedSeconds, type FocusTimerState } from './focusTimer';
+import { formatDateKey } from './gamification';
 import { toggleTaskInList, toggleSubtaskInList } from './taskUrgency';
 
 type EditorFields = Pick<QuickNote,
@@ -11,7 +12,7 @@ export type TaskAction =
   | { kind: 'toggleSubtask'; subtaskId: string }
   | { kind: 'edit'; fields: EditorFields };
 
-export function transitionTask(notes: QuickNote[], timer: FocusTimerState | null, id: string, action: TaskAction, now: number): {
+export function transitionTask(notes: QuickNote[], timer: FocusTimerState | null, id: string, action: TaskAction, now: number, actualMinutes?: number): {
   notes: QuickNote[];
   timer: FocusTimerState | null;
   completedTask?: QuickNote;
@@ -40,7 +41,18 @@ export function transitionTask(notes: QuickNote[], timer: FocusTimerState | null
   }
 
   const becameDone = next.isDone && !previous.isDone;
-  if (becameDone || (previous.isDone && !next.isDone)) next.pendingReflection = next.isDone;
+  if (actualMinutes !== undefined) {
+    if (!becameDone || !Number.isSafeInteger(actualMinutes)
+      || actualMinutes < Math.max(1, previous.partialMinutes ?? 0) || actualMinutes > 525600) {
+      return { notes, timer };
+    }
+    next.actualMinutes = actualMinutes;
+  }
+  if (becameDone || (previous.isDone && !next.isDone)) {
+    next.pendingReflection = next.isDone;
+    next.completedOn = becameDone ? formatDateKey(new Date(now)) : undefined;
+    if (!next.isDone) next.actualMinutes = undefined;
+  }
   if (becameDone && timer?.taskId === id) {
     const seconds = elapsedSeconds(timer, now);
     if (seconds > 0) next.timeSpentSeconds = (previous.timeSpentSeconds ?? 0) + seconds;

@@ -1,11 +1,20 @@
 import { AppData, QuickNote } from '../types';
 import { DEFAULT_SEED_DATA, DEFAULT_INITIAL_PREFERENCES } from '../data/seedData';
 import { validateCastleEconomy } from './castleEconomy';
+import { isValidLocalDate, parseLocalDate } from './taskPeriod';
+import { FOCUS_TIMER_STORAGE_KEY } from './focusTimer';
+import { createStorageDraftKey, readStorageDrafts, removeStorageDraft, withStorageLock, writeStorageDraft } from './storageConflict';
 
 export const STORAGE_KEY = 'launchpad_app_data_v3';
 export const STORAGE_BACKUP_KEY = 'launchpad_app_data_backup_v3';
 const LEGACY_STORAGE_KEYS = ['launchpad_app_data_v2', 'launchpad_app_data_v1', 'launchpad_app_data_backup'];
 const MAX_IMPORT_SIZE_BYTES = 15 * 1024 * 1024; // 15MB ceiling for safety
+
+function savedCompletionDay(value: unknown): string | undefined {
+  if (typeof value !== 'string') return undefined;
+  const parts = parseLocalDate(value);
+  return parts && isValidLocalDate(parts.year, parts.month, parts.day) ? value : undefined;
+}
 
 export class StorageRecoveryError extends Error {
   constructor(public readonly backup: AppData | null) {
@@ -17,8 +26,23 @@ export class StorageRecoveryError extends Error {
 type BackupStatus = 'current' | 'stale';
 let backupStatus: BackupStatus = 'current';
 const backupListeners = new Set<(status: BackupStatus) => void>();
-type PrimarySaveStatus = 'saved' | 'failed';
+type PrimarySaveStatus = 'saved' | 'failed' | 'conflict';
 let primarySaveStatus: PrimarySaveStatus = 'saved';
+let loadedPrimary: string | null | undefined;
+let loadedData: AppData | undefined;
+const LOCAL_DRAFT_PREFIX = 'launchpad_local_conflict_v1:';
+let localDraftKey = createStorageDraftKey(LOCAL_DRAFT_PREFIX);
+export const readLocalConflictDrafts = () => readStorageDrafts(LOCAL_DRAFT_PREFIX, value => sanitizeAppData(value, false));
+export const removeLocalConflictDraft = (key: string) => {
+  removeStorageDraft(LOCAL_DRAFT_PREFIX, key);
+  if (key === localDraftKey) localDraftKey = createStorageDraftKey(LOCAL_DRAFT_PREFIX);
+};
+
+function saveLocalConflict(data: AppData): boolean {
+  const preserved = writeStorageDraft(localDraftKey, data);
+  setPrimarySaveStatus(preserved ? 'conflict' : 'failed');
+  return false;
+}
 const primarySaveListeners = new Set<(status: PrimarySaveStatus) => void>();
 export const getPrimarySaveStatus = (): PrimarySaveStatus => primarySaveStatus;
 export function subscribePrimarySaveStatus(listener: (status: PrimarySaveStatus) => void): () => void {
@@ -55,16 +79,30 @@ export function restoreRollingBackup(): boolean {
   return restoreImportedBackup(backup);
 }
 
+export function restoreRollingBackupWithLock(): Promise<boolean> {
+  return withStorageLock(STORAGE_KEY, restoreRollingBackup);
+}
+
+export function restoreImportedBackupWithLock(backup: AppData): Promise<boolean> {
+  return withStorageLock(STORAGE_KEY, () => restoreImportedBackup(backup));
+}
+
 /** Preserve the damaged primary before restoring a user-selected snapshot. */
 export function restoreImportedBackup(backup: AppData): boolean {
   const validated = sanitizeAppData(backup, false);
   const damaged = localStorage.getItem(STORAGE_KEY);
+  if (loadedPrimary !== undefined && damaged !== loadedPrimary) {
+    throw new Error('Saved data changed in another tab. Reload LaunchPAD before restoring a backup.');
+  }
   if (damaged !== null) {
     // Refuse to replace the only damaged copy when it cannot be archived.
     let key = `launchpad_app_data_corrupt_${Date.now()}`;
     while (localStorage.getItem(key) !== null) key += '_copy';
     localStorage.setItem(key, damaged);
   }
+  // Recovery replaces the exact primary the user explicitly chose to recover.
+  loadedPrimary = damaged;
+  loadedData = undefined;
   return saveAppData(validated);
 }
 
@@ -134,7 +172,7 @@ export function removeRetiredIntegrationCredentials(): void {
   }
 }
 
-export function loadAppData(): AppData {
+export function loadAppData(trackSnapshot = true): AppData {
   if (typeof localStorage === 'undefined') {
     return DEFAULT_SEED_DATA;
   }
@@ -144,6 +182,7 @@ export function loadAppData(): AppData {
 
   try {
     raw = localStorage.getItem(STORAGE_KEY);
+    if (trackSnapshot) loadedPrimary = raw;
     if (!raw) {
       for (const legacyKey of LEGACY_STORAGE_KEYS) {
         raw = localStorage.getItem(legacyKey);
@@ -163,12 +202,13 @@ export function loadAppData(): AppData {
   }
 
   if (!raw) {
-    saveAppData(DEFAULT_SEED_DATA);
+    if (trackSnapshot) loadedData = DEFAULT_SEED_DATA;
     return DEFAULT_SEED_DATA;
   }
 
   try {
     const data = sanitizeAppData(JSON.parse(raw), false);
+    if (trackSnapshot) loadedData = data;
     try { setBackupStatus(localStorage.getItem(STORAGE_BACKUP_KEY) === raw ? 'current' : 'stale'); }
     catch { setBackupStatus('stale'); }
     return data;
@@ -185,13 +225,14 @@ export function sanitizeAppData(parsed: any, saveRollingBackup: boolean = true):
   const quickNotes: QuickNote[] = Array.isArray(parsed.quickNotes)
     ? parsed.quickNotes.map((n: any, idx: number) => ({
         pendingReflection: n.pendingReflection === true,
+        completedOn: n.isDone && n.pendingReflection === true ? savedCompletionDay(n.completedOn) : undefined,
         rewardAlreadyGranted: n.rewardAlreadyGranted === true,
         id: typeof n.id === 'string' && n.id ? n.id : `task-migrated-${idx}-${Date.now()}`,
         text: typeof n.text === 'string' ? n.text : 'Untitled Task',
         description: typeof n.description === 'string' ? n.description : undefined,
         isDone: Boolean(n.isDone),
         createdAt: typeof n.createdAt === 'number' ? n.createdAt : Date.now(),
-        durationMinutes: typeof n.durationMinutes === 'number' && n.durationMinutes > 0 ? n.durationMinutes : 30,
+        durationMinutes: Number.isFinite(n.durationMinutes) && n.durationMinutes > 0 ? n.durationMinutes : undefined,
         priority: ['urgent', 'high', 'medium', 'low'].includes(n.priority) ? n.priority : 'medium',
         deadline: typeof n.deadline === 'string' && n.deadline ? n.deadline : undefined,
         timeSpentSeconds: typeof n.timeSpentSeconds === 'number' ? n.timeSpentSeconds : undefined,
@@ -301,7 +342,23 @@ export function saveAppData(data: AppData): boolean {
 
   try {
     const serialized = JSON.stringify(data);
+    const current = localStorage.getItem(STORAGE_KEY);
+    if (current === serialized) {
+      loadedPrimary = current;
+      loadedData = data;
+      setPrimarySaveStatus('saved');
+      if (backupStatus === 'stale') updateBackup(serialized);
+      return true;
+    }
+    if (loadedPrimary !== undefined && current !== loadedPrimary) {
+      // Mount-time autosave must not manufacture a recovery draft in a tab
+      // that has never changed the snapshot it loaded.
+      if (data === loadedData) return false;
+      return saveLocalConflict(data);
+    }
     localStorage.setItem(STORAGE_KEY, serialized);
+    loadedPrimary = serialized;
+    loadedData = data;
     setPrimarySaveStatus('saved');
     updateBackup(serialized);
     return true;
@@ -312,6 +369,8 @@ export function saveAppData(data: AppData): boolean {
         const pruned = pruneExpendableData(data);
         const serialized = JSON.stringify(pruned);
         localStorage.setItem(STORAGE_KEY, serialized);
+        loadedPrimary = serialized;
+        loadedData = data;
         setPrimarySaveStatus('saved');
         updateBackup(serialized);
         console.info('Successfully saved after pruning ephemeral data.');
@@ -328,11 +387,28 @@ export function saveAppData(data: AppData): boolean {
   }
 }
 
+export function saveAppDataWithLock(data: AppData): Promise<boolean> {
+  return withStorageLock(STORAGE_KEY, () => saveAppData(data)).catch(() => saveLocalConflict(data));
+}
+
 /**
  * Debounced auto-save mechanism for high-frequency state changes (typing, timer ticks).
  */
 let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 let pendingDataToSave: AppData | null = null;
+
+function cancelPendingAppDataSave(): void {
+  if (debounceTimer) clearTimeout(debounceTimer);
+  debounceTimer = null;
+  pendingDataToSave = null;
+}
+
+export function preserveAppDataOnLeave(data: AppData): void {
+  cancelPendingAppDataSave();
+  // Locks may not execute during unload. A synchronous save still checks its
+  // baseline and preserves a stale tab's branch in an isolated draft.
+  saveAppData(data);
+}
 
 export function saveAppDataDebounced(data: AppData, delayMs: number = 250): void {
   pendingDataToSave = data;
@@ -340,11 +416,19 @@ export function saveAppDataDebounced(data: AppData, delayMs: number = 250): void
     clearTimeout(debounceTimer);
   }
   debounceTimer = setTimeout(() => {
-    if (pendingDataToSave) {
-      saveAppData(pendingDataToSave);
-      pendingDataToSave = null;
-    }
     debounceTimer = null;
+    const candidate = pendingDataToSave;
+    if (!candidate) return;
+    void withStorageLock(STORAGE_KEY, () => {
+      if (pendingDataToSave !== candidate) return;
+      pendingDataToSave = null;
+      saveAppData(candidate);
+    }).catch(() => {
+      if (pendingDataToSave === candidate) {
+        pendingDataToSave = null;
+        saveLocalConflict(candidate);
+      }
+    });
   }, delayMs);
 }
 
@@ -352,14 +436,13 @@ export function saveAppDataDebounced(data: AppData, delayMs: number = 250): void
  * Flushes any pending debounced save immediately (e.g. before unload).
  */
 export function flushAppDataSave(): void {
-  if (debounceTimer) {
-    clearTimeout(debounceTimer);
-    debounceTimer = null;
-  }
-  if (pendingDataToSave) {
-    saveAppData(pendingDataToSave);
-    pendingDataToSave = null;
-  }
+  if (pendingDataToSave) preserveAppDataOnLeave(pendingDataToSave);
+}
+
+export function flushAppDataSaveWithLock(): Promise<boolean> {
+  const data = pendingDataToSave;
+  cancelPendingAppDataSave();
+  return data ? saveAppDataWithLock(data) : Promise.resolve(primarySaveStatus === 'saved');
 }
 
 // Wire beforeunload listener to flush pending saves on page exit
@@ -434,14 +517,20 @@ export function exportDataAsJson(data: AppData): void {
     gamification: data.gamification || DEFAULT_SEED_DATA.gamification,
     growthHistory: data.growthHistory || {},
   };
-  const jsonString = `data:text/json;charset=utf-8,${encodeURIComponent(JSON.stringify(exportPayload, null, 2))}`;
+  const json = JSON.stringify(exportPayload, null, 2);
+  const objectUrl = typeof URL.createObjectURL === 'function'
+    ? URL.createObjectURL(new Blob([json], { type: 'application/json;charset=utf-8' }))
+    : undefined;
   const downloadAnchor = document.createElement('a');
   const dateStr = new Date().toISOString().split('T')[0];
-  downloadAnchor.setAttribute('href', jsonString);
+  downloadAnchor.setAttribute('href', objectUrl ?? `data:application/json;charset=utf-8,${encodeURIComponent(json)}`);
   downloadAnchor.setAttribute('download', `launchpad-backup-${dateStr}.json`);
   document.body.appendChild(downloadAnchor);
-  downloadAnchor.click();
-  downloadAnchor.remove();
+  try { downloadAnchor.click(); }
+  finally {
+    downloadAnchor.remove();
+    if (objectUrl) setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+  }
 }
 
 /**
@@ -484,7 +573,7 @@ export function importDataFromJson(jsonStr: string, saveRollingBackup = true): A
  * Clears all user data from local storage while resetting to a clean empty baseline.
  * Also cleans rolling backups, legacy keys, and timer storage to prevent resurrection of deleted items.
  */
-export function clearAllLocalData(): AppData {
+export function clearAllLocalData(persist = true): AppData {
   const cleared: AppData = {
     ...DEFAULT_SEED_DATA,
     version: 3,
@@ -512,24 +601,32 @@ export function clearAllLocalData(): AppData {
     },
   };
 
-  if (typeof localStorage !== 'undefined') {
-    try {
-      saveAppData(cleared);
-      localStorage.setItem(STORAGE_BACKUP_KEY, JSON.stringify(cleared));
-      for (const legacyKey of LEGACY_STORAGE_KEYS) {
-        localStorage.removeItem(legacyKey);
-      }
-      localStorage.removeItem('launchpad_focus_timer_v1');
-      for (let i = localStorage.length - 1; i >= 0; i--) {
-        const key = localStorage.key(i);
-        if (key && (key.startsWith('launchpad_app_data_corrupt_') || key.startsWith('launchpad_focus_timer_'))) {
-          localStorage.removeItem(key);
-        }
-      }
-    } catch (err) {
-      console.error('Failed to clear local data from storage:', err);
-    }
-  }
-
+  if (persist && typeof localStorage !== 'undefined') applyLocalClear(cleared);
   return cleared;
+}
+
+function applyLocalClear(cleared: AppData): void {
+  if (loadedPrimary !== undefined && localStorage.getItem(STORAGE_KEY) !== loadedPrimary) {
+    throw new Error('Another tab saved a newer copy. Export your changes, then reload before clearing this device.');
+  }
+  if (!saveAppData(cleared)) throw new Error('This copy could not be cleared safely. Reload LaunchPAD and try again.');
+  cancelPendingAppDataSave();
+  try {
+    for (const legacyKey of LEGACY_STORAGE_KEYS) {
+      localStorage.removeItem(legacyKey);
+    }
+    localStorage.removeItem(FOCUS_TIMER_STORAGE_KEY);
+    for (let i = localStorage.length - 1; i >= 0; i--) {
+      const key = localStorage.key(i);
+      if (key?.startsWith('launchpad_app_data_corrupt_')) {
+        localStorage.removeItem(key);
+      }
+    }
+  } catch (err) {
+    console.error('Failed to remove legacy data from storage:', err);
+  }
+}
+
+export function clearAllLocalDataWithLock(cleared: AppData = clearAllLocalData(false)): Promise<void> {
+  return withStorageLock(STORAGE_KEY, () => applyLocalClear(cleared));
 }
