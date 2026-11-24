@@ -7,7 +7,6 @@ interface TimeRadarWidgetProps {
   timeRemaining: DayTimeRemaining;
   taskLoad: TaskLoadSummary;
   buffer: BufferSummary;
-  endHour: number;
   onOpenTasks: () => void;
 }
 
@@ -18,10 +17,8 @@ const statusText = {
 };
 
 export const TimeRadarWidget = memo(function TimeRadarWidget({
-  timeRemaining, taskLoad, buffer, endHour, onOpenTasks,
+  timeRemaining, taskLoad, buffer, onOpenTasks,
 }: TimeRadarWidgetProps) {
-  const cutoff = new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' })
-    .format(new Date(2000, 0, 1, endHour));
   const rows = [
     ['Time left today', timeRemaining.formatted],
     ['Pending workload', taskLoad.formattedPending],

@@ -894,7 +894,6 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
                     timeRemaining={timeRemaining}
                     taskLoad={todayTaskLoad}
                     buffer={todayBuffer}
-                    endHour={appData.settings.daySchedule.endHour}
                     onOpenTasks={() => setActiveView('tasks')}
                   />
                 </div>

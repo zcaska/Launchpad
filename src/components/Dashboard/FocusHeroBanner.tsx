@@ -287,14 +287,13 @@ export const FocusHeroBanner: React.FC<FocusHeroBannerProps> = ({
         </div>
 
         {/* Time Radar Widget in former quote space (5 cols on @3xl) */}
-        {hasTimeRadar && timeRemaining && taskLoad && buffer && endHour !== undefined && (
+        {hasTimeRadar && timeRemaining && taskLoad && buffer && (
           <div className="@3xl:col-span-5 flex flex-col min-w-0">
             <GuideTarget id="dashboard.timeRadar" hoverLabel="Time budget radar" className="w-full">
               <TimeRadarWidget
                 timeRemaining={timeRemaining}
                 taskLoad={taskLoad}
                 buffer={buffer}
-                endHour={endHour}
                 onOpenTasks={onOpenTasksScreen || (() => {})}
               />
             </GuideTarget>
