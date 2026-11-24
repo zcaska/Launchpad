@@ -25,7 +25,6 @@ export const TimeRadarWidget = memo(function TimeRadarWidget({
   const rows = [
     ['Time left today', timeRemaining.formatted],
     ['Pending workload', taskLoad.formattedPending],
-    ['Day cutoff', cutoff],
   ];
 
   const spare = (buffer.bufferMinutes < 0 ? '−' : '') + buffer.formatted;
@@ -42,7 +41,7 @@ export const TimeRadarWidget = memo(function TimeRadarWidget({
           <h2 className="flex items-center gap-2 text-base font-semibold"><Clock className="budget-icon" aria-hidden="true" /> Time budget</h2>
           <details className="budget-details md:hidden">
             <summary aria-label="Time budget details"><Info size={15} aria-hidden="true" /></summary>
-            <p>Day cutoff {cutoff}<br />{statusText[buffer.status]}</p>
+            <p>{statusText[buffer.status]}</p>
           </details>
         </div>
         <button type="button" onClick={onOpenTasks} className="inline-flex min-h-11 items-center text-sm font-semibold text-serene-primary dark:text-serene-primary-dark">

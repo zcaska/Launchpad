@@ -441,7 +441,6 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
               {/* Priority Badge */}
               {task.priority === 'urgent' && (
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md font-bold text-[11px] bg-red-600 text-white shadow-2xs">
-                  <AlertTriangle className="w-3 h-3 shrink-0" />
                   <span>Urgent</span>
                 </span>
               )}

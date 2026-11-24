@@ -149,7 +149,7 @@
 .cp-work-list li { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; padding-block: 8px; border-bottom: 1px solid var(--cp-border); }
 .cp-historical-match { display: block; color: var(--cp-muted); }
 
-html:not(.dark) .cp-dialog {
+html:not(.dark) .castle-panel, html:not(.dark) .cp-dialog {
   --cp-card: #f8faf8;
   --cp-border: #aebfb5;
   --cp-text: #243631;
@@ -158,6 +158,10 @@ html:not(.dark) .cp-dialog {
   --cp-accent: #745415;
   --cp-danger: #a1262b;
 }
+html:not(.dark) .castle-workspace, html:not(.dark) .castle-panel { background: #e8eff0; }
+html:not(.dark) .cp-header { background: #f8faf8; border-color: #cbd9d1; }
+html:not(.dark) .cp-btn.cp-store-trigger { background: #f5d781; color: #252013; }
+html:not(.dark) .cp-btn.cp-store-trigger:hover { background: #efd073; }
 html:not(.dark) .cp-item-icon { background: #e8eee8; }
 
 @media (max-width: 520px) {

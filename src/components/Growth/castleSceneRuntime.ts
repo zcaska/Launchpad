@@ -109,7 +109,8 @@ export function mountCastleScene(
     ground.receiveShadow = true;
     scene.add(ground);
 
-    scene.add(new THREE.HemisphereLight(0x8fb4e8, 0x1c1712, 2.1));
+    const ambient = new THREE.HemisphereLight(0x8fb4e8, 0x1c1712, 2.1);
+    scene.add(ambient);
     const moon = new THREE.DirectionalLight(0xd6e6ff, 3.2);
     moon.position.set(-14, 22, 16);
     moon.castShadow = true;
@@ -158,6 +159,24 @@ export function mountCastleScene(
 
     let owned = new Set<string>();
     let dirty = true;
+    const updateTheme = () => {
+      const light = !document.documentElement.classList.contains('dark');
+      const background = light ? 0xdce8ea : 0x0c1322;
+      (scene.background as THREE.Color).setHex(background);
+      (scene.fog as THREE.FogExp2).color.setHex(background);
+      phantom.color.setHex(light ? 0x687f83 : 0x141b2a);
+      phantom.emissive.setHex(light ? 0x607578 : 0x3a4e68);
+      phantom.opacity = light ? 0.5 : 0.35;
+      groundMaterial.color.setHex(light ? 0x9aadaa : 0x192431);
+      ambient.color.setHex(light ? 0xeaf5f3 : 0x8fb4e8);
+      ambient.groundColor.setHex(light ? 0x8c9e96 : 0x1c1712);
+      moon.color.setHex(light ? 0xfff2d8 : 0xd6e6ff);
+      dirty = true;
+    };
+    updateTheme();
+    const themeObserver = new MutationObserver(updateTheme);
+    themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    releases.push(() => themeObserver.disconnect());
     let hasWater = false;
     const onMotionChange = () => { dirty = true; };
     motionPreference.addEventListener('change', onMotionChange);

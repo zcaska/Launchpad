@@ -10,4 +10,9 @@
 .castle-3d__selection{position:absolute;top:12px;left:12px;display:grid;gap:1px;max-width:calc(100% - 24px);padding:7px 11px;background:#172436e8;border:1px solid #718096;border-radius:8px;color:#f3e3be;pointer-events:none;font-size:13px}
 .castle-3d__selection span{font-size:11px;color:#bbc8d8}
 .castle-3d button:disabled{opacity:.5;cursor:default}
+html:not(.dark) .castle-artwork{background:#dce8ea}
+html:not(.dark) .castle-3d button,html:not(.dark) .castle-3d__selection{background:#f8faf8ed;border-color:#9cafaa;color:#243631}
+html:not(.dark) .castle-3d__selection span{color:#4c6258}
+html:not(.dark) .castle-3d__status{background:#f8faf8ed;border-color:#9cafaa;color:#243631}
+html:not(.dark) .castle-3d button:focus-visible{outline-color:#745415}
 @media(max-width:640px){.castle-artwork{min-height:280px;aspect-ratio:1.2/1}.castle-3d__controls{bottom:8px;right:8px}}
