@@ -111,7 +111,7 @@ function priorityRank({ task }: TaskRow): number {
 }
 
 export function selectTaskRows(projection: TaskListProjection, tab: FilterTab, searchQuery: string) {
-  const query = searchQuery.trim() ? searchQuery.toLowerCase() : '';
+  const query = searchQuery.trim().toLowerCase();
   const matches = ({ task }: TaskRow) => !query || matchesQuery(task, query);
   const pendingSource = tab === 'All' ? projection.pending : tab === 'Completed' ? [] : projection.byTab[tab];
   const pending = pendingSource.filter(matches);

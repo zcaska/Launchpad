@@ -40,7 +40,7 @@ export function useCloudSync(workspace: CloudWorkspace | null, data: AppData, on
     if (!cacheWriter) return;
     const flush = () => {
       const pending = cachePending.current;
-      if (pending) cacheWriter.save(pending);
+      if (pending && pending === current.current) cacheWriter.save(pending);
     };
     window.addEventListener('pagehide', flush);
     return () => {
@@ -167,13 +167,15 @@ export function useCloudSync(workspace: CloudWorkspace | null, data: AppData, on
     if (!workspace) return;
     active.current = true;
     void sync();
-    const timer = window.setInterval(() => {
+    const syncWhenVisible = () => {
       if (document.visibilityState === 'visible') void sync();
-    }, 12000);
+    };
+    const timer = window.setInterval(syncWhenVisible, 12000);
     const onOffline = () => setStatus('Offline. Reconnect to sync changes.');
     window.addEventListener('online', sync);
     window.addEventListener('focus', sync);
     window.addEventListener('offline', onOffline);
+    document.addEventListener('visibilitychange', syncWhenVisible);
     const channel = workspace.client.channel(`launchpad:${workspace.userId}`)
       .on('postgres_changes', {
         event: '*', schema: 'public', table: 'launchpad_workspaces',
@@ -189,6 +191,7 @@ export function useCloudSync(workspace: CloudWorkspace | null, data: AppData, on
       window.removeEventListener('online', sync);
       window.removeEventListener('focus', sync);
       window.removeEventListener('offline', onOffline);
+      document.removeEventListener('visibilitychange', syncWhenVisible);
     };
   }, [sync, workspace]);
 

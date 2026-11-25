@@ -589,8 +589,8 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
     });
   }, []);
 
-  const handleUpdateNotes = useCallback((newNotes: QuickNote[]) => {
-    setAppData((prev) => ({ ...prev, quickNotes: newNotes }));
+  const handleUpdateNotes = useCallback((update: QuickNote[] | ((notes: QuickNote[]) => QuickNote[])) => {
+    setAppData(prev => ({ ...prev, quickNotes: typeof update === 'function' ? update(prev.quickNotes) : update }));
   }, []);
 
   const handleUpdateScratchpad = (text: string) => {

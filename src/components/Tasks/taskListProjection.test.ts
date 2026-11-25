@@ -203,6 +203,7 @@ try {
   assert.equal(timeParses, 12);
   assert.equal(formattedTimes, 0, 'No locale formatting for the hidden completed task');
   assert.deepEqual(rowIds(fixture, 'Due Soon', 'time-11'), ['time-11']);
+  assert.deepEqual(rowIds(fixture, 'Due Soon', '  TIME-11  '), ['time-11']);
   assert.equal(timeParses, 12, 'Searching and selecting tabs never reclassifies pending deadlines');
 } finally {
   Date.prototype.setHours = originalSetHours;

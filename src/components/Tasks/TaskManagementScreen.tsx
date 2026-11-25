@@ -41,7 +41,7 @@ export interface TaskManagementScreenProps {
   onCreateTaskOpened: () => void;
   searchQuery: string;
   onSearchChange: (query: string) => void;
-  onUpdateNotes: (notes: QuickNote[]) => void;
+  onUpdateNotes: (update: (notes: QuickNote[]) => QuickNote[]) => void;
   onViewTask: (taskId: string, trigger: TaskDialogTrigger | null) => void;
   onBackToDashboard?: () => void;
   initialTaskId?: string | null;
@@ -271,11 +271,11 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
     } else {
       const newTask: QuickNote = {
         ...fields,
-        id: `task-${Date.now()}`,
+        id: `task-${crypto.randomUUID()}`,
         isDone: formSubtasks.length > 0 && formSubtasks.every(st => st.isDone),
         createdAt: Date.now(),
       };
-      onUpdateNotes([newTask, ...notes]);
+      onUpdateNotes(current => [newTask, ...current]);
     }
 
     setIsFormOpen(false);
@@ -283,7 +283,7 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
 
   // Direct In-Card Actions
   const handleDeleteTask = (taskId: string) => {
-    onUpdateNotes(notes.filter((n) => n.id !== taskId));
+    onUpdateNotes(current => current.filter(note => note.id !== taskId));
   };
 
   const projection = useMemo(() => projectTaskList(periodNotes, now), [periodNotes, now]);
