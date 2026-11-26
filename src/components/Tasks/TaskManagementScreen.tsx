@@ -341,15 +341,15 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
     }
     switch (task.priority) {
       case 'urgent':
-        return 'bg-gradient-to-br from-red-50/95 via-rose-50/50 to-white dark:from-red-950/45 dark:via-rose-950/25 dark:to-serene-surface-dark border-red-300 dark:border-red-800/80 shadow-xs hover:shadow-card hover:border-red-400 dark:hover:border-red-700';
+        return 'task-card-brushed task-card-brushed--urgent border-red-300/90 dark:border-red-800/70 shadow-xs hover:shadow-card hover:border-red-400 dark:hover:border-red-700';
       case 'high':
-        return 'bg-gradient-to-br from-rose-50/80 via-pink-50/40 to-white dark:from-rose-950/35 dark:via-pink-950/20 dark:to-serene-surface-dark border-rose-200/90 dark:border-rose-900/60 shadow-subtle hover:shadow-card hover:border-rose-300 dark:hover:border-rose-800';
+        return 'task-card-brushed task-card-brushed--high border-rose-200/90 dark:border-rose-900/60 shadow-subtle hover:shadow-card hover:border-rose-300 dark:hover:border-rose-800';
       case 'medium':
-        return 'bg-gradient-to-br from-amber-50/80 via-yellow-50/35 to-white dark:from-amber-950/30 dark:via-yellow-950/15 dark:to-serene-surface-dark border-amber-200/90 dark:border-amber-900/60 shadow-subtle hover:shadow-card hover:border-amber-300 dark:hover:border-amber-800';
+        return 'task-card-brushed task-card-brushed--medium border-amber-200/90 dark:border-amber-900/60 shadow-subtle hover:shadow-card hover:border-amber-300 dark:hover:border-amber-800';
       case 'low':
-        return 'bg-gradient-to-br from-sky-50/80 via-blue-50/35 to-white dark:from-sky-950/30 dark:via-blue-950/15 dark:to-serene-surface-dark border-sky-200/90 dark:border-sky-900/60 shadow-subtle hover:shadow-card hover:border-sky-300 dark:hover:border-sky-800';
+        return 'task-card-brushed task-card-brushed--low border-sky-200/90 dark:border-sky-900/60 shadow-subtle hover:shadow-card hover:border-sky-300 dark:hover:border-sky-800';
       default:
-        return 'bg-white dark:bg-serene-surface-dark border-serene-border-light dark:border-serene-border-dark shadow-subtle hover:shadow-card';
+        return 'task-card-brushed border-serene-border-light dark:border-serene-border-dark shadow-subtle hover:shadow-card';
     }
   };
 

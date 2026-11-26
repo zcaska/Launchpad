@@ -9,9 +9,8 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: {
-          'vendor-react': ['react', 'react-dom'],
+          'vendor-react': ['react', 'react-dom/client'],
           'vendor-motion': ['motion/react'],
-          'vendor-icons': ['@phosphor-icons/react'],
         },
       },
     },

@@ -12,9 +12,9 @@
     "semantic_hash": "ef3ba2a81ba19f8ea5ddf625521e96f0"
   },
   "src/App.tsx": {
-    "mtime": 1795686635.2526262,
-    "seen": 1795689245.0039232,
-    "ast_hash": "bf3a519d36a518da2ac15d31d7132706",
+    "mtime": 1795690109.6408803,
+    "seen": 1795690262.8357284,
+    "ast_hash": "20e063b6d105cb44224e55c7cb42cd1b",
     "semantic_hash": ""
   },
   "src/components/Dashboard/FocusHeroBanner.tsx": {
@@ -66,9 +66,9 @@
     "semantic_hash": ""
   },
   "src/types/index.ts": {
-    "mtime": 1795683335.9278688,
-    "seen": 1795689245.0039232,
-    "ast_hash": "68f6aa68b09e0c08d01d00c4175ca768",
+    "mtime": 1795690101.6888125,
+    "seen": 1795690262.8357284,
+    "ast_hash": "e6edb650619361f973fabbdc9074aef9",
     "semantic_hash": ""
   },
   "src/utils/favicon.ts": {
@@ -96,9 +96,9 @@
     "semantic_hash": ""
   },
   "tailwind.config.js": {
-    "mtime": 1794313340.1983657,
-    "seen": 1795689245.0039232,
-    "ast_hash": "b022e636e905d5ecaac8611c7cd4c2c2",
+    "mtime": 1795690104.8505557,
+    "seen": 1795690262.8367333,
+    "ast_hash": "212609c5ef4d8c14a6ddcac6ae7b0f5a",
     "semantic_hash": ""
   },
   "tsconfig.json": {
@@ -486,9 +486,9 @@
     "semantic_hash": ""
   },
   "src/components/Tasks/TaskPreviewPopUp.tsx": {
-    "mtime": 1795682013.2816691,
-    "seen": 1795689245.0039232,
-    "ast_hash": "bc94e8d1fe47c94f791900c28bbe8af0",
+    "mtime": 1795690093.943086,
+    "seen": 1795690262.8357284,
+    "ast_hash": "e0d3836db5784fa121df1daecc7f3d4d",
     "semantic_hash": ""
   },
   "src/data/curatedCatalog.ts": {
@@ -750,9 +750,9 @@
     "semantic_hash": ""
   },
   "src/components/Modals/SettingsScreen.tsx": {
-    "mtime": 1795686441.821763,
-    "seen": 1795689245.0039232,
-    "ast_hash": "9a2225ac8d75a77ce5578358d8061fac",
+    "mtime": 1795690111.8500724,
+    "seen": 1795690262.8357284,
+    "ast_hash": "635a45a4112aa39b30f49f97c8650300",
     "semantic_hash": ""
   },
   "src/components/Pet/usePetCelebration.ts": {
@@ -1026,9 +1026,9 @@
     "semantic_hash": ""
   },
   "src/components/Tasks/TaskEditorDialog.tsx": {
-    "mtime": 1795268177.2125962,
-    "seen": 1795689245.0039232,
-    "ast_hash": "de106b52b3393d94827b93dd97771d46",
+    "mtime": 1795690150.4332821,
+    "seen": 1795690262.8357284,
+    "ast_hash": "cde53f361517e208e4fad4a5b3044bec",
     "semantic_hash": ""
   },
   "src/components/Tasks/taskDeadlineEditor.test.ts": {

@@ -11,19 +11,19 @@ export default {
         serene: {
           bg: {
             light: '#faf9fb',
-            dark: '#000000',
+            dark: 'rgb(var(--serene-bg-dark) / <alpha-value>)',
           },
           surface: {
             light: '#ffffff',
-            dark: '#141417',
+            dark: 'rgb(var(--serene-surface-dark) / <alpha-value>)',
           },
           surfaceAlt: {
             light: '#f3f2f5',
-            dark: '#212126',
+            dark: 'rgb(var(--serene-surface-alt-dark) / <alpha-value>)',
           },
           border: {
             light: '#e2e0e5',
-            dark: '#2e2e36',
+            dark: 'rgb(var(--serene-border-dark) / <alpha-value>)',
           },
           primary: {
             DEFAULT: '#264d44',

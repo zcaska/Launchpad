@@ -5,15 +5,14 @@ import {
   RecommendationCandidate, 
   TimeOfDayBucket 
 } from '../types';
-import { CURATED_FOCUS_SUGGESTIONS, DEFAULT_MICRO_QUESTS } from '../data/seedData';
+import { CURATED_FOCUS_SUGGESTIONS } from '../data/curatedCatalog';
 import { getTimeOfDayBucket } from './timeBudget';
 
 export function generateCandidatePool(
   _links?: LinkItem[],
   _folders?: Folder[]
 ): RecommendationCandidate[] {
-  const basePool = CURATED_FOCUS_SUGGESTIONS || DEFAULT_MICRO_QUESTS;
-  return basePool.map((quest) => ({ ...quest }));
+  return CURATED_FOCUS_SUGGESTIONS.map((quest) => ({ ...quest }));
 }
 
 export function scoreCandidate(

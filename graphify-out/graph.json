@@ -13,7 +13,7 @@
       "_callable_class": true,
       "_origin": "ast",
       "community": 0,
-      "community_name": "timeBudget.ts",
+      "community_name": "FocusHeroBanner.tsx",
       "file_type": "code",
       "norm_label": "focusherobannerprops",
       "source_file": "src/components/Dashboard/FocusHeroBanner.tsx",
@@ -26,7 +26,7 @@
       "_callable_class": true,
       "_origin": "ast",
       "community": 0,
-      "community_name": "timeBudget.ts",
+      "community_name": "FocusHeroBanner.tsx",
       "file_type": "code",
       "norm_label": "timeradarwidgetprops",
       "source_file": "src/components/Dashboard/TimeRadarWidget.tsx",
@@ -39,7 +39,7 @@
       "_callable_class": true,
       "_origin": "ast",
       "community": 0,
-      "community_name": "timeBudget.ts",
+      "community_name": "FocusHeroBanner.tsx",
       "file_type": "code",
       "norm_label": "dailyfocus",
       "source_file": "src/types/index.ts",
@@ -52,7 +52,7 @@
       "_callable_class": true,
       "_origin": "ast",
       "community": 0,
-      "community_name": "timeBudget.ts",
+      "community_name": "FocusHeroBanner.tsx",
       "file_type": "code",
       "norm_label": "buffersummary",
       "source_file": "src/utils/timeBudget.ts",
@@ -65,24 +65,11 @@
       "_callable_class": true,
       "_origin": "ast",
       "community": 0,
-      "community_name": "timeBudget.ts",
+      "community_name": "FocusHeroBanner.tsx",
       "file_type": "code",
       "norm_label": "daytimeremaining",
       "source_file": "src/utils/timeBudget.ts",
       "source_location": "L83"
-    },
-    {
-      "id": "src_utils_timebudget_formatapproximatedurationoptions",
-      "label": "FormatApproximateDurationOptions",
-      "_callable": true,
-      "_callable_class": true,
-      "_origin": "ast",
-      "community": 0,
-      "community_name": "timeBudget.ts",
-      "file_type": "code",
-      "norm_label": "formatapproximatedurationoptions",
-      "source_file": "src/utils/timeBudget.ts",
-      "source_location": "L11"
     },
     {
       "id": "src_utils_timebudget_taskloadsummary",
@@ -91,167 +78,89 @@
       "_callable_class": true,
       "_origin": "ast",
       "community": 0,
-      "community_name": "timeBudget.ts",
+      "community_name": "FocusHeroBanner.tsx",
       "file_type": "code",
       "norm_label": "taskloadsummary",
       "source_file": "src/utils/timeBudget.ts",
       "source_location": "L120"
     },
     {
-      "id": "src_types_index_subtask",
-      "label": "Subtask",
+      "id": "src_components_header_header_headerprops",
+      "label": "HeaderProps",
       "_callable": true,
       "_callable_class": true,
       "_origin": "ast",
-      "community": 10,
-      "community_name": "taskUrgency.ts",
+      "community": 1,
+      "community_name": "App.tsx",
       "file_type": "code",
-      "norm_label": "subtask",
+      "norm_label": "headerprops",
+      "source_file": "src/components/Header/Header.tsx",
+      "source_location": "L19"
+    },
+    {
+      "id": "src_components_layout_backupremindertoast_backupremindertoastprops",
+      "label": "BackupReminderToastProps",
+      "_callable": true,
+      "_callable_class": true,
+      "_origin": "ast",
+      "community": 1,
+      "community_name": "App.tsx",
+      "file_type": "code",
+      "norm_label": "backupremindertoastprops",
+      "source_file": "src/components/Layout/BackupReminderToast.tsx",
+      "source_location": "L7"
+    },
+    {
+      "id": "src_types_index_thememode",
+      "label": "ThemeMode",
+      "_callable": true,
+      "_callable_class": true,
+      "_origin": "ast",
+      "community": 1,
+      "community_name": "App.tsx",
+      "file_type": "code",
+      "norm_label": "thememode",
       "source_file": "src/types/index.ts",
-      "source_location": "L49"
+      "source_location": "L88"
     },
     {
-      "id": "src_utils_taskurgency_opportunityrankingoptions",
-      "label": "OpportunityRankingOptions",
+      "id": "src_utils_timebudget_formatapproximatedurationoptions",
+      "label": "FormatApproximateDurationOptions",
       "_callable": true,
       "_callable_class": true,
       "_origin": "ast",
-      "community": 10,
-      "community_name": "taskUrgency.ts",
+      "community": 1,
+      "community_name": "App.tsx",
       "file_type": "code",
-      "norm_label": "opportunityrankingoptions",
-      "source_file": "src/utils/taskUrgency.ts",
-      "source_location": "L665"
+      "norm_label": "formatapproximatedurationoptions",
+      "source_file": "src/utils/timeBudget.ts",
+      "source_location": "L11"
     },
     {
-      "id": "src_utils_taskurgency_opportunityscorebreakdown",
-      "label": "OpportunityScoreBreakdown",
+      "id": "src_components_common_faviconimage_faviconimageprops",
+      "label": "FaviconImageProps",
       "_callable": true,
       "_callable_class": true,
       "_origin": "ast",
-      "community": 10,
-      "community_name": "taskUrgency.ts",
+      "community": 13,
+      "community_name": "seedData.ts",
       "file_type": "code",
-      "norm_label": "opportunityscorebreakdown",
-      "source_file": "src/utils/taskUrgency.ts",
-      "source_location": "L636"
+      "norm_label": "faviconimageprops",
+      "source_file": "src/components/Common/FaviconImage.tsx",
+      "source_location": "L7"
     },
     {
-      "id": "src_utils_taskurgency_opportunitytag",
-      "label": "OpportunityTag",
+      "id": "src_components_dashboard_smartsuggestioncard_smartsuggestioncardprops",
+      "label": "SmartSuggestionCardProps",
       "_callable": true,
       "_callable_class": true,
       "_origin": "ast",
-      "community": 10,
-      "community_name": "taskUrgency.ts",
+      "community": 13,
+      "community_name": "seedData.ts",
       "file_type": "code",
-      "norm_label": "opportunitytag",
-      "source_file": "src/utils/taskUrgency.ts",
-      "source_location": "L645"
-    },
-    {
-      "id": "src_utils_taskurgency_radarprojectionoptions",
-      "label": "RadarProjectionOptions",
-      "_callable": true,
-      "_callable_class": true,
-      "_origin": "ast",
-      "community": 10,
-      "community_name": "taskUrgency.ts",
-      "file_type": "code",
-      "norm_label": "radarprojectionoptions",
-      "source_file": "src/utils/taskUrgency.ts",
-      "source_location": "L403"
-    },
-    {
-      "id": "src_utils_taskurgency_radarringconfig",
-      "label": "RadarRingConfig",
-      "_callable": true,
-      "_callable_class": true,
-      "_origin": "ast",
-      "community": 10,
-      "community_name": "taskUrgency.ts",
-      "file_type": "code",
-      "norm_label": "radarringconfig",
-      "source_file": "src/utils/taskUrgency.ts",
-      "source_location": "L321"
-    },
-    {
-      "id": "src_utils_taskurgency_radarviewbox",
-      "label": "RadarViewBox",
-      "_callable": true,
-      "_callable_class": true,
-      "_origin": "ast",
-      "community": 10,
-      "community_name": "taskUrgency.ts",
-      "file_type": "code",
-      "norm_label": "radarviewbox",
-      "source_file": "src/utils/taskUrgency.ts",
-      "source_location": "L307"
-    },
-    {
-      "id": "src_utils_taskurgency_rankedtaskopportunity",
-      "label": "RankedTaskOpportunity",
-      "_callable": true,
-      "_callable_class": true,
-      "_origin": "ast",
-      "community": 10,
-      "community_name": "taskUrgency.ts",
-      "file_type": "code",
-      "norm_label": "rankedtaskopportunity",
-      "source_file": "src/utils/taskUrgency.ts",
-      "source_location": "L653"
-    },
-    {
-      "id": "src_utils_taskurgency_sessionmomentumstats",
-      "label": "SessionMomentumStats",
-      "_callable": true,
-      "_callable_class": true,
-      "_origin": "ast",
-      "community": 10,
-      "community_name": "taskUrgency.ts",
-      "file_type": "code",
-      "norm_label": "sessionmomentumstats",
-      "source_file": "src/utils/taskUrgency.ts",
-      "source_location": "L888"
-    },
-    {
-      "id": "src_utils_taskurgency_subtaskcontainerstate",
-      "label": "SubtaskContainerState",
-      "_callable": true,
-      "_callable_class": true,
-      "_origin": "ast",
-      "community": 10,
-      "community_name": "taskUrgency.ts",
-      "file_type": "code",
-      "norm_label": "subtaskcontainerstate",
-      "source_file": "src/utils/taskUrgency.ts",
-      "source_location": "L555"
-    },
-    {
-      "id": "src_utils_taskurgency_taskurgencyinfo",
-      "label": "TaskUrgencyInfo",
-      "_callable": true,
-      "_callable_class": true,
-      "_origin": "ast",
-      "community": 10,
-      "community_name": "taskUrgency.ts",
-      "file_type": "code",
-      "norm_label": "taskurgencyinfo",
-      "source_file": "src/utils/taskUrgency.ts",
-      "source_location": "L25"
-    },
-    {
-      "id": "src_utils_taskurgency_urgencycolortokens",
-      "label": "UrgencyColorTokens",
-      "_callable": true,
-      "_callable_class": true,
-      "_origin": "ast",
-      "community": 10,
-      "community_name": "taskUrgency.ts",
-      "file_type": "code",
-      "norm_label": "urgencycolortokens",
-      "source_file": "src/utils/taskUrgency.ts",
-      "source_location": "L16"
+      "norm_label": "smartsuggestioncardprops",
+      "source_file": "src/components/Dashboard/SmartSuggestionCard.tsx",
+      "source_location": "L30"
     },
     {
       "id": "src_types_index_learnedpreferences",
@@ -265,6 +174,19 @@
       "norm_label": "learnedpreferences",
       "source_file": "src/types/index.ts",
       "source_location": "L116"
+    },
+    {
+      "id": "src_types_index_recommendationcandidate",
+      "label": "RecommendationCandidate",
+      "_callable": true,
+      "_callable_class": true,
+      "_origin": "ast",
+      "community": 13,
+      "community_name": "seedData.ts",
+      "file_type": "code",
+      "norm_label": "recommendationcandidate",
+      "source_file": "src/types/index.ts",
+      "source_location": "L125"
     },
     {
       "id": "src_types_index_timeofdaybucket",
@@ -293,32 +215,6 @@
       "source_location": "L90"
     },
     {
-      "id": "src_components_quicknotes_quicknoteswidget_quicknoteswidgetprops",
-      "label": "QuickNotesWidgetProps",
-      "_callable": true,
-      "_callable_class": true,
-      "_origin": "ast",
-      "community": 15,
-      "community_name": "TaskManagementScreen.tsx",
-      "file_type": "code",
-      "norm_label": "quicknoteswidgetprops",
-      "source_file": "src/components/QuickNotes/QuickNotesWidget.tsx",
-      "source_location": "L15"
-    },
-    {
-      "id": "src_components_tasks_tasklistprojection_taskrow",
-      "label": "TaskRow",
-      "_callable": true,
-      "_callable_class": true,
-      "_origin": "ast",
-      "community": 15,
-      "community_name": "TaskManagementScreen.tsx",
-      "file_type": "code",
-      "norm_label": "taskrow",
-      "source_file": "src/components/Tasks/taskListProjection.ts",
-      "source_location": "L27"
-    },
-    {
       "id": "src_components_tasks_taskmanagementscreen_taskmanagementscreenprops",
       "label": "TaskManagementScreenProps",
       "_callable": true,
@@ -332,19 +228,6 @@
       "source_location": "L38"
     },
     {
-      "id": "src_components_tasks_taskpreviewpopup_taskpreviewpopupprops",
-      "label": "TaskPreviewPopUpProps",
-      "_callable": true,
-      "_callable_class": true,
-      "_origin": "ast",
-      "community": 15,
-      "community_name": "TaskManagementScreen.tsx",
-      "file_type": "code",
-      "norm_label": "taskpreviewpopupprops",
-      "source_file": "src/components/Tasks/TaskPreviewPopUp.tsx",
-      "source_location": "L12"
-    },
-    {
       "id": "src_components_tasks_usetaskview_taskviewstate",
       "label": "TaskViewState",
       "_callable": true,
@@ -356,19 +239,6 @@
       "norm_label": "taskviewstate",
       "source_file": "src/components/Tasks/useTaskView.ts",
       "source_location": "L38"
-    },
-    {
-      "id": "src_types_index_quicknote",
-      "label": "QuickNote",
-      "_callable": true,
-      "_callable_class": true,
-      "_origin": "ast",
-      "community": 15,
-      "community_name": "TaskManagementScreen.tsx",
-      "file_type": "code",
-      "norm_label": "quicknote",
-      "source_file": "src/types/index.ts",
-      "source_location": "L55"
     },
     {
       "id": "src_types_index_taskurl",
@@ -395,6 +265,32 @@
       "norm_label": "taskaction",
       "source_file": "src/utils/taskCompletion.ts",
       "source_location": "L10"
+    },
+    {
+      "id": "src_utils_taskperiod_daterange",
+      "label": "DateRange",
+      "_callable": true,
+      "_callable_class": true,
+      "_origin": "ast",
+      "community": 15,
+      "community_name": "TaskManagementScreen.tsx",
+      "file_type": "code",
+      "norm_label": "daterange",
+      "source_file": "src/utils/taskPeriod.ts",
+      "source_location": "L7"
+    },
+    {
+      "id": "src_utils_taskperiod_periodresult",
+      "label": "PeriodResult",
+      "_callable": true,
+      "_callable_class": true,
+      "_origin": "ast",
+      "community": 15,
+      "community_name": "TaskManagementScreen.tsx",
+      "file_type": "code",
+      "norm_label": "periodresult",
+      "source_file": "src/utils/taskPeriod.ts",
+      "source_location": "L12"
     },
     {
       "id": "src_utils_taskperiod_taskperiod",
@@ -733,19 +629,6 @@
       "norm_label": "quickactionscardprops",
       "source_file": "src/components/Dashboard/QuickActionsCard.tsx",
       "source_location": "L10"
-    },
-    {
-      "id": "src_utils_storage_test_mocklocalstorage",
-      "label": "MockLocalStorage",
-      "_callable": true,
-      "_callable_class": true,
-      "_origin": "ast",
-      "community": 35,
-      "community_name": "backupReminder.test.ts",
-      "file_type": "code",
-      "norm_label": "mocklocalstorage",
-      "source_file": "src/utils/storage.test.ts",
-      "source_location": "L43"
     },
     {
       "id": "src_components_common_safedescription_safedescriptionprops",
@@ -1164,30 +1047,17 @@
       "source_location": "L6"
     },
     {
-      "id": "src_utils_castleeconomy_castleasset",
-      "label": "CastleAsset",
+      "id": "src_components_growth_castlesceneruntime_castlecameracommand",
+      "label": "CastleCameraCommand",
       "_callable": true,
       "_callable_class": true,
       "_origin": "ast",
       "community": 47,
       "community_name": "CastlePanel.tsx",
       "file_type": "code",
-      "norm_label": "castleasset",
-      "source_file": "src/utils/castleEconomy.ts",
-      "source_location": "L10"
-    },
-    {
-      "id": "src_utils_castleeconomy_castleeconomy",
-      "label": "CastleEconomy",
-      "_callable": true,
-      "_callable_class": true,
-      "_origin": "ast",
-      "community": 47,
-      "community_name": "CastlePanel.tsx",
-      "file_type": "code",
-      "norm_label": "castleeconomy",
-      "source_file": "src/utils/castleEconomy.ts",
-      "source_location": "L23"
+      "norm_label": "castlecameracommand",
+      "source_file": "src/components/Growth/castleSceneRuntime.ts",
+      "source_location": "L5"
     },
     {
       "id": "src_utils_storage_backupstatus",
@@ -1268,52 +1138,13 @@
       "source_location": "L386"
     },
     {
-      "id": "src_components_dashboard_primaryfocuscard_primaryfocuscardprops",
-      "label": "PrimaryFocusCardProps",
-      "_callable": true,
-      "_callable_class": true,
-      "_origin": "ast",
-      "community": 51,
-      "community_name": "react",
-      "file_type": "code",
-      "norm_label": "primaryfocuscardprops",
-      "source_file": "src/components/Dashboard/PrimaryFocusCard.tsx",
-      "source_location": "L35"
-    },
-    {
-      "id": "src_components_dashboard_smartsuggestioncard_smartsuggestioncardprops",
-      "label": "SmartSuggestionCardProps",
-      "_callable": true,
-      "_callable_class": true,
-      "_origin": "ast",
-      "community": 51,
-      "community_name": "react",
-      "file_type": "code",
-      "norm_label": "smartsuggestioncardprops",
-      "source_file": "src/components/Dashboard/SmartSuggestionCard.tsx",
-      "source_location": "L30"
-    },
-    {
-      "id": "src_components_layout_backupremindertoast_backupremindertoastprops",
-      "label": "BackupReminderToastProps",
-      "_callable": true,
-      "_callable_class": true,
-      "_origin": "ast",
-      "community": 51,
-      "community_name": "react",
-      "file_type": "code",
-      "norm_label": "backupremindertoastprops",
-      "source_file": "src/components/Layout/BackupReminderToast.tsx",
-      "source_location": "L7"
-    },
-    {
       "id": "src_components_modals_confirmdeletemodal_confirmdeletemodalprops",
       "label": "ConfirmDeleteModalProps",
       "_callable": true,
       "_callable_class": true,
       "_origin": "ast",
       "community": 51,
-      "community_name": "react",
+      "community_name": "motion.ts",
       "file_type": "code",
       "norm_label": "confirmdeletemodalprops",
       "source_file": "src/components/Modals/ConfirmDeleteModal.tsx",
@@ -1326,24 +1157,11 @@
       "_callable_class": true,
       "_origin": "ast",
       "community": 51,
-      "community_name": "react",
+      "community_name": "motion.ts",
       "file_type": "code",
       "norm_label": "quickaddtaskmodalprops",
       "source_file": "src/components/Modals/QuickAddTaskModal.tsx",
       "source_location": "L14"
-    },
-    {
-      "id": "src_types_index_recommendationcandidate",
-      "label": "RecommendationCandidate",
-      "_callable": true,
-      "_callable_class": true,
-      "_origin": "ast",
-      "community": 51,
-      "community_name": "react",
-      "file_type": "code",
-      "norm_label": "recommendationcandidate",
-      "source_file": "src/types/index.ts",
-      "source_location": "L125"
     },
     {
       "id": "src_components_growth_castlemodel_castleshape",
@@ -1554,42 +1372,16 @@
       "source_location": "L1"
     },
     {
-      "id": "src_components_header_header_headerprops",
-      "label": "HeaderProps",
+      "id": "src_components_tasks_taskeditordialog_taskeditordialogprops",
+      "label": "TaskEditorDialogProps",
       "_callable": true,
       "_callable_class": true,
       "_origin": "ast",
       "community": 57,
       "community_name": "taskDialog.test.tsx",
       "file_type": "code",
-      "norm_label": "headerprops",
-      "source_file": "src/components/Header/Header.tsx",
-      "source_location": "L19"
-    },
-    {
-      "id": "src_types_index_thememode",
-      "label": "ThemeMode",
-      "_callable": true,
-      "_callable_class": true,
-      "_origin": "ast",
-      "community": 57,
-      "community_name": "taskDialog.test.tsx",
-      "file_type": "code",
-      "norm_label": "thememode",
-      "source_file": "src/types/index.ts",
-      "source_location": "L88"
-    },
-    {
-      "id": "src_components_growth_castlesceneruntime_castlecameracommand",
-      "label": "CastleCameraCommand",
-      "_callable": true,
-      "_callable_class": true,
-      "_origin": "ast",
-      "community": 58,
-      "community_name": "CastleScene.test.tsx",
-      "file_type": "code",
-      "norm_label": "castlecameracommand",
-      "source_file": "src/components/Growth/castleSceneRuntime.ts",
+      "norm_label": "taskeditordialogprops",
+      "source_file": "src/components/Tasks/TaskEditorDialog.tsx",
       "source_location": "L5"
     },
     {
@@ -1755,24 +1547,11 @@
       "_callable_class": true,
       "_origin": "ast",
       "community": 65,
-      "community_name": "taskCompletion.ts",
+      "community_name": "focusTimer.ts",
       "file_type": "code",
       "norm_label": "focustimerstate",
       "source_file": "src/utils/focusTimer.ts",
       "source_location": "L7"
-    },
-    {
-      "id": "src_utils_taskcompletion_editorfields",
-      "label": "EditorFields",
-      "_callable": true,
-      "_callable_class": true,
-      "_origin": "ast",
-      "community": 65,
-      "community_name": "taskCompletion.ts",
-      "file_type": "code",
-      "norm_label": "editorfields",
-      "source_file": "src/utils/taskCompletion.ts",
-      "source_location": "L6"
     },
     {
       "id": "src_types_index_confettistyle",
@@ -1788,30 +1567,30 @@
       "source_location": "L89"
     },
     {
-      "id": "src_utils_taskperiod_daterange",
-      "label": "DateRange",
+      "id": "src_utils_castleeconomy_castleasset",
+      "label": "CastleAsset",
       "_callable": true,
       "_callable_class": true,
       "_origin": "ast",
       "community": 70,
-      "community_name": "taskPeriod.ts",
+      "community_name": "CastlePanel.test.tsx",
       "file_type": "code",
-      "norm_label": "daterange",
-      "source_file": "src/utils/taskPeriod.ts",
-      "source_location": "L7"
+      "norm_label": "castleasset",
+      "source_file": "src/utils/castleEconomy.ts",
+      "source_location": "L10"
     },
     {
-      "id": "src_utils_taskperiod_periodresult",
-      "label": "PeriodResult",
+      "id": "src_utils_castleeconomy_castleeconomy",
+      "label": "CastleEconomy",
       "_callable": true,
       "_callable_class": true,
       "_origin": "ast",
       "community": 70,
-      "community_name": "taskPeriod.ts",
+      "community_name": "CastlePanel.test.tsx",
       "file_type": "code",
-      "norm_label": "periodresult",
-      "source_file": "src/utils/taskPeriod.ts",
-      "source_location": "L12"
+      "norm_label": "castleeconomy",
+      "source_file": "src/utils/castleEconomy.ts",
+      "source_location": "L23"
     },
     {
       "id": "src_components_dashboard_momentumcard_momentumcardprops",
@@ -1996,17 +1775,17 @@
       "source_location": "L148"
     },
     {
-      "id": "src_components_common_faviconimage_faviconimageprops",
-      "label": "FaviconImageProps",
+      "id": "src_utils_storage_test_mocklocalstorage",
+      "label": "MockLocalStorage",
       "_callable": true,
       "_callable_class": true,
       "_origin": "ast",
       "community": 76,
-      "community_name": "favicon.ts",
+      "community_name": "MockLocalStorage",
       "file_type": "code",
-      "norm_label": "faviconimageprops",
-      "source_file": "src/components/Common/FaviconImage.tsx",
-      "source_location": "L7"
+      "norm_label": "mocklocalstorage",
+      "source_file": "src/utils/storage.test.ts",
+      "source_location": "L43"
     },
     {
       "id": "src_components_sidebar_sidebar_sidebarprops",
@@ -2048,13 +1827,26 @@
       "source_location": "L13"
     },
     {
+      "id": "src_utils_taskcompletion_editorfields",
+      "label": "EditorFields",
+      "_callable": true,
+      "_callable_class": true,
+      "_origin": "ast",
+      "community": 83,
+      "community_name": "taskCompletion.ts",
+      "file_type": "code",
+      "norm_label": "editorfields",
+      "source_file": "src/utils/taskCompletion.ts",
+      "source_location": "L6"
+    },
+    {
       "id": "src_components_dashboard_commitmentradarwidget_commitmentradarwidgetprops",
       "label": "CommitmentRadarWidgetProps",
       "_callable": true,
       "_callable_class": true,
       "_origin": "ast",
       "community": 9,
-      "community_name": "CommitmentRadarWidget.test.ts",
+      "community_name": "QuickNote",
       "file_type": "code",
       "norm_label": "commitmentradarwidgetprops",
       "source_file": "src/components/Dashboard/CommitmentRadarWidget.tsx",
@@ -2067,7 +1859,7 @@
       "_callable_class": true,
       "_origin": "ast",
       "community": 9,
-      "community_name": "CommitmentRadarWidget.test.ts",
+      "community_name": "QuickNote",
       "file_type": "code",
       "norm_label": "radarperiod",
       "source_file": "src/components/Dashboard/CommitmentRadarWidget.tsx",
@@ -2080,7 +1872,7 @@
       "_callable_class": true,
       "_origin": "ast",
       "community": 9,
-      "community_name": "CommitmentRadarWidget.test.ts",
+      "community_name": "QuickNote",
       "file_type": "code",
       "norm_label": "radarviewmode",
       "source_file": "src/components/Dashboard/CommitmentRadarWidget.tsx",
@@ -2093,11 +1885,128 @@
       "_callable_class": true,
       "_origin": "ast",
       "community": 9,
-      "community_name": "CommitmentRadarWidget.test.ts",
+      "community_name": "QuickNote",
       "file_type": "code",
       "norm_label": "tierpresentation",
       "source_file": "src/components/Dashboard/CommitmentRadarWidget.tsx",
       "source_location": "L45"
+    },
+    {
+      "id": "src_components_dashboard_primaryfocuscard_primaryfocuscardprops",
+      "label": "PrimaryFocusCardProps",
+      "_callable": true,
+      "_callable_class": true,
+      "_origin": "ast",
+      "community": 9,
+      "community_name": "QuickNote",
+      "file_type": "code",
+      "norm_label": "primaryfocuscardprops",
+      "source_file": "src/components/Dashboard/PrimaryFocusCard.tsx",
+      "source_location": "L35"
+    },
+    {
+      "id": "src_components_quicknotes_quicknoteswidget_quicknoteswidgetprops",
+      "label": "QuickNotesWidgetProps",
+      "_callable": true,
+      "_callable_class": true,
+      "_origin": "ast",
+      "community": 9,
+      "community_name": "QuickNote",
+      "file_type": "code",
+      "norm_label": "quicknoteswidgetprops",
+      "source_file": "src/components/QuickNotes/QuickNotesWidget.tsx",
+      "source_location": "L15"
+    },
+    {
+      "id": "src_components_tasks_tasklistprojection_taskrow",
+      "label": "TaskRow",
+      "_callable": true,
+      "_callable_class": true,
+      "_origin": "ast",
+      "community": 9,
+      "community_name": "QuickNote",
+      "file_type": "code",
+      "norm_label": "taskrow",
+      "source_file": "src/components/Tasks/taskListProjection.ts",
+      "source_location": "L27"
+    },
+    {
+      "id": "src_components_tasks_taskpreviewpopup_taskpreviewpopupprops",
+      "label": "TaskPreviewPopUpProps",
+      "_callable": true,
+      "_callable_class": true,
+      "_origin": "ast",
+      "community": 9,
+      "community_name": "QuickNote",
+      "file_type": "code",
+      "norm_label": "taskpreviewpopupprops",
+      "source_file": "src/components/Tasks/TaskPreviewPopUp.tsx",
+      "source_location": "L12"
+    },
+    {
+      "id": "src_types_index_quicknote",
+      "label": "QuickNote",
+      "_callable": true,
+      "_callable_class": true,
+      "_origin": "ast",
+      "community": 9,
+      "community_name": "QuickNote",
+      "file_type": "code",
+      "norm_label": "quicknote",
+      "source_file": "src/types/index.ts",
+      "source_location": "L55"
+    },
+    {
+      "id": "src_types_index_subtask",
+      "label": "Subtask",
+      "_callable": true,
+      "_callable_class": true,
+      "_origin": "ast",
+      "community": 9,
+      "community_name": "QuickNote",
+      "file_type": "code",
+      "norm_label": "subtask",
+      "source_file": "src/types/index.ts",
+      "source_location": "L49"
+    },
+    {
+      "id": "src_utils_taskurgency_opportunityrankingoptions",
+      "label": "OpportunityRankingOptions",
+      "_callable": true,
+      "_callable_class": true,
+      "_origin": "ast",
+      "community": 9,
+      "community_name": "QuickNote",
+      "file_type": "code",
+      "norm_label": "opportunityrankingoptions",
+      "source_file": "src/utils/taskUrgency.ts",
+      "source_location": "L665"
+    },
+    {
+      "id": "src_utils_taskurgency_opportunityscorebreakdown",
+      "label": "OpportunityScoreBreakdown",
+      "_callable": true,
+      "_callable_class": true,
+      "_origin": "ast",
+      "community": 9,
+      "community_name": "QuickNote",
+      "file_type": "code",
+      "norm_label": "opportunityscorebreakdown",
+      "source_file": "src/utils/taskUrgency.ts",
+      "source_location": "L636"
+    },
+    {
+      "id": "src_utils_taskurgency_opportunitytag",
+      "label": "OpportunityTag",
+      "_callable": true,
+      "_callable_class": true,
+      "_origin": "ast",
+      "community": 9,
+      "community_name": "QuickNote",
+      "file_type": "code",
+      "norm_label": "opportunitytag",
+      "source_file": "src/utils/taskUrgency.ts",
+      "source_location": "L645"
     },
     {
       "id": "src_utils_taskurgency_radarprojectednode",
@@ -2106,11 +2015,115 @@
       "_callable_class": true,
       "_origin": "ast",
       "community": 9,
-      "community_name": "CommitmentRadarWidget.test.ts",
+      "community_name": "QuickNote",
       "file_type": "code",
       "norm_label": "radarprojectednode",
       "source_file": "src/utils/taskUrgency.ts",
       "source_location": "L388"
+    },
+    {
+      "id": "src_utils_taskurgency_radarprojectionoptions",
+      "label": "RadarProjectionOptions",
+      "_callable": true,
+      "_callable_class": true,
+      "_origin": "ast",
+      "community": 9,
+      "community_name": "QuickNote",
+      "file_type": "code",
+      "norm_label": "radarprojectionoptions",
+      "source_file": "src/utils/taskUrgency.ts",
+      "source_location": "L403"
+    },
+    {
+      "id": "src_utils_taskurgency_radarringconfig",
+      "label": "RadarRingConfig",
+      "_callable": true,
+      "_callable_class": true,
+      "_origin": "ast",
+      "community": 9,
+      "community_name": "QuickNote",
+      "file_type": "code",
+      "norm_label": "radarringconfig",
+      "source_file": "src/utils/taskUrgency.ts",
+      "source_location": "L321"
+    },
+    {
+      "id": "src_utils_taskurgency_radarviewbox",
+      "label": "RadarViewBox",
+      "_callable": true,
+      "_callable_class": true,
+      "_origin": "ast",
+      "community": 9,
+      "community_name": "QuickNote",
+      "file_type": "code",
+      "norm_label": "radarviewbox",
+      "source_file": "src/utils/taskUrgency.ts",
+      "source_location": "L307"
+    },
+    {
+      "id": "src_utils_taskurgency_rankedtaskopportunity",
+      "label": "RankedTaskOpportunity",
+      "_callable": true,
+      "_callable_class": true,
+      "_origin": "ast",
+      "community": 9,
+      "community_name": "QuickNote",
+      "file_type": "code",
+      "norm_label": "rankedtaskopportunity",
+      "source_file": "src/utils/taskUrgency.ts",
+      "source_location": "L653"
+    },
+    {
+      "id": "src_utils_taskurgency_sessionmomentumstats",
+      "label": "SessionMomentumStats",
+      "_callable": true,
+      "_callable_class": true,
+      "_origin": "ast",
+      "community": 9,
+      "community_name": "QuickNote",
+      "file_type": "code",
+      "norm_label": "sessionmomentumstats",
+      "source_file": "src/utils/taskUrgency.ts",
+      "source_location": "L888"
+    },
+    {
+      "id": "src_utils_taskurgency_subtaskcontainerstate",
+      "label": "SubtaskContainerState",
+      "_callable": true,
+      "_callable_class": true,
+      "_origin": "ast",
+      "community": 9,
+      "community_name": "QuickNote",
+      "file_type": "code",
+      "norm_label": "subtaskcontainerstate",
+      "source_file": "src/utils/taskUrgency.ts",
+      "source_location": "L555"
+    },
+    {
+      "id": "src_utils_taskurgency_taskurgencyinfo",
+      "label": "TaskUrgencyInfo",
+      "_callable": true,
+      "_callable_class": true,
+      "_origin": "ast",
+      "community": 9,
+      "community_name": "QuickNote",
+      "file_type": "code",
+      "norm_label": "taskurgencyinfo",
+      "source_file": "src/utils/taskUrgency.ts",
+      "source_location": "L25"
+    },
+    {
+      "id": "src_utils_taskurgency_urgencycolortokens",
+      "label": "UrgencyColorTokens",
+      "_callable": true,
+      "_callable_class": true,
+      "_origin": "ast",
+      "community": 9,
+      "community_name": "QuickNote",
+      "file_type": "code",
+      "norm_label": "urgencycolortokens",
+      "source_file": "src/utils/taskUrgency.ts",
+      "source_location": "L16"
     },
     {
       "id": "src_utils_taskurgency_urgencytier",
@@ -2119,7 +2132,7 @@
       "_callable_class": true,
       "_origin": "ast",
       "community": 9,
-      "community_name": "CommitmentRadarWidget.test.ts",
+      "community_name": "QuickNote",
       "file_type": "code",
       "norm_label": "urgencytier",
       "source_file": "src/utils/taskUrgency.ts",
@@ -2131,7 +2144,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 0,
-      "community_name": "timeBudget.ts",
+      "community_name": "FocusHeroBanner.tsx",
       "file_type": "code",
       "norm_label": "focusherobanner()",
       "source_file": "src/components/Dashboard/FocusHeroBanner.tsx",
@@ -2143,7 +2156,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 0,
-      "community_name": "timeBudget.ts",
+      "community_name": "FocusHeroBanner.tsx",
       "file_type": "code",
       "norm_label": "assert()",
       "source_file": "src/components/Dashboard/TimeRadarWidget.test.ts",
@@ -2155,35 +2168,11 @@
       "_callable": true,
       "_origin": "ast",
       "community": 0,
-      "community_name": "timeBudget.ts",
+      "community_name": "FocusHeroBanner.tsx",
       "file_type": "code",
       "norm_label": "assertequal()",
       "source_file": "src/components/Dashboard/TimeRadarWidget.test.ts",
       "source_location": "L15"
-    },
-    {
-      "id": "src_app_app",
-      "label": "App()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 1,
-      "community_name": "App.tsx",
-      "file_type": "code",
-      "norm_label": "app()",
-      "source_file": "src/App.tsx",
-      "source_location": "L100"
-    },
-    {
-      "id": "src_components_dashboard_smartsuggestioncard_smartsuggestioncard",
-      "label": "SmartSuggestionCard()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 1,
-      "community_name": "App.tsx",
-      "file_type": "code",
-      "norm_label": "smartsuggestioncard()",
-      "source_file": "src/components/Dashboard/SmartSuggestionCard.tsx",
-      "source_location": "L42"
     },
     {
       "id": "src_components_header_header_header",
@@ -2210,136 +2199,64 @@
       "source_location": "L12"
     },
     {
-      "id": "src_utils_backupreminder_getbackupremindercycle",
-      "label": "getBackupReminderCycle()",
+      "id": "src_components_quicknotes_quicknoteswidget_quicknoteswidget",
+      "label": "QuickNotesWidget()",
       "_callable": true,
       "_origin": "ast",
       "community": 1,
       "community_name": "App.tsx",
       "file_type": "code",
-      "norm_label": "getbackupremindercycle()",
-      "source_file": "src/utils/backupReminder.ts",
-      "source_location": "L5"
+      "norm_label": "quicknoteswidget()",
+      "source_file": "src/components/QuickNotes/QuickNotesWidget.tsx",
+      "source_location": "L33"
     },
     {
-      "id": "src_utils_petstate_pettaskchanges",
-      "label": "petTaskChanges()",
+      "id": "src_components_tasks_usetaskview_usetaskview",
+      "label": "useTaskView()",
       "_callable": true,
       "_origin": "ast",
       "community": 1,
       "community_name": "App.tsx",
       "file_type": "code",
-      "norm_label": "pettaskchanges()",
-      "source_file": "src/utils/petState.ts",
-      "source_location": "L61"
+      "norm_label": "usetaskview()",
+      "source_file": "src/components/Tasks/useTaskView.ts",
+      "source_location": "L7"
     },
     {
-      "id": "src_utils_petstate_pettierforstreak",
-      "label": "petTierForStreak()",
+      "id": "src_utils_taskperiod_deadlinedate",
+      "label": "deadlineDate()",
       "_callable": true,
       "_origin": "ast",
       "community": 1,
       "community_name": "App.tsx",
       "file_type": "code",
-      "norm_label": "pettierforstreak()",
-      "source_file": "src/utils/petState.ts",
-      "source_location": "L23"
+      "norm_label": "deadlinedate()",
+      "source_file": "src/utils/taskPeriod.ts",
+      "source_location": "L95"
     },
     {
-      "id": "src_utils_recommender_generatecandidatepool",
-      "label": "generateCandidatePool()",
+      "id": "src_utils_taskperiod_tasksinperiod",
+      "label": "tasksInPeriod()",
       "_callable": true,
       "_origin": "ast",
       "community": 1,
       "community_name": "App.tsx",
       "file_type": "code",
-      "norm_label": "generatecandidatepool()",
-      "source_file": "src/utils/recommender.ts",
-      "source_location": "L11"
+      "norm_label": "tasksinperiod()",
+      "source_file": "src/utils/taskPeriod.ts",
+      "source_location": "L156"
     },
     {
-      "id": "src_utils_recommender_recordapproval",
-      "label": "recordApproval()",
+      "id": "src_utils_timebudget_calculatebuffer",
+      "label": "calculateBuffer()",
       "_callable": true,
       "_origin": "ast",
       "community": 1,
       "community_name": "App.tsx",
       "file_type": "code",
-      "norm_label": "recordapproval()",
-      "source_file": "src/utils/recommender.ts",
-      "source_location": "L110"
-    },
-    {
-      "id": "src_utils_recommender_recordrejection",
-      "label": "recordRejection()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 1,
-      "community_name": "App.tsx",
-      "file_type": "code",
-      "norm_label": "recordrejection()",
-      "source_file": "src/utils/recommender.ts",
-      "source_location": "L146"
-    },
-    {
-      "id": "src_utils_storage_getbackupstatus",
-      "label": "getBackupStatus()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 1,
-      "community_name": "App.tsx",
-      "file_type": "code",
-      "norm_label": "getbackupstatus()",
-      "source_file": "src/utils/storage.ts",
-      "source_location": "L57"
-    },
-    {
-      "id": "src_utils_storage_subscribebackupstatus",
-      "label": "subscribeBackupStatus()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 1,
-      "community_name": "App.tsx",
-      "file_type": "code",
-      "norm_label": "subscribebackupstatus()",
-      "source_file": "src/utils/storage.ts",
-      "source_location": "L58"
-    },
-    {
-      "id": "src_utils_storage_subscribeprimarysavestatus",
-      "label": "subscribePrimarySaveStatus()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 1,
-      "community_name": "App.tsx",
-      "file_type": "code",
-      "norm_label": "subscribeprimarysavestatus()",
-      "source_file": "src/utils/storage.ts",
-      "source_location": "L48"
-    },
-    {
-      "id": "src_utils_taskreflection_getdailyreviewtasks",
-      "label": "getDailyReviewTasks()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 1,
-      "community_name": "App.tsx",
-      "file_type": "code",
-      "norm_label": "getdailyreviewtasks()",
-      "source_file": "src/utils/taskReflection.ts",
-      "source_location": "L58"
-    },
-    {
-      "id": "src_utils_taskreflection_resetreflectiontasks",
-      "label": "resetReflectionTasks()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 1,
-      "community_name": "App.tsx",
-      "file_type": "code",
-      "norm_label": "resetreflectiontasks()",
-      "source_file": "src/utils/taskReflection.ts",
-      "source_location": "L81"
+      "norm_label": "calculatebuffer()",
+      "source_file": "src/utils/timeBudget.ts",
+      "source_location": "L190"
     },
     {
       "id": "src_utils_timebudget_calculatedaytimeremaining",
@@ -2354,6 +2271,30 @@
       "source_location": "L90"
     },
     {
+      "id": "src_utils_timebudget_calculatetaskload",
+      "label": "calculateTaskLoad()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 1,
+      "community_name": "App.tsx",
+      "file_type": "code",
+      "norm_label": "calculatetaskload()",
+      "source_file": "src/utils/timeBudget.ts",
+      "source_location": "L129"
+    },
+    {
+      "id": "src_utils_timebudget_formatminutestohours",
+      "label": "formatMinutesToHours()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 1,
+      "community_name": "App.tsx",
+      "file_type": "code",
+      "norm_label": "formatminutestohours()",
+      "source_file": "src/utils/timeBudget.ts",
+      "source_location": "L79"
+    },
+    {
       "id": "src_utils_timebudget_gettimeofdaybucket",
       "label": "getTimeOfDayBucket()",
       "_callable": true,
@@ -2366,48 +2307,12 @@
       "source_location": "L3"
     },
     {
-      "id": "src_utils_taskurgency_calculatesessionmomentumindex",
-      "label": "calculateSessionMomentumIndex()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 10,
-      "community_name": "taskUrgency.ts",
-      "file_type": "code",
-      "norm_label": "calculatesessionmomentumindex()",
-      "source_file": "src/utils/taskUrgency.ts",
-      "source_location": "L903"
-    },
-    {
-      "id": "src_utils_taskurgency_calculatetaskopportunityscore",
-      "label": "calculateTaskOpportunityScore()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 10,
-      "community_name": "taskUrgency.ts",
-      "file_type": "code",
-      "norm_label": "calculatetaskopportunityscore()",
-      "source_file": "src/utils/taskUrgency.ts",
-      "source_location": "L683"
-    },
-    {
-      "id": "src_utils_taskurgency_computesubtaskcontainerstate",
-      "label": "computeSubtaskContainerState()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 10,
-      "community_name": "taskUrgency.ts",
-      "file_type": "code",
-      "norm_label": "computesubtaskcontainerstate()",
-      "source_file": "src/utils/taskUrgency.ts",
-      "source_location": "L580"
-    },
-    {
       "id": "src_utils_taskurgency_gettopopportunity",
       "label": "getTopOpportunity()",
       "_callable": true,
       "_origin": "ast",
       "community": 10,
-      "community_name": "taskUrgency.ts",
+      "community_name": "rankTasksByOpportunity",
       "file_type": "code",
       "norm_label": "gettopopportunity()",
       "source_file": "src/utils/taskUrgency.ts",
@@ -2419,11 +2324,23 @@
       "_callable": true,
       "_origin": "ast",
       "community": 10,
-      "community_name": "taskUrgency.ts",
+      "community_name": "rankTasksByOpportunity",
       "file_type": "code",
       "norm_label": "ranktasksbyopportunity()",
       "source_file": "src/utils/taskUrgency.ts",
       "source_location": "L817"
+    },
+    {
+      "id": "src_utils_taskperiod_localdate",
+      "label": "localDate()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 12,
+      "community_name": "taskPeriod.test.ts",
+      "file_type": "code",
+      "norm_label": "localdate()",
+      "source_file": "src/utils/taskPeriod.ts",
+      "source_location": "L44"
     },
     {
       "id": "src_utils_taskperiod_test_task",
@@ -2436,6 +2353,30 @@
       "norm_label": "task()",
       "source_file": "src/utils/taskPeriod.test.ts",
       "source_location": "L22"
+    },
+    {
+      "id": "src_components_common_faviconimage_faviconimage",
+      "label": "FaviconImage()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 13,
+      "community_name": "seedData.ts",
+      "file_type": "code",
+      "norm_label": "faviconimage()",
+      "source_file": "src/components/Common/FaviconImage.tsx",
+      "source_location": "L16"
+    },
+    {
+      "id": "src_components_dashboard_smartsuggestioncard_smartsuggestioncard",
+      "label": "SmartSuggestionCard()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 13,
+      "community_name": "seedData.ts",
+      "file_type": "code",
+      "norm_label": "smartsuggestioncard()",
+      "source_file": "src/components/Dashboard/SmartSuggestionCard.tsx",
+      "source_location": "L42"
     },
     {
       "id": "src_tests_featuresverification_test_assert",
@@ -2462,6 +2403,66 @@
       "source_location": "L22"
     },
     {
+      "id": "src_utils_favicon_extractapexdomain",
+      "label": "extractApexDomain()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 13,
+      "community_name": "seedData.ts",
+      "file_type": "code",
+      "norm_label": "extractapexdomain()",
+      "source_file": "src/utils/favicon.ts",
+      "source_location": "L22"
+    },
+    {
+      "id": "src_utils_favicon_extractdomain",
+      "label": "extractDomain()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 13,
+      "community_name": "seedData.ts",
+      "file_type": "code",
+      "norm_label": "extractdomain()",
+      "source_file": "src/utils/favicon.ts",
+      "source_location": "L1"
+    },
+    {
+      "id": "src_utils_favicon_formaturl",
+      "label": "formatUrl()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 13,
+      "community_name": "seedData.ts",
+      "file_type": "code",
+      "norm_label": "formaturl()",
+      "source_file": "src/utils/favicon.ts",
+      "source_location": "L14"
+    },
+    {
+      "id": "src_utils_favicon_getapexfaviconurl",
+      "label": "getApexFaviconUrl()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 13,
+      "community_name": "seedData.ts",
+      "file_type": "code",
+      "norm_label": "getapexfaviconurl()",
+      "source_file": "src/utils/favicon.ts",
+      "source_location": "L47"
+    },
+    {
+      "id": "src_utils_favicon_getfaviconurl",
+      "label": "getFaviconUrl()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 13,
+      "community_name": "seedData.ts",
+      "file_type": "code",
+      "norm_label": "getfaviconurl()",
+      "source_file": "src/utils/favicon.ts",
+      "source_location": "L53"
+    },
+    {
       "id": "src_utils_recommender_fetchopenrouteridea",
       "label": "fetchOpenRouterIdea()",
       "_callable": true,
@@ -2474,6 +2475,18 @@
       "source_location": "L190"
     },
     {
+      "id": "src_utils_recommender_generatecandidatepool",
+      "label": "generateCandidatePool()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 13,
+      "community_name": "seedData.ts",
+      "file_type": "code",
+      "norm_label": "generatecandidatepool()",
+      "source_file": "src/utils/recommender.ts",
+      "source_location": "L11"
+    },
+    {
       "id": "src_utils_recommender_getrankedrecommendations",
       "label": "getRankedRecommendations()",
       "_callable": true,
@@ -2484,6 +2497,30 @@
       "norm_label": "getrankedrecommendations()",
       "source_file": "src/utils/recommender.ts",
       "source_location": "L75"
+    },
+    {
+      "id": "src_utils_recommender_recordapproval",
+      "label": "recordApproval()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 13,
+      "community_name": "seedData.ts",
+      "file_type": "code",
+      "norm_label": "recordapproval()",
+      "source_file": "src/utils/recommender.ts",
+      "source_location": "L110"
+    },
+    {
+      "id": "src_utils_recommender_recordrejection",
+      "label": "recordRejection()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 13,
+      "community_name": "seedData.ts",
+      "file_type": "code",
+      "norm_label": "recordrejection()",
+      "source_file": "src/utils/recommender.ts",
+      "source_location": "L146"
     },
     {
       "id": "src_utils_recommender_scorecandidate",
@@ -2522,16 +2559,16 @@
       "source_location": "L22"
     },
     {
-      "id": "src_components_quicknotes_quicknoteswidget_quicknoteswidget",
-      "label": "QuickNotesWidget()",
+      "id": "src_components_tasks_taskeditordialog_taskeditordialog",
+      "label": "TaskEditorDialog()",
       "_callable": true,
       "_origin": "ast",
       "community": 15,
       "community_name": "TaskManagementScreen.tsx",
       "file_type": "code",
-      "norm_label": "quicknoteswidget()",
-      "source_file": "src/components/QuickNotes/QuickNotesWidget.tsx",
-      "source_location": "L33"
+      "norm_label": "taskeditordialog()",
+      "source_file": "src/components/Tasks/TaskEditorDialog.tsx",
+      "source_location": "L15"
     },
     {
       "id": "src_components_tasks_tasklistprojection_tasktabcount",
@@ -2570,16 +2607,16 @@
       "source_location": "L56"
     },
     {
-      "id": "src_components_tasks_usetaskview_usetaskview",
-      "label": "useTaskView()",
+      "id": "src_utils_taskperiod_adddays",
+      "label": "addDays()",
       "_callable": true,
       "_origin": "ast",
       "community": 15,
       "community_name": "TaskManagementScreen.tsx",
       "file_type": "code",
-      "norm_label": "usetaskview()",
-      "source_file": "src/components/Tasks/useTaskView.ts",
-      "source_location": "L7"
+      "norm_label": "adddays()",
+      "source_file": "src/utils/taskPeriod.ts",
+      "source_location": "L33"
     },
     {
       "id": "src_utils_taskperiod_addmonthsinclusive",
@@ -2594,6 +2631,18 @@
       "source_location": "L70"
     },
     {
+      "id": "src_utils_taskperiod_defaultperiodrange",
+      "label": "defaultPeriodRange()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 15,
+      "community_name": "TaskManagementScreen.tsx",
+      "file_type": "code",
+      "norm_label": "defaultperiodrange()",
+      "source_file": "src/utils/taskPeriod.ts",
+      "source_location": "L81"
+    },
+    {
       "id": "src_utils_taskperiod_formatperiodminutes",
       "label": "formatPeriodMinutes()",
       "_callable": true,
@@ -2606,40 +2655,64 @@
       "source_location": "L21"
     },
     {
-      "id": "src_utils_timebudget_calculatebuffer",
-      "label": "calculateBuffer()",
+      "id": "src_utils_taskperiod_gettaskperiod",
+      "label": "getTaskPeriod()",
       "_callable": true,
       "_origin": "ast",
       "community": 15,
       "community_name": "TaskManagementScreen.tsx",
       "file_type": "code",
-      "norm_label": "calculatebuffer()",
-      "source_file": "src/utils/timeBudget.ts",
-      "source_location": "L190"
+      "norm_label": "gettaskperiod()",
+      "source_file": "src/utils/taskPeriod.ts",
+      "source_location": "L117"
     },
     {
-      "id": "src_utils_timebudget_calculatetaskload",
-      "label": "calculateTaskLoad()",
+      "id": "src_utils_taskperiod_localtoday",
+      "label": "localToday()",
       "_callable": true,
       "_origin": "ast",
       "community": 15,
       "community_name": "TaskManagementScreen.tsx",
       "file_type": "code",
-      "norm_label": "calculatetaskload()",
-      "source_file": "src/utils/timeBudget.ts",
-      "source_location": "L129"
+      "norm_label": "localtoday()",
+      "source_file": "src/utils/taskPeriod.ts",
+      "source_location": "L29"
     },
     {
-      "id": "src_utils_timebudget_formatminutestohours",
-      "label": "formatMinutesToHours()",
+      "id": "src_utils_taskperiod_mondayof",
+      "label": "mondayOf()",
       "_callable": true,
       "_origin": "ast",
       "community": 15,
       "community_name": "TaskManagementScreen.tsx",
       "file_type": "code",
-      "norm_label": "formatminutestohours()",
-      "source_file": "src/utils/timeBudget.ts",
-      "source_location": "L79"
+      "norm_label": "mondayof()",
+      "source_file": "src/utils/taskPeriod.ts",
+      "source_location": "L37"
+    },
+    {
+      "id": "src_utils_taskperiod_startoflocalday",
+      "label": "startOfLocalDay()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 15,
+      "community_name": "TaskManagementScreen.tsx",
+      "file_type": "code",
+      "norm_label": "startoflocalday()",
+      "source_file": "src/utils/taskPeriod.ts",
+      "source_location": "L25"
+    },
+    {
+      "id": "src_utils_taskperiod_test_ids",
+      "label": "ids()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 15,
+      "community_name": "TaskManagementScreen.tsx",
+      "file_type": "code",
+      "norm_label": "ids()",
+      "source_file": "src/utils/taskPeriod.test.ts",
+      "source_location": "L29"
     },
     {
       "id": "src_components_pet_usepetmotion_calculateplacement",
@@ -3290,6 +3363,18 @@
       "source_location": "L26"
     },
     {
+      "id": "src_utils_backupreminder_getbackupremindercycle",
+      "label": "getBackupReminderCycle()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 35,
+      "community_name": "backupReminder.test.ts",
+      "file_type": "code",
+      "norm_label": "getbackupremindercycle()",
+      "source_file": "src/utils/backupReminder.ts",
+      "source_location": "L5"
+    },
+    {
       "id": "src_utils_backupreminder_isbackupreminderdismissed",
       "label": "isBackupReminderDismissed()",
       "_callable": true,
@@ -3312,78 +3397,6 @@
       "norm_label": "get()",
       "source_file": "src/utils/backupReminder.test.ts",
       "source_location": "L34"
-    },
-    {
-      "id": "src_utils_storage_test_mocklocalstorage_clear",
-      "label": ".clear()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 35,
-      "community_name": "backupReminder.test.ts",
-      "file_type": "code",
-      "norm_label": ".clear()",
-      "source_file": "src/utils/storage.test.ts",
-      "source_location": "L63"
-    },
-    {
-      "id": "src_utils_storage_test_mocklocalstorage_getitem",
-      "label": ".getItem()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 35,
-      "community_name": "backupReminder.test.ts",
-      "file_type": "code",
-      "norm_label": ".getitem()",
-      "source_file": "src/utils/storage.test.ts",
-      "source_location": "L47"
-    },
-    {
-      "id": "src_utils_storage_test_mocklocalstorage_key",
-      "label": ".key()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 35,
-      "community_name": "backupReminder.test.ts",
-      "file_type": "code",
-      "norm_label": ".key()",
-      "source_file": "src/utils/storage.test.ts",
-      "source_location": "L71"
-    },
-    {
-      "id": "src_utils_storage_test_mocklocalstorage_length",
-      "label": ".length()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 35,
-      "community_name": "backupReminder.test.ts",
-      "file_type": "code",
-      "norm_label": ".length()",
-      "source_file": "src/utils/storage.test.ts",
-      "source_location": "L67"
-    },
-    {
-      "id": "src_utils_storage_test_mocklocalstorage_removeitem",
-      "label": ".removeItem()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 35,
-      "community_name": "backupReminder.test.ts",
-      "file_type": "code",
-      "norm_label": ".removeitem()",
-      "source_file": "src/utils/storage.test.ts",
-      "source_location": "L59"
-    },
-    {
-      "id": "src_utils_storage_test_mocklocalstorage_setitem",
-      "label": ".setItem()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 35,
-      "community_name": "backupReminder.test.ts",
-      "file_type": "code",
-      "norm_label": ".setitem()",
-      "source_file": "src/utils/storage.test.ts",
-      "source_location": "L51"
     },
     {
       "id": "src_components_common_safedescription_safedescription",
@@ -3482,6 +3495,18 @@
       "source_location": "L5"
     },
     {
+      "id": "src_utils_taskurgency_computesubtaskcontainerstate",
+      "label": "computeSubtaskContainerState()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 38,
+      "community_name": "PrimaryFocusCard.tsx",
+      "file_type": "code",
+      "norm_label": "computesubtaskcontainerstate()",
+      "source_file": "src/utils/taskUrgency.ts",
+      "source_location": "L580"
+    },
+    {
       "id": "src_utils_taskurgency_parsetaskdeadline",
       "label": "parseTaskDeadline()",
       "_callable": true,
@@ -3566,18 +3591,6 @@
       "source_location": "L9"
     },
     {
-      "id": "src_utils_timebudget_formatapproximateduration",
-      "label": "formatApproximateDuration()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 38,
-      "community_name": "PrimaryFocusCard.tsx",
-      "file_type": "code",
-      "norm_label": "formatapproximateduration()",
-      "source_file": "src/utils/timeBudget.ts",
-      "source_location": "L28"
-    },
-    {
       "id": "src_components_dashboard_dashboardtodayscope_test_assert",
       "label": "assert()",
       "_callable": true,
@@ -3648,6 +3661,30 @@
       "norm_label": "nextpet()",
       "source_file": "src/utils/petState.ts",
       "source_location": "L27"
+    },
+    {
+      "id": "src_utils_petstate_pettaskchanges",
+      "label": "petTaskChanges()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 4,
+      "community_name": "petState.ts",
+      "file_type": "code",
+      "norm_label": "pettaskchanges()",
+      "source_file": "src/utils/petState.ts",
+      "source_location": "L61"
+    },
+    {
+      "id": "src_utils_petstate_pettierforstreak",
+      "label": "petTierForStreak()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 4,
+      "community_name": "petState.ts",
+      "file_type": "code",
+      "norm_label": "pettierforstreak()",
+      "source_file": "src/utils/petState.ts",
+      "source_location": "L23"
     },
     {
       "id": "src_components_tasks_tasklistprojection_classifydeadline",
@@ -3818,6 +3855,18 @@
       "source_location": "L20"
     },
     {
+      "id": "src_components_common_estimateddurationpicker_estimateddurationpicker",
+      "label": "EstimatedDurationPicker()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 45,
+      "community_name": "ActualTimeDialog.test.tsx",
+      "file_type": "code",
+      "norm_label": "estimateddurationpicker()",
+      "source_file": "src/components/Common/EstimatedDurationPicker.tsx",
+      "source_location": "L12"
+    },
+    {
       "id": "src_components_dashboard_actualtimedialog_actualtimedialog",
       "label": "ActualTimeDialog()",
       "_callable": true,
@@ -3926,18 +3975,6 @@
       "source_location": "L8"
     },
     {
-      "id": "src_components_growth_castlecatalog_assertcastlebuildprerequisite",
-      "label": "assertCastleBuildPrerequisite()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 47,
-      "community_name": "CastlePanel.tsx",
-      "file_type": "code",
-      "norm_label": "assertcastlebuildprerequisite()",
-      "source_file": "src/components/Growth/castleCatalog.ts",
-      "source_location": "L15"
-    },
-    {
       "id": "src_components_growth_castlepanel_castlepanel",
       "label": "CastlePanel()",
       "_callable": true,
@@ -3972,18 +4009,6 @@
       "norm_label": "money()",
       "source_file": "src/components/Growth/CastlePanel.tsx",
       "source_location": "L17"
-    },
-    {
-      "id": "src_components_growth_castlepanel_test_render",
-      "label": "render()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 47,
-      "community_name": "CastlePanel.tsx",
-      "file_type": "code",
-      "norm_label": "render()",
-      "source_file": "src/components/Growth/CastlePanel.test.tsx",
-      "source_location": "L11"
     },
     {
       "id": "src_components_growth_castlepanel_test_renderstore",
@@ -4082,6 +4107,42 @@
       "source_location": "L154"
     },
     {
+      "id": "src_utils_castleeconomy_remainingmonthlyexemptions",
+      "label": "remainingMonthlyExemptions()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 47,
+      "community_name": "CastlePanel.tsx",
+      "file_type": "code",
+      "norm_label": "remainingmonthlyexemptions()",
+      "source_file": "src/utils/castleEconomy.ts",
+      "source_location": "L243"
+    },
+    {
+      "id": "src_utils_castleeconomy_useexemption",
+      "label": "useExemption()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 47,
+      "community_name": "CastlePanel.tsx",
+      "file_type": "code",
+      "norm_label": "useexemption()",
+      "source_file": "src/utils/castleEconomy.ts",
+      "source_location": "L233"
+    },
+    {
+      "id": "src_app_app",
+      "label": "App()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 48,
+      "community_name": "storage.ts",
+      "file_type": "code",
+      "norm_label": "app()",
+      "source_file": "src/App.tsx",
+      "source_location": "L100"
+    },
+    {
       "id": "src_components_modals_storagerecovery_finddamageddata",
       "label": "findDamagedData()",
       "_callable": true,
@@ -4164,6 +4225,18 @@
       "norm_label": "flushappdatasave()",
       "source_file": "src/utils/storage.ts",
       "source_location": "L443"
+    },
+    {
+      "id": "src_utils_storage_getbackupstatus",
+      "label": "getBackupStatus()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 48,
+      "community_name": "storage.ts",
+      "file_type": "code",
+      "norm_label": "getbackupstatus()",
+      "source_file": "src/utils/storage.ts",
+      "source_location": "L57"
     },
     {
       "id": "src_utils_storage_getprimarysavestatus",
@@ -4382,6 +4455,30 @@
       "source_location": "L52"
     },
     {
+      "id": "src_utils_storage_subscribebackupstatus",
+      "label": "subscribeBackupStatus()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 48,
+      "community_name": "storage.ts",
+      "file_type": "code",
+      "norm_label": "subscribebackupstatus()",
+      "source_file": "src/utils/storage.ts",
+      "source_location": "L58"
+    },
+    {
+      "id": "src_utils_storage_subscribeprimarysavestatus",
+      "label": "subscribePrimarySaveStatus()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 48,
+      "community_name": "storage.ts",
+      "file_type": "code",
+      "norm_label": "subscribeprimarysavestatus()",
+      "source_file": "src/utils/storage.ts",
+      "source_location": "L48"
+    },
+    {
       "id": "src_utils_storage_test_assert",
       "label": "assert()",
       "_callable": true,
@@ -4451,7 +4548,7 @@
       "file_type": "code",
       "norm_label": "workspaceapp()",
       "source_file": "src/App.tsx",
-      "source_location": "L1175"
+      "source_location": "L1179"
     },
     {
       "id": "src_app_workspaceapp_restore",
@@ -4463,7 +4560,7 @@
       "file_type": "code",
       "norm_label": "restore()",
       "source_file": "src/App.tsx",
-      "source_location": "L1195"
+      "source_location": "L1199"
     },
     {
       "id": "src_components_modals_cloudworkspacesettings_cloudworkspacesettings",
@@ -4574,42 +4671,6 @@
       "source_location": "L83"
     },
     {
-      "id": "src_components_growth_castlemodel_bell",
-      "label": "bell()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 50,
-      "community_name": "castleModel.ts",
-      "file_type": "code",
-      "norm_label": "bell()",
-      "source_file": "src/components/Growth/castleModel.ts",
-      "source_location": "L235"
-    },
-    {
-      "id": "src_components_growth_castlemodel_box",
-      "label": "box()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 50,
-      "community_name": "castleModel.ts",
-      "file_type": "code",
-      "norm_label": "box()",
-      "source_file": "src/components/Growth/castleModel.ts",
-      "source_location": "L60"
-    },
-    {
-      "id": "src_components_growth_castlemodel_buttress",
-      "label": "buttress()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 50,
-      "community_name": "castleModel.ts",
-      "file_type": "code",
-      "norm_label": "buttress()",
-      "source_file": "src/components/Growth/castleModel.ts",
-      "source_location": "L99"
-    },
-    {
       "id": "src_components_growth_castlemodel_elevatesite",
       "label": "elevateSite()",
       "_callable": true,
@@ -4634,42 +4695,6 @@
       "source_location": "L390"
     },
     {
-      "id": "src_components_growth_castlemodel_gargoyle",
-      "label": "gargoyle()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 50,
-      "community_name": "castleModel.ts",
-      "file_type": "code",
-      "norm_label": "gargoyle()",
-      "source_file": "src/components/Growth/castleModel.ts",
-      "source_location": "L249"
-    },
-    {
-      "id": "src_components_growth_castlemodel_hall",
-      "label": "hall()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 50,
-      "community_name": "castleModel.ts",
-      "file_type": "code",
-      "norm_label": "hall()",
-      "source_file": "src/components/Growth/castleModel.ts",
-      "source_location": "L144"
-    },
-    {
-      "id": "src_components_growth_castlemodel_lantern",
-      "label": "lantern()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 50,
-      "community_name": "castleModel.ts",
-      "file_type": "code",
-      "norm_label": "lantern()",
-      "source_file": "src/components/Growth/castleModel.ts",
-      "source_location": "L222"
-    },
-    {
       "id": "src_components_growth_castlemodel_moat",
       "label": "moat()",
       "_callable": true,
@@ -4680,18 +4705,6 @@
       "norm_label": "moat()",
       "source_file": "src/components/Growth/castleModel.ts",
       "source_location": "L395"
-    },
-    {
-      "id": "src_components_growth_castlemodel_pedestal",
-      "label": "pedestal()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 50,
-      "community_name": "castleModel.ts",
-      "file_type": "code",
-      "norm_label": "pedestal()",
-      "source_file": "src/components/Growth/castleModel.ts",
-      "source_location": "L209"
     },
     {
       "id": "src_components_growth_castlemodel_planters",
@@ -4716,18 +4729,6 @@
       "norm_label": "row()",
       "source_file": "src/components/Growth/castleModel.ts",
       "source_location": "L74"
-    },
-    {
-      "id": "src_components_growth_castlemodel_shield",
-      "label": "shield()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 50,
-      "community_name": "castleModel.ts",
-      "file_type": "code",
-      "norm_label": "shield()",
-      "source_file": "src/components/Growth/castleModel.ts",
-      "source_location": "L228"
     },
     {
       "id": "src_components_growth_castlemodel_shift",
@@ -4790,48 +4791,12 @@
       "source_location": "L103"
     },
     {
-      "id": "src_components_growth_castlemodel_wedge",
-      "label": "wedge()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 50,
-      "community_name": "castleModel.ts",
-      "file_type": "code",
-      "norm_label": "wedge()",
-      "source_file": "src/components/Growth/castleModel.ts",
-      "source_location": "L70"
-    },
-    {
-      "id": "src_components_growth_castlemodel_window",
-      "label": "window()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 50,
-      "community_name": "castleModel.ts",
-      "file_type": "code",
-      "norm_label": "window()",
-      "source_file": "src/components/Growth/castleModel.ts",
-      "source_location": "L139"
-    },
-    {
-      "id": "src_components_common_estimateddurationpicker_estimateddurationpicker",
-      "label": "EstimatedDurationPicker()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 51,
-      "community_name": "react",
-      "file_type": "code",
-      "norm_label": "estimateddurationpicker()",
-      "source_file": "src/components/Common/EstimatedDurationPicker.tsx",
-      "source_location": "L12"
-    },
-    {
       "id": "src_components_modals_confirmdeletemodal_confirmdeletemodal",
       "label": "ConfirmDeleteModal()",
       "_callable": true,
       "_origin": "ast",
       "community": 51,
-      "community_name": "react",
+      "community_name": "motion.ts",
       "file_type": "code",
       "norm_label": "confirmdeletemodal()",
       "source_file": "src/components/Modals/ConfirmDeleteModal.tsx",
@@ -4843,11 +4808,35 @@
       "_callable": true,
       "_origin": "ast",
       "community": 51,
-      "community_name": "react",
+      "community_name": "motion.ts",
       "file_type": "code",
       "norm_label": "quickaddtaskmodal()",
       "source_file": "src/components/Modals/QuickAddTaskModal.tsx",
       "source_location": "L48"
+    },
+    {
+      "id": "src_utils_castleeconomy_appendcommitment",
+      "label": "appendCommitment()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 52,
+      "community_name": "castleEconomy.test.ts",
+      "file_type": "code",
+      "norm_label": "appendcommitment()",
+      "source_file": "src/utils/castleEconomy.ts",
+      "source_location": "L313"
+    },
+    {
+      "id": "src_utils_castleeconomy_commitopentask",
+      "label": "commitOpenTask()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 52,
+      "community_name": "castleEconomy.test.ts",
+      "file_type": "code",
+      "norm_label": "commitopentask()",
+      "source_file": "src/utils/castleEconomy.ts",
+      "source_location": "L298"
     },
     {
       "id": "src_utils_castleeconomy_committask",
@@ -4884,6 +4873,30 @@
       "norm_label": "substitutewithopentasks()",
       "source_file": "src/utils/castleEconomy.ts",
       "source_location": "L322"
+    },
+    {
+      "id": "src_utils_taskreflection_test_reflectwork",
+      "label": "reflectWork()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 52,
+      "community_name": "castleEconomy.test.ts",
+      "file_type": "code",
+      "norm_label": "reflectwork()",
+      "source_file": "src/utils/taskReflection.test.ts",
+      "source_location": "L154"
+    },
+    {
+      "id": "src_utils_taskreflection_test_task",
+      "label": "task()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 52,
+      "community_name": "castleEconomy.test.ts",
+      "file_type": "code",
+      "norm_label": "task()",
+      "source_file": "src/utils/taskReflection.test.ts",
+      "source_location": "L11"
     },
     {
       "id": "src_components_growth_castlepartpreviewrenderer_drawcastlepartpreview",
@@ -4968,6 +4981,18 @@
       "norm_label": "appendearning()",
       "source_file": "src/utils/castleEconomy.ts",
       "source_location": "L263"
+    },
+    {
+      "id": "src_utils_castleeconomy_changedailygoal",
+      "label": "changeDailyGoal()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 55,
+      "community_name": "castleEconomy.ts",
+      "file_type": "code",
+      "norm_label": "changedailygoal()",
+      "source_file": "src/utils/castleEconomy.ts",
+      "source_location": "L247"
     },
     {
       "id": "src_utils_castleeconomy_datenumber",
@@ -5090,18 +5115,6 @@
       "source_location": "L398"
     },
     {
-      "id": "src_utils_castleeconomy_remainingmonthlyexemptions",
-      "label": "remainingMonthlyExemptions()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 55,
-      "community_name": "castleEconomy.ts",
-      "file_type": "code",
-      "norm_label": "remainingmonthlyexemptions()",
-      "source_file": "src/utils/castleEconomy.ts",
-      "source_location": "L243"
-    },
-    {
       "id": "src_utils_castleeconomy_settlepastdays",
       "label": "settlePastDays()",
       "_callable": true,
@@ -5148,18 +5161,6 @@
       "norm_label": "uncreditedreflectioncents()",
       "source_file": "src/utils/castleEconomy.ts",
       "source_location": "L382"
-    },
-    {
-      "id": "src_utils_castleeconomy_useexemption",
-      "label": "useExemption()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 55,
-      "community_name": "castleEconomy.ts",
-      "file_type": "code",
-      "norm_label": "useexemption()",
-      "source_file": "src/utils/castleEconomy.ts",
-      "source_location": "L233"
     },
     {
       "id": "src_utils_castleeconomy_validatecastleeconomy",
@@ -5306,18 +5307,6 @@
       "source_location": "L105"
     },
     {
-      "id": "src_utils_castleblueprint_test_indistrict",
-      "label": "inDistrict()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 56,
-      "community_name": "castleBlueprint.ts",
-      "file_type": "code",
-      "norm_label": "indistrict()",
-      "source_file": "src/utils/castleBlueprint.test.ts",
-      "source_location": "L8"
-    },
-    {
       "id": "src_utils_castleblueprintcatalog_district",
       "label": "district()",
       "_callable": true,
@@ -5359,7 +5348,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 58,
-      "community_name": "CastleScene.test.tsx",
+      "community_name": "castleSceneRuntime.ts",
       "file_type": "code",
       "norm_label": "createcastlegeometry()",
       "source_file": "src/components/Growth/castleModel.ts",
@@ -5371,7 +5360,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 58,
-      "community_name": "CastleScene.test.tsx",
+      "community_name": "castleSceneRuntime.ts",
       "file_type": "code",
       "norm_label": "getcastleelementbounds()",
       "source_file": "src/components/Growth/castleModel.ts",
@@ -5383,7 +5372,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 58,
-      "community_name": "CastleScene.test.tsx",
+      "community_name": "castleSceneRuntime.ts",
       "file_type": "code",
       "norm_label": "getunitbounds()",
       "source_file": "src/components/Growth/castleModel.ts",
@@ -5395,7 +5384,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 58,
-      "community_name": "CastleScene.test.tsx",
+      "community_name": "castleSceneRuntime.ts",
       "file_type": "code",
       "norm_label": "fitoverview()",
       "source_file": "src/components/Growth/castleSceneRuntime.ts",
@@ -5407,7 +5396,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 58,
-      "community_name": "CastleScene.test.tsx",
+      "community_name": "castleSceneRuntime.ts",
       "file_type": "code",
       "norm_label": "getcastleinspectionframe()",
       "source_file": "src/components/Growth/castleSceneRuntime.ts",
@@ -5419,7 +5408,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 58,
-      "community_name": "CastleScene.test.tsx",
+      "community_name": "castleSceneRuntime.ts",
       "file_type": "code",
       "norm_label": "mountcastlescene()",
       "source_file": "src/components/Growth/castleSceneRuntime.ts",
@@ -5431,7 +5420,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 58,
-      "community_name": "CastleScene.test.tsx",
+      "community_name": "castleSceneRuntime.ts",
       "file_type": "code",
       "norm_label": "pancastletarget()",
       "source_file": "src/components/Growth/castleSceneRuntime.ts",
@@ -5443,7 +5432,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 58,
-      "community_name": "CastleScene.test.tsx",
+      "community_name": "castleSceneRuntime.ts",
       "file_type": "code",
       "norm_label": "createcastlematerials()",
       "source_file": "src/components/Growth/castleTextures.ts",
@@ -5508,18 +5497,6 @@
       "norm_label": "thoughtbubble()",
       "source_file": "src/components/Pet/ThoughtBubble.tsx",
       "source_location": "L10"
-    },
-    {
-      "id": "src_utils_petevolution_petevolutionmessage",
-      "label": "petEvolutionMessage()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 59,
-      "community_name": "LaunchpadPet.tsx",
-      "file_type": "code",
-      "norm_label": "petevolutionmessage()",
-      "source_file": "src/utils/petEvolution.ts",
-      "source_location": "L30"
     },
     {
       "id": "src_components_pet_mascot_eye",
@@ -5606,16 +5583,52 @@
       "source_location": "L16"
     },
     {
+      "id": "src_components_dashboard_primaryfocuscard_test_resolveactivetask",
+      "label": "resolveActiveTask()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 60,
+      "community_name": "PrimaryFocusCard.test.ts",
+      "file_type": "code",
+      "norm_label": "resolveactivetask()",
+      "source_file": "src/components/Dashboard/PrimaryFocusCard.test.ts",
+      "source_location": "L117"
+    },
+    {
       "id": "src_components_growth_castlemodel_armillary",
       "label": "armillary()",
       "_callable": true,
       "_origin": "ast",
       "community": 61,
-      "community_name": "sphere",
+      "community_name": "box",
       "file_type": "code",
       "norm_label": "armillary()",
       "source_file": "src/components/Growth/castleModel.ts",
       "source_location": "L258"
+    },
+    {
+      "id": "src_components_growth_castlemodel_bell",
+      "label": "bell()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 61,
+      "community_name": "box",
+      "file_type": "code",
+      "norm_label": "bell()",
+      "source_file": "src/components/Growth/castleModel.ts",
+      "source_location": "L235"
+    },
+    {
+      "id": "src_components_growth_castlemodel_box",
+      "label": "box()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 61,
+      "community_name": "box",
+      "file_type": "code",
+      "norm_label": "box()",
+      "source_file": "src/components/Growth/castleModel.ts",
+      "source_location": "L60"
     },
     {
       "id": "src_components_growth_castlemodel_brazier",
@@ -5623,11 +5636,23 @@
       "_callable": true,
       "_origin": "ast",
       "community": 61,
-      "community_name": "sphere",
+      "community_name": "box",
       "file_type": "code",
       "norm_label": "brazier()",
       "source_file": "src/components/Growth/castleModel.ts",
       "source_location": "L214"
+    },
+    {
+      "id": "src_components_growth_castlemodel_buttress",
+      "label": "buttress()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 61,
+      "community_name": "box",
+      "file_type": "code",
+      "norm_label": "buttress()",
+      "source_file": "src/components/Growth/castleModel.ts",
+      "source_location": "L99"
     },
     {
       "id": "src_components_growth_castlemodel_calico",
@@ -5635,7 +5660,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 61,
-      "community_name": "sphere",
+      "community_name": "box",
       "file_type": "code",
       "norm_label": "calico()",
       "source_file": "src/components/Growth/castleModel.ts",
@@ -5647,7 +5672,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 61,
-      "community_name": "sphere",
+      "community_name": "box",
       "file_type": "code",
       "norm_label": "cone()",
       "source_file": "src/components/Growth/castleModel.ts",
@@ -5659,7 +5684,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 61,
-      "community_name": "sphere",
+      "community_name": "box",
       "file_type": "code",
       "norm_label": "crown()",
       "source_file": "src/components/Growth/castleModel.ts",
@@ -5671,7 +5696,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 61,
-      "community_name": "sphere",
+      "community_name": "box",
       "file_type": "code",
       "norm_label": "cylinder()",
       "source_file": "src/components/Growth/castleModel.ts",
@@ -5683,11 +5708,35 @@
       "_callable": true,
       "_origin": "ast",
       "community": 61,
-      "community_name": "sphere",
+      "community_name": "box",
       "file_type": "code",
       "norm_label": "falcon()",
       "source_file": "src/components/Growth/castleModel.ts",
       "source_location": "L340"
+    },
+    {
+      "id": "src_components_growth_castlemodel_gargoyle",
+      "label": "gargoyle()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 61,
+      "community_name": "box",
+      "file_type": "code",
+      "norm_label": "gargoyle()",
+      "source_file": "src/components/Growth/castleModel.ts",
+      "source_location": "L249"
+    },
+    {
+      "id": "src_components_growth_castlemodel_hall",
+      "label": "hall()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 61,
+      "community_name": "box",
+      "file_type": "code",
+      "norm_label": "hall()",
+      "source_file": "src/components/Growth/castleModel.ts",
+      "source_location": "L144"
     },
     {
       "id": "src_components_growth_castlemodel_head",
@@ -5695,11 +5744,23 @@
       "_callable": true,
       "_origin": "ast",
       "community": 61,
-      "community_name": "sphere",
+      "community_name": "box",
       "file_type": "code",
       "norm_label": "head()",
       "source_file": "src/components/Growth/castleModel.ts",
       "source_location": "L276"
+    },
+    {
+      "id": "src_components_growth_castlemodel_lantern",
+      "label": "lantern()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 61,
+      "community_name": "box",
+      "file_type": "code",
+      "norm_label": "lantern()",
+      "source_file": "src/components/Growth/castleModel.ts",
+      "source_location": "L222"
     },
     {
       "id": "src_components_growth_castlemodel_mastiff",
@@ -5707,11 +5768,23 @@
       "_callable": true,
       "_origin": "ast",
       "community": 61,
-      "community_name": "sphere",
+      "community_name": "box",
       "file_type": "code",
       "norm_label": "mastiff()",
       "source_file": "src/components/Growth/castleModel.ts",
       "source_location": "L279"
+    },
+    {
+      "id": "src_components_growth_castlemodel_pedestal",
+      "label": "pedestal()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 61,
+      "community_name": "box",
+      "file_type": "code",
+      "norm_label": "pedestal()",
+      "source_file": "src/components/Growth/castleModel.ts",
+      "source_location": "L209"
     },
     {
       "id": "src_components_growth_castlemodel_pole",
@@ -5719,7 +5792,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 61,
-      "community_name": "sphere",
+      "community_name": "box",
       "file_type": "code",
       "norm_label": "pole()",
       "source_file": "src/components/Growth/castleModel.ts",
@@ -5731,7 +5804,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 61,
-      "community_name": "sphere",
+      "community_name": "box",
       "file_type": "code",
       "norm_label": "primitive()",
       "source_file": "src/components/Growth/castleModel.ts",
@@ -5743,11 +5816,23 @@
       "_callable": true,
       "_origin": "ast",
       "community": 61,
-      "community_name": "sphere",
+      "community_name": "box",
       "file_type": "code",
       "norm_label": "rose()",
       "source_file": "src/components/Growth/castleModel.ts",
       "source_location": "L265"
+    },
+    {
+      "id": "src_components_growth_castlemodel_shield",
+      "label": "shield()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 61,
+      "community_name": "box",
+      "file_type": "code",
+      "norm_label": "shield()",
+      "source_file": "src/components/Growth/castleModel.ts",
+      "source_location": "L228"
     },
     {
       "id": "src_components_growth_castlemodel_sphere",
@@ -5755,7 +5840,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 61,
-      "community_name": "sphere",
+      "community_name": "box",
       "file_type": "code",
       "norm_label": "sphere()",
       "source_file": "src/components/Growth/castleModel.ts",
@@ -5767,7 +5852,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 61,
-      "community_name": "sphere",
+      "community_name": "box",
       "file_type": "code",
       "norm_label": "stallion()",
       "source_file": "src/components/Growth/castleModel.ts",
@@ -5779,7 +5864,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 61,
-      "community_name": "sphere",
+      "community_name": "box",
       "file_type": "code",
       "norm_label": "support()",
       "source_file": "src/components/Growth/castleModel.ts",
@@ -5791,7 +5876,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 61,
-      "community_name": "sphere",
+      "community_name": "box",
       "file_type": "code",
       "norm_label": "torus()",
       "source_file": "src/components/Growth/castleModel.ts",
@@ -5803,11 +5888,35 @@
       "_callable": true,
       "_origin": "ast",
       "community": 61,
-      "community_name": "sphere",
+      "community_name": "box",
       "file_type": "code",
       "norm_label": "tower()",
       "source_file": "src/components/Growth/castleModel.ts",
       "source_location": "L168"
+    },
+    {
+      "id": "src_components_growth_castlemodel_wedge",
+      "label": "wedge()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 61,
+      "community_name": "box",
+      "file_type": "code",
+      "norm_label": "wedge()",
+      "source_file": "src/components/Growth/castleModel.ts",
+      "source_location": "L70"
+    },
+    {
+      "id": "src_components_growth_castlemodel_window",
+      "label": "window()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 61,
+      "community_name": "box",
+      "file_type": "code",
+      "norm_label": "window()",
+      "source_file": "src/components/Growth/castleModel.ts",
+      "source_location": "L139"
     },
     {
       "id": "src_components_growth_castlemodel_wyvern",
@@ -5815,7 +5924,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 61,
-      "community_name": "sphere",
+      "community_name": "box",
       "file_type": "code",
       "norm_label": "wyvern()",
       "source_file": "src/components/Growth/castleModel.ts",
@@ -5930,6 +6039,18 @@
       "source_location": "L51"
     },
     {
+      "id": "src_utils_taskreflection_getdailyreviewtasks",
+      "label": "getDailyReviewTasks()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 62,
+      "community_name": "taskReflection.ts",
+      "file_type": "code",
+      "norm_label": "getdailyreviewtasks()",
+      "source_file": "src/utils/taskReflection.ts",
+      "source_location": "L58"
+    },
+    {
       "id": "src_utils_taskreflection_getreflectiontasks",
       "label": "getReflectionTasks()",
       "_callable": true,
@@ -6014,6 +6135,18 @@
       "source_location": "L207"
     },
     {
+      "id": "src_utils_taskreflection_resetreflectiontasks",
+      "label": "resetReflectionTasks()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 62,
+      "community_name": "taskReflection.ts",
+      "file_type": "code",
+      "norm_label": "resetreflectiontasks()",
+      "source_file": "src/utils/taskReflection.ts",
+      "source_location": "L81"
+    },
+    {
       "id": "src_utils_taskreflection_validreflection",
       "label": "validReflection()",
       "_callable": true,
@@ -6024,66 +6157,6 @@
       "norm_label": "validreflection()",
       "source_file": "src/utils/taskReflection.ts",
       "source_location": "L90"
-    },
-    {
-      "id": "src_utils_castleblueprint_test_day",
-      "label": "day()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 63,
-      "community_name": "castleJourney.test.ts",
-      "file_type": "code",
-      "norm_label": "day()",
-      "source_file": "src/utils/castleBlueprint.test.ts",
-      "source_location": "L6"
-    },
-    {
-      "id": "src_utils_castleblueprint_test_funded",
-      "label": "funded()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 63,
-      "community_name": "castleJourney.test.ts",
-      "file_type": "code",
-      "norm_label": "funded()",
-      "source_file": "src/utils/castleBlueprint.test.ts",
-      "source_location": "L7"
-    },
-    {
-      "id": "src_utils_castleeconomy_activateeconomy",
-      "label": "activateEconomy()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 63,
-      "community_name": "castleJourney.test.ts",
-      "file_type": "code",
-      "norm_label": "activateeconomy()",
-      "source_file": "src/utils/castleEconomy.ts",
-      "source_location": "L144"
-    },
-    {
-      "id": "src_utils_taskreflection_test_reflectwork",
-      "label": "reflectWork()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 63,
-      "community_name": "castleJourney.test.ts",
-      "file_type": "code",
-      "norm_label": "reflectwork()",
-      "source_file": "src/utils/taskReflection.test.ts",
-      "source_location": "L154"
-    },
-    {
-      "id": "src_utils_taskreflection_test_task",
-      "label": "task()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 63,
-      "community_name": "castleJourney.test.ts",
-      "file_type": "code",
-      "norm_label": "task()",
-      "source_file": "src/utils/taskReflection.test.ts",
-      "source_location": "L11"
     },
     {
       "id": "src_utils_storage_storagerecoveryerror_constructor",
@@ -6098,24 +6171,12 @@
       "source_location": "L20"
     },
     {
-      "id": "src_utils_focustimer_elapsedseconds",
-      "label": "elapsedSeconds()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 65,
-      "community_name": "taskCompletion.ts",
-      "file_type": "code",
-      "norm_label": "elapsedseconds()",
-      "source_file": "src/utils/focusTimer.ts",
-      "source_location": "L49"
-    },
-    {
       "id": "src_utils_focustimer_formatelapsed",
       "label": "formatElapsed()",
       "_callable": true,
       "_origin": "ast",
       "community": 65,
-      "community_name": "taskCompletion.ts",
+      "community_name": "focusTimer.ts",
       "file_type": "code",
       "norm_label": "formatelapsed()",
       "source_file": "src/utils/focusTimer.ts",
@@ -6127,7 +6188,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 65,
-      "community_name": "taskCompletion.ts",
+      "community_name": "focusTimer.ts",
       "file_type": "code",
       "norm_label": "loadfocustimer()",
       "source_file": "src/utils/focusTimer.ts",
@@ -6139,7 +6200,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 65,
-      "community_name": "taskCompletion.ts",
+      "community_name": "focusTimer.ts",
       "file_type": "code",
       "norm_label": "savefocustimer()",
       "source_file": "src/utils/focusTimer.ts",
@@ -6151,47 +6212,11 @@
       "_callable": true,
       "_origin": "ast",
       "community": 65,
-      "community_name": "taskCompletion.ts",
+      "community_name": "focusTimer.ts",
       "file_type": "code",
       "norm_label": "assertequal()",
       "source_file": "src/utils/focusTimer.test.ts",
       "source_location": "L12"
-    },
-    {
-      "id": "src_utils_taskcompletion_transitiontask",
-      "label": "transitionTask()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 65,
-      "community_name": "taskCompletion.ts",
-      "file_type": "code",
-      "norm_label": "transitiontask()",
-      "source_file": "src/utils/taskCompletion.ts",
-      "source_location": "L15"
-    },
-    {
-      "id": "src_utils_taskurgency_togglesubtaskinlist",
-      "label": "toggleSubtaskInList()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 65,
-      "community_name": "taskCompletion.ts",
-      "file_type": "code",
-      "norm_label": "togglesubtaskinlist()",
-      "source_file": "src/utils/taskUrgency.ts",
-      "source_location": "L1017"
-    },
-    {
-      "id": "src_utils_taskurgency_toggletaskinlist",
-      "label": "toggleTaskInList()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 65,
-      "community_name": "taskCompletion.ts",
-      "file_type": "code",
-      "norm_label": "toggletaskinlist()",
-      "source_file": "src/utils/taskUrgency.ts",
-      "source_location": "L983"
     },
     {
       "id": "src_utils_timebudget_test_assertequal",
@@ -6206,28 +6231,52 @@
       "source_location": "L8"
     },
     {
-      "id": "src_utils_castleeconomy_appendcommitment",
-      "label": "appendCommitment()",
+      "id": "src_utils_castleblueprint_test_day",
+      "label": "day()",
       "_callable": true,
       "_origin": "ast",
       "community": 67,
       "community_name": "castleFixture.tsx",
       "file_type": "code",
-      "norm_label": "appendcommitment()",
-      "source_file": "src/utils/castleEconomy.ts",
-      "source_location": "L313"
+      "norm_label": "day()",
+      "source_file": "src/utils/castleBlueprint.test.ts",
+      "source_location": "L6"
     },
     {
-      "id": "src_utils_castleeconomy_commitopentask",
-      "label": "commitOpenTask()",
+      "id": "src_utils_castleblueprint_test_funded",
+      "label": "funded()",
       "_callable": true,
       "_origin": "ast",
       "community": 67,
       "community_name": "castleFixture.tsx",
       "file_type": "code",
-      "norm_label": "commitopentask()",
+      "norm_label": "funded()",
+      "source_file": "src/utils/castleBlueprint.test.ts",
+      "source_location": "L7"
+    },
+    {
+      "id": "src_utils_castleblueprint_test_indistrict",
+      "label": "inDistrict()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 67,
+      "community_name": "castleFixture.tsx",
+      "file_type": "code",
+      "norm_label": "indistrict()",
+      "source_file": "src/utils/castleBlueprint.test.ts",
+      "source_location": "L8"
+    },
+    {
+      "id": "src_utils_castleeconomy_activateeconomy",
+      "label": "activateEconomy()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 67,
+      "community_name": "castleFixture.tsx",
+      "file_type": "code",
+      "norm_label": "activateeconomy()",
       "source_file": "src/utils/castleEconomy.ts",
-      "source_location": "L298"
+      "source_location": "L144"
     },
     {
       "id": "src_utils_castleeconomy_completecommitment",
@@ -6506,18 +6555,6 @@
       "source_location": "L42"
     },
     {
-      "id": "src_utils_castleeconomy_changedailygoal",
-      "label": "changeDailyGoal()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 7,
-      "community_name": "SettingsScreen.tsx",
-      "file_type": "code",
-      "norm_label": "changedailygoal()",
-      "source_file": "src/utils/castleEconomy.ts",
-      "source_location": "L247"
-    },
-    {
       "id": "src_utils_storage_getstoragemetrics",
       "label": "getStorageMetrics()",
       "_callable": true,
@@ -6530,124 +6567,28 @@
       "source_location": "L463"
     },
     {
-      "id": "src_utils_taskperiod_adddays",
-      "label": "addDays()",
+      "id": "src_components_growth_castlecatalog_assertcastlebuildprerequisite",
+      "label": "assertCastleBuildPrerequisite()",
       "_callable": true,
       "_origin": "ast",
       "community": 70,
-      "community_name": "taskPeriod.ts",
+      "community_name": "CastlePanel.test.tsx",
       "file_type": "code",
-      "norm_label": "adddays()",
-      "source_file": "src/utils/taskPeriod.ts",
-      "source_location": "L33"
+      "norm_label": "assertcastlebuildprerequisite()",
+      "source_file": "src/components/Growth/castleCatalog.ts",
+      "source_location": "L15"
     },
     {
-      "id": "src_utils_taskperiod_deadlinedate",
-      "label": "deadlineDate()",
+      "id": "src_components_growth_castlepanel_test_render",
+      "label": "render()",
       "_callable": true,
       "_origin": "ast",
       "community": 70,
-      "community_name": "taskPeriod.ts",
+      "community_name": "CastlePanel.test.tsx",
       "file_type": "code",
-      "norm_label": "deadlinedate()",
-      "source_file": "src/utils/taskPeriod.ts",
-      "source_location": "L95"
-    },
-    {
-      "id": "src_utils_taskperiod_defaultperiodrange",
-      "label": "defaultPeriodRange()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 70,
-      "community_name": "taskPeriod.ts",
-      "file_type": "code",
-      "norm_label": "defaultperiodrange()",
-      "source_file": "src/utils/taskPeriod.ts",
-      "source_location": "L81"
-    },
-    {
-      "id": "src_utils_taskperiod_gettaskperiod",
-      "label": "getTaskPeriod()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 70,
-      "community_name": "taskPeriod.ts",
-      "file_type": "code",
-      "norm_label": "gettaskperiod()",
-      "source_file": "src/utils/taskPeriod.ts",
-      "source_location": "L117"
-    },
-    {
-      "id": "src_utils_taskperiod_localdate",
-      "label": "localDate()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 70,
-      "community_name": "taskPeriod.ts",
-      "file_type": "code",
-      "norm_label": "localdate()",
-      "source_file": "src/utils/taskPeriod.ts",
-      "source_location": "L44"
-    },
-    {
-      "id": "src_utils_taskperiod_localtoday",
-      "label": "localToday()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 70,
-      "community_name": "taskPeriod.ts",
-      "file_type": "code",
-      "norm_label": "localtoday()",
-      "source_file": "src/utils/taskPeriod.ts",
-      "source_location": "L29"
-    },
-    {
-      "id": "src_utils_taskperiod_mondayof",
-      "label": "mondayOf()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 70,
-      "community_name": "taskPeriod.ts",
-      "file_type": "code",
-      "norm_label": "mondayof()",
-      "source_file": "src/utils/taskPeriod.ts",
-      "source_location": "L37"
-    },
-    {
-      "id": "src_utils_taskperiod_startoflocalday",
-      "label": "startOfLocalDay()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 70,
-      "community_name": "taskPeriod.ts",
-      "file_type": "code",
-      "norm_label": "startoflocalday()",
-      "source_file": "src/utils/taskPeriod.ts",
-      "source_location": "L25"
-    },
-    {
-      "id": "src_utils_taskperiod_tasksinperiod",
-      "label": "tasksInPeriod()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 70,
-      "community_name": "taskPeriod.ts",
-      "file_type": "code",
-      "norm_label": "tasksinperiod()",
-      "source_file": "src/utils/taskPeriod.ts",
-      "source_location": "L156"
-    },
-    {
-      "id": "src_utils_taskperiod_test_ids",
-      "label": "ids()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 70,
-      "community_name": "taskPeriod.ts",
-      "file_type": "code",
-      "norm_label": "ids()",
-      "source_file": "src/utils/taskPeriod.test.ts",
-      "source_location": "L29"
+      "norm_label": "render()",
+      "source_file": "src/components/Growth/CastlePanel.test.tsx",
+      "source_location": "L11"
     },
     {
       "id": "src_components_dashboard_momentumcard_getlocaldatestring",
@@ -6890,76 +6831,76 @@
       "source_location": "L17"
     },
     {
-      "id": "src_components_common_faviconimage_faviconimage",
-      "label": "FaviconImage()",
+      "id": "src_utils_storage_test_mocklocalstorage_clear",
+      "label": ".clear()",
       "_callable": true,
       "_origin": "ast",
       "community": 76,
-      "community_name": "favicon.ts",
+      "community_name": "MockLocalStorage",
       "file_type": "code",
-      "norm_label": "faviconimage()",
-      "source_file": "src/components/Common/FaviconImage.tsx",
-      "source_location": "L16"
+      "norm_label": ".clear()",
+      "source_file": "src/utils/storage.test.ts",
+      "source_location": "L63"
     },
     {
-      "id": "src_utils_favicon_extractapexdomain",
-      "label": "extractApexDomain()",
+      "id": "src_utils_storage_test_mocklocalstorage_getitem",
+      "label": ".getItem()",
       "_callable": true,
       "_origin": "ast",
       "community": 76,
-      "community_name": "favicon.ts",
+      "community_name": "MockLocalStorage",
       "file_type": "code",
-      "norm_label": "extractapexdomain()",
-      "source_file": "src/utils/favicon.ts",
-      "source_location": "L22"
-    },
-    {
-      "id": "src_utils_favicon_extractdomain",
-      "label": "extractDomain()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 76,
-      "community_name": "favicon.ts",
-      "file_type": "code",
-      "norm_label": "extractdomain()",
-      "source_file": "src/utils/favicon.ts",
-      "source_location": "L1"
-    },
-    {
-      "id": "src_utils_favicon_formaturl",
-      "label": "formatUrl()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 76,
-      "community_name": "favicon.ts",
-      "file_type": "code",
-      "norm_label": "formaturl()",
-      "source_file": "src/utils/favicon.ts",
-      "source_location": "L14"
-    },
-    {
-      "id": "src_utils_favicon_getapexfaviconurl",
-      "label": "getApexFaviconUrl()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 76,
-      "community_name": "favicon.ts",
-      "file_type": "code",
-      "norm_label": "getapexfaviconurl()",
-      "source_file": "src/utils/favicon.ts",
+      "norm_label": ".getitem()",
+      "source_file": "src/utils/storage.test.ts",
       "source_location": "L47"
     },
     {
-      "id": "src_utils_favicon_getfaviconurl",
-      "label": "getFaviconUrl()",
+      "id": "src_utils_storage_test_mocklocalstorage_key",
+      "label": ".key()",
       "_callable": true,
       "_origin": "ast",
       "community": 76,
-      "community_name": "favicon.ts",
+      "community_name": "MockLocalStorage",
       "file_type": "code",
-      "norm_label": "getfaviconurl()",
-      "source_file": "src/utils/favicon.ts",
-      "source_location": "L53"
+      "norm_label": ".key()",
+      "source_file": "src/utils/storage.test.ts",
+      "source_location": "L71"
+    },
+    {
+      "id": "src_utils_storage_test_mocklocalstorage_length",
+      "label": ".length()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 76,
+      "community_name": "MockLocalStorage",
+      "file_type": "code",
+      "norm_label": ".length()",
+      "source_file": "src/utils/storage.test.ts",
+      "source_location": "L67"
+    },
+    {
+      "id": "src_utils_storage_test_mocklocalstorage_removeitem",
+      "label": ".removeItem()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 76,
+      "community_name": "MockLocalStorage",
+      "file_type": "code",
+      "norm_label": ".removeitem()",
+      "source_file": "src/utils/storage.test.ts",
+      "source_location": "L59"
+    },
+    {
+      "id": "src_utils_storage_test_mocklocalstorage_setitem",
+      "label": ".setItem()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 76,
+      "community_name": "MockLocalStorage",
+      "file_type": "code",
+      "norm_label": ".setitem()",
+      "source_file": "src/utils/storage.test.ts",
+      "source_location": "L51"
     },
     {
       "id": "src_components_sidebar_sidebar_activepill",
@@ -7022,6 +6963,18 @@
       "source_location": "L20"
     },
     {
+      "id": "src_utils_petevolution_petevolutionmessage",
+      "label": "petEvolutionMessage()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 78,
+      "community_name": "petEvolution.test.ts",
+      "file_type": "code",
+      "norm_label": "petevolutionmessage()",
+      "source_file": "src/utils/petEvolution.ts",
+      "source_location": "L30"
+    },
+    {
       "id": "src_utils_taskurgency_test_assert",
       "label": "assert()",
       "_callable": true,
@@ -7070,12 +7023,60 @@
       "source_location": "L194"
     },
     {
+      "id": "src_utils_focustimer_elapsedseconds",
+      "label": "elapsedSeconds()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 83,
+      "community_name": "taskCompletion.ts",
+      "file_type": "code",
+      "norm_label": "elapsedseconds()",
+      "source_file": "src/utils/focusTimer.ts",
+      "source_location": "L49"
+    },
+    {
+      "id": "src_utils_taskcompletion_transitiontask",
+      "label": "transitionTask()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 83,
+      "community_name": "taskCompletion.ts",
+      "file_type": "code",
+      "norm_label": "transitiontask()",
+      "source_file": "src/utils/taskCompletion.ts",
+      "source_location": "L15"
+    },
+    {
+      "id": "src_utils_taskurgency_togglesubtaskinlist",
+      "label": "toggleSubtaskInList()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 83,
+      "community_name": "taskCompletion.ts",
+      "file_type": "code",
+      "norm_label": "togglesubtaskinlist()",
+      "source_file": "src/utils/taskUrgency.ts",
+      "source_location": "L1017"
+    },
+    {
+      "id": "src_utils_taskurgency_toggletaskinlist",
+      "label": "toggleTaskInList()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 83,
+      "community_name": "taskCompletion.ts",
+      "file_type": "code",
+      "norm_label": "toggletaskinlist()",
+      "source_file": "src/utils/taskUrgency.ts",
+      "source_location": "L983"
+    },
+    {
       "id": "src_components_dashboard_commitmentradarwidget_test_assert",
       "label": "assert()",
       "_callable": true,
       "_origin": "ast",
       "community": 9,
-      "community_name": "CommitmentRadarWidget.test.ts",
+      "community_name": "QuickNote",
       "file_type": "code",
       "norm_label": "assert()",
       "source_file": "src/components/Dashboard/CommitmentRadarWidget.test.ts",
@@ -7087,7 +7088,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 9,
-      "community_name": "CommitmentRadarWidget.test.ts",
+      "community_name": "QuickNote",
       "file_type": "code",
       "norm_label": "assertequal()",
       "source_file": "src/components/Dashboard/CommitmentRadarWidget.test.ts",
@@ -7099,23 +7100,35 @@
       "_callable": true,
       "_origin": "ast",
       "community": 9,
-      "community_name": "CommitmentRadarWidget.test.ts",
+      "community_name": "QuickNote",
       "file_type": "code",
       "norm_label": "truncatetext()",
       "source_file": "src/components/Dashboard/CommitmentRadarWidget.tsx",
       "source_location": "L108"
     },
     {
-      "id": "src_components_dashboard_primaryfocuscard_test_resolveactivetask",
-      "label": "resolveActiveTask()",
+      "id": "src_utils_taskurgency_calculatesessionmomentumindex",
+      "label": "calculateSessionMomentumIndex()",
       "_callable": true,
       "_origin": "ast",
       "community": 9,
-      "community_name": "CommitmentRadarWidget.test.ts",
+      "community_name": "QuickNote",
       "file_type": "code",
-      "norm_label": "resolveactivetask()",
-      "source_file": "src/components/Dashboard/PrimaryFocusCard.test.ts",
-      "source_location": "L117"
+      "norm_label": "calculatesessionmomentumindex()",
+      "source_file": "src/utils/taskUrgency.ts",
+      "source_location": "L903"
+    },
+    {
+      "id": "src_utils_taskurgency_calculatetaskopportunityscore",
+      "label": "calculateTaskOpportunityScore()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 9,
+      "community_name": "QuickNote",
+      "file_type": "code",
+      "norm_label": "calculatetaskopportunityscore()",
+      "source_file": "src/utils/taskUrgency.ts",
+      "source_location": "L683"
     },
     {
       "id": "src_utils_taskurgency_calculatetaskurgency",
@@ -7123,7 +7136,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 9,
-      "community_name": "CommitmentRadarWidget.test.ts",
+      "community_name": "QuickNote",
       "file_type": "code",
       "norm_label": "calculatetaskurgency()",
       "source_file": "src/utils/taskUrgency.ts",
@@ -7135,7 +7148,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 9,
-      "community_name": "CommitmentRadarWidget.test.ts",
+      "community_name": "QuickNote",
       "file_type": "code",
       "norm_label": "formattaskcountdown()",
       "source_file": "src/utils/taskUrgency.ts",
@@ -7147,18 +7160,30 @@
       "_callable": true,
       "_origin": "ast",
       "community": 9,
-      "community_name": "CommitmentRadarWidget.test.ts",
+      "community_name": "QuickNote",
       "file_type": "code",
       "norm_label": "projecttaskstoradarcoordinates()",
       "source_file": "src/utils/taskUrgency.ts",
       "source_location": "L418"
     },
     {
+      "id": "src_utils_timebudget_formatapproximateduration",
+      "label": "formatApproximateDuration()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 9,
+      "community_name": "QuickNote",
+      "file_type": "code",
+      "norm_label": "formatapproximateduration()",
+      "source_file": "src/utils/timeBudget.ts",
+      "source_location": "L28"
+    },
+    {
       "id": "src_components_dashboard_focusherobanner",
       "label": "FocusHeroBanner.tsx",
       "_origin": "ast",
       "community": 0,
-      "community_name": "timeBudget.ts",
+      "community_name": "FocusHeroBanner.tsx",
       "file_type": "code",
       "norm_label": "focusherobanner.tsx",
       "source_file": "src/components/Dashboard/FocusHeroBanner.tsx",
@@ -7169,7 +7194,7 @@
       "label": "TimeRadarWidget.tsx",
       "_origin": "ast",
       "community": 0,
-      "community_name": "timeBudget.ts",
+      "community_name": "FocusHeroBanner.tsx",
       "file_type": "code",
       "norm_label": "timeradarwidget.tsx",
       "source_file": "src/components/Dashboard/TimeRadarWidget.tsx",
@@ -7180,7 +7205,7 @@
       "label": "statusText",
       "_origin": "ast",
       "community": 0,
-      "community_name": "timeBudget.ts",
+      "community_name": "FocusHeroBanner.tsx",
       "file_type": "code",
       "norm_label": "statustext",
       "source_file": "src/components/Dashboard/TimeRadarWidget.tsx",
@@ -7191,7 +7216,7 @@
       "label": "TimeRadarWidget.test.ts",
       "_origin": "ast",
       "community": 0,
-      "community_name": "timeBudget.ts",
+      "community_name": "FocusHeroBanner.tsx",
       "file_type": "code",
       "norm_label": "timeradarwidget.test.ts",
       "source_file": "src/components/Dashboard/TimeRadarWidget.test.ts",
@@ -7202,7 +7227,7 @@
       "label": "mockBuffer",
       "_origin": "ast",
       "community": 0,
-      "community_name": "timeBudget.ts",
+      "community_name": "FocusHeroBanner.tsx",
       "file_type": "code",
       "norm_label": "mockbuffer",
       "source_file": "src/components/Dashboard/TimeRadarWidget.test.ts",
@@ -7213,7 +7238,7 @@
       "label": "mockTaskLoad",
       "_origin": "ast",
       "community": 0,
-      "community_name": "timeBudget.ts",
+      "community_name": "FocusHeroBanner.tsx",
       "file_type": "code",
       "norm_label": "mocktaskload",
       "source_file": "src/components/Dashboard/TimeRadarWidget.test.ts",
@@ -7224,7 +7249,7 @@
       "label": "mockTimeRemaining",
       "_origin": "ast",
       "community": 0,
-      "community_name": "timeBudget.ts",
+      "community_name": "FocusHeroBanner.tsx",
       "file_type": "code",
       "norm_label": "mocktimeremaining",
       "source_file": "src/components/Dashboard/TimeRadarWidget.test.ts",
@@ -7235,7 +7260,7 @@
       "label": "testProps",
       "_origin": "ast",
       "community": 0,
-      "community_name": "timeBudget.ts",
+      "community_name": "FocusHeroBanner.tsx",
       "file_type": "code",
       "norm_label": "testprops",
       "source_file": "src/components/Dashboard/TimeRadarWidget.test.ts",
@@ -7246,29 +7271,18 @@
       "label": "TimeRadarWidget",
       "_origin": "ast",
       "community": 0,
-      "community_name": "timeBudget.ts",
+      "community_name": "FocusHeroBanner.tsx",
       "file_type": "code",
       "norm_label": "timeradarwidget",
       "source_file": "src/components/Dashboard/TimeRadarWidget.tsx",
       "source_location": "L19"
     },
     {
-      "id": "src_utils_timebudget",
-      "label": "timeBudget.ts",
-      "_origin": "ast",
-      "community": 0,
-      "community_name": "timeBudget.ts",
-      "file_type": "code",
-      "norm_label": "timebudget.ts",
-      "source_file": "src/utils/timeBudget.ts",
-      "source_location": "L1"
-    },
-    {
       "id": "src_utils_timebudget_buffertextcolor",
       "label": "bufferTextColor",
       "_origin": "ast",
       "community": 0,
-      "community_name": "timeBudget.ts",
+      "community_name": "FocusHeroBanner.tsx",
       "file_type": "code",
       "norm_label": "buffertextcolor",
       "source_file": "src/utils/timeBudget.ts",
@@ -7297,28 +7311,6 @@
       "source_location": "L56"
     },
     {
-      "id": "src_app_growthmasteryscreen",
-      "label": "GrowthMasteryScreen",
-      "_origin": "ast",
-      "community": 1,
-      "community_name": "App.tsx",
-      "file_type": "code",
-      "norm_label": "growthmasteryscreen",
-      "source_file": "src/App.tsx",
-      "source_location": "L53"
-    },
-    {
-      "id": "src_app_settingsscreen",
-      "label": "SettingsScreen",
-      "_origin": "ast",
-      "community": 1,
-      "community_name": "App.tsx",
-      "file_type": "code",
-      "norm_label": "settingsscreen",
-      "source_file": "src/App.tsx",
-      "source_location": "L66"
-    },
-    {
       "id": "src_app_taskmanagementscreen",
       "label": "TaskManagementScreen",
       "_origin": "ast",
@@ -7330,70 +7322,81 @@
       "source_location": "L63"
     },
     {
-      "id": "src_components_pet_launchpadpet_launchpadpet",
-      "label": "LaunchpadPet",
+      "id": "src_components_header_header",
+      "label": "Header.tsx",
       "_origin": "ast",
       "community": 1,
       "community_name": "App.tsx",
       "file_type": "code",
-      "norm_label": "launchpadpet",
-      "source_file": "src/components/Pet/LaunchpadPet.tsx",
-      "source_location": "L228"
+      "norm_label": "header.tsx",
+      "source_file": "src/components/Header/Header.tsx",
+      "source_location": "L1"
     },
     {
-      "id": "src_main",
-      "label": "main.tsx",
+      "id": "src_components_layout_backupremindertoast",
+      "label": "BackupReminderToast.tsx",
       "_origin": "ast",
       "community": 1,
       "community_name": "App.tsx",
       "file_type": "code",
-      "norm_label": "main.tsx",
-      "source_file": "src/main.tsx",
+      "norm_label": "backupremindertoast.tsx",
+      "source_file": "src/components/Layout/BackupReminderToast.tsx",
       "source_location": "L1"
     },
     {
-      "id": "src_utils_taskurgency",
-      "label": "taskUrgency.ts",
+      "id": "src_components_quicknotes_quicknoteswidget",
+      "label": "QuickNotesWidget.tsx",
       "_origin": "ast",
-      "community": 10,
-      "community_name": "taskUrgency.ts",
+      "community": 1,
+      "community_name": "App.tsx",
       "file_type": "code",
-      "norm_label": "taskurgency.ts",
-      "source_file": "src/utils/taskUrgency.ts",
+      "norm_label": "quicknoteswidget.tsx",
+      "source_file": "src/components/QuickNotes/QuickNotesWidget.tsx",
       "source_location": "L1"
     },
     {
-      "id": "src_utils_taskurgency_default_visible_subtasks",
-      "label": "DEFAULT_VISIBLE_SUBTASKS",
+      "id": "src_components_quicknotes_quicknoteswidget_duration_options",
+      "label": "DURATION_OPTIONS",
       "_origin": "ast",
-      "community": 10,
-      "community_name": "taskUrgency.ts",
+      "community": 1,
+      "community_name": "App.tsx",
       "file_type": "code",
-      "norm_label": "default_visible_subtasks",
-      "source_file": "src/utils/taskUrgency.ts",
-      "source_location": "L553"
+      "norm_label": "duration_options",
+      "source_file": "src/components/QuickNotes/QuickNotesWidget.tsx",
+      "source_location": "L24"
     },
     {
-      "id": "src_utils_taskurgency_priority_scores",
-      "label": "PRIORITY_SCORES",
+      "id": "src_components_tasks_usetaskview",
+      "label": "useTaskView.ts",
       "_origin": "ast",
-      "community": 10,
-      "community_name": "taskUrgency.ts",
+      "community": 1,
+      "community_name": "App.tsx",
       "file_type": "code",
-      "norm_label": "priority_scores",
-      "source_file": "src/utils/taskUrgency.ts",
-      "source_location": "L673"
+      "norm_label": "usetaskview.ts",
+      "source_file": "src/components/Tasks/useTaskView.ts",
+      "source_location": "L1"
     },
     {
-      "id": "src_utils_taskurgency_urgency_tier_weights",
-      "label": "URGENCY_TIER_WEIGHTS",
+      "id": "src_utils_timebudget",
+      "label": "timeBudget.ts",
       "_origin": "ast",
-      "community": 10,
-      "community_name": "taskUrgency.ts",
+      "community": 1,
+      "community_name": "App.tsx",
       "file_type": "code",
-      "norm_label": "urgency_tier_weights",
-      "source_file": "src/utils/taskUrgency.ts",
-      "source_location": "L96"
+      "norm_label": "timebudget.ts",
+      "source_file": "src/utils/timeBudget.ts",
+      "source_location": "L1"
+    },
+    {
+      "id": "ref_react",
+      "label": "react",
+      "_origin": "ast",
+      "community": 1,
+      "community_name": "App.tsx",
+      "file_type": "concept",
+      "norm_label": "react",
+      "source_file": "package.json",
+      "source_location": "L19"
     },
     {
       "id": "tsconfig",
@@ -7858,6 +7861,28 @@
       "source_location": "L67"
     },
     {
+      "id": "src_components_common_faviconimage",
+      "label": "FaviconImage.tsx",
+      "_origin": "ast",
+      "community": 13,
+      "community_name": "seedData.ts",
+      "file_type": "code",
+      "norm_label": "faviconimage.tsx",
+      "source_file": "src/components/Common/FaviconImage.tsx",
+      "source_location": "L1"
+    },
+    {
+      "id": "src_components_dashboard_smartsuggestioncard",
+      "label": "SmartSuggestionCard.tsx",
+      "_origin": "ast",
+      "community": 13,
+      "community_name": "seedData.ts",
+      "file_type": "code",
+      "norm_label": "smartsuggestioncard.tsx",
+      "source_file": "src/components/Dashboard/SmartSuggestionCard.tsx",
+      "source_location": "L1"
+    },
+    {
       "id": "src_data_curatedcatalog",
       "label": "curatedCatalog.ts",
       "_origin": "ast",
@@ -7943,6 +7968,17 @@
       "file_type": "code",
       "norm_label": "featuresverification.test.ts",
       "source_file": "src/tests/featuresVerification.test.ts",
+      "source_location": "L1"
+    },
+    {
+      "id": "src_utils_favicon",
+      "label": "favicon.ts",
+      "_origin": "ast",
+      "community": 13,
+      "community_name": "seedData.ts",
+      "file_type": "code",
+      "norm_label": "favicon.ts",
+      "source_file": "src/utils/favicon.ts",
       "source_location": "L1"
     },
     {
@@ -9211,28 +9247,6 @@
       "source_location": "L94"
     },
     {
-      "id": "src_components_quicknotes_quicknoteswidget",
-      "label": "QuickNotesWidget.tsx",
-      "_origin": "ast",
-      "community": 15,
-      "community_name": "TaskManagementScreen.tsx",
-      "file_type": "code",
-      "norm_label": "quicknoteswidget.tsx",
-      "source_file": "src/components/QuickNotes/QuickNotesWidget.tsx",
-      "source_location": "L1"
-    },
-    {
-      "id": "src_components_quicknotes_quicknoteswidget_duration_options",
-      "label": "DURATION_OPTIONS",
-      "_origin": "ast",
-      "community": 15,
-      "community_name": "TaskManagementScreen.tsx",
-      "file_type": "code",
-      "norm_label": "duration_options",
-      "source_file": "src/components/QuickNotes/QuickNotesWidget.tsx",
-      "source_location": "L24"
-    },
-    {
       "id": "src_components_tasks_taskmanagementscreen",
       "label": "TaskManagementScreen.tsx",
       "_origin": "ast",
@@ -9244,15 +9258,26 @@
       "source_location": "L1"
     },
     {
-      "id": "src_components_tasks_usetaskview",
-      "label": "useTaskView.ts",
+      "id": "src_utils_taskperiod",
+      "label": "taskPeriod.ts",
       "_origin": "ast",
       "community": 15,
       "community_name": "TaskManagementScreen.tsx",
       "file_type": "code",
-      "norm_label": "usetaskview.ts",
-      "source_file": "src/components/Tasks/useTaskView.ts",
+      "norm_label": "taskperiod.ts",
+      "source_file": "src/utils/taskPeriod.ts",
       "source_location": "L1"
+    },
+    {
+      "id": "src_utils_taskperiod_taskperiods",
+      "label": "taskPeriods",
+      "_origin": "ast",
+      "community": 15,
+      "community_name": "TaskManagementScreen.tsx",
+      "file_type": "code",
+      "norm_label": "taskperiods",
+      "source_file": "src/utils/taskPeriod.ts",
+      "source_location": "L5"
     },
     {
       "id": "src_components_pet_usepetmotion",
@@ -10573,6 +10598,17 @@
       "norm_label": "unhidden",
       "source_file": "scratch/test-folder-actions.ts",
       "source_location": "L64"
+    },
+    {
+      "id": "src_app_growthmasteryscreen",
+      "label": "GrowthMasteryScreen",
+      "_origin": "ast",
+      "community": 3,
+      "community_name": "GrowthMasteryScreen.tsx",
+      "file_type": "code",
+      "norm_label": "growthmasteryscreen",
+      "source_file": "src/App.tsx",
+      "source_location": "L53"
     },
     {
       "id": "src_components_growth_growthmasteryscreen",
@@ -12633,39 +12669,6 @@
       "source_location": "L16"
     },
     {
-      "id": "src_components_growth_castlecatalog",
-      "label": "castleCatalog.ts",
-      "_origin": "ast",
-      "community": 47,
-      "community_name": "CastlePanel.tsx",
-      "file_type": "code",
-      "norm_label": "castlecatalog.ts",
-      "source_file": "src/components/Growth/castleCatalog.ts",
-      "source_location": "L1"
-    },
-    {
-      "id": "src_components_growth_castlecatalog_castle_catalog",
-      "label": "CASTLE_CATALOG",
-      "_origin": "ast",
-      "community": 47,
-      "community_name": "CastlePanel.tsx",
-      "file_type": "code",
-      "norm_label": "castle_catalog",
-      "source_file": "src/components/Growth/castleCatalog.ts",
-      "source_location": "L3"
-    },
-    {
-      "id": "src_components_growth_castlecatalog_castle_catalog_ids",
-      "label": "CASTLE_CATALOG_IDS",
-      "_origin": "ast",
-      "community": 47,
-      "community_name": "CastlePanel.tsx",
-      "file_type": "code",
-      "norm_label": "castle_catalog_ids",
-      "source_file": "src/components/Growth/castleCatalog.ts",
-      "source_location": "L13"
-    },
-    {
       "id": "src_components_growth_castlepanel",
       "label": "CastlePanel.tsx",
       "_origin": "ast",
@@ -12710,28 +12713,6 @@
       "source_location": "L27"
     },
     {
-      "id": "src_components_growth_castlepanel_test",
-      "label": "CastlePanel.test.tsx",
-      "_origin": "ast",
-      "community": 47,
-      "community_name": "CastlePanel.tsx",
-      "file_type": "code",
-      "norm_label": "castlepanel.test.tsx",
-      "source_file": "src/components/Growth/CastlePanel.test.tsx",
-      "source_location": "L1"
-    },
-    {
-      "id": "src_components_growth_castlepanel_test_base",
-      "label": "base",
-      "_origin": "ast",
-      "community": 47,
-      "community_name": "CastlePanel.tsx",
-      "file_type": "code",
-      "norm_label": "base",
-      "source_file": "src/components/Growth/CastlePanel.test.tsx",
-      "source_location": "L10"
-    },
-    {
       "id": "src_components_growth_castlepartpreview",
       "label": "CastlePartPreview.tsx",
       "_origin": "ast",
@@ -12752,6 +12733,17 @@
       "norm_label": "castlescene.tsx",
       "source_file": "src/components/Growth/CastleScene.tsx",
       "source_location": "L1"
+    },
+    {
+      "id": "src_components_growth_castlescene_castle_parts",
+      "label": "CASTLE_PARTS",
+      "_origin": "ast",
+      "community": 47,
+      "community_name": "CastlePanel.tsx",
+      "file_type": "code",
+      "norm_label": "castle_parts",
+      "source_file": "src/components/Growth/CastleScene.tsx",
+      "source_location": "L14"
     },
     {
       "id": "src_components_growth_castlescene_controls",
@@ -13524,33 +13516,11 @@
       "source_location": "L929"
     },
     {
-      "id": "src_components_dashboard_smartsuggestioncard",
-      "label": "SmartSuggestionCard.tsx",
-      "_origin": "ast",
-      "community": 51,
-      "community_name": "react",
-      "file_type": "code",
-      "norm_label": "smartsuggestioncard.tsx",
-      "source_file": "src/components/Dashboard/SmartSuggestionCard.tsx",
-      "source_location": "L1"
-    },
-    {
-      "id": "src_components_layout_backupremindertoast",
-      "label": "BackupReminderToast.tsx",
-      "_origin": "ast",
-      "community": 51,
-      "community_name": "react",
-      "file_type": "code",
-      "norm_label": "backupremindertoast.tsx",
-      "source_file": "src/components/Layout/BackupReminderToast.tsx",
-      "source_location": "L1"
-    },
-    {
       "id": "src_components_modals_confirmdeletemodal",
       "label": "ConfirmDeleteModal.tsx",
       "_origin": "ast",
       "community": 51,
-      "community_name": "react",
+      "community_name": "motion.ts",
       "file_type": "code",
       "norm_label": "confirmdeletemodal.tsx",
       "source_file": "src/components/Modals/ConfirmDeleteModal.tsx",
@@ -13561,7 +13531,7 @@
       "label": "QuickAddTaskModal.tsx",
       "_origin": "ast",
       "community": 51,
-      "community_name": "react",
+      "community_name": "motion.ts",
       "file_type": "code",
       "norm_label": "quickaddtaskmodal.tsx",
       "source_file": "src/components/Modals/QuickAddTaskModal.tsx",
@@ -13572,18 +13542,29 @@
       "label": "PRIORITY_OPTIONS",
       "_origin": "ast",
       "community": 51,
-      "community_name": "react",
+      "community_name": "motion.ts",
       "file_type": "code",
       "norm_label": "priority_options",
       "source_file": "src/components/Modals/QuickAddTaskModal.tsx",
       "source_location": "L26"
     },
     {
+      "id": "src_main",
+      "label": "main.tsx",
+      "_origin": "ast",
+      "community": 51,
+      "community_name": "motion.ts",
+      "file_type": "code",
+      "norm_label": "main.tsx",
+      "source_file": "src/main.tsx",
+      "source_location": "L1"
+    },
+    {
       "id": "src_utils_motion",
       "label": "motion.ts",
       "_origin": "ast",
       "community": 51,
-      "community_name": "react",
+      "community_name": "motion.ts",
       "file_type": "code",
       "norm_label": "motion.ts",
       "source_file": "src/utils/motion.ts",
@@ -13594,7 +13575,7 @@
       "label": "drawerVariants",
       "_origin": "ast",
       "community": 51,
-      "community_name": "react",
+      "community_name": "motion.ts",
       "file_type": "code",
       "norm_label": "drawervariants",
       "source_file": "src/utils/motion.ts",
@@ -13605,7 +13586,7 @@
       "label": "fadeScaleVariants",
       "_origin": "ast",
       "community": 51,
-      "community_name": "react",
+      "community_name": "motion.ts",
       "file_type": "code",
       "norm_label": "fadescalevariants",
       "source_file": "src/utils/motion.ts",
@@ -13616,7 +13597,7 @@
       "label": "MICRO_INTERACTIONS",
       "_origin": "ast",
       "community": 51,
-      "community_name": "react",
+      "community_name": "motion.ts",
       "file_type": "code",
       "norm_label": "micro_interactions",
       "source_file": "src/utils/motion.ts",
@@ -13627,7 +13608,7 @@
       "label": "modalBackdropVariants",
       "_origin": "ast",
       "community": 51,
-      "community_name": "react",
+      "community_name": "motion.ts",
       "file_type": "code",
       "norm_label": "modalbackdropvariants",
       "source_file": "src/utils/motion.ts",
@@ -13638,7 +13619,7 @@
       "label": "modalContentVariants",
       "_origin": "ast",
       "community": 51,
-      "community_name": "react",
+      "community_name": "motion.ts",
       "file_type": "code",
       "norm_label": "modalcontentvariants",
       "source_file": "src/utils/motion.ts",
@@ -13649,7 +13630,7 @@
       "label": "MOTION_DURATIONS",
       "_origin": "ast",
       "community": 51,
-      "community_name": "react",
+      "community_name": "motion.ts",
       "file_type": "code",
       "norm_label": "motion_durations",
       "source_file": "src/utils/motion.ts",
@@ -13660,7 +13641,7 @@
       "label": "MOTION_EASINGS",
       "_origin": "ast",
       "community": 51,
-      "community_name": "react",
+      "community_name": "motion.ts",
       "file_type": "code",
       "norm_label": "motion_easings",
       "source_file": "src/utils/motion.ts",
@@ -13671,7 +13652,7 @@
       "label": "MOTION_SPRINGS",
       "_origin": "ast",
       "community": 51,
-      "community_name": "react",
+      "community_name": "motion.ts",
       "file_type": "code",
       "norm_label": "motion_springs",
       "source_file": "src/utils/motion.ts",
@@ -13682,7 +13663,7 @@
       "label": "pageTransitionVariants",
       "_origin": "ast",
       "community": 51,
-      "community_name": "react",
+      "community_name": "motion.ts",
       "file_type": "code",
       "norm_label": "pagetransitionvariants",
       "source_file": "src/utils/motion.ts",
@@ -13693,7 +13674,7 @@
       "label": "staggerContainerVariants",
       "_origin": "ast",
       "community": 51,
-      "community_name": "react",
+      "community_name": "motion.ts",
       "file_type": "code",
       "norm_label": "staggercontainervariants",
       "source_file": "src/utils/motion.ts",
@@ -13704,7 +13685,7 @@
       "label": "staggerItemVariants",
       "_origin": "ast",
       "community": 51,
-      "community_name": "react",
+      "community_name": "motion.ts",
       "file_type": "code",
       "norm_label": "staggeritemvariants",
       "source_file": "src/utils/motion.ts",
@@ -13715,22 +13696,11 @@
       "label": "motion",
       "_origin": "ast",
       "community": 51,
-      "community_name": "react",
+      "community_name": "motion.ts",
       "file_type": "concept",
       "norm_label": "motion",
       "source_file": "package.json",
       "source_location": "L18"
-    },
-    {
-      "id": "ref_react",
-      "label": "react",
-      "_origin": "ast",
-      "community": 51,
-      "community_name": "react",
-      "file_type": "concept",
-      "norm_label": "react",
-      "source_file": "package.json",
-      "source_location": "L19"
     },
     {
       "id": "src_utils_castleeconomy_test",
@@ -14174,17 +14144,6 @@
       "source_location": "L7"
     },
     {
-      "id": "src_utils_castleblueprint_test",
-      "label": "castleBlueprint.test.ts",
-      "_origin": "ast",
-      "community": 56,
-      "community_name": "castleBlueprint.ts",
-      "file_type": "code",
-      "norm_label": "castleblueprint.test.ts",
-      "source_file": "src/utils/castleBlueprint.test.ts",
-      "source_location": "L1"
-    },
-    {
       "id": "src_utils_castleblueprintcatalog",
       "label": "castleBlueprintCatalog.ts",
       "_origin": "ast",
@@ -14216,17 +14175,6 @@
       "norm_label": "castle_districts",
       "source_file": "src/utils/castleBlueprintCatalog.ts",
       "source_location": "L15"
-    },
-    {
-      "id": "src_components_header_header",
-      "label": "Header.tsx",
-      "_origin": "ast",
-      "community": 57,
-      "community_name": "taskDialog.test.tsx",
-      "file_type": "code",
-      "norm_label": "header.tsx",
-      "source_file": "src/components/Header/Header.tsx",
-      "source_location": "L1"
     },
     {
       "id": "src_components_tasks_taskdialog_test",
@@ -14339,22 +14287,22 @@
       "source_location": "L87"
     },
     {
-      "id": "src_components_growth_castlescene_castle_parts",
-      "label": "CASTLE_PARTS",
+      "id": "src_components_tasks_taskeditordialog",
+      "label": "TaskEditorDialog.tsx",
       "_origin": "ast",
-      "community": 58,
-      "community_name": "CastleScene.test.tsx",
+      "community": 57,
+      "community_name": "taskDialog.test.tsx",
       "file_type": "code",
-      "norm_label": "castle_parts",
-      "source_file": "src/components/Growth/CastleScene.tsx",
-      "source_location": "L14"
+      "norm_label": "taskeditordialog.tsx",
+      "source_file": "src/components/Tasks/TaskEditorDialog.tsx",
+      "source_location": "L1"
     },
     {
       "id": "src_components_growth_castlescene_test",
       "label": "CastleScene.test.tsx",
       "_origin": "ast",
       "community": 58,
-      "community_name": "CastleScene.test.tsx",
+      "community_name": "castleSceneRuntime.ts",
       "file_type": "code",
       "norm_label": "castlescene.test.tsx",
       "source_file": "src/components/Growth/CastleScene.test.tsx",
@@ -14365,7 +14313,7 @@
       "label": "all",
       "_origin": "ast",
       "community": 58,
-      "community_name": "CastleScene.test.tsx",
+      "community_name": "castleSceneRuntime.ts",
       "file_type": "code",
       "norm_label": "all",
       "source_file": "src/components/Growth/CastleScene.test.tsx",
@@ -14376,7 +14324,7 @@
       "label": "boundedPan",
       "_origin": "ast",
       "community": 58,
-      "community_name": "CastleScene.test.tsx",
+      "community_name": "castleSceneRuntime.ts",
       "file_type": "code",
       "norm_label": "boundedpan",
       "source_file": "src/components/Growth/CastleScene.test.tsx",
@@ -14387,7 +14335,7 @@
       "label": "empty",
       "_origin": "ast",
       "community": 58,
-      "community_name": "CastleScene.test.tsx",
+      "community_name": "castleSceneRuntime.ts",
       "file_type": "code",
       "norm_label": "empty",
       "source_file": "src/components/Growth/CastleScene.test.tsx",
@@ -14398,7 +14346,7 @@
       "label": "frame",
       "_origin": "ast",
       "community": 58,
-      "community_name": "CastleScene.test.tsx",
+      "community_name": "castleSceneRuntime.ts",
       "file_type": "code",
       "norm_label": "frame",
       "source_file": "src/components/Growth/CastleScene.test.tsx",
@@ -14409,7 +14357,7 @@
       "label": "ids",
       "_origin": "ast",
       "community": 58,
-      "community_name": "CastleScene.test.tsx",
+      "community_name": "castleSceneRuntime.ts",
       "file_type": "code",
       "norm_label": "ids",
       "source_file": "src/components/Growth/CastleScene.test.tsx",
@@ -14420,7 +14368,7 @@
       "label": "inspected",
       "_origin": "ast",
       "community": 58,
-      "community_name": "CastleScene.test.tsx",
+      "community_name": "castleSceneRuntime.ts",
       "file_type": "code",
       "norm_label": "inspected",
       "source_file": "src/components/Growth/CastleScene.test.tsx",
@@ -14431,7 +14379,7 @@
       "label": "multiple",
       "_origin": "ast",
       "community": 58,
-      "community_name": "CastleScene.test.tsx",
+      "community_name": "castleSceneRuntime.ts",
       "file_type": "code",
       "norm_label": "multiple",
       "source_file": "src/components/Growth/CastleScene.test.tsx",
@@ -14442,7 +14390,7 @@
       "label": "castleSceneRuntime.ts",
       "_origin": "ast",
       "community": 58,
-      "community_name": "CastleScene.test.tsx",
+      "community_name": "castleSceneRuntime.ts",
       "file_type": "code",
       "norm_label": "castlesceneruntime.ts",
       "source_file": "src/components/Growth/castleSceneRuntime.ts",
@@ -14458,6 +14406,17 @@
       "norm_label": "launchpadpet.tsx",
       "source_file": "src/components/Pet/LaunchpadPet.tsx",
       "source_location": "L1"
+    },
+    {
+      "id": "src_components_pet_launchpadpet_launchpadpet",
+      "label": "LaunchpadPet",
+      "_origin": "ast",
+      "community": 59,
+      "community_name": "LaunchpadPet.tsx",
+      "file_type": "code",
+      "norm_label": "launchpadpet",
+      "source_file": "src/components/Pet/LaunchpadPet.tsx",
+      "source_location": "L228"
     },
     {
       "id": "src_components_pet_launchpadpet_state_quote_category_map",
@@ -14713,26 +14672,15 @@
       "source_location": "L229"
     },
     {
-      "id": "src_components_pet_mascotmotion_test",
-      "label": "MascotMotion.test.ts",
+      "id": "src_components_pet_mascotmanifest_mascot_state_poses",
+      "label": "MASCOT_STATE_POSES",
       "_origin": "ast",
       "community": 6,
       "community_name": "Mascot.tsx",
       "file_type": "code",
-      "norm_label": "mascotmotion.test.ts",
-      "source_file": "src/components/Pet/MascotMotion.test.ts",
-      "source_location": "L1"
-    },
-    {
-      "id": "src_components_pet_mascotmotion_test_context",
-      "label": "context",
-      "_origin": "ast",
-      "community": 6,
-      "community_name": "Mascot.tsx",
-      "file_type": "code",
-      "norm_label": "context",
-      "source_file": "src/components/Pet/MascotMotion.test.ts",
-      "source_location": "L7"
+      "norm_label": "mascot_state_poses",
+      "source_file": "src/components/Pet/mascotManifest.ts",
+      "source_location": "L184"
     },
     {
       "id": "src_components_pet_mascotshowcasemodal",
@@ -15256,7 +15204,7 @@
       "label": "focusTimer.ts",
       "_origin": "ast",
       "community": 65,
-      "community_name": "taskCompletion.ts",
+      "community_name": "focusTimer.ts",
       "file_type": "code",
       "norm_label": "focustimer.ts",
       "source_file": "src/utils/focusTimer.ts",
@@ -15267,7 +15215,7 @@
       "label": "FOCUS_TIMER_STORAGE_KEY",
       "_origin": "ast",
       "community": 65,
-      "community_name": "taskCompletion.ts",
+      "community_name": "focusTimer.ts",
       "file_type": "code",
       "norm_label": "focus_timer_storage_key",
       "source_file": "src/utils/focusTimer.ts",
@@ -15278,7 +15226,7 @@
       "label": "focusTimer.test.ts",
       "_origin": "ast",
       "community": 65,
-      "community_name": "taskCompletion.ts",
+      "community_name": "focusTimer.ts",
       "file_type": "code",
       "norm_label": "focustimer.test.ts",
       "source_file": "src/utils/focusTimer.test.ts",
@@ -15289,22 +15237,11 @@
       "label": "storageMap",
       "_origin": "ast",
       "community": 65,
-      "community_name": "taskCompletion.ts",
+      "community_name": "focusTimer.ts",
       "file_type": "code",
       "norm_label": "storagemap",
       "source_file": "src/utils/focusTimer.test.ts",
       "source_location": "L22"
-    },
-    {
-      "id": "src_utils_taskcompletion",
-      "label": "taskCompletion.ts",
-      "_origin": "ast",
-      "community": 65,
-      "community_name": "taskCompletion.ts",
-      "file_type": "code",
-      "norm_label": "taskcompletion.ts",
-      "source_file": "src/utils/taskCompletion.ts",
-      "source_location": "L1"
     },
     {
       "id": "src_utils_timebudget_test",
@@ -15459,6 +15396,17 @@
       "norm_label": "taskoverdue5h",
       "source_file": "src/utils/timeBudget.test.ts",
       "source_location": "L123"
+    },
+    {
+      "id": "src_utils_castleblueprint_test",
+      "label": "castleBlueprint.test.ts",
+      "_origin": "ast",
+      "community": 67,
+      "community_name": "castleFixture.tsx",
+      "file_type": "code",
+      "norm_label": "castleblueprint.test.ts",
+      "source_file": "src/utils/castleBlueprint.test.ts",
+      "source_location": "L1"
     },
     {
       "id": "tests_castlefixture",
@@ -15659,6 +15607,17 @@
       "source_location": "L1"
     },
     {
+      "id": "src_app_settingsscreen",
+      "label": "SettingsScreen",
+      "_origin": "ast",
+      "community": 7,
+      "community_name": "SettingsScreen.tsx",
+      "file_type": "code",
+      "norm_label": "settingsscreen",
+      "source_file": "src/App.tsx",
+      "source_location": "L66"
+    },
+    {
       "id": "src_components_dashboard_confettioverlay",
       "label": "ConfettiOverlay.tsx",
       "_origin": "ast",
@@ -15703,26 +15662,59 @@
       "source_location": "L720"
     },
     {
-      "id": "src_utils_taskperiod",
-      "label": "taskPeriod.ts",
+      "id": "src_components_growth_castlecatalog",
+      "label": "castleCatalog.ts",
       "_origin": "ast",
       "community": 70,
-      "community_name": "taskPeriod.ts",
+      "community_name": "CastlePanel.test.tsx",
       "file_type": "code",
-      "norm_label": "taskperiod.ts",
-      "source_file": "src/utils/taskPeriod.ts",
+      "norm_label": "castlecatalog.ts",
+      "source_file": "src/components/Growth/castleCatalog.ts",
       "source_location": "L1"
     },
     {
-      "id": "src_utils_taskperiod_taskperiods",
-      "label": "taskPeriods",
+      "id": "src_components_growth_castlecatalog_castle_catalog",
+      "label": "CASTLE_CATALOG",
       "_origin": "ast",
       "community": 70,
-      "community_name": "taskPeriod.ts",
+      "community_name": "CastlePanel.test.tsx",
       "file_type": "code",
-      "norm_label": "taskperiods",
-      "source_file": "src/utils/taskPeriod.ts",
-      "source_location": "L5"
+      "norm_label": "castle_catalog",
+      "source_file": "src/components/Growth/castleCatalog.ts",
+      "source_location": "L3"
+    },
+    {
+      "id": "src_components_growth_castlecatalog_castle_catalog_ids",
+      "label": "CASTLE_CATALOG_IDS",
+      "_origin": "ast",
+      "community": 70,
+      "community_name": "CastlePanel.test.tsx",
+      "file_type": "code",
+      "norm_label": "castle_catalog_ids",
+      "source_file": "src/components/Growth/castleCatalog.ts",
+      "source_location": "L13"
+    },
+    {
+      "id": "src_components_growth_castlepanel_test",
+      "label": "CastlePanel.test.tsx",
+      "_origin": "ast",
+      "community": 70,
+      "community_name": "CastlePanel.test.tsx",
+      "file_type": "code",
+      "norm_label": "castlepanel.test.tsx",
+      "source_file": "src/components/Growth/CastlePanel.test.tsx",
+      "source_location": "L1"
+    },
+    {
+      "id": "src_components_growth_castlepanel_test_base",
+      "label": "base",
+      "_origin": "ast",
+      "community": 70,
+      "community_name": "CastlePanel.test.tsx",
+      "file_type": "code",
+      "norm_label": "base",
+      "source_file": "src/components/Growth/CastlePanel.test.tsx",
+      "source_location": "L10"
     },
     {
       "id": "src_components_dashboard_momentumcard",
@@ -15789,17 +15781,6 @@
       "norm_label": "propstest",
       "source_file": "src/components/Dashboard/MomentumCard.test.ts",
       "source_location": "L78"
-    },
-    {
-      "id": "src_components_pet_mascotmanifest_mascot_state_poses",
-      "label": "MASCOT_STATE_POSES",
-      "_origin": "ast",
-      "community": 72,
-      "community_name": "PetSprite.tsx",
-      "file_type": "code",
-      "norm_label": "mascot_state_poses",
-      "source_file": "src/components/Pet/mascotManifest.ts",
-      "source_location": "L184"
     },
     {
       "id": "src_components_pet_petsprite",
@@ -15987,39 +15968,6 @@
       "norm_label": "markup",
       "source_file": "src/components/Dashboard/TaskClearReflection.test.tsx",
       "source_location": "L5"
-    },
-    {
-      "id": "ref_react_dom",
-      "label": "react-dom",
-      "_origin": "ast",
-      "community": 75,
-      "community_name": "ref_node_assert",
-      "file_type": "concept",
-      "norm_label": "react-dom",
-      "source_file": "package.json",
-      "source_location": "L20"
-    },
-    {
-      "id": "src_components_common_faviconimage",
-      "label": "FaviconImage.tsx",
-      "_origin": "ast",
-      "community": 76,
-      "community_name": "favicon.ts",
-      "file_type": "code",
-      "norm_label": "faviconimage.tsx",
-      "source_file": "src/components/Common/FaviconImage.tsx",
-      "source_location": "L1"
-    },
-    {
-      "id": "src_utils_favicon",
-      "label": "favicon.ts",
-      "_origin": "ast",
-      "community": 76,
-      "community_name": "favicon.ts",
-      "file_type": "code",
-      "norm_label": "favicon.ts",
-      "source_file": "src/utils/favicon.ts",
-      "source_location": "L1"
     },
     {
       "id": "src_components_sidebar_sidebar",
@@ -16660,11 +16608,55 @@
       "source_location": "L1"
     },
     {
+      "id": "src_utils_taskcompletion",
+      "label": "taskCompletion.ts",
+      "_origin": "ast",
+      "community": 83,
+      "community_name": "taskCompletion.ts",
+      "file_type": "code",
+      "norm_label": "taskcompletion.ts",
+      "source_file": "src/utils/taskCompletion.ts",
+      "source_location": "L1"
+    },
+    {
+      "id": "src_components_pet_mascotmotion_test",
+      "label": "MascotMotion.test.ts",
+      "_origin": "ast",
+      "community": 84,
+      "community_name": "react-dom",
+      "file_type": "code",
+      "norm_label": "mascotmotion.test.ts",
+      "source_file": "src/components/Pet/MascotMotion.test.ts",
+      "source_location": "L1"
+    },
+    {
+      "id": "src_components_pet_mascotmotion_test_context",
+      "label": "context",
+      "_origin": "ast",
+      "community": 84,
+      "community_name": "react-dom",
+      "file_type": "code",
+      "norm_label": "context",
+      "source_file": "src/components/Pet/MascotMotion.test.ts",
+      "source_location": "L7"
+    },
+    {
+      "id": "ref_react_dom",
+      "label": "react-dom",
+      "_origin": "ast",
+      "community": 84,
+      "community_name": "react-dom",
+      "file_type": "concept",
+      "norm_label": "react-dom",
+      "source_file": "package.json",
+      "source_location": "L20"
+    },
+    {
       "id": "src_components_dashboard_commitmentradarwidget",
       "label": "CommitmentRadarWidget.tsx",
       "_origin": "ast",
       "community": 9,
-      "community_name": "CommitmentRadarWidget.test.ts",
+      "community_name": "QuickNote",
       "file_type": "code",
       "norm_label": "commitmentradarwidget.tsx",
       "source_file": "src/components/Dashboard/CommitmentRadarWidget.tsx",
@@ -16675,7 +16667,7 @@
       "label": "CommitmentRadarWidget",
       "_origin": "ast",
       "community": 9,
-      "community_name": "CommitmentRadarWidget.test.ts",
+      "community_name": "QuickNote",
       "file_type": "code",
       "norm_label": "commitmentradarwidget",
       "source_file": "src/components/Dashboard/CommitmentRadarWidget.tsx",
@@ -16686,7 +16678,7 @@
       "label": "CommitmentRadarWidget.test.ts",
       "_origin": "ast",
       "community": 9,
-      "community_name": "CommitmentRadarWidget.test.ts",
+      "community_name": "QuickNote",
       "file_type": "code",
       "norm_label": "commitmentradarwidget.test.ts",
       "source_file": "src/components/Dashboard/CommitmentRadarWidget.test.ts",
@@ -16697,7 +16689,7 @@
       "label": "countdown2d12h",
       "_origin": "ast",
       "community": 9,
-      "community_name": "CommitmentRadarWidget.test.ts",
+      "community_name": "QuickNote",
       "file_type": "code",
       "norm_label": "countdown2d12h",
       "source_file": "src/components/Dashboard/CommitmentRadarWidget.test.ts",
@@ -16708,7 +16700,7 @@
       "label": "countdown4mo12d",
       "_origin": "ast",
       "community": 9,
-      "community_name": "CommitmentRadarWidget.test.ts",
+      "community_name": "QuickNote",
       "file_type": "code",
       "norm_label": "countdown4mo12d",
       "source_file": "src/components/Dashboard/CommitmentRadarWidget.test.ts",
@@ -16719,7 +16711,7 @@
       "label": "countdownAi",
       "_origin": "ast",
       "community": 9,
-      "community_name": "CommitmentRadarWidget.test.ts",
+      "community_name": "QuickNote",
       "file_type": "code",
       "norm_label": "countdownai",
       "source_file": "src/components/Dashboard/CommitmentRadarWidget.test.ts",
@@ -16730,7 +16722,7 @@
       "label": "countdownDsc",
       "_origin": "ast",
       "community": 9,
-      "community_name": "CommitmentRadarWidget.test.ts",
+      "community_name": "QuickNote",
       "file_type": "code",
       "norm_label": "countdowndsc",
       "source_file": "src/components/Dashboard/CommitmentRadarWidget.test.ts",
@@ -16741,7 +16733,7 @@
       "label": "countdownEcon",
       "_origin": "ast",
       "community": 9,
-      "community_name": "CommitmentRadarWidget.test.ts",
+      "community_name": "QuickNote",
       "file_type": "code",
       "norm_label": "countdownecon",
       "source_file": "src/components/Dashboard/CommitmentRadarWidget.test.ts",
@@ -16752,7 +16744,7 @@
       "label": "countdownExcel",
       "_origin": "ast",
       "community": 9,
-      "community_name": "CommitmentRadarWidget.test.ts",
+      "community_name": "QuickNote",
       "file_type": "code",
       "norm_label": "countdownexcel",
       "source_file": "src/components/Dashboard/CommitmentRadarWidget.test.ts",
@@ -16763,7 +16755,7 @@
       "label": "countdownNoDeadline",
       "_origin": "ast",
       "community": 9,
-      "community_name": "CommitmentRadarWidget.test.ts",
+      "community_name": "QuickNote",
       "file_type": "code",
       "norm_label": "countdownnodeadline",
       "source_file": "src/components/Dashboard/CommitmentRadarWidget.test.ts",
@@ -16774,7 +16766,7 @@
       "label": "countdownSpanish",
       "_origin": "ast",
       "community": 9,
-      "community_name": "CommitmentRadarWidget.test.ts",
+      "community_name": "QuickNote",
       "file_type": "code",
       "norm_label": "countdownspanish",
       "source_file": "src/components/Dashboard/CommitmentRadarWidget.test.ts",
@@ -16785,7 +16777,7 @@
       "label": "mockTasksImage1",
       "_origin": "ast",
       "community": 9,
-      "community_name": "CommitmentRadarWidget.test.ts",
+      "community_name": "QuickNote",
       "file_type": "code",
       "norm_label": "mocktasksimage1",
       "source_file": "src/components/Dashboard/CommitmentRadarWidget.test.ts",
@@ -16796,7 +16788,7 @@
       "label": "projected",
       "_origin": "ast",
       "community": 9,
-      "community_name": "CommitmentRadarWidget.test.ts",
+      "community_name": "QuickNote",
       "file_type": "code",
       "norm_label": "projected",
       "source_file": "src/components/Dashboard/CommitmentRadarWidget.test.ts",
@@ -16807,7 +16799,7 @@
       "label": "refDate",
       "_origin": "ast",
       "community": 9,
-      "community_name": "CommitmentRadarWidget.test.ts",
+      "community_name": "QuickNote",
       "file_type": "code",
       "norm_label": "refdate",
       "source_file": "src/components/Dashboard/CommitmentRadarWidget.test.ts",
@@ -16818,7 +16810,7 @@
       "label": "richTask",
       "_origin": "ast",
       "community": 9,
-      "community_name": "CommitmentRadarWidget.test.ts",
+      "community_name": "QuickNote",
       "file_type": "code",
       "norm_label": "richtask",
       "source_file": "src/components/Dashboard/CommitmentRadarWidget.test.ts",
@@ -16829,7 +16821,7 @@
       "label": "urgencyInfo",
       "_origin": "ast",
       "community": 9,
-      "community_name": "CommitmentRadarWidget.test.ts",
+      "community_name": "QuickNote",
       "file_type": "code",
       "norm_label": "urgencyinfo",
       "source_file": "src/components/Dashboard/CommitmentRadarWidget.test.ts",
@@ -16840,7 +16832,7 @@
       "label": "validProps",
       "_origin": "ast",
       "community": 9,
-      "community_name": "CommitmentRadarWidget.test.ts",
+      "community_name": "QuickNote",
       "file_type": "code",
       "norm_label": "validprops",
       "source_file": "src/components/Dashboard/CommitmentRadarWidget.test.ts",
@@ -16851,18 +16843,51 @@
       "label": "TIER_PRESENTATION_MAP",
       "_origin": "ast",
       "community": 9,
-      "community_name": "CommitmentRadarWidget.test.ts",
+      "community_name": "QuickNote",
       "file_type": "code",
       "norm_label": "tier_presentation_map",
       "source_file": "src/components/Dashboard/CommitmentRadarWidget.tsx",
       "source_location": "L54"
     },
     {
+      "id": "src_utils_taskurgency",
+      "label": "taskUrgency.ts",
+      "_origin": "ast",
+      "community": 9,
+      "community_name": "QuickNote",
+      "file_type": "code",
+      "norm_label": "taskurgency.ts",
+      "source_file": "src/utils/taskUrgency.ts",
+      "source_location": "L1"
+    },
+    {
+      "id": "src_utils_taskurgency_default_visible_subtasks",
+      "label": "DEFAULT_VISIBLE_SUBTASKS",
+      "_origin": "ast",
+      "community": 9,
+      "community_name": "QuickNote",
+      "file_type": "code",
+      "norm_label": "default_visible_subtasks",
+      "source_file": "src/utils/taskUrgency.ts",
+      "source_location": "L553"
+    },
+    {
+      "id": "src_utils_taskurgency_priority_scores",
+      "label": "PRIORITY_SCORES",
+      "_origin": "ast",
+      "community": 9,
+      "community_name": "QuickNote",
+      "file_type": "code",
+      "norm_label": "priority_scores",
+      "source_file": "src/utils/taskUrgency.ts",
+      "source_location": "L673"
+    },
+    {
       "id": "src_utils_taskurgency_radar_rings",
       "label": "RADAR_RINGS",
       "_origin": "ast",
       "community": 9,
-      "community_name": "CommitmentRadarWidget.test.ts",
+      "community_name": "QuickNote",
       "file_type": "code",
       "norm_label": "radar_rings",
       "source_file": "src/utils/taskUrgency.ts",
@@ -16873,7 +16898,7 @@
       "label": "RADAR_VIEWBOX",
       "_origin": "ast",
       "community": 9,
-      "community_name": "CommitmentRadarWidget.test.ts",
+      "community_name": "QuickNote",
       "file_type": "code",
       "norm_label": "radar_viewbox",
       "source_file": "src/utils/taskUrgency.ts",
@@ -16884,11 +16909,22 @@
       "label": "URGENCY_COLOR_MAP",
       "_origin": "ast",
       "community": 9,
-      "community_name": "CommitmentRadarWidget.test.ts",
+      "community_name": "QuickNote",
       "file_type": "code",
       "norm_label": "urgency_color_map",
       "source_file": "src/utils/taskUrgency.ts",
       "source_location": "L42"
+    },
+    {
+      "id": "src_utils_taskurgency_urgency_tier_weights",
+      "label": "URGENCY_TIER_WEIGHTS",
+      "_origin": "ast",
+      "community": 9,
+      "community_name": "QuickNote",
+      "file_type": "code",
+      "norm_label": "urgency_tier_weights",
+      "source_file": "src/utils/taskUrgency.ts",
+      "source_location": "L96"
     },
     {
       "id": "agents_rules_dashboard_ux_focus_dashboard_ux_heuristics",
@@ -16897,7 +16933,7 @@
       "author": null,
       "captured_at": null,
       "community": 0,
-      "community_name": "timeBudget.ts",
+      "community_name": "FocusHeroBanner.tsx",
       "contributor": null,
       "file_type": "document",
       "norm_label": "focus dashboard ux heuristics",
@@ -16912,7 +16948,7 @@
       "author": null,
       "captured_at": null,
       "community": 0,
-      "community_name": "timeBudget.ts",
+      "community_name": "FocusHeroBanner.tsx",
       "contributor": null,
       "file_type": "rationale",
       "norm_label": "context-scoped overview widgets",
@@ -16928,7 +16964,7 @@
       "author": null,
       "captured_at": null,
       "community": 0,
-      "community_name": "timeBudget.ts",
+      "community_name": "FocusHeroBanner.tsx",
       "contributor": null,
       "file_type": "rationale",
       "norm_label": "visual harmony & clean iconography",
@@ -17290,6 +17326,39 @@
       "type": "external"
     },
     {
+      "id": "src_components_common_guidetarget",
+      "label": "src_components_common_guidetarget",
+      "community": 1,
+      "community_name": "App.tsx",
+      "external": true,
+      "file_type": "concept",
+      "norm_label": "src_components_common_guidetarget",
+      "source_file": "",
+      "type": "external"
+    },
+    {
+      "id": "src_components_common_guidetarget_guidetarget",
+      "label": "src_components_common_guidetarget_guidetarget",
+      "community": 1,
+      "community_name": "App.tsx",
+      "external": true,
+      "file_type": "concept",
+      "norm_label": "src_components_common_guidetarget_guidetarget",
+      "source_file": "",
+      "type": "external"
+    },
+    {
+      "id": "src_components_tasks_taskdialog_istaskdialogopen",
+      "label": "src_components_tasks_taskdialog_istaskdialogopen",
+      "community": 1,
+      "community_name": "App.tsx",
+      "external": true,
+      "file_type": "concept",
+      "norm_label": "src_components_tasks_taskdialog_istaskdialogopen",
+      "source_file": "",
+      "type": "external"
+    },
+    {
       "id": "src_data_seeddata_curated_focus_suggestions",
       "label": "src_data_seeddata_curated_focus_suggestions",
       "community": 13,
@@ -17330,17 +17399,6 @@
       "external": true,
       "file_type": "concept",
       "norm_label": "src_components_tasks_taskdeadlineeditor_projectdeadlineeditor",
-      "source_file": "",
-      "type": "external"
-    },
-    {
-      "id": "src_components_tasks_taskdialog_taskdialogtrigger",
-      "label": "src_components_tasks_taskdialog_taskdialogtrigger",
-      "community": 15,
-      "community_name": "TaskManagementScreen.tsx",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "src_components_tasks_taskdialog_taskdialogtrigger",
       "source_file": "",
       "type": "external"
     },
@@ -17455,17 +17513,6 @@
       "type": "external"
     },
     {
-      "id": "src_components_tasks_taskdialog_taskdialog",
-      "label": "src_components_tasks_taskdialog_taskdialog",
-      "community": 38,
-      "community_name": "PrimaryFocusCard.tsx",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "src_components_tasks_taskdialog_taskdialog",
-      "source_file": "",
-      "type": "external"
-    },
-    {
       "id": "src_utils_taskdeadline",
       "label": "src_utils_taskdeadline",
       "community": 44,
@@ -17510,46 +17557,24 @@
       "type": "external"
     },
     {
-      "id": "ref_node_test",
-      "label": "ref_node_test",
-      "community": 56,
-      "community_name": "castleBlueprint.ts",
+      "id": "src_utils_castleblueprint_blueprintpart",
+      "label": "src_utils_castleblueprint_blueprintpart",
+      "community": 47,
+      "community_name": "CastlePanel.tsx",
       "external": true,
       "file_type": "concept",
-      "norm_label": "ref_node_test",
+      "norm_label": "src_utils_castleblueprint_blueprintpart",
       "source_file": "",
       "type": "external"
     },
     {
       "id": "src_utils_castleblueprint_castle_districts",
       "label": "src_utils_castleblueprint_castle_districts",
-      "community": 56,
-      "community_name": "castleBlueprint.ts",
+      "community": 47,
+      "community_name": "CastlePanel.tsx",
       "external": true,
       "file_type": "concept",
       "norm_label": "src_utils_castleblueprint_castle_districts",
-      "source_file": "",
-      "type": "external"
-    },
-    {
-      "id": "src_components_common_guidetarget",
-      "label": "src_components_common_guidetarget",
-      "community": 57,
-      "community_name": "taskDialog.test.tsx",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "src_components_common_guidetarget",
-      "source_file": "",
-      "type": "external"
-    },
-    {
-      "id": "src_components_common_guidetarget_guidetarget",
-      "label": "src_components_common_guidetarget_guidetarget",
-      "community": 57,
-      "community_name": "taskDialog.test.tsx",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "src_components_common_guidetarget_guidetarget",
       "source_file": "",
       "type": "external"
     },
@@ -17565,17 +17590,6 @@
       "type": "external"
     },
     {
-      "id": "src_components_tasks_taskdialog_istaskdialogopen",
-      "label": "src_components_tasks_taskdialog_istaskdialogopen",
-      "community": 57,
-      "community_name": "taskDialog.test.tsx",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "src_components_tasks_taskdialog_istaskdialogopen",
-      "source_file": "",
-      "type": "external"
-    },
-    {
       "id": "src_components_tasks_taskdialog_restoretaskdialogfocus",
       "label": "src_components_tasks_taskdialog_restoretaskdialogfocus",
       "community": 57,
@@ -17587,24 +17601,24 @@
       "type": "external"
     },
     {
-      "id": "src_components_tasks_taskeditordialog",
-      "label": "src_components_tasks_taskeditordialog",
+      "id": "src_components_tasks_taskdialog_taskdialog",
+      "label": "src_components_tasks_taskdialog_taskdialog",
       "community": 57,
       "community_name": "taskDialog.test.tsx",
       "external": true,
       "file_type": "concept",
-      "norm_label": "src_components_tasks_taskeditordialog",
+      "norm_label": "src_components_tasks_taskdialog_taskdialog",
       "source_file": "",
       "type": "external"
     },
     {
-      "id": "src_components_tasks_taskeditordialog_taskeditordialog",
-      "label": "src_components_tasks_taskeditordialog_taskeditordialog",
+      "id": "src_components_tasks_taskdialog_taskdialogtrigger",
+      "label": "src_components_tasks_taskdialog_taskdialogtrigger",
       "community": 57,
       "community_name": "taskDialog.test.tsx",
       "external": true,
       "file_type": "concept",
-      "norm_label": "src_components_tasks_taskeditordialog_taskeditordialog",
+      "norm_label": "src_components_tasks_taskdialog_taskdialogtrigger",
       "source_file": "",
       "type": "external"
     },
@@ -17612,7 +17626,7 @@
       "id": "ref_three",
       "label": "ref_three",
       "community": 58,
-      "community_name": "CastleScene.test.tsx",
+      "community_name": "castleSceneRuntime.ts",
       "external": true,
       "file_type": "concept",
       "norm_label": "ref_three",
@@ -17653,6 +17667,17 @@
       "type": "external"
     },
     {
+      "id": "ref_node_test",
+      "label": "ref_node_test",
+      "community": 70,
+      "community_name": "CastlePanel.test.tsx",
+      "external": true,
+      "file_type": "concept",
+      "norm_label": "ref_node_test",
+      "source_file": "",
+      "type": "external"
+    },
+    {
       "id": "ref_node_assert",
       "label": "ref_node_assert",
       "community": 75,
@@ -17667,7 +17692,7 @@
       "id": "src_components_dashboard_commitmentradarwidget_formattaskcountdown",
       "label": "src_components_dashboard_commitmentradarwidget_formattaskcountdown",
       "community": 9,
-      "community_name": "CommitmentRadarWidget.test.ts",
+      "community_name": "QuickNote",
       "external": true,
       "file_type": "concept",
       "norm_label": "src_components_dashboard_commitmentradarwidget_formattaskcountdown",
@@ -17733,7 +17758,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/App.tsx",
-      "source_location": "L1018",
+      "source_location": "L1022",
       "weight": 1.0
     },
     {
@@ -17757,7 +17782,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/App.tsx",
-      "source_location": "L1067",
+      "source_location": "L1071",
       "weight": 1.0
     },
     {
@@ -17781,7 +17806,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/App.tsx",
-      "source_location": "L1084",
+      "source_location": "L1088",
       "weight": 1.0
     },
     {
@@ -17793,7 +17818,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/App.tsx",
-      "source_location": "L1096",
+      "source_location": "L1100",
       "weight": 1.0
     },
     {
@@ -17805,7 +17830,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/App.tsx",
-      "source_location": "L1109",
+      "source_location": "L1113",
       "weight": 1.0
     },
     {
@@ -17817,7 +17842,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/App.tsx",
-      "source_location": "L1113",
+      "source_location": "L1117",
       "weight": 1.0
     },
     {
@@ -17853,7 +17878,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/App.tsx",
-      "source_location": "L1159",
+      "source_location": "L1163",
       "weight": 1.0
     },
     {
@@ -17865,7 +17890,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/App.tsx",
-      "source_location": "L1167",
+      "source_location": "L1171",
       "weight": 1.0
     },
     {
@@ -17889,7 +17914,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/App.tsx",
-      "source_location": "L219",
+      "source_location": "L223",
       "weight": 1.0
     },
     {
@@ -17901,7 +17926,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/App.tsx",
-      "source_location": "L228",
+      "source_location": "L232",
       "weight": 1.0
     },
     {
@@ -17913,7 +17938,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/App.tsx",
-      "source_location": "L261",
+      "source_location": "L265",
       "weight": 1.0
     },
     {
@@ -17925,7 +17950,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/App.tsx",
-      "source_location": "L287",
+      "source_location": "L291",
       "weight": 1.0
     },
     {
@@ -17937,7 +17962,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/App.tsx",
-      "source_location": "L288",
+      "source_location": "L292",
       "weight": 1.0
     },
     {
@@ -17949,7 +17974,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/App.tsx",
-      "source_location": "L307",
+      "source_location": "L311",
       "weight": 1.0
     },
     {
@@ -17961,7 +17986,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/App.tsx",
-      "source_location": "L321",
+      "source_location": "L325",
       "weight": 1.0
     },
     {
@@ -17973,7 +17998,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/App.tsx",
-      "source_location": "L328",
+      "source_location": "L332",
       "weight": 1.0
     },
     {
@@ -17985,7 +18010,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/App.tsx",
-      "source_location": "L330",
+      "source_location": "L334",
       "weight": 1.0
     },
     {
@@ -17997,7 +18022,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/App.tsx",
-      "source_location": "L337",
+      "source_location": "L341",
       "weight": 1.0
     },
     {
@@ -18009,7 +18034,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/App.tsx",
-      "source_location": "L342",
+      "source_location": "L346",
       "weight": 1.0
     },
     {
@@ -18021,7 +18046,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/App.tsx",
-      "source_location": "L348",
+      "source_location": "L352",
       "weight": 1.0
     },
     {
@@ -18033,7 +18058,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/App.tsx",
-      "source_location": "L352",
+      "source_location": "L356",
       "weight": 1.0
     },
     {
@@ -18045,7 +18070,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/App.tsx",
-      "source_location": "L361",
+      "source_location": "L365",
       "weight": 1.0
     },
     {
@@ -18057,7 +18082,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/App.tsx",
-      "source_location": "L367",
+      "source_location": "L371",
       "weight": 1.0
     },
     {
@@ -18069,7 +18094,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/App.tsx",
-      "source_location": "L380",
+      "source_location": "L384",
       "weight": 1.0
     },
     {
@@ -18081,7 +18106,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/App.tsx",
-      "source_location": "L389",
+      "source_location": "L393",
       "weight": 1.0
     },
     {
@@ -18093,7 +18118,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/App.tsx",
-      "source_location": "L409",
+      "source_location": "L413",
       "weight": 1.0
     },
     {
@@ -18105,7 +18130,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/App.tsx",
-      "source_location": "L425",
+      "source_location": "L429",
       "weight": 1.0
     },
     {
@@ -18117,7 +18142,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/App.tsx",
-      "source_location": "L443",
+      "source_location": "L447",
       "weight": 1.0
     },
     {
@@ -18129,7 +18154,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/App.tsx",
-      "source_location": "L444",
+      "source_location": "L448",
       "weight": 1.0
     },
     {
@@ -18141,7 +18166,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/App.tsx",
-      "source_location": "L474",
+      "source_location": "L478",
       "weight": 1.0
     },
     {
@@ -18153,7 +18178,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/App.tsx",
-      "source_location": "L475",
+      "source_location": "L479",
       "weight": 1.0
     },
     {
@@ -18165,7 +18190,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/App.tsx",
-      "source_location": "L495",
+      "source_location": "L499",
       "weight": 1.0
     },
     {
@@ -18177,7 +18202,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/App.tsx",
-      "source_location": "L504",
+      "source_location": "L508",
       "weight": 1.0
     },
     {
@@ -18189,7 +18214,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/App.tsx",
-      "source_location": "L508",
+      "source_location": "L512",
       "weight": 1.0
     },
     {
@@ -18201,7 +18226,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/App.tsx",
-      "source_location": "L540",
+      "source_location": "L544",
       "weight": 1.0
     },
     {
@@ -18213,7 +18238,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/App.tsx",
-      "source_location": "L642",
+      "source_location": "L646",
       "weight": 1.0
     },
     {
@@ -18225,7 +18250,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/App.tsx",
-      "source_location": "L663",
+      "source_location": "L667",
       "weight": 1.0
     },
     {
@@ -18237,7 +18262,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/App.tsx",
-      "source_location": "L668",
+      "source_location": "L672",
       "weight": 1.0
     },
     {
@@ -18249,7 +18274,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/App.tsx",
-      "source_location": "L676",
+      "source_location": "L680",
       "weight": 1.0
     },
     {
@@ -18261,7 +18286,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/App.tsx",
-      "source_location": "L676",
+      "source_location": "L680",
       "weight": 1.0
     },
     {
@@ -18273,7 +18298,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/App.tsx",
-      "source_location": "L697",
+      "source_location": "L701",
       "weight": 1.0
     },
     {
@@ -18285,7 +18310,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/App.tsx",
-      "source_location": "L702",
+      "source_location": "L706",
       "weight": 1.0
     },
     {
@@ -18297,7 +18322,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/App.tsx",
-      "source_location": "L706",
+      "source_location": "L710",
       "weight": 1.0
     },
     {
@@ -18309,7 +18334,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/App.tsx",
-      "source_location": "L715",
+      "source_location": "L719",
       "weight": 1.0
     },
     {
@@ -18321,7 +18346,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/App.tsx",
-      "source_location": "L757",
+      "source_location": "L761",
       "weight": 1.0
     },
     {
@@ -18333,7 +18358,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/App.tsx",
-      "source_location": "L775",
+      "source_location": "L779",
       "weight": 1.0
     },
     {
@@ -18345,7 +18370,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/App.tsx",
-      "source_location": "L778",
+      "source_location": "L782",
       "weight": 1.0
     },
     {
@@ -18357,7 +18382,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/App.tsx",
-      "source_location": "L787",
+      "source_location": "L791",
       "weight": 1.0
     },
     {
@@ -18369,7 +18394,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/App.tsx",
-      "source_location": "L803",
+      "source_location": "L807",
       "weight": 1.0
     },
     {
@@ -18381,7 +18406,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/App.tsx",
-      "source_location": "L811",
+      "source_location": "L815",
       "weight": 1.0
     },
     {
@@ -18393,7 +18418,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/App.tsx",
-      "source_location": "L836",
+      "source_location": "L840",
       "weight": 1.0
     },
     {
@@ -18405,7 +18430,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/App.tsx",
-      "source_location": "L880",
+      "source_location": "L884",
       "weight": 1.0
     },
     {
@@ -18417,7 +18442,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/App.tsx",
-      "source_location": "L918",
+      "source_location": "L922",
       "weight": 1.0
     },
     {
@@ -18429,7 +18454,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/App.tsx",
-      "source_location": "L941",
+      "source_location": "L945",
       "weight": 1.0
     },
     {
@@ -18441,7 +18466,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/App.tsx",
-      "source_location": "L949",
+      "source_location": "L953",
       "weight": 1.0
     },
     {
@@ -18453,7 +18478,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/App.tsx",
-      "source_location": "L979",
+      "source_location": "L983",
       "weight": 1.0
     },
     {
@@ -18465,7 +18490,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/App.tsx",
-      "source_location": "L1181",
+      "source_location": "L1185",
       "weight": 1.0
     },
     {
@@ -18477,7 +18502,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/App.tsx",
-      "source_location": "L1194",
+      "source_location": "L1198",
       "weight": 1.0
     },
     {
@@ -18489,7 +18514,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/App.tsx",
-      "source_location": "L1198",
+      "source_location": "L1202",
       "weight": 1.0
     },
     {
@@ -18501,7 +18526,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/App.tsx",
-      "source_location": "L1200",
+      "source_location": "L1204",
       "weight": 1.0
     },
     {
@@ -18513,7 +18538,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/App.tsx",
-      "source_location": "L1224",
+      "source_location": "L1228",
       "weight": 1.0
     },
     {
@@ -18525,7 +18550,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/App.tsx",
-      "source_location": "L1228",
+      "source_location": "L1232",
       "weight": 1.0
     },
     {
@@ -18537,7 +18562,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/App.tsx",
-      "source_location": "L1230",
+      "source_location": "L1234",
       "weight": 1.0
     },
     {
@@ -18549,7 +18574,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/App.tsx",
-      "source_location": "L1198",
+      "source_location": "L1202",
       "weight": 1.0
     },
     {
@@ -18561,7 +18586,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/App.tsx",
-      "source_location": "L1200",
+      "source_location": "L1204",
       "weight": 1.0
     },
     {
@@ -21057,7 +21082,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/components/Modals/SettingsScreen.tsx",
-      "source_location": "L245",
+      "source_location": "L246",
       "weight": 1.0
     },
     {
@@ -21069,7 +21094,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/components/Modals/SettingsScreen.tsx",
-      "source_location": "L442",
+      "source_location": "L443",
       "weight": 1.0
     },
     {
@@ -21081,7 +21106,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/components/Modals/SettingsScreen.tsx",
-      "source_location": "L596",
+      "source_location": "L597",
       "weight": 1.0
     },
     {
@@ -21093,7 +21118,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/components/Modals/SettingsScreen.tsx",
-      "source_location": "L727",
+      "source_location": "L728",
       "weight": 1.0
     },
     {
@@ -21105,7 +21130,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/components/Modals/SettingsScreen.tsx",
-      "source_location": "L728",
+      "source_location": "L729",
       "weight": 1.0
     },
     {
@@ -21958,6 +21983,18 @@
       "context": "call",
       "source_file": "src/components/Tasks/TaskManagementScreen.tsx",
       "source_location": "L740",
+      "weight": 1.0
+    },
+    {
+      "source": "src_components_tasks_taskmanagementscreen_taskmanagementscreen",
+      "target": "src_components_tasks_taskeditordialog_taskeditordialog",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "src/components/Tasks/TaskManagementScreen.tsx",
+      "source_location": "L907",
       "weight": 1.0
     },
     {
@@ -25581,7 +25618,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/App.tsx",
-      "source_location": "L1195",
+      "source_location": "L1199",
       "weight": 1.0
     },
     {
@@ -27513,18 +27550,6 @@
     },
     {
       "source": "src_app",
-      "target": "src_components_dashboard_timeradarwidget_timeradarwidget",
-      "relation": "imports",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "context": "import",
-      "source_file": "src/App.tsx",
-      "source_location": "L41",
-      "weight": 1.0
-    },
-    {
-      "source": "src_app",
       "target": "src_utils_taskcompletion_taskaction",
       "relation": "imports",
       "_origin": "ast",
@@ -29156,32 +29181,8 @@
       "weight": 1.0
     },
     {
-      "source": "src_components_growth_castlemodel",
-      "target": "src_utils_castleblueprintcatalog_blueprint_parts",
-      "relation": "imports",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "context": "import",
-      "source_file": "src/components/Growth/castleModel.ts",
-      "source_location": "L5",
-      "weight": 1.0
-    },
-    {
       "source": "src_components_growth_castlemodel_test",
       "target": "src_utils_castleblueprint_blueprint_parts",
-      "relation": "imports",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "context": "import",
-      "source_file": "src/components/Growth/castleModel.test.ts",
-      "source_location": "L5",
-      "weight": 1.0
-    },
-    {
-      "source": "src_components_growth_castlemodel_test",
-      "target": "src_utils_castleblueprintcatalog_blueprint_parts",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -29373,6 +29374,18 @@
     },
     {
       "source": "src_components_growth_castlepanel",
+      "target": "src_utils_castleblueprint_blueprintpart",
+      "relation": "imports",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "src/components/Growth/CastlePanel.tsx",
+      "source_location": "L5",
+      "weight": 1.0
+    },
+    {
+      "source": "src_components_growth_castlepanel",
       "target": "src_utils_castleblueprint_castle_districts",
       "relation": "imports",
       "_origin": "ast",
@@ -29446,42 +29459,6 @@
     {
       "source": "src_components_growth_castlepanel",
       "target": "src_utils_castleblueprint_resolveblueprintid",
-      "relation": "imports",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "context": "import",
-      "source_file": "src/components/Growth/CastlePanel.tsx",
-      "source_location": "L5",
-      "weight": 1.0
-    },
-    {
-      "source": "src_components_growth_castlepanel",
-      "target": "src_utils_castleblueprintcatalog_blueprint_parts",
-      "relation": "imports",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "context": "import",
-      "source_file": "src/components/Growth/CastlePanel.tsx",
-      "source_location": "L5",
-      "weight": 1.0
-    },
-    {
-      "source": "src_components_growth_castlepanel",
-      "target": "src_utils_castleblueprintcatalog_blueprintpart",
-      "relation": "imports",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "context": "import",
-      "source_file": "src/components/Growth/CastlePanel.tsx",
-      "source_location": "L5",
-      "weight": 1.0
-    },
-    {
-      "source": "src_components_growth_castlepanel",
-      "target": "src_utils_castleblueprintcatalog_castle_districts",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -29673,18 +29650,6 @@
     },
     {
       "source": "src_components_growth_castlepanel_test",
-      "target": "src_utils_castleblueprintcatalog_blueprint_parts",
-      "relation": "imports",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "context": "import",
-      "source_file": "src/components/Growth/CastlePanel.test.tsx",
-      "source_location": "L6",
-      "weight": 1.0
-    },
-    {
-      "source": "src_components_growth_castlepanel_test",
       "target": "src_utils_castleeconomy_activateeconomy",
       "relation": "imports",
       "_origin": "ast",
@@ -29841,18 +29806,6 @@
     },
     {
       "source": "src_components_growth_castlescene",
-      "target": "src_utils_castleblueprintcatalog_blueprint_parts",
-      "relation": "imports",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "context": "import",
-      "source_file": "src/components/Growth/CastleScene.tsx",
-      "source_location": "L2",
-      "weight": 1.0
-    },
-    {
-      "source": "src_components_growth_castlescene",
       "target": "src_components_growth_castlesceneruntime_castlecameracommand",
       "relation": "imports",
       "_origin": "ast",
@@ -29890,18 +29843,6 @@
     {
       "source": "src_components_growth_castlescene_test",
       "target": "src_components_growth_castlescene_castlescene",
-      "relation": "imports",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "context": "import",
-      "source_file": "src/components/Growth/CastleScene.test.tsx",
-      "source_location": "L3",
-      "weight": 1.0
-    },
-    {
-      "source": "src_components_growth_castlescene_test",
-      "target": "src_utils_castleblueprintcatalog_blueprint_parts",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -31697,6 +31638,30 @@
       "context": "import",
       "source_file": "src/components/Tasks/taskDialog.test.tsx",
       "source_location": "L6",
+      "weight": 1.0
+    },
+    {
+      "source": "src_components_tasks_taskeditordialog",
+      "target": "src_components_tasks_taskdialog_taskdialog",
+      "relation": "imports",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "src/components/Tasks/TaskEditorDialog.tsx",
+      "source_location": "L3",
+      "weight": 1.0
+    },
+    {
+      "source": "src_components_tasks_taskeditordialog",
+      "target": "src_components_tasks_taskdialog_taskdialogtrigger",
+      "relation": "imports",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "src/components/Tasks/TaskEditorDialog.tsx",
+      "source_location": "L3",
       "weight": 1.0
     },
     {
@@ -33538,30 +33503,6 @@
     {
       "source": "src_utils_castleblueprint_test",
       "target": "src_utils_castleblueprint_purchaseblueprintpart",
-      "relation": "imports",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "context": "import",
-      "source_file": "src/utils/castleBlueprint.test.ts",
-      "source_location": "L4",
-      "weight": 1.0
-    },
-    {
-      "source": "src_utils_castleblueprint_test",
-      "target": "src_utils_castleblueprintcatalog_blueprint_parts",
-      "relation": "imports",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "context": "import",
-      "source_file": "src/utils/castleBlueprint.test.ts",
-      "source_location": "L4",
-      "weight": 1.0
-    },
-    {
-      "source": "src_utils_castleblueprint_test",
-      "target": "src_utils_castleblueprintcatalog_castle_districts",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -39812,6 +39753,42 @@
       "weight": 1.0
     },
     {
+      "source": "src_components_tasks_taskeditordialog",
+      "target": "ref_react",
+      "relation": "imports_from",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "src/components/Tasks/TaskEditorDialog.tsx",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "src_components_tasks_taskeditordialog",
+      "target": "ref_phosphor_icons_react",
+      "relation": "imports_from",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "src/components/Tasks/TaskEditorDialog.tsx",
+      "source_location": "L2",
+      "weight": 1.0
+    },
+    {
+      "source": "src_components_tasks_taskeditordialog",
+      "target": "src_components_tasks_taskdialog",
+      "relation": "imports_from",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "src/components/Tasks/TaskEditorDialog.tsx",
+      "source_location": "L3",
+      "weight": 1.0
+    },
+    {
       "source": "src_components_tasks_tasklinks",
       "target": "ref_phosphor_icons_react",
       "relation": "imports_from",
@@ -43881,7 +43858,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/App.tsx",
-      "source_location": "L1175",
+      "source_location": "L1179",
       "weight": 1.0
     },
     {
@@ -48084,6 +48061,28 @@
       "confidence_score": 1.0,
       "source_file": "src/components/Tasks/taskDialog.test.tsx",
       "source_location": "L9",
+      "weight": 1.0
+    },
+    {
+      "source": "src_components_tasks_taskeditordialog",
+      "target": "src_components_tasks_taskeditordialog_taskeditordialog",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/components/Tasks/TaskEditorDialog.tsx",
+      "source_location": "L15",
+      "weight": 1.0
+    },
+    {
+      "source": "src_components_tasks_taskeditordialog",
+      "target": "src_components_tasks_taskeditordialog_taskeditordialogprops",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/components/Tasks/TaskEditorDialog.tsx",
+      "source_location": "L5",
       "weight": 1.0
     },
     {
@@ -56919,5 +56918,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "dbae01db05ecab96c7d195acddb1c326069d0c13"
+  "built_at_commit": "0288ad4abd26c9b267806a1cacaefd97d2e3d246"
 }

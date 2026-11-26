@@ -43,7 +43,7 @@ export function TaskEditorDialog({
             <X size={18} aria-hidden="true" />
           </button>
         </header>
-        <div className="min-h-0 flex-1 space-y-5 overflow-y-auto overscroll-contain p-4 sm:p-6">
+        <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain p-4 sm:p-5">
           <div>
             <label htmlFor={titleInputId} className="mb-1.5 block text-xs font-semibold text-serene-text-secondary dark:text-serene-text-darkSecondary">
               Task Title <span className="text-rose-500" aria-hidden="true">*</span>
@@ -60,7 +60,7 @@ export function TaskEditorDialog({
           </div>
           {children}
         </div>
-        <footer className="flex shrink-0 items-center justify-end gap-2 border-t border-serene-border-light px-4 pt-2.5 pb-[max(0.625rem,env(safe-area-inset-bottom))] dark:border-serene-border-dark sm:px-6">
+        <footer className="flex shrink-0 items-center justify-end gap-2 border-t border-serene-border-light px-4 py-1.5 pb-[max(0.375rem,env(safe-area-inset-bottom))] dark:border-serene-border-dark sm:px-5 sm:py-2">
           <button
             type="button"
             onClick={onClose}

@@ -22,6 +22,20 @@
     --color-bg-primary: #000000;
     --color-surface-primary: #141417;
     --color-border-subtle: #2e2e36;
+    --serene-bg-dark: 0 0 0;
+    --serene-surface-dark: 20 20 23;
+    --serene-surface-alt-dark: 33 33 38;
+    --serene-border-dark: 46 46 54;
+  }
+
+  .dark.pitch-black {
+    --color-bg-primary: #000000;
+    --color-surface-primary: #000000;
+    --color-border-subtle: #26262c;
+    --serene-bg-dark: 0 0 0;
+    --serene-surface-dark: 0 0 0;
+    --serene-surface-alt-dark: 12 12 14;
+    --serene-border-dark: 38 38 44;
   }
 
   body {
@@ -707,3 +721,47 @@
     min-height: 44px;
   }
 }
+
+/* Brushed metal / satin sheen task card backgrounds */
+.task-card-brushed {
+  --task-tint: 148, 163, 184;
+  background-color: #ffffff;
+  background-image:
+    repeating-linear-gradient(
+      125deg,
+      rgba(0, 0, 0, 0.012) 0px,
+      rgba(0, 0, 0, 0.012) 1px,
+      transparent 1px,
+      transparent 3px
+    ),
+    linear-gradient(
+      125deg,
+      rgba(var(--task-tint), 0.10) 0%,
+      rgba(255, 255, 255, 0.72) 42%,
+      rgba(var(--task-tint), 0.05) 100%
+    );
+}
+
+.dark .task-card-brushed {
+  background-color: rgb(var(--serene-surface-dark));
+  background-image:
+    repeating-linear-gradient(
+      125deg,
+      rgba(255, 255, 255, 0.015) 0px,
+      rgba(255, 255, 255, 0.015) 1px,
+      transparent 1px,
+      transparent 3px
+    ),
+    linear-gradient(
+      125deg,
+      rgba(var(--task-tint), 0.11) 0%,
+      rgba(255, 255, 255, 0.03) 38%,
+      rgba(255, 255, 255, 0.008) 58%,
+      rgba(var(--task-tint), 0.05) 100%
+    );
+}
+
+.task-card-brushed--urgent { --task-tint: 239, 68, 68; }
+.task-card-brushed--high   { --task-tint: 244, 63, 94; }
+.task-card-brushed--medium { --task-tint: 245, 158, 11; }
+.task-card-brushed--low    { --task-tint: 56, 189, 248; }

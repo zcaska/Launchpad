@@ -85,7 +85,7 @@ export interface DailyFocus {
   durationMinutes?: number;
 }
 
-export type ThemeMode = 'light' | 'dark' | 'system';
+export type ThemeMode = 'light' | 'dark' | 'pitch-black' | 'system';
 export type ConfettiStyle = 'cascade' | 'burst' | 'sparkle';
 export type TimeOfDayBucket = 'morning' | 'afternoon' | 'evening' | 'night';
 

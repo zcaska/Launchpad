@@ -199,6 +199,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
                 <option value="system">System</option>
                 <option value="light">Light</option>
                 <option value="dark">Dark</option>
+                <option value="pitch-black">Pitch Black (OLED)</option>
               </select>
             </label>
             <button type="button" onClick={onOpenSparkIdea} className="font-semibold text-serene-primary dark:text-serene-primary-dark md:hidden">

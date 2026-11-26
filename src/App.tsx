@@ -49,10 +49,14 @@ import { QuickAddTaskModal } from './components/Modals/QuickAddTaskModal';
 import { StorageRecovery } from './components/Modals/StorageRecovery';
 import { FeatureGuideProvider } from './components/Common/FeatureGuideContext';
 
-// Code-split heavy screens and modals into on-demand bundles for 0ms initial load
-const GrowthMasteryScreen = lazy(() =>
-  import('./components/Growth/GrowthMasteryScreen').then((m) => ({ default: m.GrowthMasteryScreen }))
-);
+const GrowthMasteryScreen = lazy(async () => {
+  const [screen] = await Promise.all([
+    import('./components/Growth/GrowthMasteryScreen'),
+    import('./components/Growth/CastleScene.css'),
+    import('./components/Growth/CastlePanel.css'),
+  ]);
+  return { default: screen.GrowthMasteryScreen };
+});
 const castleGuidance = [
   'One focused step. Then another.',
   'Choose the next piece. Build it.',
@@ -77,12 +81,6 @@ import { tasksDueToday } from './utils/taskPeriod';
 import { applyCompletedTaskReflection, getDailyReviewTasks, getReflectionTasks, resetReflectionTasks, registerCompletedTasks, registerPartialProgress, releasePendingProgress } from './utils/taskReflection';
 import { useTaskView } from './components/Tasks/useTaskView';
 import { 
-  generateCandidatePool, 
-  getRankedRecommendations, 
-  recordApproval,
-  recordRejection 
-} from './utils/recommender';
-import { 
   pageTransitionVariants, 
   drawerVariants 
 } from './utils/motion';
@@ -97,8 +95,9 @@ interface PendingTaskCompletion {
 
 const interruptedCompletionMessage = 'The task list changed while you were entering time. Your time was not saved. If the task is still open, mark it done again to enter its time.';
 
-export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
+export function App({ workspace = null, initialLocalData, onSwitchWorkspace, cloudNotice }: {
   workspace?: CloudWorkspace | null;
+  initialLocalData?: AppData;
   onSwitchWorkspace?: (workspace: CloudWorkspace | null) => void;
   cloudNotice?: string;
 } = {}) {
@@ -109,7 +108,7 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
   const workspaceScope = workspace ? `${workspace.project.url}:${workspace.userId}` : undefined;
   // Commit task completion and its timer and focus changes together.
   const [session, setSession] = useState(() => ({
-    appData: workspace?.initial.data ?? loadAppData(),
+    appData: workspace?.initial.data ?? initialLocalData ?? loadAppData(),
     focusTimer: loadFocusTimer(workspaceScope),
     selectedFocusTaskId: null as string | null,
     completedFocusTask: null as QuickNote | null,
@@ -158,7 +157,7 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
   const [isQuickNotesOpen, setIsQuickNotesOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   const [isSparkIdeaModalOpen, setIsSparkIdeaModalOpen] = useState(false);
-  const [now, setNow] = useState<Date>(new Date());
+  const [now, setNow] = useState(() => new Date());
   const [backupReminderRefresh, setBackupReminderRefresh] = useState(0);
   const [editingTaskIdForScreen, setEditingTaskIdForScreen] = useState<string | null>(null);
   const [taskDetails, setTaskDetails] = useState<{ id: string; trigger: TaskDialogTrigger | null } | null>(null);
@@ -176,10 +175,25 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
   };
 
 
-  // Live clock tick for time radar calculations
+  // The dashboard shows whole minutes. Resync when a background tab becomes visible.
   useEffect(() => {
-    const timer = setInterval(() => setNow(new Date()), 15000);
-    return () => clearInterval(timer);
+    let timer: ReturnType<typeof setTimeout>;
+    const scheduleTick = () => {
+      const delay = 60_000 - Date.now() % 60_000;
+      timer = setTimeout(refresh, delay);
+    };
+    const refresh = () => {
+      clearTimeout(timer);
+      if (document.hidden) return;
+      setNow(new Date());
+      scheduleTick();
+    };
+    if (!document.hidden) scheduleTick();
+    document.addEventListener('visibilitychange', refresh);
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener('visibilitychange', refresh);
+    };
   }, []);
 
   // Sync state changes to localStorage debounced
@@ -191,11 +205,15 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
   useEffect(() => {
     const root = document.documentElement;
     const theme = appData.settings.theme;
-    if (theme === 'dark') {
+    if (theme === 'pitch-black') {
+      root.classList.add('dark', 'pitch-black');
+    } else if (theme === 'dark') {
       root.classList.add('dark');
+      root.classList.remove('pitch-black');
     } else if (theme === 'light') {
-      root.classList.remove('dark');
+      root.classList.remove('dark', 'pitch-black');
     } else {
+      root.classList.remove('pitch-black');
       const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
       root.classList.toggle('dark', prefersDark);
     }
@@ -357,15 +375,24 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
     [dashboardTodayTasks]
   );
   // Recommender Engine: Candidates & Scored Suggestions
-  const candidatePool = useMemo(() => {
-    return generateCandidatePool();
+  const [recommender, setRecommender] = useState<typeof import('./utils/recommender')>();
+  useEffect(() => {
+    let cancelled = false;
+    void import('./utils/recommender').then(engine => {
+      if (!cancelled) setRecommender(engine);
+    }).catch(error => {
+      if (!cancelled) console.error('Focus suggestions could not be loaded.', error);
+    });
+    return () => { cancelled = true; };
   }, []);
+  const candidatePool = useMemo(() => recommender?.generateCandidatePool(), [recommender]);
 
   const [suggestionOffset, setSuggestionOffset] = useState(0);
 
   const rankedSuggestions = useMemo(() => {
-    return getRankedRecommendations(candidatePool, appData.learnedPreferences, timeOfDay, candidatePool.length || 50);
-  }, [candidatePool, appData.learnedPreferences, timeOfDay]);
+    if (!recommender || !candidatePool) return [];
+    return recommender.getRankedRecommendations(candidatePool, appData.learnedPreferences, timeOfDay, candidatePool.length || 50);
+  }, [recommender, candidatePool, appData.learnedPreferences, timeOfDay]);
 
   const currentSuggestion = useMemo(() => {
     if (rankedSuggestions.length === 0) return null;
@@ -377,16 +404,18 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
   }, []);
 
   const handleRejectSuggestion = useCallback((candidate: RecommendationCandidate) => {
-    const updatedPrefs = recordRejection(appData.learnedPreferences, candidate, timeOfDay);
+    if (!recommender) return;
+    const updatedPrefs = recommender.recordRejection(appData.learnedPreferences, candidate, timeOfDay);
     setAppData((prev) => ({
       ...prev,
       learnedPreferences: updatedPrefs,
     }));
     setSuggestionOffset((prev) => prev + 1);
-  }, [appData.learnedPreferences, timeOfDay]);
+  }, [recommender, appData.learnedPreferences, timeOfDay]);
 
   const handleApproveSuggestion = useCallback((candidate: RecommendationCandidate) => {
-    const updatedPrefs = recordApproval(appData.learnedPreferences, candidate, timeOfDay);
+    if (!recommender) return;
+    const updatedPrefs = recommender.recordApproval(appData.learnedPreferences, candidate, timeOfDay);
     setAppData((prev) => ({
       ...prev,
       learnedPreferences: updatedPrefs,
@@ -395,7 +424,7 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
       window.open(candidate.url, '_blank', 'noopener,noreferrer');
     }
     setSuggestionOffset((prev) => prev + 1);
-  }, [appData.learnedPreferences, timeOfDay]);
+  }, [recommender, appData.learnedPreferences, timeOfDay]);
 
   const [showReflection, setShowReflection] = useState(false);
   const [showDailyReflection, setShowDailyReflection] = useState(false);
@@ -1219,13 +1248,13 @@ export default function WorkspaceApp() {
     return () => subscription.unsubscribe();
   }, [workspace, switchWorkspace]);
 
-  const localStorageError = useMemo(() => {
+  const localLoad = useMemo(() => {
     if (restoring || workspace) return null;
-    try { loadAppData(); return null; } catch (error) { return error; }
+    try { return { data: loadAppData() }; } catch (error) { return { error }; }
   }, [restoring, workspace, recoveryAttempt]);
 
   if (restoring) return <main className="p-6" role="status">Opening LaunchPAD…</main>;
-  if (localStorageError) return <StorageRecovery hasRollingBackup={localStorageError instanceof StorageRecoveryError && !!localStorageError.backup} onRecovered={() => setRecoveryAttempt(value => value + 1)} />;
+  if (localLoad && 'error' in localLoad) return <StorageRecovery hasRollingBackup={localLoad.error instanceof StorageRecoveryError && !!localLoad.error.backup} onRecovered={() => setRecoveryAttempt(value => value + 1)} />;
   const key = workspace ? `${workspace.project.url}:${workspace.userId}` : 'local';
-  return <App key={key} workspace={workspace} onSwitchWorkspace={switchWorkspace} cloudNotice={cloudNotice} />;
+  return <App key={key} workspace={workspace} initialLocalData={localLoad?.data} onSwitchWorkspace={switchWorkspace} cloudNotice={cloudNotice} />;
 }

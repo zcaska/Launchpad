@@ -87,6 +87,8 @@ export function mountCastleScene(
     renderer.toneMappingExposure = 1.18;
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFShadowMap;
+    // The directional light is fixed. Only changes to shadow casters need a new map.
+    renderer.shadowMap.autoUpdate = false;
     container.appendChild(canvas);
 
     const scene = new THREE.Scene();
@@ -226,6 +228,7 @@ export function mountCastleScene(
       owned = next;
       clearAssets();
       dirty = true;
+      renderer.shadowMap.needsUpdate = true;
       hasWater = false;
       let hasEmissiveAnimation = false;
       type Instance = { id: string; position: THREE.Vector3; primitive: ModelPrimitive };
@@ -432,6 +435,7 @@ export function mountCastleScene(
     });
 
     let lastTime = performance.now();
+    let lastRenderTime = -Infinity;
     let elapsed = 0;
     const tick = (now: number) => {
       if (lost || disposed) return;
@@ -441,7 +445,13 @@ export function mountCastleScene(
       if (!inViewport || document.hidden || !distance) return;
       const reduced = motionPreference.matches;
       const transitioning = Math.abs(distance - desiredDistance) > 0.002 || target.distanceToSquared(desiredTarget) > 0.000004;
-      if (!dirty && !transitioning && !beacons.size && (reduced || (!moving.length && !hasWater && !assets.userData.hasEmissiveAnimation))) return;
+      if (!reduced) elapsed += dt;
+      if (!dirty && !transitioning && !beacons.size) {
+        if (reduced || (!moving.length && !hasWater && !assets.userData.hasEmissiveAnimation)) return;
+        // Keep input and camera transitions responsive while easing idle GPU work.
+        if (now - lastRenderTime < 1000 / 30 - 1) return;
+      }
+      lastRenderTime = now;
       dirty = false;
       const easing = reduced ? 1 : 1 - Math.exp(-dt * 8);
       distance = THREE.MathUtils.lerp(distance, desiredDistance, easing);
@@ -449,9 +459,12 @@ export function mountCastleScene(
       camera.position.set(Math.sin(yaw) * Math.cos(pitch), Math.sin(pitch), Math.cos(yaw) * Math.cos(pitch))
         .multiplyScalar(distance).add(target);
       camera.lookAt(target);
-      if (!reduced) elapsed += dt;
       for (const { pivot, joint } of moving) {
-        pivot.rotation[joint.axis] = reduced ? 0 : Math.sin(elapsed * joint.speed + (joint.phase ?? 0)) * joint.amplitude;
+        const rotation = reduced ? 0 : Math.sin(elapsed * joint.speed + (joint.phase ?? 0)) * joint.amplitude;
+        if (pivot.rotation[joint.axis] !== rotation) {
+          pivot.rotation[joint.axis] = rotation;
+          renderer.shadowMap.needsUpdate = true;
+        }
       }
       textures.waterTexture.offset.set(elapsed * 0.035 % 1, elapsed * 0.016 % 1);
       textures.materials.flame.emissiveIntensity = reduced ? 1.4 : 1.15 + Math.sin(elapsed * 4.2) * 0.32;

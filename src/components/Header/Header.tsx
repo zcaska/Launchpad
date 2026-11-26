@@ -73,7 +73,8 @@ export const Header: React.FC<HeaderProps> = ({
 
   const toggleTheme = () => {
     if (theme === 'light') onThemeChange('dark');
-    else if (theme === 'dark') onThemeChange('system');
+    else if (theme === 'dark') onThemeChange('pitch-black');
+    else if (theme === 'pitch-black') onThemeChange('system');
     else onThemeChange('light');
   };
 
@@ -181,6 +182,7 @@ export const Header: React.FC<HeaderProps> = ({
               >
                 {theme === 'light' && <Sun size={19} className="text-amber-500" />}
                 {theme === 'dark' && <Moon size={19} className="text-sky-400" />}
+                {theme === 'pitch-black' && <Moon size={19} weight="fill" className="text-emerald-400" />}
                 {theme === 'system' && <Laptop size={19} className="text-serene-text-muted" />}
               </button>
             </GuideTarget>

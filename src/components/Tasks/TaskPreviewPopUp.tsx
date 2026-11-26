@@ -90,7 +90,7 @@ export function TaskPreviewPopUp({
                 <dd className="font-semibold tabular-nums">{formatElapsed(task.timeSpentSeconds)}</dd>
               </div>
             )}
-            <div className="col-span-2">
+            <div>
               <dt className="text-xs text-serene-text-secondary dark:text-serene-text-darkSecondary">Deadline</dt>
               <dd className="font-semibold tabular-nums">
                 {deadline ? dateFormat.format(deadline) : 'No deadline'}
@@ -103,7 +103,7 @@ export function TaskPreviewPopUp({
               </dd>
             </div>
             {Number.isFinite(createdAt.getTime()) && (
-              <div className="col-span-2">
+              <div>
                 <dt className="text-xs text-serene-text-secondary dark:text-serene-text-darkSecondary">Created</dt>
                 <dd className="font-semibold tabular-nums">{dateFormat.format(createdAt)}</dd>
               </div>

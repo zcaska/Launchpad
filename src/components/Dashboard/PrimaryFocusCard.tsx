@@ -362,10 +362,10 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
   const cashEstimate = castleActive ? formatTaskCashEstimate(activeTask ?? undefined, now ?? new Date()) : undefined;
   const cashEstimateBadge = castleActive && activeTask && (
     <span title={cashEstimate ? 'Estimated cash value. Earnings use the actual time you report.' : 'Add an estimated duration to see the cash value.'}
-      className="inline-flex items-center gap-1 text-xs font-medium tabular-nums text-emerald-700 dark:text-emerald-300">
+      className="inline-flex items-center gap-1 text-xs md:text-sm font-medium tabular-nums text-emerald-700 dark:text-emerald-300">
       {cashEstimate ? (
         <>
-          <Money size={15} aria-hidden="true" />
+          <Money className="w-[15px] h-[15px] md:w-4 md:h-4" aria-hidden="true" />
           {cashEstimate.replace(/^\$/, '')}
         </>
       ) : 'Add time estimate for cash value'}
