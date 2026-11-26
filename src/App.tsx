@@ -40,6 +40,7 @@ import { earnedPetLevel } from './utils/petEvolution';
 import { CommitmentRadarWidget } from './components/Dashboard/CommitmentRadarWidget';
 import TimeRadarWidget from './components/Dashboard/TimeRadarWidget';
 import { transitionTask, type TaskAction } from './utils/taskCompletion';
+import { prepareTaskCompletionSound, playTaskCompletionBell } from './utils/taskCompletionSound';
 import {
   loadFocusTimer,
   saveFocusTimer,
@@ -112,6 +113,7 @@ export function App({ workspace = null, initialLocalData, onSwitchWorkspace, clo
     focusTimer: loadFocusTimer(workspaceScope),
     selectedFocusTaskId: null as string | null,
     completedFocusTask: null as QuickNote | null,
+    completionSoundTaskId: null as string | null,
     pendingTaskCompletion: null as PendingTaskCompletion | null,
     completionNotice: null as string | null,
   }));
@@ -263,6 +265,7 @@ export function App({ workspace = null, initialLocalData, onSwitchWorkspace, clo
   }, []);
 
   const confirmTaskCompletion = (pending: PendingTaskCompletion, actualMinutes: number) => {
+    prepareTaskCompletionSound();
     setSession(prev => {
       if (prev.pendingTaskCompletion !== pending) return prev;
       if (!prev.appData.quickNotes.includes(pending.originalTask)) {
@@ -289,6 +292,7 @@ export function App({ workspace = null, initialLocalData, onSwitchWorkspace, clo
         focusTimer: result.timer,
         selectedFocusTaskId: prev.selectedFocusTaskId === id ? null : prev.selectedFocusTaskId,
         completedFocusTask: pending.fromFocus ? result.completedTask : prev.completedFocusTask,
+        completionSoundTaskId: id,
         pendingTaskCompletion: null,
       };
     });
@@ -586,6 +590,13 @@ export function App({ workspace = null, initialLocalData, onSwitchWorkspace, clo
     return () => window.clearTimeout(timeout);
   }, [completedFocusTask]);
 
+  useEffect(() => {
+    const taskId = session.completionSoundTaskId;
+    if (!taskId) return;
+    void playTaskCompletionBell();
+    setSession(prev => prev.completionSoundTaskId === taskId ? { ...prev, completionSoundTaskId: null } : prev);
+  }, [session.completionSoundTaskId]);
+
   const completeFocusTask = (task: QuickNote) => {
     handleTaskAction(task.id, { kind: 'toggleTask' }, true);
   };
@@ -690,7 +701,7 @@ export function App({ workspace = null, initialLocalData, onSwitchWorkspace, clo
 
     if (workspace) await cloudSync.clearCloud(nextAppData);
     else await clearAllLocalDataWithLock(nextAppData);
-    setSession({ appData: nextAppData, focusTimer: null, selectedFocusTaskId: null, completedFocusTask: null, pendingTaskCompletion: null, completionNotice: null });
+    setSession({ appData: nextAppData, focusTimer: null, selectedFocusTaskId: null, completedFocusTask: null, completionSoundTaskId: null, pendingTaskCompletion: null, completionNotice: null });
   }, [appData.settings, cloudSync, workspace]);
 
   const handleImportBackup = async (text: string) => {

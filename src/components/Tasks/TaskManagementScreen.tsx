@@ -72,6 +72,9 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
 }) => {
   // Filters & State
   const [activeTab, setActiveTab] = useState<FilterTab>('All');
+  const [isFilterMenuOpen, setIsFilterMenuOpen] = useState(false);
+  const filterMenuRef = useRef<HTMLDivElement>(null);
+  const filterTriggerRef = useRef<HTMLButtonElement>(null);
   const [showCompletedInAll, setShowCompletedInAll] = useState(true);
   const [expandedChecklists, setExpandedChecklists] = useState<Record<string, boolean>>({});
   const { period, setPeriod, customRange, setCustomRange, baseRange, defaultEndInclusive,
@@ -81,6 +84,25 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const formTrigger = useRef<TaskDialogTrigger | null>(null);
   const tasksHeading = useRef<HTMLHeadingElement>(null);
+
+  useEffect(() => {
+    if (!isFilterMenuOpen) return;
+    const onPointerDown = (event: PointerEvent) => {
+      if (!filterMenuRef.current?.contains(event.target as Node)) setIsFilterMenuOpen(false);
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsFilterMenuOpen(false);
+        filterTriggerRef.current?.focus();
+      }
+    };
+    document.addEventListener('pointerdown', onPointerDown);
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown);
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [isFilterMenuOpen]);
 
   // Form Fields
   const [formTitle, setFormTitle] = useState('');
@@ -297,6 +319,16 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
     [projection, activeTab, searchQuery],
   );
   const tabTasks = activeTab === 'Completed' ? completedTasks : remainingTasks;
+
+  const filterTextColors: Record<FilterTab, string> = {
+    'All': 'text-slate-700 dark:text-slate-300',
+    'Urgent': 'text-red-700 dark:text-red-300',
+    'High Priority': 'text-rose-700 dark:text-rose-300',
+    'Medium': 'text-amber-800 dark:text-amber-300',
+    'Low': 'text-sky-700 dark:text-sky-300',
+    'Due Soon': 'text-purple-700 dark:text-purple-300',
+    'Completed': 'text-emerald-700 dark:text-emerald-300',
+  };
 
   // Tab Badge Style reflecting nature
   const getTabBadgeStyle = (tab: FilterTab, isActive: boolean) => {
@@ -579,7 +611,7 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
   return (
     <div className="w-full flex flex-col h-full bg-serene-bg-light dark:bg-serene-bg-dark text-serene-text-primary dark:text-serene-text-darkPrimary overflow-hidden">
       {/* 1. TOP HEADER & OVERVIEW BAR */}
-      <header className="tasks-toolbar w-full shrink-0 min-w-0 bg-white dark:bg-serene-surface-dark border-b border-serene-border-light dark:border-serene-border-dark px-3 sm:px-6 py-3.5 sm:py-4 shadow-subtle transition-colors overflow-hidden">
+      <header className="tasks-toolbar w-full shrink-0 min-w-0 bg-white dark:bg-serene-surface-dark border-b border-serene-border-light dark:border-serene-border-dark px-3 sm:px-6 py-3.5 sm:py-4 shadow-subtle transition-colors">
         <div data-date-range={hasPeriodBudget && period !== "Today" ? true : undefined} className="tasks-toolbar-heading w-full min-w-0 flex items-center justify-between gap-2 sm:gap-4">
           
           {/* Left: Back button + Title */}
@@ -604,24 +636,26 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
             </div>
 
             {/* Desktop Status metrics row */}
-            <div className="hidden lg:flex items-center gap-3 text-sm lg:text-base lg:ml-2 shrink-0">
-              <span className="flex items-center gap-1.5 font-medium text-serene-text-secondary dark:text-serene-text-darkSecondary">
-                <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
-                <strong className="text-serene-text-primary dark:text-serene-text-darkPrimary font-bold">
+            <div className="hidden lg:flex flex-col items-center lg:ml-2 shrink-0">
+              <div className="flex items-center gap-3 text-sm lg:text-base">
+              <span className="flex items-center gap-1.5 font-medium text-slate-600 dark:text-slate-300">
+                <span className="w-2 h-2 rounded-full bg-slate-400 dark:bg-slate-400" />
+                <strong className="font-bold">
                   {loadSummary.pendingCount}
                 </strong>{' '}
                 pending
               </span>
               <span className="text-serene-text-muted">•</span>
-              <span className="flex items-center gap-1.5 font-medium text-emerald-600 dark:text-emerald-400">
+              <span className="flex items-center gap-1.5 font-medium text-slate-600 dark:text-slate-300">
                 <CheckCircle2 className="w-3.5 h-3.5" />
                 <strong>{totalCompleted}</strong> done
               </span>
               <span className="text-serene-text-muted">•</span>
-              <span className="flex items-center gap-1 font-mono font-medium text-serene-primary dark:text-serene-primary-dark">
+              <span className="flex items-center gap-1 font-mono font-medium text-slate-600 dark:text-slate-300">
                 <Clock className="w-3.5 h-3.5" />
                 <strong>{loadSummary.formattedPending}</strong> load
               </span>
+              </div>
             </div>
           </div>
 
@@ -705,7 +739,7 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
         </div>
 
         {hasPeriodBudget ? (
-          <div className="tasks-budget mt-2 text-xs sm:text-sm" aria-live="polite">
+          <div className="tasks-budget mt-2 text-xs sm:text-sm lg:hidden" aria-live="polite">
             <div className="flex flex-wrap items-baseline gap-x-3 sm:gap-x-4 gap-y-1">
               <span>
                 <strong>{formatPeriodMinutes(range.availableMinutes)}</strong>{' '}
@@ -742,7 +776,7 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
             </select>
           </label>
           {/* Desktop filter tabs */}
-          <div className="hidden md:flex items-center gap-1.5 overflow-x-auto pb-0.5 text-xs no-scrollbar min-w-0 flex-1">
+          <div className="hidden md:flex lg:hidden items-center gap-1.5 overflow-x-auto pb-0.5 text-xs no-scrollbar min-w-0 flex-1">
           {taskFilterTabs.map(
             (tab) => {
               const isActive = activeTab === tab;
@@ -769,6 +803,57 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
             }
           )}
           </div>
+
+          {/* Desktop filter menu */}
+          <div ref={filterMenuRef} className="relative hidden lg:block shrink-0">
+            <button
+              ref={filterTriggerRef}
+              type="button"
+              aria-haspopup="true"
+              aria-expanded={isFilterMenuOpen}
+              aria-controls="task-filter-menu"
+              onClick={() => setIsFilterMenuOpen((open) => !open)}
+              className={`inline-flex min-h-9 items-center gap-2 rounded-xl border px-3 py-1.5 text-xs font-semibold shadow-sm transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-serene-primary ${getTabBadgeStyle(activeTab, true)}`}
+            >
+              <FunnelSimple size={14} aria-hidden="true" />
+              <span>{activeTab}</span>
+              <span className="rounded-full bg-white/25 px-1.5 py-0.5 text-[10px] font-bold leading-none">{taskTabCount(projection, activeTab)}</span>
+              <CaretDown size={12} aria-hidden="true" className={`transition-transform ${isFilterMenuOpen ? 'rotate-180' : ''}`} />
+            </button>
+            {isFilterMenuOpen && (
+              <div id="task-filter-menu" role="group" aria-label="Filter tasks" className="absolute left-0 top-full z-[80] mt-2 w-56 overflow-hidden rounded-xl border border-serene-border-light bg-white p-1.5 shadow-xl dark:border-serene-border-dark dark:bg-serene-surface-dark">
+                {taskFilterTabs.map((tab) => {
+                  const isActive = activeTab === tab;
+                  const count = taskTabCount(projection, tab);
+                  return (
+                    <button
+                      key={tab}
+                      type="button"
+                      aria-pressed={isActive}
+                      onClick={() => { setActiveTab(tab); setIsFilterMenuOpen(false); }}
+                      className={`flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-left text-xs font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-serene-primary ${filterTextColors[tab]} ${isActive ? 'bg-serene-primary/10' : 'hover:bg-serene-surfaceAlt-light dark:hover:bg-serene-surfaceAlt-dark'}`}
+                    >
+                      <span>{tab}</span>
+                      <span className="min-w-6 rounded-full bg-black/5 px-1.5 py-0.5 text-center text-[10px] font-bold dark:bg-white/10">{count}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {hasPeriodBudget && (
+            <div className="hidden lg:flex min-w-0 flex-1 items-center justify-center gap-3 xl:gap-5 px-2 py-2 text-base xl:text-xl leading-tight" aria-live="polite">
+              <Clock className="h-5 w-5 shrink-0 text-serene-primary dark:text-serene-primary-dark" />
+              <span className="whitespace-nowrap"><strong>{formatPeriodMinutes(range.availableMinutes)}</strong> available</span>
+              <span className="text-serene-text-muted">·</span>
+              <span className="whitespace-nowrap"><strong>{formatPeriodMinutes(periodLoad.pendingMinutes)}</strong> pending</span>
+              <span className="text-serene-text-muted">·</span>
+              <strong className={`whitespace-nowrap ${bufferTextColor[periodBuffer.status]}`}>
+                {formatPeriodMinutes(Math.abs(periodBuffer.bufferMinutes))} {periodBuffer.bufferMinutes < 0 ? 'over' : periodBuffer.status === 'tight' ? 'left · tight' : 'spare'}
+              </strong>
+            </div>
+          )}
 
           {/* Search Input relocated to filter bar toolbar */}
           <div className="relative hidden w-full md:block md:w-56 lg:w-64 shrink-0">
