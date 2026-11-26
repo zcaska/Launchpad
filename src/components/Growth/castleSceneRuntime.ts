@@ -2,7 +2,26 @@ import * as THREE from 'three';
 import { CASTLE_ELEMENTS, createCastleGeometry, getCastleElementBounds, type CastleShape, type ModelPrimitive } from './castleModel';
 import { createCastleMaterials } from './castleTextures';
 
-export type CastleCameraCommand = 'left' | 'right' | 'in' | 'out' | 'reset';
+export type CastleCameraCommand = 'left' | 'right' | 'in' | 'out' | 'reset' | 'pan-up' | 'pan-down' | 'pan-left' | 'pan-right';
+
+/** Move the look target in camera space while keeping it within the castle grounds. */
+export function panCastleTarget(
+  target: THREE.Vector3,
+  center: THREE.Vector3,
+  yaw: number,
+  pitch: number,
+  dx: number,
+  dy: number,
+  maxOffset: number,
+) {
+  const view = new THREE.Vector3(Math.sin(yaw) * Math.cos(pitch), Math.sin(pitch), Math.cos(yaw) * Math.cos(pitch));
+  const right = new THREE.Vector3(Math.cos(yaw), 0, -Math.sin(yaw));
+  const up = new THREE.Vector3().crossVectors(view, right).normalize();
+  const next = target.clone().addScaledVector(right, dx).addScaledVector(up, dy);
+  const offset = next.clone().sub(center);
+  if (offset.length() > maxOffset) next.copy(center).add(offset.setLength(maxOffset));
+  return next;
+}
 
 export function getCastleInspectionFrame(bounds: THREE.Box3) {
   return {
@@ -21,7 +40,8 @@ function fitOverview(
   const view = new THREE.Vector3(Math.sin(yaw) * Math.cos(pitch), Math.sin(pitch), Math.cos(yaw) * Math.cos(pitch));
   const right = new THREE.Vector3(Math.cos(yaw), 0, -Math.sin(yaw));
   const up = new THREE.Vector3().crossVectors(view, right);
-  const tanVertical = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * 0.88;
+  // Reserve a small edge margin while letting the fortress use more of the full-page viewport.
+  const tanVertical = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * 0.95;
   const tanHorizontal = tanVertical * camera.aspect;
   const point = new THREE.Vector3();
   let distance = 1;
@@ -64,6 +84,7 @@ export function mountCastleScene(
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.75));
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.18;
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFShadowMap;
     container.appendChild(canvas);
@@ -97,8 +118,9 @@ export function mountCastleScene(
     const textures = createCastleMaterials();
     releases.push(textures.dispose);
     const phantom = new THREE.MeshStandardMaterial({
-      color: 0x141b2a, roughness: 0.85, metalness: 0.1, transparent: true, opacity: 0.35,
-      depthWrite: false, emissive: 0x3a4e68, emissiveIntensity: 1,
+      color: 0x425165, roughness: 0.95, metalness: 0.04,
+      emissive: 0x1c2b40, emissiveIntensity: 0.45,
+      transparent: true, opacity: 0.58, depthWrite: false,
     });
     const groundMaterial = new THREE.MeshStandardMaterial({ color: 0x192431, roughness: 1 });
     const groundGeometry = new THREE.CylinderGeometry(1, 0.84, 0.9, 64);
@@ -109,9 +131,9 @@ export function mountCastleScene(
     ground.receiveShadow = true;
     scene.add(ground);
 
-    const ambient = new THREE.HemisphereLight(0x8fb4e8, 0x1c1712, 2.1);
+    const ambient = new THREE.HemisphereLight(0xb9d2f5, 0x55483d, 2.7);
     scene.add(ambient);
-    const moon = new THREE.DirectionalLight(0xd6e6ff, 3.2);
+    const moon = new THREE.DirectionalLight(0xe2edff, 3.8);
     moon.position.set(-14, 22, 16);
     moon.castShadow = true;
     moon.shadow.mapSize.set(1024, 1024);
@@ -121,6 +143,12 @@ export function mountCastleScene(
     moon.shadow.normalBias = 0.035;
     scene.add(moon);
     releases.push(() => moon.shadow.dispose());
+    const fill = new THREE.DirectionalLight(0xffdca0, 1.8);
+    fill.position.set(world.radius * 1.4, world.radius * 0.85, -world.radius * 1.8);
+    scene.add(fill);
+    const rim = new THREE.DirectionalLight(0x9ccfff, 1.35);
+    rim.position.set(world.radius * 1.7, world.radius * 1.3, world.radius * 0.3);
+    scene.add(rim);
 
     const geometries = new Map<CastleShape, THREE.BufferGeometry>();
     releases.push(() => geometries.forEach(geometry => geometry.dispose()));
@@ -164,13 +192,13 @@ export function mountCastleScene(
       const background = light ? 0xdce8ea : 0x0c1322;
       (scene.background as THREE.Color).setHex(background);
       (scene.fog as THREE.FogExp2).color.setHex(background);
-      phantom.color.setHex(light ? 0x687f83 : 0x141b2a);
-      phantom.emissive.setHex(light ? 0x607578 : 0x3a4e68);
-      phantom.opacity = light ? 0.5 : 0.35;
+      phantom.color.setHex(light ? 0x536b70 : 0x425165);
+      phantom.emissive.setHex(light ? 0x536b70 : 0x1c2b40);
+      phantom.opacity = light ? 0.6 : 0.58;
       groundMaterial.color.setHex(light ? 0x9aadaa : 0x192431);
-      ambient.color.setHex(light ? 0xeaf5f3 : 0x8fb4e8);
-      ambient.groundColor.setHex(light ? 0x8c9e96 : 0x1c1712);
-      moon.color.setHex(light ? 0xfff2d8 : 0xd6e6ff);
+      ambient.color.setHex(light ? 0xf0f8f6 : 0xb9d2f5);
+      ambient.groundColor.setHex(light ? 0xa6b2a8 : 0x55483d);
+      moon.color.setHex(light ? 0xfff2d8 : 0xe2edff);
       dirty = true;
     };
     updateTheme();
@@ -199,6 +227,7 @@ export function mountCastleScene(
       clearAssets();
       dirty = true;
       hasWater = false;
+      let hasEmissiveAnimation = false;
       type Instance = { id: string; position: THREE.Vector3; primitive: ModelPrimitive };
       const batches = new Map<string, { material: THREE.Material; items: Instance[]; phantom: boolean }>();
       for (const element of CASTLE_ELEMENTS) {
@@ -207,6 +236,7 @@ export function mountCastleScene(
         for (const primitive of element.primitives) {
           const material = built ? textures.materials[primitive.material] : phantom;
           if (built && primitive.material === 'water') hasWater = true;
+          if (built && (primitive.material === 'flame' || primitive.material === 'ember')) hasEmissiveAnimation = true;
           const position = new THREE.Vector3(...primitive.position).add(anchor);
           const joint = primitive.joint;
           if (built && joint) {
@@ -248,6 +278,7 @@ export function mountCastleScene(
         assets.add(mesh);
         picks.set(mesh, items.map(item => item.id));
       }
+      assets.userData.hasEmissiveAnimation = hasEmissiveAnimation;
     };
     updateOwnership(initialOwnership, false);
 
@@ -274,7 +305,7 @@ export function mountCastleScene(
       selection.visible = true;
       const framing = getCastleInspectionFrame(closeupBounds.get(id) ?? bounds);
       desiredTarget.copy(framing.center);
-      desiredDistance = Math.max(3.2, fitDistance(framing.radius) * 1.17);
+      desiredDistance = Math.max(3.2, fitDistance(framing.radius) * 1.1);
     };
     const reset = () => {
       selectedId = undefined;
@@ -291,6 +322,12 @@ export function mountCastleScene(
       if (action === 'right') yaw += 0.22;
       if (action === 'in') desiredDistance = Math.max(2, desiredDistance * 0.85);
       if (action === 'out') desiredDistance = Math.min(fitDistance(world.radius) * 1.4, desiredDistance * 1.18);
+      if (action.startsWith('pan-')) {
+        const step = Math.max(0.12, distance * 0.055);
+        const dx = action === 'pan-left' ? -step : action === 'pan-right' ? step : 0;
+        const dy = action === 'pan-up' ? step : action === 'pan-down' ? -step : 0;
+        desiredTarget.copy(panCastleTarget(desiredTarget, world.center, yaw, pitch, dx, dy, world.radius * 0.85));
+      }
       dirty = true;
     };
     const resize = () => {
@@ -354,9 +391,21 @@ export function mountCastleScene(
       if (id) { inspect(id); onInspect(id); }
     };
     const wheel = (event: WheelEvent) => {
-      if (lost || !event.shiftKey) return;
+      if (lost || (!event.deltaX && !event.deltaY)) return;
       event.preventDefault();
-      desiredDistance = THREE.MathUtils.clamp(desiredDistance * Math.exp(event.deltaY * 0.001), 2, fitDistance(world.radius) * 1.4);
+      const unit = event.deltaMode === WheelEvent.DOM_DELTA_LINE ? 16
+        : event.deltaMode === WheelEvent.DOM_DELTA_PAGE ? container.clientHeight : 1;
+      const deltaX = event.deltaX * unit;
+      const deltaY = event.deltaY * unit;
+      if (event.shiftKey || event.ctrlKey) {
+        desiredDistance = THREE.MathUtils.clamp(desiredDistance * Math.exp((deltaY || deltaX) * 0.001), 2, fitDistance(world.radius) * 1.4);
+      } else {
+        const scale = Math.max(0.0012, distance * 0.0012);
+        desiredTarget.copy(panCastleTarget(
+          desiredTarget, world.center, yaw, pitch,
+          -deltaX * scale, -deltaY * scale, world.radius * 0.85,
+        ));
+      }
       dirty = true;
     };
     const contextLost = (event: Event) => {
@@ -392,7 +441,7 @@ export function mountCastleScene(
       if (!inViewport || document.hidden || !distance) return;
       const reduced = motionPreference.matches;
       const transitioning = Math.abs(distance - desiredDistance) > 0.002 || target.distanceToSquared(desiredTarget) > 0.000004;
-      if (!dirty && !transitioning && !beacons.size && (reduced || (!moving.length && !hasWater))) return;
+      if (!dirty && !transitioning && !beacons.size && (reduced || (!moving.length && !hasWater && !assets.userData.hasEmissiveAnimation))) return;
       dirty = false;
       const easing = reduced ? 1 : 1 - Math.exp(-dt * 8);
       distance = THREE.MathUtils.lerp(distance, desiredDistance, easing);
@@ -404,7 +453,9 @@ export function mountCastleScene(
       for (const { pivot, joint } of moving) {
         pivot.rotation[joint.axis] = reduced ? 0 : Math.sin(elapsed * joint.speed + (joint.phase ?? 0)) * joint.amplitude;
       }
-      textures.waterTexture.offset.set(elapsed * 0.022 % 1, elapsed * 0.01 % 1);
+      textures.waterTexture.offset.set(elapsed * 0.035 % 1, elapsed * 0.016 % 1);
+      textures.materials.flame.emissiveIntensity = reduced ? 1.4 : 1.15 + Math.sin(elapsed * 4.2) * 0.32;
+      textures.materials.ember.emissiveIntensity = reduced ? 1.8 : 1.55 + Math.sin(elapsed * 2.6 + 0.8) * 0.4;
       for (const [id, beacon] of beacons) {
         const life = (now - beacon.started) / 850;
         if (reduced || life >= 1) removeBeacon(id);

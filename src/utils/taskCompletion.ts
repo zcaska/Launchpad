@@ -43,7 +43,7 @@ export function transitionTask(notes: QuickNote[], timer: FocusTimerState | null
   const becameDone = next.isDone && !previous.isDone;
   if (actualMinutes !== undefined) {
     if (!becameDone || !Number.isSafeInteger(actualMinutes)
-      || actualMinutes < Math.max(1, previous.partialMinutes ?? 0) || actualMinutes > 525600) {
+      || actualMinutes < Math.max(1, (previous.partialMinutes ?? 0) + (previous.pendingProgress ?? []).reduce((sum, entry) => sum + entry.minutes, 0)) || actualMinutes > 525600) {
       return { notes, timer };
     }
     next.actualMinutes = actualMinutes;

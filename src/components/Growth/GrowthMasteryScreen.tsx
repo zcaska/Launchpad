@@ -1,4 +1,4 @@
-import React, { useState, useRef, useMemo } from 'react';
+import React, { useState, useRef, useMemo, useEffect } from 'react';
 import {
   ArrowLeft,
   Trophy,
@@ -58,6 +58,7 @@ export interface GrowthMasteryScreenProps {
   onReflectCompleted?: (taskIds: string[]) => void;
   onDailyReview: () => void;
   reflections: ReflectionEntry[];
+  onCastleSceneChange?: (active: boolean) => void;
 }
 
 type HorizonTab = 'weekly' | 'monthly' | 'yearly';
@@ -77,6 +78,7 @@ export const GrowthMasteryScreen: React.FC<GrowthMasteryScreenProps> = ({
   onReflectCompleted,
   onDailyReview,
   reflections,
+  onCastleSceneChange,
 }) => {
   const [showEarlierDailyReviews, setShowEarlierDailyReviews] = useState(false);
   const completedReviewTasks = useMemo(
@@ -89,6 +91,11 @@ export const GrowthMasteryScreen: React.FC<GrowthMasteryScreenProps> = ({
   );
   const [showMilestoneDetails, setShowMilestoneDetails] = useState(false);
   const [showEarlierGrowth, setShowEarlierGrowth] = useState(false);
+  const castleSceneActive = !!castleEconomy && !showEarlierGrowth;
+  useEffect(() => {
+    onCastleSceneChange?.(castleSceneActive);
+    return () => onCastleSceneChange?.(false);
+  }, [castleSceneActive, onCastleSceneChange]);
   const [activeTab, setActiveTab] = useState<HorizonTab>('weekly');
   const [importError, setImportError] = useState<string | null>(null);
   const [importSuccess, setImportSuccess] = useState<string | null>(null);

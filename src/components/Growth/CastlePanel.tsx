@@ -307,7 +307,7 @@ export function CastlePanel({
               )}
                 <section className="cp-card cp-work" aria-labelledby={tasksId}>
                   <h2 id={tasksId}>Today’s commitments</h2>
-                  <p className="cp-muted">Commit before finishing. Reflected work earns castle dollars when the estimate and actual time each reach 30 minutes.</p>
+                  <p className="cp-muted">Completed work earns virtual dollars based on actual time. Commit to a task to hold yourself accountable if it is missed.</p>
                   {candidates.length ? (
                     <><div className="cp-commit-controls">
                       <label>Task <select className="cp-select" value={candidate?.task.id ?? ''} onChange={event => setSelectedTask(event.target.value)}>

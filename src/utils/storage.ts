@@ -238,6 +238,11 @@ export function sanitizeAppData(parsed: any, saveRollingBackup: boolean = true):
         timeSpentSeconds: typeof n.timeSpentSeconds === 'number' ? n.timeSpentSeconds : undefined,
         actualMinutes: Number.isFinite(n.actualMinutes) && n.actualMinutes > 0 && n.actualMinutes <= 525600 ? n.actualMinutes : undefined,
         partialMinutes: Number.isFinite(n.partialMinutes) && n.partialMinutes > 0 ? n.partialMinutes : undefined,
+        pendingProgress: Array.isArray(n.pendingProgress) ? n.pendingProgress.filter((entry: any, index: number, entries: any[]) =>
+          entry && typeof entry.id === 'string' && entry.id.length > 0 && savedCompletionDay(entry.date)
+          && Number.isSafeInteger(entry.minutes) && entry.minutes > 0 && entry.minutes <= 525600
+          && entries.findIndex(other => other?.id === entry.id && other?.date === entry.date) === index)
+          .map((entry: any) => ({ id: entry.id, date: entry.date, minutes: entry.minutes })) : undefined,
         attachedUrls: Array.isArray(n.attachedUrls)
           ? n.attachedUrls.filter((u: any) => u && typeof u.url === 'string')
           : [],

@@ -2,6 +2,7 @@ import { useId, type RefObject } from 'react';
 import { CheckCircle, Circle, PencilSimple, X } from '@phosphor-icons/react';
 import type { QuickNote } from '../../types';
 import { formatElapsed } from '../../utils/focusTimer';
+import { formatTaskCashEstimate } from '../../utils/taskCashEstimate';
 import { formatTaskCountdown, parseTaskDeadline } from '../../utils/taskUrgency';
 import { formatEventDuration, formatEventTime, isSafeUrl } from '../../utils/textFormatting';
 import { SafeDescription } from '../Common/SafeDescription';
@@ -12,6 +13,7 @@ interface TaskPreviewPopUpProps {
   task: QuickNote;
   now: Date;
   clockFormat: '12h' | '24h';
+  castleActive?: boolean;
   returnFocus: TaskDialogTrigger | null;
   fallbackFocus?: RefObject<HTMLElement | null>;
   onClose: () => void;
@@ -21,12 +23,13 @@ interface TaskPreviewPopUpProps {
 const dateFormat = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' });
 
 export function TaskPreviewPopUp({
-  task, now, clockFormat, returnFocus, fallbackFocus, onClose, onEdit,
+  task, now, clockFormat, castleActive, returnFocus, fallbackFocus, onClose, onEdit,
 }: TaskPreviewPopUpProps) {
   const titleId = useId();
   const deadline = parseTaskDeadline(task.deadline, now);
   const dateOnly = /^\d{4}-\d{2}-\d{2}$/.test(task.deadline?.trim() ?? '');
   const deadlineTime = deadline && !dateOnly ? formatEventTime(deadline, clockFormat) : '';
+  const cashEstimate = castleActive ? formatTaskCashEstimate(task, now) : undefined;
   const createdAt = new Date(task.createdAt);
   const subtasks = task.subtasks ?? [];
   const completedSubtasks = subtasks.filter((subtask) => subtask.isDone).length;
@@ -68,6 +71,13 @@ export function TaskPreviewPopUp({
               <dt className="text-xs text-serene-text-secondary dark:text-serene-text-darkSecondary">Estimate</dt>
               <dd className="font-semibold tabular-nums">{task.durationMinutes == null ? 'Unspecified' : formatEventDuration(task.durationMinutes)}</dd>
             </div>
+            {cashEstimate && (
+              <div>
+                <dt className="text-xs text-serene-text-secondary dark:text-serene-text-darkSecondary">Estimated cash value</dt>
+                <dd className="font-semibold tabular-nums text-emerald-800 dark:text-emerald-300">{cashEstimate}</dd>
+                <dd className="text-xs text-serene-text-secondary dark:text-serene-text-darkSecondary">Earnings use the actual time you report.</dd>
+              </div>
+            )}
             {task.actualMinutes != null && (
               <div>
                 <dt className="text-xs text-serene-text-secondary dark:text-serene-text-darkSecondary">Actual time</dt>

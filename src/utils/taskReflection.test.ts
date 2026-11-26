@@ -12,6 +12,12 @@ const task = (id: string, deadline?: string, isDone = false, pendingReflection =
   id, text: id, deadline, isDone, pendingReflection, createdAt: 0,
 });
 const done = task('today', '2026-11-10', true, true);
+const directData: AppData = { ...DEFAULT_SEED_DATA, settings: { ...DEFAULT_SEED_DATA.settings, dailyReviewRequired: false }, quickNotes: [{ ...done, actualMinutes: 30 }], reflections: [] };
+const directResult = taskReflection.registerCompletedTasks(directData, now, now, directData.quickNotes);
+assert.equal(directResult.quickNotes.length, 0, 'Direct completion clears the recorded task');
+assert.equal(directResult.reflections?.length, 0, 'Direct completion does not invent a reflection');
+assert.ok(directResult.gamification.currentXp > directData.gamification.currentXp, 'Direct completion awards XP');
+assert.equal(taskReflection.registerCompletedTasks(directResult, now, now, directData.quickNotes), directResult, 'Replaying completion does not award twice');
 const future = task('future', '2026-11-12');
 const undated = task('undated');
 assert.deepEqual(getReflectionTasks([done], now).map(t => t.id), ['today']);
@@ -105,7 +111,7 @@ const backlog = [
 assert.deepEqual(getReflectionTasks(backlog, now), [], 'open backlog still prevents an automatic reflection prompt');
 const reviewTasks = taskReflection.getDailyReviewTasks(backlog);
 assert.deepEqual(reviewTasks.map(item => item.id), ['overdue-done', 'undated-done'], 'manual review finds work left pending by the automatic trigger');
-const reviewResult = taskReflection.applyCompletedTaskReflection({ ...DEFAULT_SEED_DATA, quickNotes: backlog }, now, now, questions, answers, reviewTasks);
+const reviewResult = taskReflection.applyCompletedTaskReflection({ ...DEFAULT_SEED_DATA, settings: { ...DEFAULT_SEED_DATA.settings, dailyReviewRequired: false }, quickNotes: backlog }, now, now, questions, answers, reviewTasks);
 assert.deepEqual(reviewResult.quickNotes, backlog.slice(2), 'review leaves unrelated open work and legacy completions in place');
 assert.deepEqual(reviewResult.reflections?.at(-1)?.taskTitles, ['overdue-done', 'undated-done']);
 assert.equal(taskReflection.applyCompletedTaskReflection(reviewResult, now, now, questions, answers, reviewTasks), reviewResult, 'manual review credit remains idempotent');
@@ -114,10 +120,29 @@ const economy = commitTask(commitTask(activateEconomy(5000, '2026-11-10'), {
 }), { id: 'last', title: 'Last', date: '2026-11-10', estimatedValueCents: 2000 });
 const first = { ...task('first', undefined, true, true), actualMinutes: 20 };
 const last = { ...task('last', '2026-11-12', true, true), actualMinutes: 20 };
+const immediateData = { ...DEFAULT_SEED_DATA, castleEconomy: economy, quickNotes: [first, { ...last, isDone: false, pendingReflection: false }] };
+const immediate = taskReflection.registerCompletedTasks(immediateData, now, now, [first]);
+assert.equal(immediate, immediateData, 'required review defers registration without changing cash, growth, or tasks');
+assert.equal(immediate.quickNotes[0].rewardAlreadyGranted, undefined);
+assert.equal(immediate.castleEconomy?.commitments[0].completed, false);
+assert.equal(immediate.castleEconomy?.ledger.length, 0);
+assert.equal(taskReflection.applyCompletedTaskReflection(immediateData, now, now, questions, answers, [first]), immediateData, 'manual review cannot release rewards before the final active commitment');
+const finalImmediateTask = { ...last, actualMinutes: 20 };
+const immediateBoth = taskReflection.registerCompletedTasks({ ...immediate, quickNotes: [immediate.quickNotes[0], finalImmediateTask] }, now, now, [finalImmediateTask]);
+assert.deepEqual(getReflectionTasks(immediateBoth.quickNotes, now, immediateBoth.castleEconomy).map(item => item.id), ['first', 'last']);
+assert.equal(immediateBoth.castleEconomy?.ledger.length, 0, 'finishing all tasks still waits for the review');
+const reviewedImmediate = taskReflection.applyCompletedTaskReflection(immediateBoth, now, now, questions, answers, immediateBoth.quickNotes);
+assert.ok(reviewedImmediate.gamification.currentXp > immediateBoth.gamification.currentXp, 'the final review grants XP');
+assert.equal(reviewedImmediate.castleEconomy?.ledger.length, 2, 'the final review grants cash for both tasks');
+assert.equal(taskReflection.applyCompletedTaskReflection(reviewedImmediate, now, now, questions, answers, immediateBoth.quickNotes), reviewedImmediate, 'review replay grants neither cash nor growth twice');
+const legacyRewardedData = { ...immediateBoth, castleEconomy: reviewedImmediate.castleEconomy, gamification: reviewedImmediate.gamification, growthHistory: reviewedImmediate.growthHistory, quickNotes: immediateBoth.quickNotes.map(task => ({ ...task, rewardAlreadyGranted: true })) };
+const legacyRewardedReview = taskReflection.applyCompletedTaskReflection(legacyRewardedData, now, now, questions, answers, legacyRewardedData.quickNotes);
+assert.equal(legacyRewardedReview.gamification.currentXp, legacyRewardedData.gamification.currentXp, 'previously granted growth is preserved without duplication');
+assert.deepEqual(legacyRewardedReview.castleEconomy?.ledger, legacyRewardedData.castleEconomy?.ledger, 'previously granted cash is preserved without duplication');
 const noEstimate = { ...first, actualMinutes: 60 };
-const restoredNoEstimate = sanitizeAppData(JSON.parse(JSON.stringify({ ...DEFAULT_SEED_DATA, castleEconomy: economy, quickNotes: [noEstimate] })), false);
+const restoredNoEstimate = sanitizeAppData(JSON.parse(JSON.stringify({ ...DEFAULT_SEED_DATA, castleEconomy: { ...economy, commitments: economy.commitments.slice(0, 1) }, quickNotes: [noEstimate] })), false);
 const reflectedNoEstimate = taskReflection.applyCompletedTaskReflection(restoredNoEstimate, now, now, questions, answers, [noEstimate]);
-assert.equal(reflectedNoEstimate.castleEconomy?.ledger.at(-1)?.amountCents, 0, 'restoring a legacy task with no estimate does not make it eligible');
+assert.equal(reflectedNoEstimate.castleEconomy?.ledger.at(-1)?.amountCents, 1500, 'a restored legacy task can earn from recorded actual time without an estimate');
 assert.deepEqual(getReflectionTasks([first, { ...last, isDone: false }, future], now, economy), [], 'waits for the final commitment of the day');
 assert.deepEqual(getReflectionTasks([first, last, future], now, economy).map(t => t.id), ['first', 'last'], 'reflects finished commitments even if their deadlines are undated or in the future');
 assert.deepEqual(getReflectionTasks([first, last, future], new Date(2026, 10, 11), economy).map(t => t.id), ['first', 'last'], 'an interrupted prior-day batch remains available');
@@ -135,34 +160,46 @@ const reflectWork = (estimate: number | undefined, actualMinutes: number, commit
   const data = { ...DEFAULT_SEED_DATA, castleEconomy, quickNotes: [completed] };
   return taskReflection.applyCompletedTaskReflection(data, now, now, questions, answers, [completed]);
 };
-for (const [estimate, actual, expected] of [[29, 30, 0], [30, 29, 0], [30, 30, 750], [60, 239, 5975], [60, 240, 6000], [60, 241, 6000], [undefined, 30, 750]] as const) {
+for (const [estimate, actual, expected] of [[29, 30, 750], [30, 29, 725], [30, 30, 750], [60, 239, 5975], [60, 240, 6000], [60, 241, 6025], [undefined, 30, 750]] as const) {
   const result = reflectWork(estimate, actual);
   assert.equal(result.castleEconomy?.ledger.reduce((sum, entry) => sum + entry.amountCents, 0), expected, `estimate ${estimate}, actual ${actual}`);
   assert.equal(result.castleEconomy?.commitments[0].completed, true);
   assert.deepEqual(result.quickNotes, []);
 }
-const normalTask = reflectWork(60, 60, false);
-assert.equal(normalTask.castleEconomy?.ledger.reduce((sum, entry) => sum + entry.amountCents, 0), 0, 'uncommitted task earns no dollars');
+const normalTask = reflectWork(60, 26, false);
+assert.equal(normalTask.castleEconomy?.ledger.reduce((sum, entry) => sum + entry.amountCents, 0), 650, 'uncommitted task earns based on reported actual time');
 assert.equal(normalTask.reflections?.length, 1);
-assert.ok(normalTask.gamification.currentXp > DEFAULT_SEED_DATA.gamification.currentXp);
+assert.equal(normalTask.growthHistory[earningDay].focusMinutes, 26, 'growth history records actual time');
+assert.equal(normalTask.gamification.currentXp - DEFAULT_SEED_DATA.gamification.currentXp, 39, 'task XP uses actual time');
 
 const partialTask = { ...task('cumulative'), durationMinutes: 60 };
 const partialEconomy = commitTask(activateEconomy(5000, earningDay), { id: partialTask.id, title: partialTask.text, date: earningDay, estimatedValueCents: 1500, estimatedMinutes: 60 });
-const partialStart = { ...DEFAULT_SEED_DATA, castleEconomy: partialEconomy, quickNotes: [partialTask] };
+const partialStart = { ...DEFAULT_SEED_DATA, settings: { ...DEFAULT_SEED_DATA.settings, dailyReviewRequired: false }, castleEconomy: partialEconomy, quickNotes: [partialTask] };
+const directPartialEntry = { taskId: partialTask.id, date: earningDay, id: 'direct', minutes: 30 };
+const directPartial = taskReflection.registerPartialProgress(partialStart, directPartialEntry, now);
+assert.equal(directPartial.quickNotes[0].partialMinutes, 30);
+assert.equal(directPartial.castleEconomy?.ledger.at(-1)?.amountCents, 750);
+assert.deepEqual(directPartial.reflections, partialStart.reflections);
+assert.equal(taskReflection.registerPartialProgress(directPartial, directPartialEntry, now), directPartial);
+const directCastleTask = { ...partialTask, isDone: true, pendingReflection: true, actualMinutes: 60 };
+const directCastle = taskReflection.registerCompletedTasks({ ...partialStart, quickNotes: [directCastleTask] }, now, now, [directCastleTask]);
+assert.equal(directCastle.castleEconomy?.commitments[0].completed, true);
+assert.equal(directCastle.castleEconomy?.ledger.at(-1)?.amountCents, 1500);
+assert.deepEqual(directCastle.reflections, partialStart.reflections);
 let partialWork: AppData = partialStart;
-for (const [id, minutes, expected] of [['first-fragment', 29, 0], ['floor', 1, 750], ['cap', 211, 5250], ['above-cap', 10, 0]] as const) {
+for (const [id, minutes, expected] of [['first-fragment', 29, 725], ['single-minute', 1, 25], ['long-session', 211, 5275], ['additional-progress', 10, 250]] as const) {
   const entry = { taskId: partialTask.id, date: earningDay, id, minutes };
   partialWork = taskReflection.applyPartialTaskReflection(partialWork, entry, now, questions, answers);
   assert.equal(partialWork.castleEconomy?.ledger.at(-1)?.amountCents, expected, id);
   assert.equal(taskReflection.applyPartialTaskReflection(partialWork, entry, now, questions, answers), partialWork);
 }
-assert.equal(partialWork.quickNotes[0].partialMinutes, 251, 'the cap does not truncate reported time');
+assert.equal(partialWork.quickNotes[0].partialMinutes, 251, 'all reported time is preserved');
 const partialClosed = settlePastDays(partialWork.castleEconomy!, '2026-11-11');
 const partialFinished = { ...partialWork.quickNotes[0], isDone: true, pendingReflection: true, actualMinutes: 270 };
 const tomorrow = new Date(2026, 10, 11, 9);
-const lateCapped = taskReflection.applyCompletedTaskReflection({ ...partialWork, castleEconomy: partialClosed, quickNotes: [partialFinished] }, now, tomorrow, questions, answers, [{ ...partialFinished, actualMinutes: 251 }]);
-assert.equal(lateCapped.castleEconomy?.commitments[0].actualValueCents, 6750, 'registration reads the latest actual minutes, which remain available to replacement coverage');
-assert.equal(lateCapped.castleEconomy?.ledger.at(-1)?.amountCents, 0, 'late completion does not pay beyond the cap');
+const lateCompletion = taskReflection.applyCompletedTaskReflection({ ...partialWork, castleEconomy: partialClosed, quickNotes: [partialFinished] }, now, tomorrow, questions, answers, [{ ...partialFinished, actualMinutes: 251 }]);
+assert.equal(lateCompletion.castleEconomy?.commitments[0].actualValueCents, 6750, 'registration reads the latest actual minutes, which remain available to replacement coverage');
+assert.equal(lateCompletion.castleEconomy?.ledger.at(-1)?.amountCents, 475, 'late completion pays only newly reported work');
 
 const legacyPartial = recordPartialProgress(partialEconomy, partialTask.id, earningDay, 'historical', 8000);
 const legacyClosed = settlePastDays(legacyPartial, '2026-11-11');
@@ -172,7 +209,7 @@ const latePartial = taskReflection.applyPartialTaskReflection(legacyWork, latePa
 assert.equal(latePartial.quickNotes[0].partialMinutes, 330);
 assert.deepEqual(latePartial.castleEconomy?.ledger.slice(0, legacyClosed.ledger.length), legacyClosed.ledger);
 assert.deepEqual(latePartial.castleEconomy?.ledger.at(-1), {
-  id: `earning:progress:${earningDay}:${partialTask.id}:late-partial`, date: '2026-11-11', kind: 'earning', amountCents: 0,
+  id: `earning:progress:${earningDay}:${partialTask.id}:late-partial`, date: '2026-11-11', kind: 'earning', amountCents: 250,
 });
 assert.equal(taskReflection.applyPartialTaskReflection(latePartial, latePartialEntry, tomorrow, questions, answers), latePartial);
 
@@ -190,7 +227,7 @@ const twoUnfinished = [task('last', '2026-11-12'), task('third')];
 assert.deepEqual(getReflectionTasks([oneFinished, ...twoUnfinished], now, threeCommitments), [], 'does not automatically open a partial current-day batch');
 assert.deepEqual(taskReflection.getCompletedCommittedReflectionTasks([oneFinished, ...twoUnfinished], now, threeCommitments).map(item => item.id), ['first'], 'explicit reflection offers finished work while other commitments remain unfinished');
 const manualPartialDay = taskReflection.applyCompletedTaskReflection({ ...DEFAULT_SEED_DATA, castleEconomy: threeCommitments, quickNotes: [oneFinished, ...twoUnfinished] }, now, now, questions, answers, [oneFinished]);
-assert.deepEqual(manualPartialDay.castleEconomy?.commitments.map(item => item.completed), [true, false, false], 'manual reflection registers the finished task and leaves unfinished commitments for settlement');
+assert.deepEqual(manualPartialDay.castleEconomy?.commitments.map(item => item.completed), [false, false, false], 'manual review cannot register a finished task while current commitments are unfinished');
 assert.deepEqual(getReflectionTasks([oneFinished, ...twoUnfinished], new Date(2026, 10, 11), threeCommitments).map(item => item.id), ['first'], 'prior-day finished work remains recoverable when other commitments missed');
 const recoveredBeforeSettlement = taskReflection.applyCompletedTaskReflection({ ...DEFAULT_SEED_DATA, castleEconomy: threeCommitments, quickNotes: [oneFinished, ...twoUnfinished] }, new Date(2026, 10, 11), new Date(2026, 10, 11, 9), questions, answers);
 assert.deepEqual(recoveredBeforeSettlement.castleEconomy?.ledger.filter(item => item.kind === 'earning').map(item => item.date), ['2026-11-10'], 'prior-day reflection credits the original commitment date before offline settlement');
@@ -220,7 +257,7 @@ const fridayData = sanitizeAppData(JSON.parse(JSON.stringify({ ...partialStart, 
 assert.equal(fridayData.quickNotes[0].completedOn, '2026-11-13', 'completion day survives reload');
 const reflectedFriday = taskReflection.applyCompletedTaskReflection(fridayData, friday, friday, questions, answers, fridayData.quickNotes);
 assert.equal(reflectedFriday.castleEconomy?.commitments[0].completed, false, 'work completed on an uncommitted day does not satisfy an expired commitment');
-assert.equal(reflectedFriday.castleEconomy?.ledger.at(-1)?.amountCents, 0);
+assert.equal(reflectedFriday.castleEconomy?.ledger.at(-1)?.amountCents, 1500, 'ordinary completion earns after the prior commitment has expired');
 assert.deepEqual(reflectedFriday.quickNotes, []);
 const actuallyLate = { ...fridayData, quickNotes: [{ ...fridayData.quickNotes[0], completedOn: earningDay }] };
 const reflectedLate = taskReflection.applyCompletedTaskReflection(actuallyLate, friday, friday, questions, answers, actuallyLate.quickNotes);
@@ -248,10 +285,12 @@ assert.equal(taskReflection.canRegisterReflectionTasks(aheadOfClockData.castleEc
 assert.equal(taskReflection.applyCompletedTaskReflection(aheadOfClockData, justBeforeMidnight, justAfterMidnight, questions, answers), aheadOfClockData, 'a settled submission day leaves tasks and reflection untouched until an open day is available');
 const nextOpenDay = new Date(2026, 10, 12, 9);
 assert.equal(taskReflection.canRegisterReflectionTasks(aheadOfClockData.castleEconomy!, [first, last], justBeforeMidnight, nextOpenDay), true);
-const laterReflection = taskReflection.applyCompletedTaskReflection(aheadOfClockData, justBeforeMidnight, nextOpenDay, questions, answers);
+assert.equal(taskReflection.applyCompletedTaskReflection(aheadOfClockData, justBeforeMidnight, nextOpenDay, questions, answers), aheadOfClockData, 'an open submission date still waits for that date’s active tasks');
+const readyOnOpenDay = { ...aheadOfClockData, quickNotes: aheadOfClockData.quickNotes.map(task => task.id === future.id ? { ...task, isDone: true } : task) };
+const laterReflection = taskReflection.applyCompletedTaskReflection(readyOnOpenDay, justBeforeMidnight, nextOpenDay, questions, answers);
 assert.deepEqual(laterReflection.castleEconomy?.ledger.filter(item => item.kind === 'earning').map(item => item.date), ['2026-11-12', '2026-11-12']);
 
-const partialData: AppData = { ...finalData, quickNotes: [task('first'), future] };
+const partialData: AppData = { ...finalData, settings: { ...DEFAULT_SEED_DATA.settings, dailyReviewRequired: false }, quickNotes: [task('first'), future] };
 const partialEntry = { taskId: 'first', date: '2026-11-10', id: 'partial-1', minutes: 10 };
 const partial = taskReflection.applyPartialTaskReflection(partialData, partialEntry, justAfterMidnight, questions, answers);
 assert.equal(partial.quickNotes[0].partialMinutes, 10);
@@ -260,3 +299,41 @@ assert.equal(partial.castleEconomy?.ledger[0].date, '2026-11-10');
 assert.equal(partial.reflections?.at(-1)?.taskTitles[0], 'first');
 assert.equal(taskReflection.applyPartialTaskReflection(partial, partialEntry, justAfterMidnight, questions, answers), partial, 'replaying an accepted partial reflection leaves time, journal, and earnings unchanged');
 assert.throws(() => taskReflection.applyPartialTaskReflection({ ...partialData, quickNotes: [{ ...partialData.quickNotes[0], partialMinutes: 525599 }] }, partialEntry, now, questions, answers), /remaining/i, 'cannot record partial time beyond the supported final total');
+
+const requiredProgressData: AppData = { ...partialStart, settings: { ...partialStart.settings, dailyReviewRequired: true } };
+const queuedEntry = { taskId: partialTask.id, date: earningDay, id: 'queued-progress', minutes: 30 };
+const queued = taskReflection.registerPartialProgress(requiredProgressData, queuedEntry, now);
+assert.deepEqual(queued.quickNotes[0].pendingProgress, [{ id: queuedEntry.id, date: earningDay, minutes: 30 }]);
+assert.equal(queued.quickNotes[0].partialMinutes, undefined, 'unpaid partial work stays separate from paid time');
+assert.equal(queued.castleEconomy, requiredProgressData.castleEconomy, 'partial entry does not pay cash before daily review');
+assert.equal(queued.gamification, requiredProgressData.gamification);
+assert.equal(taskReflection.registerPartialProgress(queued, queuedEntry, now), queued, 'queued submission replay does not add time twice');
+assert.equal(taskReflection.releasePendingProgress(queued, now), queued, 'ordinary release cannot bypass a required review');
+assert.equal(taskReflection.applyCompletedTaskReflection(queued, now, now, questions, answers, queued.quickNotes), queued, 'partial review cannot release cash while today’s commitment remains open');
+const restoredQueue = sanitizeAppData(JSON.parse(JSON.stringify(queued)), false);
+assert.deepEqual(restoredQueue.quickNotes[0].pendingProgress, queued.quickNotes[0].pendingProgress, 'unpaid entries survive reload');
+const queuedFinal = transitionTask(restoredQueue.quickNotes, null, partialTask.id, { kind: 'toggleTask' }, now.getTime(), 45);
+assert.equal(transitionTask(restoredQueue.quickNotes, null, partialTask.id, { kind: 'toggleTask' }, now.getTime(), 29).notes, restoredQueue.quickNotes, 'final duration includes queued time');
+const queuedComplete = { ...restoredQueue, quickNotes: queuedFinal.notes };
+const queuedReviewed = taskReflection.applyCompletedTaskReflection(queuedComplete, now, now, questions, answers);
+assert.equal(queuedReviewed.castleEconomy?.ledger.at(-1)?.amountCents, 1125, 'completion review pays total actual time once, including queued partial time');
+assert.equal(queuedReviewed.quickNotes.length, 0);
+assert.equal(taskReflection.applyCompletedTaskReflection(queuedReviewed, now, now, questions, answers, queuedComplete.quickNotes), queuedReviewed);
+const switchedOff = { ...restoredQueue, settings: { ...restoredQueue.settings, dailyReviewRequired: false } };
+const released = taskReflection.releasePendingProgress(switchedOff, now);
+assert.equal(released.castleEconomy?.ledger.at(-1)?.amountCents, 750, 'disabling review releases already recorded partial earnings');
+assert.equal(released.quickNotes[0].partialMinutes, 30);
+assert.equal(released.quickNotes[0].pendingProgress, undefined);
+assert.equal(taskReflection.releasePendingProgress(released, now), released);
+const queuedSettled = { ...restoredQueue, castleEconomy: settlePastDays(restoredQueue.castleEconomy!, '2026-11-11') };
+const rolloverReviewed = taskReflection.applyCompletedTaskReflection(queuedSettled, tomorrow, tomorrow, questions, answers);
+assert.equal(rolloverReviewed.castleEconomy?.ledger.at(-1)?.amountCents, 750, 'queued partial work remains recoverable after settlement');
+assert.equal(rolloverReviewed.castleEconomy?.ledger.at(-1)?.date, '2026-11-11');
+assert.deepEqual(rolloverReviewed.castleEconomy?.ledger.slice(0, queuedSettled.castleEconomy.ledger.length), queuedSettled.castleEconomy.ledger, 'review preserves settled penalties');
+assert.equal(rolloverReviewed.quickNotes[0].isDone, false, 'partial review leaves the unfinished task open');
+const blockedRollover = { ...queuedSettled, quickNotes: [...queuedSettled.quickNotes, task('today-open', '2026-11-11')] };
+assert.deepEqual(getReflectionTasks(blockedRollover.quickNotes, tomorrow, blockedRollover.castleEconomy), [], 'today’s unfinished tasks block prior-day partial review');
+assert.equal(taskReflection.applyCompletedTaskReflection(blockedRollover, tomorrow, tomorrow, questions, answers, queuedSettled.quickNotes), blockedRollover);
+const midnightBlocked = { ...finalData, quickNotes: [...finalData.quickNotes, task('tomorrow-open', '2026-11-11')] };
+assert.equal(taskReflection.applyCompletedTaskReflection(midnightBlocked, justBeforeMidnight, justAfterMidnight, questions, answers, finalData.quickNotes), midnightBlocked, 'a review started yesterday cannot bypass active tasks on its submission day');
+console.log('Required-review reward deferral, durable partial queues, setting changes, and rollover tests passed.');

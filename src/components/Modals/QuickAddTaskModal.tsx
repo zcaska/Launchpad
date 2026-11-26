@@ -4,13 +4,12 @@ import { motion, AnimatePresence } from 'motion/react';
 import {
   Plus,
   X,
-  Clock,
   WarningCircle as AlertCircle,
   CalendarBlank as Calendar,
   ArrowRight
 } from '@phosphor-icons/react';
 import { modalBackdropVariants, modalContentVariants } from '../../utils/motion';
-import { formatMinutesToHours } from '../../utils/timeBudget';
+import { EstimatedDurationPicker } from '../Common/EstimatedDurationPicker';
 
 export interface QuickAddTaskModalProps {
   isOpen: boolean;
@@ -23,15 +22,6 @@ export interface QuickAddTaskModalProps {
   }) => void;
   onOpenFullTasksView?: () => void;
 }
-
-const DURATION_PRESETS = [
-  { label: '15m', minutes: 15 },
-  { label: '30m', minutes: 30 },
-  { label: '45m', minutes: 45 },
-  { label: '1h', minutes: 60 },
-  { label: '1.5h', minutes: 90 },
-  { label: '2h', minutes: 120 },
-];
 
 const PRIORITY_OPTIONS: Array<{
   value: 'low' | 'medium' | 'high';
@@ -185,33 +175,7 @@ export const QuickAddTaskModal: React.FC<QuickAddTaskModalProps> = ({
               </div>
 
               {/* Duration Estimate */}
-              <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <label className="flex items-center gap-1.5 text-xs font-semibold text-serene-text-secondary dark:text-serene-text-darkSecondary">
-                    <Clock className="w-3.5 h-3.5 text-serene-text-muted" />
-                    <span>Estimated Duration</span>
-                  </label>
-                  <span className="text-xs font-mono font-bold text-serene-primary dark:text-serene-primary-dark">
-                    {formatMinutesToHours(duration)}
-                  </span>
-                </div>
-                <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5">
-                  {DURATION_PRESETS.map((preset) => (
-                    <button
-                      key={preset.minutes}
-                      type="button"
-                      onClick={() => setDuration(preset.minutes)}
-                      className={`min-h-[44px] sm:min-h-0 py-1.5 px-1 rounded-lg text-xs font-medium font-mono border transition-all text-center cursor-pointer ${
-                        duration === preset.minutes
-                          ? 'bg-serene-primary text-white border-serene-primary shadow-xs font-bold'
-                          : 'bg-serene-surfaceAlt-light/50 dark:bg-serene-surfaceAlt-dark/50 text-serene-text-secondary dark:text-serene-text-darkSecondary border-serene-border-light dark:border-serene-border-dark hover:bg-serene-surfaceAlt-light dark:hover:bg-serene-surfaceAlt-dark'
-                      }`}
-                    >
-                      {preset.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
+              <EstimatedDurationPicker minutes={duration} onChange={setDuration} label="Estimated Duration" />
 
               {/* Priority & Deadline Toggle */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-1">

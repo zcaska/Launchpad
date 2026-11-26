@@ -17,6 +17,7 @@ import {
   CaretRight as ChevronRight,
   DotsSixVertical,
   Waves,
+  Money,
 } from '@phosphor-icons/react';
 import { QuickNote, RecommendationCandidate } from '../../types';
 import { formatApproximateDuration } from '../../utils/timeBudget';
@@ -28,11 +29,13 @@ import {
 import { SafeDescription } from '../Common/SafeDescription';
 import { TaskLinks } from '../Tasks/TaskLinks';
 import { formatEventTime, formatEventDuration, isSafeUrl } from '../../utils/textFormatting';
+import { formatTaskCashEstimate } from '../../utils/taskCashEstimate';
 import { SmartSuggestionCard } from './SmartSuggestionCard';
 
 export interface PrimaryFocusCardProps {
   tasks: QuickNote[];
   now?: Date;
+  castleActive?: boolean;
   selectedTaskId?: string | null;
   onSelectTask?: (id: string) => void;
   onPreviewTask?: (id: string, trigger: HTMLButtonElement) => void;
@@ -148,6 +151,7 @@ function parseSubtaskContent(rawText: string): { title: string; subtitle?: strin
 export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
   tasks = [],
   now,
+  castleActive,
   selectedTaskId,
   onSelectTask,
   onPreviewTask,
@@ -355,6 +359,18 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
   }, [sortedSubtasks, isSubtasksExpanded]);
 
   const durationEstimate = formatEventDuration(activeTask?.durationMinutes || 120);
+  const cashEstimate = castleActive ? formatTaskCashEstimate(activeTask ?? undefined, now ?? new Date()) : undefined;
+  const cashEstimateBadge = castleActive && activeTask && (
+    <span title={cashEstimate ? 'Estimated cash value. Earnings use the actual time you report.' : 'Add an estimated duration to see the cash value.'}
+      className="inline-flex items-center gap-1 text-xs font-medium tabular-nums text-emerald-700 dark:text-emerald-300">
+      {cashEstimate ? (
+        <>
+          <Money size={15} aria-hidden="true" />
+          {cashEstimate.replace(/^\$/, '')}
+        </>
+      ) : 'Add time estimate for cash value'}
+    </span>
+  );
 
   const handleCopyTitle = () => {
     if (!activeTask) return;
@@ -466,10 +482,11 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
                   <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-400 border border-amber-200/60 dark:border-amber-900/50">
                     {urgency.badgeText.toUpperCase()}
                   </span>
+                  {cashEstimateBadge}
                 </div>
 
                 {/* Task Title Row with Elevated Completion/Target Icon */}
-                <div className="flex items-center gap-3 min-w-0">
+                <div className="flex items-start gap-3 min-w-0">
                   <button
                     type="button"
                     onClick={() => onCompleteTask?.(activeTask)}
@@ -487,27 +504,29 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
                     </div>
                   </button>
 
-                  <h3 className="text-base sm:text-lg lg:text-xl font-bold text-serene-text-primary dark:text-white leading-snug min-w-0 flex-1">
-                    <button
-                      type="button"
-                      onClick={(event) => onPreviewTask?.(activeTask.id, event.currentTarget)}
-                      className="break-words text-left hover:text-teal-600 dark:hover:text-teal-400 transition-colors rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-teal-600"
-                      title="View task details"
-                    >
-                      {completedTask ? <s>{activeTask.text}</s> : activeTask.text}
-                    </button>
-                  </h3>
-                </div>
+                  <div className="min-w-0 flex-1">
+                    <h3 className="text-base sm:text-lg lg:text-xl font-bold text-serene-text-primary dark:text-white leading-snug">
+                      <button
+                        type="button"
+                        onClick={(event) => onPreviewTask?.(activeTask.id, event.currentTarget)}
+                        className="break-words text-left hover:text-teal-600 dark:hover:text-teal-400 transition-colors rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-teal-600"
+                        title="View task details"
+                      >
+                        {completedTask ? <s>{activeTask.text}</s> : activeTask.text}
+                      </button>
+                    </h3>
 
-                {/* Multiline Description with safe sanitization */}
-                {activeTask.description && (
-                  <div className="pl-13">
-                    <SafeDescription
-                      text={activeTask.description}
-                      className="text-xs sm:text-sm text-serene-text-muted dark:text-serene-text-darkMuted"
-                    />
+                    {/* Multiline Description with safe sanitization */}
+                    {activeTask.description && (
+                      <div className="mt-1">
+                        <SafeDescription
+                          text={activeTask.description}
+                          className="text-xs sm:text-sm text-serene-text-muted dark:text-serene-text-darkMuted"
+                        />
+                      </div>
+                    )}
                   </div>
-                )}
+                </div>
               </div>
 
               {/* Metadata Pills Row (Removed Focus Task badge per user request) */}
@@ -879,6 +898,7 @@ export const PrimaryFocusCard: React.FC<PrimaryFocusCardProps> = React.memo(({
               <span className="px-2 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300">
                 {urgency.badgeText.toUpperCase()}
               </span>
+              {cashEstimateBadge}
             </div>
 
             {/* Task actions */}

@@ -37,9 +37,41 @@ test('work totals follow historical goals, independent of missions, waiting, exe
   state = recordEarning(state, 'task:' + day(3) + ':d', day(3), 200);
   assert.equal(getDisciplineDays(state, day(2)), 1);
   assert.equal(getDisciplineDays(state, day(900)), 2);
-  assert.equal(getBlueprintPrice(BLUEPRINT_PARTS[1], state), 300);
-  assert.equal(getBlueprintPrice({ ...BLUEPRINT_PARTS[1], goalUnits: 0 }, state), 300);
+  assert.equal(getBlueprintPrice(BLUEPRINT_PARTS[1], state), 400);
+  assert.equal(getBlueprintPrice({ ...BLUEPRINT_PARTS[1], goalUnits: 0 }, state), 400);
   assert.throws(() => getBlueprintPrice(BLUEPRINT_PARTS[119], { ...state, goalCents: Number.MAX_SAFE_INTEGER }), /safe/);
+});
+
+test('prices reflect the relative worth of fittings, structures and companions', () => {
+  const units = (key: string) => BLUEPRINT_PARTS.find(part => part.modelKey === key)!.goalUnits;
+  assert.equal(units('gatehouse-lanterns'), 1);
+  assert.equal(units('banqueting-hall'), 7);
+  assert.ok(units('banqueting-hall') > units('hall-lanterns'));
+  assert.ok(units('astral-clock-tower') > units('clock-bells'));
+  assert.ok(units('north-bastion') > units('bastion-weathercock'));
+  assert.ok(units('royal-library') > units('courtyard-benches'));
+  assert.ok(units('stallion') > units('cat'));
+  assert.ok(units('wyvern') > units('mastiff'));
+  assert.deepEqual(CASTLE_DISTRICTS.map(district => inDistrict(district.number)
+    .reduce((sum, part) => sum + part.goalUnits, 0)), [82, 83, 89, 111]);
+});
+
+test('catalog repricing preserves an existing purchase and charges the current price only once for a new one', () => {
+  const moat = BLUEPRINT_PARTS.find(part => part.modelKey === 'moat-excavation')!;
+  let state = funded();
+  state = purchaseAsset(state, { id: moat.id, label: moat.label, priceCents: 300 }, day(0));
+  const snapshot = JSON.stringify(state);
+  assert.equal(getBlueprintPrice(moat, state), 400);
+  assert.equal(purchaseBlueprintPart(state, moat.id, day(0)), state);
+  const restored = validateCastleEconomy(JSON.parse(snapshot));
+  assert.equal(purchaseBlueprintPart(restored, moat.id, day(0)), restored);
+  assert.equal(JSON.stringify(restored), snapshot);
+  assert.equal(balanceCents(restored), 999700);
+  assert.equal(netWorthCents(restored), 1_000_000);
+  const newPurchase = purchaseBlueprintPart(funded(), moat.id, day(0));
+  assert.equal(newPurchase.assets[0].priceCents, 400);
+  assert.equal(newPurchase.ledger.find(entry => entry.id === `asset:${moat.id}`)?.amountCents, -400);
+  assert.equal(purchaseBlueprintPart(newPurchase, moat.id, day(0)), newPurchase);
 });
 
 test('18 unique pieces unlock each next district and companions and crown may be purchased first', () => {

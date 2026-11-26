@@ -71,6 +71,7 @@ export interface QuickNote {
   timeSpentSeconds?: number; // Actual focused seconds logged by the focus timer
   actualMinutes?: number; // User-reported time, separate from the focus timer
   partialMinutes?: number; // Previously reflected partial work for this task
+  pendingProgress?: Array<{ id: string; date: string; minutes: number }>; // Recorded work awaiting daily review; not yet paid.
 
 
 
@@ -205,6 +206,7 @@ export interface AppData {
     showQuotes: boolean;
     openInNewTab: boolean;
     compactView: boolean;
+    dailyReviewRequired: boolean;
     daySchedule: DaySchedule;
     openRouter: OpenRouterConfig;
     activeMode: 'auto' | 'work' | 'free';

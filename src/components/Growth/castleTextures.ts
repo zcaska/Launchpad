@@ -189,16 +189,16 @@ export function createCastleMaterials(createCanvas: CastleCanvasFactory = () => 
     const colors = Object.fromEntries(CASTLE_PATTERN_KEYS.map(key => [key, map(key)])) as Record<CastlePattern, CanvasTexture>;
     const slate = new MeshPhongMaterial({
       map: colors.slate, bumpMap: map('slate', 'bump'), specularMap: map('slate', 'specular'),
-      bumpScale: .09, shininess: 28, specular: '#809abc',
+      bumpScale: .1, shininess: 30, specular: '#809abc',
     });
     ownedMaterials.push(slate);
     const solid = (key: CastleMaterial, options: ConstructorParameters<typeof MeshStandardMaterial>[0] = {}) =>
       standard({ color: CASTLE_MATERIAL_COLORS[key], ...options });
     const materials = {
-      stone: standard({ map: colors.stone, bumpMap: map('stone', 'bump'), roughnessMap: map('stone', 'roughness'), bumpScale: .11, roughness: 1 }),
-      timber: standard({ map: colors.timber, bumpMap: map('timber', 'bump'), roughnessMap: map('timber', 'roughness'), bumpScale: .07, roughness: .96 }),
+      stone: standard({ map: colors.stone, bumpMap: map('stone', 'bump'), roughnessMap: map('stone', 'roughness'), bumpScale: .13, roughness: 1 }),
+      timber: standard({ map: colors.timber, bumpMap: map('timber', 'bump'), roughnessMap: map('timber', 'roughness'), bumpScale: .08, roughness: .96 }),
       slate,
-      gold: standard({ map: colors.gold, metalness: .85, roughness: .22, emissive: '#b48434', emissiveIntensity: .15 }),
+      gold: standard({ map: colors.gold, bumpMap: map('gold', 'bump'), bumpScale: .035, metalness: .82, roughness: .25, emissive: '#b48434', emissiveIntensity: .15 }),
       water: standard({ map: colors.water, metalness: .18, roughness: .29, emissive: '#1d5c79', emissiveIntensity: .19 }),
       banner: standard({ map: colors.banner, roughness: .8 }),
       mastiffPelt: standard({ map: colors.mastiffPelt, roughness: .9 }),

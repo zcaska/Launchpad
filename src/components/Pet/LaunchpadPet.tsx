@@ -22,6 +22,7 @@ export interface LaunchpadPetProps {
   paused: boolean;
   onTogglePaused: () => void;
   tier: PetTier;
+  castleMessage?: string;
 }
 
 const STATE_QUOTE_CATEGORY_MAP: Partial<Record<PetState, QuoteCategory>> = {
@@ -40,6 +41,7 @@ function LaunchpadPetComponent({
   onTogglePaused,
   tier,
   evolutionLevel = 1,
+  castleMessage,
 }: LaunchpadPetProps) {
   const state: PetState = controller.state;
   // The user's explicit request for a living, animated companion uses the
@@ -66,6 +68,17 @@ function LaunchpadPetComponent({
   const onDismissQuote = useCallback(() => {
     setQuoteVisible(false);
   }, []);
+
+  const previousCastleMessage = useRef<string | undefined>(undefined);
+  useEffect(() => {
+    if (castleMessage && castleMessage !== previousCastleMessage.current) {
+      setQuote(castleMessage);
+      setQuoteVisible(true);
+    } else if (!castleMessage && previousCastleMessage.current) {
+      setQuoteVisible(false);
+    }
+    previousCastleMessage.current = castleMessage;
+  }, [castleMessage]);
 
   // Motion controller: owns position, dragging, roaming flight, and bubble placement
   const motion = usePetMotion({

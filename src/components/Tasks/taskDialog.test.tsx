@@ -25,6 +25,24 @@ assert.match(details, /aria-label="Close task details"/);
 assert.match(details, /> Edit task<\/button>/);
 assert.doesNotMatch(details, /<(input|select|textarea|form)\b/, 'Details stay read-only');
 
+const renderEstimatedCash = (castleActive: boolean, durationMinutes: number) => renderToStaticMarkup(
+  <TaskPreviewPopUp
+    task={{ id: 'task-2', text: 'Plan next week', durationMinutes, deadline: '2026-11-21', isDone: false, createdAt: 0 }}
+    now={new Date(2026, 10, 21)}
+    clockFormat="24h"
+    castleActive={castleActive}
+    returnFocus={null}
+    onClose={noop}
+    onEdit={noop}
+  />,
+);
+const activeEstimate = renderEstimatedCash(true, 15);
+assert.match(activeEstimate, /Estimated cash value/);
+assert.match(activeEstimate, /\$4\.69/);
+assert.match(activeEstimate, /Earnings use the actual time you report/);
+assert.doesNotMatch(renderEstimatedCash(false, 15), /Estimated cash value/);
+assert.doesNotMatch(renderEstimatedCash(true, 0), /Estimated cash value/);
+
 const editorProps = {
   title: 'Write report',
   returnFocus: null,

@@ -371,12 +371,6 @@ export function recordPartialProgress(state: CastleEconomy, taskId: string, day:
   return appendEarning(state, `progress:${day}:${taskId}:${progressId}`, postingDay, actualValueCents);
 }
 
-function reflectedValueCents(task: QuickNote, commitment: Commitment, minutes: number, day: string): number {
-  const estimate = commitment.estimatedMinutes ?? task.durationMinutes;
-  if (!validTaskMinutes(estimate) || estimate < 30 || minutes < 30) return 0;
-  return taskValueCents(Math.min(minutes, 240), task.priority ?? 'medium', task.deadline, day);
-}
-
 function priorProgressCents(state: CastleEconomy, taskId: string): number {
   return state.ledger.reduce((sum, entry) => {
     if (entry.kind !== 'earning') return sum;
@@ -385,16 +379,18 @@ function priorProgressCents(state: CastleEconomy, taskId: string): number {
   }, 0);
 }
 
-function uncreditedReflectionCents(state: CastleEconomy, task: QuickNote, commitment: Commitment, totalMinutes: number, day: string): number {
-  const eligible = reflectedValueCents(task, commitment, totalMinutes, day);
-  const priorEligible = reflectedValueCents(task, commitment, task.partialMinutes ?? 0, day);
-  return Math.max(0, eligible - Math.max(priorEligible, priorProgressCents(state, task.id)));
+function uncreditedReflectionCents(state: CastleEconomy, task: QuickNote, totalCents: number, day: string): number {
+  const priorValue = task.partialMinutes
+    ? taskValueCents(task.partialMinutes, task.priority ?? 'medium', task.deadline, day)
+    : 0;
+  return Math.max(0, totalCents - Math.max(priorValue, priorProgressCents(state, task.id)));
 }
 
 export function recordReflectedProgress(state: CastleEconomy, task: QuickNote, day: string, progressId: string, totalMinutes: number, postingDay: string): CastleEconomy {
   const commitment = state.commitments.find(item => item.id === task.id && item.date === day);
   if (!commitment || commitment.completed || commitment.replacementIds || taskWasCompleted(state, task.id)) throw new Error('An unfinished commitment is required');
-  const increment = uncreditedReflectionCents(state, task, commitment, totalMinutes, postingDay);
+  const totalCents = taskValueCents(totalMinutes, task.priority ?? 'medium', task.deadline, postingDay);
+  const increment = uncreditedReflectionCents(state, task, totalCents, postingDay);
   return recordPartialProgress(state, task.id, day, progressId, increment, postingDay);
 }
 
@@ -404,17 +400,14 @@ export function registerReflectedTasks(state: CastleEconomy, tasks: QuickNote[],
   return tasks.reduce((economy, task) => {
     if (taskWasCompleted(economy, task.id)) return economy;
     const commitment = economy.commitments.find(item => item.id === task.id && item.date === commitmentDay && !item.replacementIds);
-    if (!commitment) {
-      if (day < economy.activatedOn || dayIsSettled(economy, day)) return economy;
-      // A zero-dollar receipt prevents restored uncommitted work from being credited later.
-      return appendEarning(economy, `task:${day}:${task.id}`, day, 0);
-    }
+    if (!commitment && (day < economy.activatedOn || dayIsSettled(economy, day))) return economy;
     const { actualMinutes, partialMinutes = 0 } = task;
     if (!validTaskMinutes(actualMinutes) || actualMinutes < partialMinutes) throw new Error('Enter actual time for each completed task, including previously recorded work');
+    const earnedValueCents = taskValueCents(actualMinutes, task.priority ?? 'medium', task.deadline, day);
+    const increment = uncreditedReflectionCents(economy, task, earnedValueCents, day);
+    if (!commitment) return appendEarning(economy, `task:${day}:${task.id}`, day, increment);
     if (day < commitment.date || day < economy.activatedOn) throw new Error('Invalid earning date');
     const actualValueCents = taskValueCents(actualMinutes, task.priority ?? 'medium', task.deadline, commitment.date);
-    const earnedValueCents = reflectedValueCents(task, commitment, actualMinutes, day);
-    const increment = uncreditedReflectionCents(economy, task, commitment, actualMinutes, day);
     const credited = appendEarning(economy, `commitment:${commitment.date}:${task.id}`, day, increment);
     return { ...credited, commitments: credited.commitments.map(item => item === commitment ? {
       ...item, completed: true, actualValueCents, earnedValueCents,

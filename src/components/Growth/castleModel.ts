@@ -83,12 +83,17 @@ const shift = (pieces: ModelPrimitive[], x: number, y: number, z: number): Model
 const arch = (span: number, jamb: number, depth: number, radiusY = span * .49) => {
   const radius = span / 2;
   return [
-    ...[-radius, radius].map(x => box([x, jamb / 2, 0], [.34, jamb, depth])),
+    ...[-radius, radius].flatMap(x => [
+      box([x, jamb / 2, 0], [.34, jamb, depth]),
+      box([x, .1, 0], [.47, .2, depth + .14]),
+      box([x, jamb, 0], [.47, .14, depth + .12]),
+    ]),
     ...Array.from({ length: 9 }, (_, i) => {
       const angle = i * Math.PI / 8;
       return box([Math.cos(angle) * radius, jamb + Math.sin(angle) * radiusY, 0],
         [.38, span * .22, depth], undefined, [0, 0, angle]);
     }),
+    box([0, jamb + radiusY + span * .04, depth / 2 + .035], [.25, span * .25, .09]),
   ];
 };
 const buttress = (height: number, depth = 1) => [
@@ -97,8 +102,25 @@ const buttress = (height: number, depth = 1) => [
 ];
 const wall = (width: number, height: number, depth: number) => [
   box([0, height / 2, 0], [width, height, depth]),
+  box([0, .11, 0], [width + .2, .22, depth + .25]),
+  // Recessed arrow loops, projecting wall walks and machicolations give the
+  // long curtain walls a readable defensive structure from every orbit angle.
+  ...[-1, 1].flatMap(side => [
+    box([0, height * .3, side * (depth / 2 + .035)], [width, .09, .1]),
+    box([0, height * .73, side * (depth / 2 + .035)], [width, .09, .1]),
+    box([0, height - .13, side * (depth / 2 + .13)], [width + .16, .18, .31]),
+    ...row(Math.max(2, Math.round(width / 2.1)), width / Math.max(2, Math.round(width / 2.1))).flatMap(x => [
+      box([x, height * .46, side * (depth / 2 + .055)], [.17, height * .36, .09], 'iron'),
+      box([x, height * .53, side * (depth / 2 + .085)], [.4, .08, .07]),
+    ]),
+    ...row(Math.max(2, Math.round(width / .9)), .83).map(x =>
+      box([x, height - .36, side * (depth / 2 + .1)], [.22, .43, .28], 'stone', [side * .18, 0, 0])),
+  ]),
   box([0, height, 0], [width + .12, .19, depth + .16]),
-  ...row(Math.max(2, Math.round(width / .9)), .83).map(x => box([x, height + .24, 0], [.49, .48, depth + .12])),
+  ...row(Math.max(2, Math.round(width / .9)), .83).flatMap(x => [
+    box([x, height + .24, 0], [.49, .48, depth + .12]),
+    box([x, height + .48, 0], [.57, .08, depth + .21]),
+  ]),
 ];
 const turn = (pieces: ModelPrimitive[]) => {
   const yaw = new Quaternion().setFromEuler(new Euler(0, Math.PI / 2, 0));
@@ -126,16 +148,47 @@ const hall = (w: number, h: number, d: number, roof: number, material: CastleMat
   box([0, h / 3, d / 2 + .025], [.48, h * .65, .065], 'timber'),
   ...row(3, w * .28).flatMap(x => window(x, h * .67, d / 2 + .035, Math.sqrt(h) * .62)),
   ...[-w / 2, w / 2].map(x => box([x, h, 0], [.14, .16, d + .1], 'timber')),
+  box([0, h * .28, 0], [w + .09, .12, d + .09], material === 'timber' ? 'timber' : 'stone'),
+  box([0, h + roof + .035, 0], [.17, .12, d + .45], 'slate'),
+  // Both long elevations have their own windows and pilasters, so rotating
+  // the castle reveals architecture instead of undecorated box backs.
+  ...[-1, 1].flatMap(side => row(3, d * .29).flatMap(z => [
+    box([side * (w / 2 + .035), h * .64, z], [.07, h * .27, .21], 'glass'),
+    box([side * (w / 2 + .075), h * .47, z], [.17, .09, .36]),
+    box([side * (w / 2 + .035), h * .3, z + d * .12], [.13, h * .6, .14], material),
+  ])),
+  // Small gabled dormers interrupt the roof silhouette without occupying
+  // neighbouring sites or introducing a new purchased asset.
+  ...row(w > 2.5 ? 3 : 2, w * .3).flatMap(x => [
+    box([x, h + roof * .27, d / 2 - .13], [.38, roof * .4, .39]),
+    wedge([x, h + roof * .54, d / 2 - .13], [.56, roof * .3, .53], 'slate'),
+    box([x, h + roof * .29, d / 2 + .075], [.14, roof * .23, .04], 'glass'),
+  ]),
 ];
 const tower = (diameter: number, height: number, roof = 0) => [
   cylinder([0, .25, 0], [diameter * 1.12, .5, diameter * 1.12]),
   cylinder([0, height / 2, 0], [diameter, height, diameter]),
   cylinder([0, height, 0], [diameter * 1.13, .23, diameter * 1.13]),
+  ...[.16, .48, .81].map(tier => cylinder([0, height * tier, 0], [diameter * 1.045, .12, diameter * 1.045])),
+  ...Array.from({ length: 6 }, (_, i) => {
+    const angle = i * Math.PI / 3;
+    const x = Math.sin(angle), z = Math.cos(angle);
+    return [
+      box([x * diameter * .494, height * .48, z * diameter * .494], [.13, height * .18, .08], 'iron', [0, angle, 0]),
+      box([x * diameter * .515, height * .37, z * diameter * .515], [.3, .09, .18], 'stone', [0, angle, 0]),
+    ];
+  }).flat(),
   ...Array.from({ length: 9 }, (_, i) => {
     const angle = i * Math.PI * 2 / 9;
-    return box([Math.cos(angle) * diameter * .49, height + .26, Math.sin(angle) * diameter * .49],
-      [.28, .52, .28], undefined, [0, -angle, 0]);
-  }),
+    return [
+      box([Math.cos(angle) * diameter * .49, height + .26, Math.sin(angle) * diameter * .49],
+        [.28, .52, .28], undefined, [0, -angle, 0]),
+      box([Math.cos(angle) * diameter * .49, height + .53, Math.sin(angle) * diameter * .49],
+        [.37, .09, .37], undefined, [0, -angle, 0]),
+      box([Math.cos(angle) * diameter * .52, height - .28, Math.sin(angle) * diameter * .52],
+        [.22, .42, .27], undefined, [0, -angle, 0]),
+    ];
+  }).flat(),
   ...window(0, height * .66, diameter / 2 + .03, diameter * .78, 'iron'),
   ...(roof ? [
     cone([0, height + roof / 2 + .15, 0], [diameter * 1.12, roof, diameter * 1.12], 'slate'),
@@ -688,6 +741,11 @@ const SITES: Record<string, Site> = {
     ...[-1, 1].flatMap(side => shift(tower(1.2, 5.9, 1.71), side * 1.94, 0, .99)),
     ...shift(arch(1.21, 1.08, .29, .68), 0, 0, 1.72),
     ...row(3, .68).flatMap(x => window(x, 4.72, 1.52, 1.19)),
+    ...[-1, 1].flatMap(side => shift(tower(.69, 1.48, 1.06), side * 1.34, 6.24, -.68)),
+    ...[-1, 1].flatMap(side => [
+      box([side * 1.43, 2.92, 1.53], [.19, 5.12, .28]),
+      cone([side * 1.43, 5.65, 1.53], [.34, .68, .34], 'slate'),
+    ]),
   ]),
   'royal-sanctuary': site([3.1, 0, -8.04], () => [
     box([0, 1.19, 0], [3.52, 2.38, 2.54]),
@@ -706,6 +764,18 @@ const SITES: Record<string, Site> = {
       sphere([x * .76, 8.5, z * .76], [.14, .21, .139], 'gold'),
     ])),
     sphere([0, 11.76, 0], [.22, .3, .22], 'gold'),
+    ...[-1, 1].flatMap(x => [-1, 1].flatMap(z => [
+      box([x * .77, 3.91, z * .77], [.2, 6.84, .2]),
+      cone([x * .77, 7.3, z * .77], [.37, .73, .37], 'slate'),
+    ])),
+    ...[8.05, 9.25, 10.4].map(y => {
+      const diameter = (11.695 - y) / 4.21 * 2.29;
+      return cylinder([0, y, 0], [diameter * 1.04, .08, diameter * 1.04], 'gold');
+    }),
+    ...[-1, 1].flatMap(side => row(2, .53).flatMap(z => [
+      box([side * .832, 5.67, z], [.055, 1.34, .19], 'glass'),
+      box([side * .865, 4.96, z], [.13, .09, .29]),
+    ])),
   ]),
   'flying-buttresses': site([-.36, 0, -8.95], () => [-1, 1].flatMap(side => [
     ...shift(buttress(3.65, .65), side * 2.08, 0, .39),
@@ -722,6 +792,11 @@ const SITES: Record<string, Site> = {
     ...shift(rose(.54), 0, 7.33, .914),
     box([.13, 7.43, 1.06], [.39, .076, .055], 'gold', [0, 0, .58]),
     box([0, 7.51, 1.07], [.065, .39, .055], 'gold'),
+    ...[-1, 1].flatMap(side => [
+      box([side * .77, 4.19, .82], [.15, 8.12, .19]),
+      ...[1.87, 4.45].flatMap(y => window(side * .38, y, .9, .87, 'iron')),
+      cone([side * .78, 8.7, .78], [.46, .96, .46], 'slate'),
+    ]),
   ]),
   'sun-observatory': site([6.21, 0, -8.71], () => [
     cylinder([0, 2.2, 0], [1.95, 4.4, 1.95]),
@@ -804,10 +879,41 @@ const SITES: Record<string, Site> = {
   'imperial-crown': site([-.36, 11.94, -9.06], () => crown(11.94, 1.6)),
 };
 
+// The royal skyline rises above the wider bailey, while the moat, bridge and
+// tightly packed courtyard retain their established horizontal alignment.
+// Roof-mounted ornaments share the same elevation transform as their hosts.
+const ROYAL_ELEVATION = 1.18;
+const elevatedSites = new Set([
+  'throne-keep', 'royal-sanctuary', 'cathedral-spire', 'astral-clock-tower',
+  'sun-observatory', 'rose-windows', 'gilded-railings', 'royal-braziers',
+  'throne-hall', 'royal-library', 'choir-chapel', 'star-gallery', 'west-spire',
+  'east-spire', 'royal-skybridge', 'clock-bells', 'spire-finials',
+  'imperial-standard', 'spire-grotesques', 'wyvern', 'imperial-crown',
+]);
+function elevateSite(element: ModelElement, modelKey: string): ModelElement {
+  if (!elevatedSites.has(modelKey)) return element;
+  const elevate = ([x, y, z]: CastleVector): CastleVector => [x, y * ROYAL_ELEVATION, z];
+  return {
+    ...element,
+    anchor: elevate(element.anchor),
+    primitives: element.primitives.map(piece => {
+      // Preserve the perched companion's body and animation proportions;
+      // only its ground-reaching support stretches with the higher perch.
+      if (modelKey === 'wyvern' && piece.position[1] >= -.4) return piece;
+      return {
+        ...piece,
+        position: elevate(piece.position),
+        size: elevate(piece.size),
+        joint: piece.joint && { ...piece.joint, pivot: elevate(piece.joint.pivot) },
+      };
+    }),
+  };
+}
+
 export const CASTLE_ELEMENTS: readonly ModelElement[] = BLUEPRINT_PARTS.map(part => {
   const location = SITES[part.modelKey];
   if (!location) throw new Error('Missing castle geometry for ' + part.modelKey);
-  return { id: part.id, anchor: location.anchor, primitives: location.build() };
+  return elevateSite({ id: part.id, anchor: location.anchor, primitives: location.build() }, part.modelKey);
 });
 const elementsById = new Map(CASTLE_ELEMENTS.map(element => [element.id, element] as const));
 

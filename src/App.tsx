@@ -21,9 +21,10 @@ import { WorkspaceRecoveryNotice } from './components/Modals/WorkspaceRecoveryNo
 import { ACTIVE_CLOUD_KEY, openCloudWorkspace, readCloudProjects, type CloudWorkspace } from './services/cloudWorkspace';
 import { useCloudSync } from './services/useCloudSync';
 import { formatDateKey } from './utils/gamification';
-import { findReflectionCommitment, offerMission, partialProgressLedgerId, settlePastDays } from './utils/castleEconomy';
+import { offerMission, partialProgressLedgerId, settlePastDays } from './utils/castleEconomy';
 import { Header } from './components/Header/Header';
 import { BackupReminderToast } from './components/Layout/BackupReminderToast';
+import { dismissBackupReminder, getBackupReminderCycle, isBackupReminderDismissed } from './utils/backupReminder';
 import { Sidebar } from './components/Sidebar/Sidebar';
 import { TaskClearReflection } from './components/Dashboard/TaskClearReflection';
 import { ActualTimeDialog } from './components/Dashboard/ActualTimeDialog';
@@ -52,6 +53,13 @@ import { FeatureGuideProvider } from './components/Common/FeatureGuideContext';
 const GrowthMasteryScreen = lazy(() =>
   import('./components/Growth/GrowthMasteryScreen').then((m) => ({ default: m.GrowthMasteryScreen }))
 );
+const castleGuidance = [
+  'One focused step. Then another.',
+  'Choose the next piece. Build it.',
+  'Steady work gives this fortress strength.',
+  'Small steps move the build forward.',
+  'Your effort becomes something lasting.',
+];
 const TaskManagementScreen = lazy(() =>
   import('./components/Tasks/TaskManagementScreen').then((m) => ({ default: m.TaskManagementScreen }))
 );
@@ -66,7 +74,7 @@ import {
   calculateBuffer
 } from './utils/timeBudget';
 import { tasksDueToday } from './utils/taskPeriod';
-import { applyCompletedTaskReflection, applyPartialTaskReflection, getDailyReviewTasks, getReflectionTasks, resetReflectionTasks } from './utils/taskReflection';
+import { applyCompletedTaskReflection, getDailyReviewTasks, getReflectionTasks, resetReflectionTasks, registerCompletedTasks, registerPartialProgress, releasePendingProgress } from './utils/taskReflection';
 import { useTaskView } from './components/Tasks/useTaskView';
 import { 
   generateCandidatePool, 
@@ -127,6 +135,7 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
     setSession(prev => ({ ...prev, selectedFocusTaskId: id }));
   }, []);
   const [activeView, setActiveView] = useState<'dashboard' | 'tasks' | 'growth' | 'settings'>('dashboard');
+  const [castleSceneActive, setCastleSceneActive] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const previousView = useRef<'dashboard' | 'tasks' | 'growth'>('dashboard');
   const openSettings = () => {
@@ -150,7 +159,7 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   const [isSparkIdeaModalOpen, setIsSparkIdeaModalOpen] = useState(false);
   const [now, setNow] = useState<Date>(new Date());
-  const [isBackupDismissed, setIsBackupDismissed] = useState(false);
+  const [backupReminderRefresh, setBackupReminderRefresh] = useState(0);
   const [editingTaskIdForScreen, setEditingTaskIdForScreen] = useState<string | null>(null);
   const [taskDetails, setTaskDetails] = useState<{ id: string; trigger: TaskDialogTrigger | null } | null>(null);
   const viewingTask = taskDetails && appData.quickNotes.find((task) => task.id === taskDetails.id);
@@ -246,9 +255,19 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
       if (!result.completedTask) {
         return { ...prev, pendingTaskCompletion: null, completionNotice: 'This time could not be saved. Mark the task done again to enter its time.' };
       }
+      let nextData = { ...prev.appData, quickNotes: result.notes };
+      try {
+        if (prev.appData.settings.dailyReviewRequired === false) {
+          const recorded = registerCompletedTasks(nextData, new Date(pending.requestedAt), new Date(), [result.completedTask]);
+          if (recorded === nextData) throw new Error('Completion could not be recorded');
+          nextData = recorded;
+        }
+      } catch {
+        return { ...prev, pendingTaskCompletion: null, completionNotice: 'This completion could not be recorded. Please try again.' };
+      }
       return {
         ...prev,
-        appData: { ...prev.appData, quickNotes: result.notes },
+        appData: nextData,
         focusTimer: result.timer,
         selectedFocusTaskId: prev.selectedFocusTaskId === id ? null : prev.selectedFocusTaskId,
         completedFocusTask: pending.fromFocus ? result.completedTask : prev.completedFocusTask,
@@ -386,22 +405,24 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
   const [partialError, setPartialError] = useState<string>();
   useEffect(() => {
     if (!partialSubmission) return;
-    const recorded = appData.castleEconomy?.ledger.some(item => item.id === partialSubmission);
+    const recorded = appData.castleEconomy?.ledger.some(item => item.id === partialSubmission)
+      || appData.quickNotes.some(task => task.pendingProgress?.some(entry => partialProgressLedgerId(task.id, entry.date, entry.id) === partialSubmission));
     setPartialSubmission(null);
     if (recorded) {
       setPartialError(undefined);
       setPartialEntry(null);
     } else {
-      setPartialError('This progress could not be recorded. Your answers are still here. Check that the task is open and that an open date is available.');
+      setPartialError('This progress could not be recorded. Check that the task is open and that an open date is available.');
     }
-  }, [partialSubmission, appData.castleEconomy]);
+  }, [partialSubmission, appData.castleEconomy, appData.quickNotes]);
   const [manualReflectionIds, setManualReflectionIds] = useState<string[] | null>(null);
   const [showReflectionCelebration, setShowReflectionCelebration] = useState(false);
   const [reflectionSubmission, setReflectionSubmission] = useState<string[] | null>(null);
   const [reflectionError, setReflectionError] = useState<string>();
   useEffect(() => {
     if (!reflectionSubmission) return;
-    const stillPending = appData.quickNotes.some(task => reflectionSubmission.includes(task.id) && task.isDone && task.pendingReflection);
+    const stillPending = appData.quickNotes.some(task => reflectionSubmission.includes(task.id)
+      && ((task.isDone && task.pendingReflection) || task.pendingProgress?.some(entry => entry.date < formatDateKey(reflectionStartedAt ?? new Date()))));
     setReflectionSubmission(null);
     if (stillPending) {
       setReflectionError('This reflection could not be recorded. Your work and answers are still here. Confirm the reported time and check that an open date is available.');
@@ -419,16 +440,17 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
     return () => window.clearTimeout(timeout);
   }, [showReflectionCelebration]);
   const reflectionTasks = useMemo(() => manualReflectionIds
-    ? appData.quickNotes.filter(task => manualReflectionIds.includes(task.id) && task.isDone && task.pendingReflection)
+    ? (appData.settings.dailyReviewRequired === false ? getDailyReviewTasks(appData.quickNotes)
+      : getReflectionTasks(appData.quickNotes, reflectionStartedAt ?? now, appData.castleEconomy)).filter(task => manualReflectionIds.includes(task.id))
+    : appData.settings.dailyReviewRequired === false ? getDailyReviewTasks(appData.quickNotes)
     : getReflectionTasks(appData.quickNotes, reflectionStartedAt ?? now, appData.castleEconomy),
-  [appData.quickNotes, appData.castleEconomy, reflectionStartedAt, manualReflectionIds, now]);
+  [appData.quickNotes, appData.castleEconomy, appData.settings.dailyReviewRequired, reflectionStartedAt, manualReflectionIds, now]);
   const reflectionKey = JSON.stringify(reflectionTasks.map(task => task.id).sort());
   const reflectionReady = reflectionTasks.length > 0;
   const dayKey = formatDateKey(now);
-  const reflectionDay = reflectionStartedAt ? formatDateKey(reflectionStartedAt) : dayKey;
   const reflectionEconomy = appData.castleEconomy;
   const timedReflectionTasks = reflectionEconomy
-    ? reflectionTasks.filter(task => !task.actualMinutes && findReflectionCommitment(reflectionEconomy, task, reflectionDay)) : [];
+    ? reflectionTasks.filter(task => task.isDone && (!Number.isSafeInteger(task.actualMinutes) || (task.actualMinutes ?? 0) < Math.max(1, (task.partialMinutes ?? 0) + (task.pendingProgress ?? []).reduce((sum, entry) => sum + entry.minutes, 0)))) : [];
   const needsActualTime = timedReflectionTasks.length > 0;
   const openCompletedTaskReflection = (taskIds: string[]) => {
     setManualReflectionIds(taskIds);
@@ -436,7 +458,8 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
     setShowReflection(true);
   };
   const openDailyReflection = () => {
-    const taskIds = getDailyReviewTasks(appData.quickNotes).map(task => task.id);
+    const taskIds = (appData.settings.dailyReviewRequired === false ? getDailyReviewTasks(appData.quickNotes)
+      : getReflectionTasks(appData.quickNotes, new Date(), appData.castleEconomy)).map(task => task.id);
     if (taskIds.length) {
       openCompletedTaskReflection(taskIds);
     } else {
@@ -477,6 +500,7 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
     let resetAfterLeave: AppData | null = null;
     const onLeave = () => {
       const { appData: current, workspace: activeWorkspace, reflectionStartedAt: anchor, manualReflectionIds: selectedIds, saveOnLeave } = leavingRef.current;
+      if (current.settings.dailyReviewRequired === false) return;
       const reset = resetReflectionTasks(current.quickNotes, anchor ?? new Date(), current.castleEconomy, selectedIds ?? undefined);
       if (reset === current.quickNotes) return;
       resetAfterLeave = { ...current, quickNotes: reset };
@@ -509,6 +533,23 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
     const timer = window.setTimeout(() => setShowReflection(true), 1500);
     return () => window.clearTimeout(timer);
   }, [reflectionKey, reflectionReady, manualReflectionIds]);
+
+  useEffect(() => {
+    if (appData.settings.dailyReviewRequired !== false || !appData.quickNotes.some(task => !task.isDone && task.pendingProgress?.length)) return;
+    setAppData(prev => {
+      try { return releasePendingProgress(prev, new Date()); }
+      catch { return prev; }
+    });
+  }, [appData.settings.dailyReviewRequired, appData.quickNotes]);
+
+  useEffect(() => {
+    if (appData.settings.dailyReviewRequired !== false || !showReflection || !reflectionReady || needsActualTime || partialEntry || pendingTaskCompletion) return;
+    setAppData(prev => {
+      try { return registerCompletedTasks(prev, reflectionStartedAt ?? new Date(), new Date(), reflectionTasks); }
+      catch { return prev; }
+    });
+    setShowReflection(false);
+  }, [appData.settings.dailyReviewRequired, showReflection, reflectionReady, needsActualTime, partialEntry, pendingTaskCompletion, reflectionStartedAt, reflectionTasks]);
 
   useEffect(() => {
     if (!completedFocusTask) return;
@@ -646,23 +687,24 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
   };
 
   const handleQuickBackup = () => {
-    exportDataAsJson(appData);
-    setAppData((prev) => {
-      const updated = {
-        ...prev,
-        gamification: {
-          ...prev.gamification,
-          lastBackupTimestamp: Date.now(),
-        },
-      };
-      return updated;
-    });
-    setIsBackupDismissed(true);
+    const updated = {
+      ...appData,
+      gamification: {
+        ...appData.gamification,
+        lastBackupTimestamp: Date.now(),
+      },
+    };
+    exportDataAsJson(updated);
+    setAppData(updated);
   };
 
+  const backupReminderScope = workspaceScope ?? 'local';
+  const backupReminderCycle = getBackupReminderCycle(appData.gamification?.lastBackupTimestamp || 0, now.getTime());
   const daysSinceBackup = Math.floor(
-    (Date.now() - (appData.gamification?.lastBackupTimestamp || 0)) / (1000 * 60 * 60 * 24)
+    (now.getTime() - (appData.gamification?.lastBackupTimestamp || 0)) / (1000 * 60 * 60 * 24)
   );
+  const backupDismissalIsCurrent = isBackupReminderDismissed(backupReminderScope, backupReminderCycle);
+  void backupReminderRefresh;
 
   return (
     <FeatureGuideProvider>
@@ -728,12 +770,14 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
         </p>
       )}
 
-      {/* 5-Day Automated Backup Reminder Banner */}
-      {daysSinceBackup >= 5 && !isBackupDismissed && (
+      {/* 5-Day Backup Reminder */}
+      {daysSinceBackup >= 5 && !backupDismissalIsCurrent && (
         <BackupReminderToast
-          daysSinceLastBackup={daysSinceBackup}
           onQuickBackup={handleQuickBackup}
-          onDismiss={() => setIsBackupDismissed(true)}
+          onDismiss={() => {
+            dismissBackupReminder(backupReminderScope, backupReminderCycle);
+            setBackupReminderRefresh(value => value + 1);
+          }}
         />
       )}
 
@@ -756,7 +800,7 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
 
         {/* Launchpad Pet */}
         {petEnabled && (
-          <div className="hidden md:contents"><LaunchpadPet controller={pet} paused={petPaused} onTogglePaused={handleTogglePetPaused} tier={petTier} evolutionLevel={petLevel} /></div>
+          <div className="hidden md:contents"><LaunchpadPet controller={pet} paused={petPaused} onTogglePaused={handleTogglePetPaused} tier={petTier} evolutionLevel={petLevel} castleMessage={castleSceneActive ? castleGuidance[(Number(dayKey.slice(-2)) - 1) % castleGuidance.length] : undefined} /></div>
         )}
 
         {/* Content Area */}
@@ -770,6 +814,7 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
                   onOpenSparkIdea={() => setIsSparkIdeaModalOpen(true)}
                   appData={appData}
                   onUpdateAppData={setAppData}
+                  onExportBackup={handleQuickBackup}
                   onImportBackup={handleImportBackup}
                   onClearAllData={handleClearAllData}
                   workspace={workspace}
@@ -789,6 +834,7 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
             >
               <Suspense fallback={<div className="p-8 text-center text-sm text-serene-text-muted">Loading Growth & Mastery...</div>}>
                 <GrowthMasteryScreen
+                  onCastleSceneChange={setCastleSceneActive}
                   castleEconomy={appData.castleEconomy}
                   tasks={appData.quickNotes}
                   reflections={appData.reflections || []}
@@ -832,6 +878,7 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
             >
               <Suspense fallback={<div className="p-8 text-center text-sm text-serene-text-muted">Loading Tasks...</div>}>
                 <TaskManagementScreen
+                  castleActive={!!appData.castleEconomy}
                   createTaskRequested={createTaskRequested}
                   requestedFormTrigger={taskFormTrigger.current}
                   onCreateTaskOpened={() => setCreateTaskRequested(false)}
@@ -869,6 +916,7 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
                 {/* Focus and available time share a row when the workspace is wide. */}
                 <div className="min-w-0 @6xl:col-span-7">
                   <PrimaryFocusCard
+                    castleActive={!!appData.castleEconomy}
                     tasks={dashboardTodayTasks}
                     now={now}
                     selectedTaskId={selectedFocusTaskId}
@@ -968,6 +1016,7 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
 
       {taskDetails && viewingTask && (
         <TaskPreviewPopUp
+          castleActive={!!appData.castleEconomy}
           key={viewingTask.id}
           task={viewingTask}
           now={now}
@@ -1053,22 +1102,11 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
         />
       )}
       {partialEntry && partialEntry.minutes === undefined && appData.quickNotes.some(task => task.id === partialEntry.taskId) && (
-        <ActualTimeDialog tasks={appData.quickNotes.filter(task => task.id === partialEntry.taskId).map(task => ({ ...task, actualMinutes: undefined, partialMinutes: undefined }))} maxMinutes={525600 - (appData.quickNotes.find(task => task.id === partialEntry.taskId)?.partialMinutes || 0)} description="Enter only the additional minutes worked since your last progress entry. Your reflection comes next." onCancel={() => setPartialEntry(null)} onSave={values => setPartialEntry(entry => entry ? { ...entry, minutes: values[entry.taskId] } : null)} />
-      )}
-      {partialEntry && partialEntry.minutes !== undefined && (
-        <TaskClearReflection error={partialError} onClose={() => { setPartialError(undefined); setPartialEntry(null); }} onSubmit={(questions, answers) => {
-          if (questions.length !== 5 || answers.length !== 5 || answers.some(answer => answer.trim().split(/\s+/u).filter(Boolean).length < 150)) return;
-          const entry = partialEntry;
-          const submittedAt = new Date();
+        <ActualTimeDialog tasks={appData.quickNotes.filter(task => task.id === partialEntry.taskId).map(task => ({ ...task, actualMinutes: undefined, partialMinutes: undefined, pendingProgress: undefined }))} maxMinutes={525600 - (appData.quickNotes.find(task => task.id === partialEntry.taskId)?.partialMinutes || 0) - (appData.quickNotes.find(task => task.id === partialEntry.taskId)?.pendingProgress ?? []).reduce((sum, entry) => sum + entry.minutes, 0)} description={partialError || (appData.settings.dailyReviewRequired === false ? 'Enter only the additional minutes worked since your last progress entry.' : 'Enter only the additional minutes worked since your last progress entry. Earnings wait for your daily review after today’s tasks are complete.')} onCancel={() => { setPartialEntry(null); setPartialError(undefined); }} onSave={values => {
+          const entry = { ...partialEntry, minutes: values[partialEntry.taskId] };
           setPartialError(undefined);
           setPartialSubmission(partialProgressLedgerId(entry.taskId, entry.date, entry.id));
-          setAppData(prev => {
-            try {
-              return entry.minutes === undefined ? prev : applyPartialTaskReflection(prev, { ...entry, minutes: entry.minutes }, submittedAt, questions, answers);
-            } catch {
-              return prev;
-            }
-          });
+          setAppData(prev => { try { return registerPartialProgress(prev, entry, new Date()); } catch { return prev; } });
         }} />
       )}
       {showDailyReflection && (
@@ -1086,14 +1124,14 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
         />
       )}
       {showReflection && reflectionReady && !showDailyReflection && !partialEntry && !pendingTaskCompletion && needsActualTime && (
-        <ActualTimeDialog tasks={timedReflectionTasks} description="Enter the total time spent on each task, including any previously recorded partial work. Your reflection comes next." onSave={minutes => setAppData(prev => ({ ...prev, quickNotes: prev.quickNotes.map(task => typeof minutes[task.id] === 'number' ? { ...task, actualMinutes: minutes[task.id] } : task) }))} onCancel={() => {
+        <ActualTimeDialog tasks={timedReflectionTasks} description={appData.settings.dailyReviewRequired === false ? 'Enter the total time spent on each task, including any previously recorded partial work.' : 'Enter the total time spent on each task, including any previously recorded partial work. Your reflection comes next.'} onSave={minutes => setAppData(prev => ({ ...prev, quickNotes: prev.quickNotes.map(task => typeof minutes[task.id] === 'number' ? { ...task, actualMinutes: minutes[task.id] } : task) }))} onCancel={() => {
           setShowReflection(false);
-          setAppData(prev => ({ ...prev, quickNotes: resetReflectionTasks(prev.quickNotes, reflectionStartedAt ?? new Date(), prev.castleEconomy, manualReflectionIds ?? undefined) }));
+          if (appData.settings.dailyReviewRequired !== false) setAppData(prev => ({ ...prev, quickNotes: resetReflectionTasks(prev.quickNotes, reflectionStartedAt ?? new Date(), prev.castleEconomy, manualReflectionIds ?? undefined) }));
           setReflectionStartedAt(null);
           setManualReflectionIds(null);
         }} />
       )}
-      {showReflection && reflectionReady && !showDailyReflection && !partialEntry && !pendingTaskCompletion && !needsActualTime && (
+      {showReflection && reflectionReady && !showDailyReflection && !partialEntry && !pendingTaskCompletion && !needsActualTime && appData.settings.dailyReviewRequired !== false && (
         <TaskClearReflection
           style={appData.settings.confettiStyle}
           error={reflectionError}
@@ -1114,7 +1152,8 @@ export function App({ workspace = null, onSwitchWorkspace, cloudNotice }: {
             setReflectionError(undefined);
             setReflectionSubmission([...completedIds]);
             setAppData((prev) => {
-              const completed = prev.quickNotes.filter(task => completedIds.has(task.id) && task.isDone && task.pendingReflection);
+              const completed = prev.quickNotes.filter(task => completedIds.has(task.id)
+                && ((task.isDone && task.pendingReflection) || (!task.isDone && !!task.pendingProgress?.length)));
               if (!completed.length) return prev;
               try {
                 return applyCompletedTaskReflection(prev, reflectionDate, submittedAt, questions, answers, completed);

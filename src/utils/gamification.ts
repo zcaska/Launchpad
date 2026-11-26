@@ -191,7 +191,7 @@ export function recordTaskCompletion(
     now
   );
 
-  const durationMinutes = task.durationMinutes || 30;
+  const durationMinutes = task.actualMinutes ?? (task.durationMinutes || 30);
   const earnedXp = calculateTaskXp(durationMinutes, task.priority, nextStreak);
 
   const nextLongestStreak = Math.max(gamification.longestStreak || 0, nextStreak);

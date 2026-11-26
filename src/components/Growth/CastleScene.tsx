@@ -22,6 +22,10 @@ const controls: { action: CastleCameraCommand; label: string; text: string }[] =
   { action: 'in', label: 'Zoom into castle', text: '+' },
   { action: 'out', label: 'Zoom out of castle', text: '−' },
   { action: 'reset', label: 'Reset view', text: 'Reset view' },
+  { action: 'pan-up', label: 'Pan castle view up', text: '↑' },
+  { action: 'pan-down', label: 'Pan castle view down', text: '↓' },
+  { action: 'pan-left', label: 'Pan castle view left', text: '←' },
+  { action: 'pan-right', label: 'Pan castle view right', text: '→' },
 ];
 
 export function CastleScene({ ownedIds, inspection, compact = false, className = '', id }: CastleSceneProps) {
@@ -90,7 +94,7 @@ export function CastleScene({ ownedIds, inspection, compact = false, className =
       <p id={`${titleId}-summary`} className="castle-artwork__accessible">
         {built.length} of {total} physical elements built. {built.length < total && 'Unbuilt elements appear as silhouettes. '}
         {built.length > 0 && `Built: ${built.map(part => part.label).join(', ')}. `}
-        Drag to orbit. Select an element in the scene or select a purchased material in the store to highlight its location.
+        Drag to orbit. Scroll or use the arrow controls to pan the view; hold Shift or Control while scrolling to zoom. Select an element in the scene or select a purchased material in the store to highlight its location.
       </p>
       {status && <div className="castle-3d__status" role="status">{status}
         {status !== loading && <button type="button" onClick={() => setRecovery(value => value + 1)}>Restore 3D view</button>}

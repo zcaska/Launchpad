@@ -156,6 +156,7 @@ export const DEFAULT_SEED_DATA: AppData = {
     showQuotes: true,
     openInNewTab: true,
     compactView: false,
+    dailyReviewRequired: true,
     activeMode: 'auto',
     confettiStyle: 'cascade',
     pet: { enabled: true },

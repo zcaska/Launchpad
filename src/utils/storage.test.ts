@@ -136,6 +136,7 @@ const mockStorage = new MockLocalStorage();
 
   const migrated = loadAppData();
   assertEqual(migrated.version, 3, 'loadAppData migrates legacy v2 data to version 3');
+  assertEqual(migrated.settings.dailyReviewRequired, true, 'Legacy data keeps the daily review requirement by default');
   assertEqual(migrated.quickNotes.length, 1, 'Preserves quickNotes across migration');
   assertEqual(migrated.quickNotes[0].text, 'Important task', 'Preserves task text');
   assertEqual(migrated.scratchpadText, 'Preserved notes', 'Preserves scratchpadText');
@@ -185,6 +186,13 @@ const mockStorage = new MockLocalStorage();
   assertEqual(imported.version, 3, 'importDataFromJson upgrades version to 3');
   assertEqual(imported.quickNotes[0].durationMinutes, 45, 'importDataFromJson preserves task duration');
   assertEqual(imported.quickNotes[0].text, 'Task 1', 'importDataFromJson preserves task text');
+  const optedOut = importDataFromJson(JSON.stringify({
+    ...imported,
+    settings: { ...imported.settings, dailyReviewRequired: false },
+  }));
+  assertEqual(optedOut.settings.dailyReviewRequired, false, 'Import preserves daily review opt-out');
+  assert(saveAppData(optedOut), 'Saves the daily review opt-out');
+  assertEqual(loadAppData().settings.dailyReviewRequired, false, 'Reload preserves daily review opt-out');
 
   // Corrupted / invalid imports
   let caught = false;

@@ -14,7 +14,7 @@ import {
 } from '@phosphor-icons/react';
 import { AppData, type ConfettiStyle } from '../../types';
 import { ConfettiOverlay } from '../Dashboard/ConfettiOverlay';
-import { exportDataAsJson, getStorageMetrics } from '../../utils/storage';
+import { getStorageMetrics } from '../../utils/storage';
 import { DEFAULT_INITIAL_PREFERENCES } from '../../data/seedData';
 import { Mascot } from '../Pet/Mascot';
 import { MascotShowcaseModal } from '../Pet/MascotShowcaseModal';
@@ -31,6 +31,7 @@ interface SettingsScreenProps {
   appData: AppData;
   onUpdateAppData: (data: AppData) => void;
   onImportBackup: (text: string) => Promise<void>;
+  onExportBackup: () => void;
   onClearAllData: () => Promise<void> | void;
   workspace?: CloudWorkspace | null;
   onSwitchWorkspace?: (workspace: CloudWorkspace | null) => void;
@@ -44,6 +45,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
   appData,
   onUpdateAppData,
   onImportBackup,
+  onExportBackup,
   onClearAllData,
   workspace = null,
   onSwitchWorkspace,
@@ -66,7 +68,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
   };
 
   const handleExport = () => {
-    exportDataAsJson(appData);
+    onExportBackup();
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -202,6 +204,26 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
             <button type="button" onClick={onOpenSparkIdea} className="font-semibold text-serene-primary dark:text-serene-primary-dark md:hidden">
               Spark an idea
             </button>
+          </section>
+          <section aria-labelledby="daily-review-settings-heading" className="space-y-3 rounded-xl border border-serene-border-light p-3 sm:p-4 dark:border-serene-border-dark">
+            <h2 id="daily-review-settings-heading" className="font-bold">Daily review</h2>
+            <label className="flex min-h-11 cursor-pointer items-center justify-between gap-3">
+              <span>
+                <span id="daily-review-setting-label" className="block font-semibold">Require daily review</span>
+                <span id="daily-review-setting-description" className="block text-serene-text-secondary dark:text-serene-text-darkSecondary">
+                  When off, completed work and partial progress are recorded without a required reflection.
+                </span>
+              </span>
+              <input
+                type="checkbox"
+                role="switch"
+                aria-labelledby="daily-review-setting-label"
+                aria-describedby="daily-review-setting-description"
+                checked={appData.settings.dailyReviewRequired}
+                onChange={event => updateSetting('dailyReviewRequired', event.target.checked)}
+                className="h-5 w-5 shrink-0 accent-serene-primary"
+              />
+            </label>
           </section>
           {Boolean(appData.reflections?.length) && (
             <section className="rounded-xl border border-serene-border-light dark:border-serene-border-dark p-4 space-y-3 text-serene-text-primary dark:text-serene-text-darkPrimary">

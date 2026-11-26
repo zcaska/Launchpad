@@ -18,6 +18,7 @@ const renderStore = (economy: CastleEconomy) => renderToStaticMarkup(
 test('opens with a castle view and a Store button, with the catalog closed', () => {
   const view = render(base);
   assert.match(view, /aria-label="Castle view"/);
+  assert.doesNotMatch(view, /Castle building encouragement|data-expression="welcoming"/);
   assert.match(view, /aria-haspopup="dialog"[^>]*>.*? Store<\/button>/);
   assert.doesNotMatch(view, /<dialog|data-asset=|Financial summary|Daily summary/);
 });

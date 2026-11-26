@@ -18,6 +18,7 @@ import {
   CaretDown,
   FunnelSimple,
   CaretUp,
+  Money,
 } from '@phosphor-icons/react';
 import { QuickNote, TaskPriority, TaskUrl, Subtask } from '../../types';
 import { bufferTextColor, formatMinutesToHours } from '../../utils/timeBudget';
@@ -28,14 +29,17 @@ import { staggerItemVariants, staggerContainerVariants } from '../../utils/motio
 import { SafeDescription } from '../Common/SafeDescription';
 import { TaskLinks } from './TaskLinks';
 import { TaskEditorDialog } from './TaskEditorDialog';
+import { EstimatedDurationPicker } from '../Common/EstimatedDurationPicker';
 import { formatLocalYMD, projectDeadlineEditor } from './taskDeadlineEditor';
 import type { TaskDialogTrigger } from './TaskDialog';
 import type { TaskAction } from '../../utils/taskCompletion';
+import { formatTaskCashEstimate } from '../../utils/taskCashEstimate';
 
 export interface TaskManagementScreenProps {
   notes: QuickNote[];
   view: TaskViewState;
   now: Date;
+  castleActive?: boolean;
   createTaskRequested: boolean;
   requestedFormTrigger?: TaskDialogTrigger | null;
   onCreateTaskOpened: () => void;
@@ -53,6 +57,7 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
   notes,
   view,
   now,
+  castleActive,
   createTaskRequested,
   requestedFormTrigger = null,
   onCreateTaskOpened,
@@ -351,9 +356,10 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
   const renderTaskCard = (row: TaskRow) => {
     const { task } = row;
     const deadlineInfo = taskDeadlineBadge(row, projection.clock);
+    const cashEstimate = castleActive ? formatTaskCashEstimate(task, now) : undefined;
     const subtasks = task.subtasks || [];
     const completedSubtasks = subtasks.filter((s) => s.isDone).length;
-    const hasMetadata = !!(task.priority || task.durationMinutes || deadlineInfo || (task.attachedUrls && task.attachedUrls.length > 0));
+    const hasMetadata = !!(castleActive || task.priority || task.durationMinutes || deadlineInfo || (task.attachedUrls && task.attachedUrls.length > 0));
 
     return (
       <motion.div
@@ -465,6 +471,18 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md font-mono font-medium bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark text-serene-text-secondary dark:text-serene-text-darkSecondary border border-serene-border-light dark:border-serene-border-dark">
                   <Clock className="w-3 h-3 text-serene-text-muted" />
                   {formatMinutesToHours(task.durationMinutes)}
+                </span>
+              )}
+
+              {castleActive && (
+                <span title={cashEstimate ? 'Estimated cash value. Earnings use the actual time you report.' : 'Add an estimated duration to see the cash value.'}
+                  className="inline-flex items-center gap-1 text-xs font-medium tabular-nums text-emerald-700 dark:text-emerald-300">
+                  {cashEstimate ? (
+                    <>
+                      <Money size={15} aria-hidden="true" />
+                      {cashEstimate.replace(/^\$/, '')}
+                    </>
+                  ) : 'Add time estimate for cash value'}
                 </span>
               )}
 
@@ -916,7 +934,7 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
                   <label className="block text-xs font-semibold text-serene-text-secondary dark:text-serene-text-darkSecondary mb-1.5">
                     Priority Level
                   </label>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  <div className="grid grid-cols-2 gap-2">
                     <button
                       type="button"
                       onClick={() => setFormPriority('urgent')}
@@ -966,75 +984,7 @@ export const TaskManagementScreen: React.FC<TaskManagementScreenProps> = ({
 
                 {/* Estimated Time Selector */}
                 <div>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <label className="block text-xs font-semibold text-serene-text-secondary dark:text-serene-text-darkSecondary">
-                      Estimated Time Budget
-                    </label>
-                    <span className="text-[11px] font-mono font-bold text-serene-primary dark:text-serene-primary-dark">
-                      {formatMinutesToHours(formDuration)}
-                    </span>
-                  </div>
-
-                  {/* Flexible Hours and Minutes Time Selectors */}
-                  <div className="grid grid-cols-2 gap-2">
-                    {/* Hours Select */}
-                    <div className="flex items-center justify-between bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark border border-serene-border-light dark:border-serene-border-dark rounded-xl px-3 py-1.5 focus-within:ring-2 focus-within:ring-serene-primary/40 focus-within:border-serene-primary">
-                      <select
-                        aria-label="Hours duration"
-                        value={Math.floor(formDuration / 60)}
-                        onChange={(e) => {
-                          const h = parseInt(e.target.value, 10) || 0;
-                          const m = formDuration % 60;
-                          setFormDuration(Math.max(5, h * 60 + m));
-                        }}
-                        className="bg-transparent text-xs font-semibold text-serene-text-primary dark:text-serene-text-darkPrimary focus:outline-none w-full cursor-pointer"
-                      >
-                        {Array.from({ length: 13 }, (_, i) => (
-                          <option key={i} value={i} className="bg-white dark:bg-serene-surface-dark">
-                            {i} {i === 1 ? 'hour' : 'hours'}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    {/* Minutes Select */}
-                    <div className="flex items-center justify-between bg-serene-surfaceAlt-light dark:bg-serene-surfaceAlt-dark border border-serene-border-light dark:border-serene-border-dark rounded-xl px-3 py-1.5 focus-within:ring-2 focus-within:ring-serene-primary/40 focus-within:border-serene-primary">
-                      <select
-                        aria-label="Minutes duration"
-                        value={formDuration % 60}
-                        onChange={(e) => {
-                          const m = parseInt(e.target.value, 10) || 0;
-                          const h = Math.floor(formDuration / 60);
-                          setFormDuration(Math.max(5, h * 60 + m));
-                        }}
-                        className="bg-transparent text-xs font-semibold text-serene-text-primary dark:text-serene-text-darkPrimary focus:outline-none w-full cursor-pointer"
-                      >
-                        {[0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55].map((mins) => (
-                          <option key={mins} value={mins} className="bg-white dark:bg-serene-surface-dark">
-                            {mins} mins
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-
-                  {/* Quick Preset Chips for speed */}
-                  <div className="flex items-center gap-1.5 mt-2 flex-wrap">
-                    {[15, 25, 30, 45, 60, 90, 120].map((mins) => (
-                      <button
-                        key={mins}
-                        type="button"
-                        onClick={() => setFormDuration(mins)}
-                        className={`px-2 py-0.5 rounded-lg text-[10px] font-mono transition-all border ${
-                          formDuration === mins
-                            ? 'bg-serene-primary text-white border-serene-primary font-semibold shadow-2xs'
-                            : 'bg-serene-surfaceAlt-light/60 dark:bg-serene-surfaceAlt-dark/60 text-serene-text-muted hover:text-serene-text-primary border-serene-border-light dark:border-serene-border-dark'
-                        }`}
-                      >
-                        {formatMinutesToHours(mins)}
-                      </button>
-                    ))}
-                  </div>
+                  <EstimatedDurationPicker minutes={formDuration} onChange={setFormDuration} label="Estimated Time Budget" />
                 </div>
               </div>
 
