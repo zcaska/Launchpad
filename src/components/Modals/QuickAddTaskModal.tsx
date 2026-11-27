@@ -226,7 +226,7 @@ export const QuickAddTaskModal: React.FC<QuickAddTaskModalProps> = ({
                       aria-label="Deadline date and time"
                       value={deadline}
                       onChange={(e) => setDeadline(e.target.value)}
-                                            className="w-full px-3 py-1.5 rounded-lg bg-serene-surfaceAlt-light/60 dark:bg-serene-surfaceAlt-dark/70 border border-serene-border-light dark:border-serene-border-dark text-xs text-serene-text-primary dark:text-serene-text-darkPrimary placeholder:text-serene-text-muted focus:outline-none focus:ring-1 focus:ring-serene-primary transition-all"
+                      className="w-full px-3 py-1.5 rounded-lg bg-serene-surfaceAlt-light/60 dark:bg-serene-surfaceAlt-dark/70 border border-serene-border-light dark:border-serene-border-dark text-xs text-serene-text-primary dark:text-serene-text-darkPrimary [color-scheme:light] dark:[color-scheme:dark] placeholder:text-serene-text-muted focus:outline-none focus:ring-1 focus:ring-serene-primary transition-all"
                     />
                   ) : (
                     <div 

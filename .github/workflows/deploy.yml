@@ -35,6 +35,9 @@ jobs:
       - name: Run focused tests
         run: npm test
 
+      - name: Verify offline app isolation
+        run: npm run test:pwa
+
       - name: Build project
         run: npm run build
         env:

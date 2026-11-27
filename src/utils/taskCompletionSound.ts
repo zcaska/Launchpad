@@ -19,11 +19,11 @@ export async function playTaskCompletionBell() {
     const now = audio.currentTime;
     const gain = audio.createGain();
     gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.exponentialRampToValueAtTime(0.055, now + 0.012);
-    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.24);
+    gain.gain.exponentialRampToValueAtTime(0.16, now + 0.012);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.32);
     gain.connect(audio.destination);
     let remaining = 2;
-    for (const [frequency, volume] of [[880, 1], [1320, 0.28]] as const) {
+    for (const [frequency, volume, delay] of [[1046.5, 1, 0], [1318.5, 0.75, 0.065]] as const) {
       const oscillator = audio.createOscillator();
       const partialGain = audio.createGain();
       oscillator.type = 'sine';
@@ -36,8 +36,8 @@ export async function playTaskCompletionBell() {
         partialGain.disconnect();
         if (--remaining === 0) gain.disconnect();
       };
-      oscillator.start(now);
-      oscillator.stop(now + 0.25);
+      oscillator.start(now + delay);
+      oscillator.stop(now + 0.33);
     }
     // Reuse the authorized context; cleanup follows audio time, not a wall timer.
   } catch {
